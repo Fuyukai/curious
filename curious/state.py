@@ -140,6 +140,9 @@ class State(object):
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect")
 
+    async def handle_resumed(self, event_data: dict):
+        await self.client.fire_event("resumed")
+
     async def handle_presence_update(self, event_data: dict):
         """
         Called when a member changes game.

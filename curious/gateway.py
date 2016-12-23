@@ -134,6 +134,9 @@ class Gateway(object):
         #: The connection state used for this connection.
         self.state = connection_state
 
+        #: The cached gateway URL.
+        self._cached_gateway_url = None  # type: str
+
         # Heartbeats and ACKs are tracked by this class to make sure if we send a heartbeat, but the previous one has
         #  not been ACK'd yet, we need to reconnect, as we've lost connection.
         #: The number of heartbeats this connection has sent.
@@ -149,7 +152,9 @@ class Gateway(object):
         This does not do ANY handshake steps.
         :param url: The URL to connect to.
         """
+        self.logger.info("Opening connection to {}".format(url))
         self.websocket = await WSClient.connect(url)
+        self.logger.info("Connected to gateway!")
         self._open = True
         return self.websocket
 
@@ -243,6 +248,21 @@ class Gateway(object):
         # TODO: Sharding
         self._send_json(payload)
 
+    def send_resume(self):
+        """
+        Sends a RESUME packet.
+        """
+        payload = {
+            "op": GatewayOp.RESUME,
+            "d": {
+                "token": self.token,
+                "session_id": self.state._session_id,
+                "seq": self.sequence_num
+            }
+        }
+
+        self._send_json(payload)
+
     def send_status(self, game: Game, status: Status):
         payload = {
             "op": GatewayOp.PRESENCE,
@@ -279,6 +299,7 @@ class Gateway(object):
         obb = cls(token, state)
 
         gateway_url += "?v={}&encoding=json".format(cls.GATEWAY_VERSION)
+        obb._cached_gateway_url = gateway_url
 
         await obb.connect(gateway_url)
 
@@ -286,11 +307,35 @@ class Gateway(object):
         obb._event_reader = await curio.spawn(obb._send_events())
 
         # send IDENTIFY
-        # TODO: RESUME
         obb.logger.info("Sending IDENTIFY...")
         obb.send_identify()
 
         return obb
+
+    async def reconnect(self, *, resume: bool=False):
+        """
+        Reconnects the bot to the gateway.
+
+        :param resume: Should a RESUME be attempted?
+        """
+        self.logger.info("Reconnecting to the gateway")
+        if not self.websocket.closed:
+            await self.websocket.close_now()
+
+        self._open = False
+
+        await self.connect(self._cached_gateway_url)
+        self._event_reader = await curio.spawn(self._send_events())
+
+        if resume:
+            # Send the RESUME packet, instead of the IDENTIFY packet.
+            self.logger.info("Sending RESUME...")
+            self.send_resume()
+        else:
+            self.logger.info("Sending IDENTIFY...")
+            self.send_identify()
+
+        return self
 
     async def _get_chunks(self, guild):
         """
@@ -348,6 +393,7 @@ class Gateway(object):
         elif op == GatewayOp.INVALIDATE_SESSION:
             # Clean up our session.
             self.sequence_num = 0
+            self.state._reset()
             self.send_identify()
 
         elif op == GatewayOp.RECONNECT:
@@ -369,6 +415,10 @@ class Gateway(object):
                 except ChunkGuild as e:
                     # We need to download all member chunks from this guild.
                     await curio.spawn(self._get_chunks(e.args[0]))
+                except Exception:
+                    await self._close()
+                    await self.websocket.close_now()
+                    raise
             else:
                 self.logger.warning("Unhandled event: {}".format(event))
 
@@ -377,12 +427,3 @@ class Gateway(object):
                 self.logger.warning("Unhandled opcode: {} ({})".format(op, GatewayOp(op)))
             except ValueError:
                 self.logger.warning("Unknown opcode: {}".format(op))
-
-    async def poll(self):
-        """
-        Starts a polling loop.
-
-        This is a convenience method for testing - `next_event` should be used normally.
-        """
-        while True:
-            await self.next_event()

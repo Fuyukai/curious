@@ -4,11 +4,12 @@ import typing
 import curio
 import logging
 import multidict
+from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
-from curious.gateway import Gateway
+from curious.gateway import Gateway, ReconnectWebsocket
 from curious.http import HTTPClient
 from curious.state import State
 
@@ -158,7 +159,22 @@ class Client(object):
 
     async def start(self, token: str = None):
         """
-        Stub method
+        Starts the gateway polling loop.
         """
         await self.connect(token)
-        await self.gw.poll()
+
+        while True:
+            try:
+                await self.gw.next_event()
+            except WebsocketClosedError as e:
+                # Try and handle the close.
+                if e.code not in (1000, 4004):
+                    # Try and RESUME.
+                    self.logger.info("Disconnected with close code {}, attempting a reconnect.".format(e.code))
+                    await self.gw.reconnect(resume=True)
+                else:
+                    raise
+            except ReconnectWebsocket:
+                # We've been told to reconnect, try and RESUME.
+                await self.gw.reconnect(resume=True)
+
