@@ -1,14 +1,14 @@
 import copy
 import typing
 
-from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.bases import Dataclass, Messagable
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
-from curious.dataclasses.user import User
+from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild
 
 
-class Member(Dataclass):
+class Member(Dataclass, Messagable):
     """
     A member is a user attached to a guild.
     """
@@ -16,7 +16,7 @@ class Member(Dataclass):
         super().__init__(kwargs["user"]["id"], client)
 
         #: The user object associated with this member.
-        self.user = User(client, **kwargs.get("user"))
+        self.user = dt_user.User(client, **kwargs.get("user"))
 
         #: A dictionary of roles this user has.
         self._roles = {}
@@ -89,3 +89,6 @@ class Member(Dataclass):
             return next(roles).colour
         except StopIteration:
             return 0
+
+    def send(self, content: str, *args, **kwargs):
+        return self.user.send(content, *args, **kwargs)

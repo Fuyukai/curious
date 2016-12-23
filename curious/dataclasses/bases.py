@@ -1,11 +1,23 @@
 """
 Base classes.
 """
+import abc
 import datetime
 
 from curious import client
 
 DISCORD_EPOCH = 1420070400000
+
+
+class Messagable(abc.ABC):
+    @abc.abstractmethod
+    async def send(self, content: str, *args, **kwargs):
+        """
+        Send a message to the target.
+
+        :param content: The content to return.
+        :return: A new :class:`Message` representing the message returned.
+        """
 
 
 class IDObject(object):
@@ -23,6 +35,9 @@ class IDObject(object):
             id = int(id)
 
         self.id = id
+
+    def __repr__(self):
+        return "<{} id={}>".format(self.__class__.__name__, self.id)
 
     @property
     def timestamp(self):
@@ -44,6 +59,7 @@ class Dataclass(IDObject):
 
     These contain a reference to the current bot as `_bot`.
     """
+
     def __init__(self, id: int, client: 'client.Client'):
         super().__init__(id)
 

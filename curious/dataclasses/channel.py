@@ -4,7 +4,7 @@ from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.bases import Dataclass
 
 from curious.dataclasses import message as dt_message
-from curious.dataclasses.user import User
+from curious.dataclasses import user as dt_user
 
 
 class ChannelType(enum.Enum):
@@ -31,20 +31,30 @@ class Channel(Dataclass):
         #: This can sometimes be None, if this channel is a private channel.
         self.guild = None  # type: dt_guild.Guild
 
-        #: Is this channel a private channel?
-        self.is_private = kwargs.pop("is_private", False)
+        #: The type of channel this channel is.
+        self.type = ChannelType(kwargs.pop("type", 0))
 
-        #: If it is private, the recipient of the channel.
+        #: Is this channel a private channel?
+        self.is_private = kwargs.pop("is_private", self.type not in [ChannelType.TEXT, ChannelType.VOICE])
+
+        #: If it is private, the recipients of the channel.
+        self.recipients = []
         if self.is_private:
-            self.recipient = User(**kwargs.pop("user"))
-        else:
-            self.recipient = None
+            for recipient in kwargs.pop("recipients"):
+                self.recipients.append(dt_user.User(self._bot, **recipient))
 
         #: The position of this channel.
         self.position = kwargs.pop("position", 0)
 
-        #: The type of channel this channel is.
-        self.type = ChannelType(kwargs.pop("type", 0))
+    @property
+    def user(self):
+        """
+        :return: If this channel is a private channel, return the user of the channel.
+        """
+        if self.type != ChannelType.PRIVATE:
+            return None
+
+        return self.recipients[0]
 
     async def send(self, content: str, *,
                    tts: bool = False) -> 'dt_message.Message':

@@ -284,6 +284,20 @@ class HTTPClient(object):
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
         return data
 
+    async def open_private_channel(self, user_id: int):
+        """
+        Opens a new private channel with a user.
+
+        :param user_id: The user ID of the user to open with.
+        """
+        url = self.USER_ME + "/channels"
+        params = {
+            "recipient_id": user_id
+        }
+
+        data = await self.post(url, "channels:private:create", json=params)
+        return data
+
     async def leave_guild(self, guild_id: str):
         """
         Leaves a guild.

@@ -2,6 +2,7 @@ import collections
 import curio
 import logging
 
+from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
@@ -17,7 +18,7 @@ class State(object):
     It is also used to parse objects into their representations.
     """
 
-    def __init__(self, client):
+    def __init__(self, client, max_messages: int=500):
         #: The guilds the bot can see.
         self._guilds = {}
 
@@ -39,8 +40,15 @@ class State(object):
         #: This will signal that in GUILD_CREATE, we need to dispatch to `on_guild_join`.
         self._is_ready = curio.Event()
 
+        #: The private channel cache.
+        self._private_channels = {}
+
         #: The state logger.
         self.logger = logging.getLogger("curious.state")
+
+        #: The deque of messages.
+        #: This is bounded to prevent the message cache from growing infinitely.
+        self._messages = collections.deque(maxlen=max_messages)
 
     def _reset(self):
         """
@@ -51,6 +59,7 @@ class State(object):
         self._session_id = None
 
         self._have_all_guilds.clear()
+        self._messages.clear()
 
     async def _check_all_guilds(self):
         """
@@ -78,6 +87,30 @@ class State(object):
             for channel in guild.channels:
                 yield channel
 
+    def _get_channel(self, channel_id: int):
+        # default channel_id == guild id
+        if channel_id in self._guilds:
+            return self._guilds[channel_id].default_channel
+
+        if channel_id in self._private_channels:
+            return self._private_channels[channel_id]
+
+        for channel in self.get_all_channels():
+            if channel.id == channel_id:
+                return channel
+
+    def new_private_channel(self, channel_data: dict) -> Channel:
+        """
+        Creates a new private channel and caches it.
+
+        :param channel_data: The channel data to cache.
+        """
+        print(channel_data)
+        channel = Channel(self.client, **channel_data)
+        self._private_channels[channel.id] = channel
+
+        return channel
+
     # Event handlers.
     # These parse the events and deconstruct them.
     async def handle_ready(self, event_data: dict):
@@ -93,6 +126,10 @@ class State(object):
         for guild in event_data.get("guilds"):
             new_guild = Guild(self.client, **guild)
             self._guilds[new_guild.id] = new_guild
+
+        # Create all of the private channels.
+        for channel in event_data.get("private_channels"):
+            self.new_private_channel(channel)
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect")
@@ -180,26 +217,21 @@ class State(object):
 
     def parse_message(self, event_data: dict):
         message = Message(self.client, **event_data)
-        # discord won't give us the Guild object
+        # discord won't give us the Guild id
         # so we have to search it from the channels
-        # quick optimization - the default channel id == default guild ID
-        # so if channel_id is in guilds, we can use `guild.default_channel`
         channel_id = int(event_data.get("channel_id"))
-        if channel_id in self._guilds:
-            channel = self._guilds[channel_id].default_channel
-        else:
-            try:
-                channel = next(filter(lambda c: c.id == channel_id, self.get_all_channels()))
-            except StopIteration:
-                # no channel :(
-                # don't fire events before we get all our data
-                return
+        channel = self._get_channel(channel_id)
+        if not channel:
+            # fuck off discord
+            return
 
         author_id = int(event_data.get("author", {}).get("id", 0))
 
         message.channel = channel
         message.guild = channel.guild
-        if message.guild:
+        if message.channel.is_private:
+            message.author = message.channel.user
+        else:
             message.author = message.guild.get_member(author_id)
 
         return message
@@ -335,3 +367,24 @@ class State(object):
 
         user = User(self.client, **event_data["user"])
         await self.client.fire_event("user_unban", guild, user)
+
+    async def handle_typing_start(self, event_data: dict):
+        """
+        Called when a user starts typing.
+        """
+        member_id = int(event_data.get("user_id"))
+        channel_id = int(event_data.get("channel_id"))
+
+        channel = self._get_channel(channel_id)
+        if not channel:
+            return
+
+        if not channel.is_private:
+            member = channel.guild.get_member(member_id)
+            if not member:
+                return
+        else:
+            member = channel.user
+
+        await self.client.fire_event("user_typing", channel, member)
+
