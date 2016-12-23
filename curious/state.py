@@ -105,7 +105,6 @@ class State(object):
 
         :param channel_data: The channel data to cache.
         """
-        print(channel_data)
         channel = Channel(self.client, **channel_data)
         self._private_channels[channel.id] = channel
 
