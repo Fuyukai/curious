@@ -1,4 +1,6 @@
 import collections
+import typing
+
 import curio
 import logging
 
@@ -87,7 +89,7 @@ class State(object):
             for channel in guild.channels:
                 yield channel
 
-    def _get_channel(self, channel_id: int):
+    def _get_channel(self, channel_id: int) -> Channel:
         # default channel_id == guild id
         if channel_id in self._guilds:
             return self._guilds[channel_id].default_channel
@@ -98,6 +100,11 @@ class State(object):
         for channel in self.get_all_channels():
             if channel.id == channel_id:
                 return channel
+
+    def _find_message(self, message_id: int) -> Message:
+        for message in reversed(self._messages):
+            if message.id == message_id:
+                return message
 
     def new_private_channel(self, channel_data: dict) -> Channel:
         """
@@ -214,7 +221,7 @@ class State(object):
         # Request all members from the guild.
         raise gateway.ChunkGuild(guild)
 
-    def parse_message(self, event_data: dict):
+    def parse_message(self, event_data: dict, cache: bool=True) -> Message:
         message = Message(self.client, **event_data)
         # discord won't give us the Guild id
         # so we have to search it from the channels
@@ -222,7 +229,7 @@ class State(object):
         channel = self._get_channel(channel_id)
         if not channel:
             # fuck off discord
-            return
+            return None
 
         author_id = int(event_data.get("author", {}).get("id", 0))
 
@@ -232,6 +239,9 @@ class State(object):
             message.author = message.channel.user
         else:
             message.author = message.guild.get_member(author_id)
+
+        if cache:
+            self._messages.append(message)
 
         return message
 
@@ -243,7 +253,41 @@ class State(object):
         if not message:
             return
 
-        await self.client.fire_event("message", message)
+        await self.client.fire_event("message_create", message)
+
+    async def handle_message_update(self, event_data: dict):
+        """
+        Called when MESSAGE_UPDATE is dispatched.
+        """
+        new_message = self.parse_message(event_data, cache=False)
+        if not new_message:
+            return
+
+        # Try and find the old message.
+        old_message = self._find_message(new_message.id)
+        if not old_message:
+            return
+
+        self._messages.remove(old_message)
+        self._messages.append(new_message)
+
+        if old_message.content != new_message.content:
+            # Fire a message_edit, as well as a message_update, because the content differs.
+            await self.client.fire_event("message_edit", old_message, new_message)
+
+        await self.client.fire_event("message_update", old_message, new_message)
+
+    async def handle_message_delete(self, event_data: dict):
+        """
+        Called when MESSAGE_DELETE is dispatched.
+        """
+        message_id = int(event_data.get("id"))
+        message = self._find_message(message_id)
+
+        if not message:
+            return
+
+        await self.client.fire_event("message_delete", message)
 
     async def handle_guild_delete(self, event_data: dict):
         """
