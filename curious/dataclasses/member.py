@@ -57,6 +57,13 @@ class Member(Dataclass):
         return new_object
 
     @property
+    def name(self):
+        """
+        :return: The computed display name of this user.
+        """
+        return self.nickname if self.nickname else self.user.username
+
+    @property
     def status(self) -> Status:
         return self._status
 

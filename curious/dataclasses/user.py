@@ -42,11 +42,7 @@ class User(Dataclass):
 
     @property
     def name(self):
-        """
-        :return: The computed display name of this user.
-            For simplicity sake, this is on User, rather than Member, so it can always be called.
-        """
-        return getattr(self, "nickname", None) or self.username
+        return self.username
 
     @property
     def mention(self):
