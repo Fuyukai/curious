@@ -86,6 +86,9 @@ class Guild(Dataclass):
     def get_role(self, role_id: int) -> 'role.Role':
         return self._roles.get(role_id)
 
+    def get_channel(self, channel_id: int) -> 'channel.Channel':
+        return self._channels.get(channel_id)
+
     def start_chunking(self):
         self._finished_chunking.clear()
         self._chunks_left = ceil(self.member_count / 1000)

@@ -1,4 +1,5 @@
 import typing
+import re
 
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild as dt_guild
@@ -7,6 +8,8 @@ from curious.dataclasses import member as dt_member
 from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
 from curious.util import to_datetime
+
+CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 
 
 class Message(Dataclass):
@@ -56,6 +59,11 @@ class Message(Dataclass):
     @property
     def role_mentions(self) -> typing.List['dt_role.Role']:
         return self._resolve_mentions(self._role_mentions, "role")
+
+    @property
+    def channel_mentions(self):
+        mentions = CHANNEL_REGEX.findall(self.content)
+        return self._resolve_mentions(mentions, "channel")
 
     def _resolve_mentions(self, mentions, type_: str) -> typing.List[Dataclass]:
         final_mentions = []
