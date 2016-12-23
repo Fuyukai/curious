@@ -26,7 +26,7 @@ class Member(Dataclass):
         self.joined_at = kwargs.pop("joined_at", None)
 
         #: The member's current nickname.
-        self.nickname = kwargs.pop("nickname", None)
+        self.nickname = kwargs.pop("nick", None)
 
         #: The member's current guild.
         self.guild = None  # type: guild.Guild
