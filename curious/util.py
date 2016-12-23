@@ -11,4 +11,6 @@ def to_datetime(timestamp: str) -> datetime.datetime:
     :param timestamp: The timestamp to convert.
     :return: The :class:`datetime.datetime` object that corresponds to this datetime.
     """
+    if timestamp is None:
+        return
     return datetime.datetime.strptime(timestamp[:-6], "%Y-%m-%dT%H:%M:%S.%f")
