@@ -259,3 +259,38 @@ class State(object):
             return
 
         await self.client.fire_event("member_leave", member)
+
+    async def handle_guild_member_update(self, event_data: dict):
+        """
+        Called when a guild member is updated.
+        """
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        member_id = int(event_data["user"]["id"])
+        member = guild.get_member(member_id)
+
+        if not member:
+            return
+
+        # Make a copy of the member for the old previous reference.
+        old_member = member._copy()
+        member.user = User(self.client, **event_data["user"])
+
+        for role_id in event_data.get("roles", []):
+            role_id = int(role_id)
+            role = guild.get_role(role_id)
+
+            if not role:
+                # thanks discord
+                continue
+
+            member._roles[role.id] = role
+
+        guild._members[member.id] = member
+
+        member.nickname = event_data.get("nickname")
+        await self.client.fire_event("member_update", old_member, member)

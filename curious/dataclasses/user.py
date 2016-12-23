@@ -25,7 +25,20 @@ class User(Dataclass):
         self.verified = kwargs.pop("verified", True)
 
         #: If this user has MFA enabled or not.
-        self.mfa_enabled = kwargs.pop("mfa_enabled", False)
+        self.mfa_enabled = kwargs.pop("mfa_enabled", None)
+
+    def _copy(self):
+        new_object = object.__new__(self.__class__)
+        new_object.id = self.id
+        new_object.username = self.username
+        new_object.discriminator = self.discriminator
+        new_object._avatar_hash = self._avatar_hash
+        new_object.verified = self.verified
+        new_object.mfa_enabled = self.mfa_enabled
+
+        new_object._bot = self._bot
+
+        return new_object
 
     @property
     def name(self):

@@ -267,17 +267,30 @@ class HTTPClient(object):
 
         return data
 
-    async def send_message(self, channel_id: int, content: str):
+    async def send_message(self, channel_id: int, content: str, tts: bool=False):
         """
         Sends a message to a channel.
 
         :param channel_id: The ID of the channel to send to.
         :param content: The content of the message.
+        :param tts: Is this message a text to speech message?
         """
         url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
         params = {
             "content": content,
+            "tts": tts,
         }
 
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
+        return data
+
+    async def leave_guild(self, guild_id: str):
+        """
+        Leaves a guild.
+
+        :param guild_id: The guild ID of the guild to leave.
+        """
+        url = self.USER_ME + "/guilds/{}".format(guild_id)
+
+        data = await self.delete(url, "guild:leave")
         return data

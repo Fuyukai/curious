@@ -83,6 +83,9 @@ class Guild(Dataclass):
     def get_member(self, member_id: int) -> 'member.Member':
         return self._members.get(member_id)
 
+    def get_role(self, role_id: int) -> 'role.Role':
+        return self._roles.get(role_id)
+
     def start_chunking(self):
         self._finished_chunking.clear()
         self._chunks_left = ceil(self.member_count / 1000)
@@ -149,7 +152,7 @@ class Guild(Dataclass):
             member_id = int(presence["user"]["id"])
             member_obj = self._members.get(member_id)
 
-            if not member:
+            if not member_obj:
                 continue
 
             game = presence.get("game", {})
@@ -163,3 +166,10 @@ class Guild(Dataclass):
             channel_obj = channel.Channel(self._bot, **channel_data)
             channel_obj.guild = self
             self._channels[channel_obj.id] = channel_obj
+
+    # Guild methods.
+    async def leave(self):
+        """
+        Leaves the guild.
+        """
+        await self._bot.http.leave_guild(self.id)

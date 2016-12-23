@@ -1,3 +1,4 @@
+import copy
 import typing
 
 from curious.dataclasses.bases import Dataclass
@@ -35,6 +36,25 @@ class Member(Dataclass):
 
         #: The current status of this member.
         self._status = None  # type: Status
+
+    def _copy(self):
+        """
+        Copies a member object.
+        """
+        new_object = object.__new__(self.__class__)  # type: Member
+        new_object._bot = self._bot
+
+        new_object.id = self.id
+        new_object._roles = self._roles.copy()
+        new_object.joined_at = self.joined_at
+        new_object.guild = self.guild
+        new_object.game = copy.deepcopy(self.game)
+        new_object._status = self._status
+        new_object.nickname = self.nickname
+
+        new_object.user = self.user._copy()
+
+        return new_object
 
     @property
     def status(self) -> Status:
