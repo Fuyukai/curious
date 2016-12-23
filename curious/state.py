@@ -368,6 +368,37 @@ class State(object):
         user = User(self.client, **event_data["user"])
         await self.client.fire_event("user_unban", guild, user)
 
+    async def handle_channel_create(self, event_data: dict):
+        """
+        Called when a channel is created.
+        """
+        channel = Channel(self.client, **event_data)
+        if channel.is_private:
+            self._private_channels[channel.id] = channel
+
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        channel.guild = guild
+        await self.client.fire_event("channel_create", channel)
+
+    async def handle_channel_delete(self, event_data: dict):
+        """
+        Called when a channel is deleted.
+        """
+        channel_id = int(event_data.get("channel_id", 0))
+        channel = self._get_channel(channel_id)
+
+        if channel.is_private:
+            del self._private_channels[channel.id]
+        else:
+            del channel.guild._channels[channel.id]
+
+        await self.client.fire_event("channel_delete", channel)
+
     async def handle_typing_start(self, event_data: dict):
         """
         Called when a user starts typing.
