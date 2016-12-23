@@ -44,7 +44,7 @@ class IDObject(object):
         """
         :return: The timestamp of the snowflake.
         """
-        return datetime.datetime.utcfromtimestamp(((int(id) >> 22) + DISCORD_EPOCH) / 1000)
+        return datetime.datetime.utcfromtimestamp(((int(self.id) >> 22) + DISCORD_EPOCH) / 1000)
 
     def __eq__(self, other):
         return other.id == self.id
