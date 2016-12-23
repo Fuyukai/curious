@@ -99,6 +99,12 @@ class Client(object):
         event = func.__name__[3:]
         self.events.add(event, func)
 
+    async def _error_wrapper(self, func, *args, **kwargs):
+        try:
+            await func(*args, **kwargs)
+        except Exception as e:
+            self.logger.exception("Unhandled exception in {}!".format(func.__name__))
+
     async def fire_event(self, event_name: str, *args, **kwargs) -> typing.List[Task]:
         """
         Fires an event to run.
@@ -116,7 +122,7 @@ class Client(object):
 
         tasks = []
         for event in coros:
-            tasks.append(await curio.spawn(event(self, *args, **kwargs)))
+            tasks.append(await curio.spawn(self._error_wrapper(event, self, *args, **kwargs)))
 
         return tasks
 
