@@ -1,17 +1,21 @@
 import typing
 
+from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.dataclasses import guild
 
 
-class Member(User):
+class Member(Dataclass):
     """
     A member is a user attached to a guild.
     """
     def __init__(self, client, **kwargs):
-        super().__init__(client, **kwargs.get("user"))
+        super().__init__(kwargs["user"]["id"], client)
+
+        #: The user object associated with this member.
+        self.user = User(client, **kwargs.get("user"))
 
         #: A dictionary of roles this user has.
         self._roles = {}
