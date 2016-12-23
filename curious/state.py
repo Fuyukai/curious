@@ -330,4 +330,4 @@ class State(object):
             return
 
         user = User(self.client, **event_data["user"])
-        await self.client.fire_event("user_unban", user)
+        await self.client.fire_event("user_unban", guild, user)
