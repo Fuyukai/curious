@@ -110,6 +110,10 @@ class State(object):
         member_id = int(event_data["user"]["id"])
         member = guild.get_member(member_id)
 
+        if member is None:
+            # thanks discord
+            return
+
         game = event_data.get("game", {})
         if game is None:
             game = {}
