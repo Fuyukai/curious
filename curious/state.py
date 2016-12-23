@@ -234,7 +234,6 @@ class State(object):
         guild = self._guilds.get(guild_id)
 
         if not guild:
-            self.logger.warning("Got GUILD_MEMBER_ADD for guild we're not in")
             return
 
         member = Member(self.client, **event_data)
@@ -264,7 +263,7 @@ class State(object):
         """
         Called when a guild member is updated.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         if not guild:
@@ -294,3 +293,37 @@ class State(object):
 
         member.nickname = event_data.get("nickname")
         await self.client.fire_event("member_update", old_member, member)
+
+    async def handle_guild_ban_add(self, event_data: dict):
+        """
+        Called when a ban is added to a guild.
+        """
+        guild_id = int(event_data.get("guild_id", 0))
+        guild = self._guilds.get(guild_id)
+
+        if guild is None:
+            return
+
+        member_id = int(event_data["user"]["id"])
+        member = guild.get_member(member_id)
+
+        if not member:
+            # Dispatch to `user_ban` instead of `member_ban`.
+            user = User(self.client, **event_data["user"])
+            await self.client.fire_event("user_ban", guild, user)
+            return
+
+        await self.client.fire_event("member_ban", member)
+
+    async def handle_guild_ban_remove(self, event_data: dict):
+        """
+        Called when a ban is removed from a guild.
+        """
+        guild_id = int(event_data.get("guild_id", 0))
+        guild = self._guilds.get(guild_id)
+
+        if guild is None:
+            return
+
+        user = User(self.client, **event_data["user"])
+        await self.client.fire_event("user_unban", user)
