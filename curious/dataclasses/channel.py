@@ -68,7 +68,7 @@ class Channel(Dataclass):
         if not isinstance(content, str):
             content = str(content)
 
-        data = await self._bot.http.send_message(self.id, content)
-        obb = self._bot.state.parse_message(data)
+        data = await self._bot.http.send_message(self.id, content, tts=tts)
+        obb = self._bot.state.parse_message(data, cache=False)
 
         return obb
