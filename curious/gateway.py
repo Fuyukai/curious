@@ -67,6 +67,8 @@ class _HeartbeatThread(threading.Thread):
         # This means that Python won't wait on us to shutdown.
         self.daemon = True
 
+        self.logger = logging.getLogger("curious.gateway")
+
     def run(self):
         """
         Heartbeats every <x> seconds.
@@ -74,13 +76,11 @@ class _HeartbeatThread(threading.Thread):
         # This uses `Event.wait()` to wait for the next heartbeat.
         # This is effectively a bootleg sleep(), but we can signal it at any time to stop.
         # Which is really cool!
+
+        # Send the first heartbeat.
+        self._send_heartbeat()
         while not self._stop_heartbeating.wait(self._hb_interval):
-            hb = self.get_heartbeat()
-
-            # Enqueue onto the sending queue.
-            self._gateway.send(hb)
-
-            self._gateway.heartbeats += 1
+            self._send_heartbeat()
 
     def get_heartbeat(self):
         """
@@ -90,6 +90,15 @@ class _HeartbeatThread(threading.Thread):
             "op": int(GatewayOp.HEARTBEAT),
             "d": self._gateway.sequence_num
         }
+
+    def _send_heartbeat(self):
+        hb = self.get_heartbeat()
+
+        # Enqueue onto the sending queue.
+        self.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
+        self._gateway.send(hb)
+
+        self._gateway.heartbeats += 1
 
 
 class Gateway(object):
@@ -175,7 +184,11 @@ class Gateway(object):
     async def _send_events(self):
         while self._open:
             # this is cool!
-            next_item = await curio.abide(self._event_queue.get)
+            try:
+                next_item = await curio.abide(self._event_queue.get)
+            except curio.CancelledError:
+                self._event_queue.put_nowait(next_item)
+                return
             if isinstance(next_item, dict):
                 # this'll come back around in a sec
                 self._send_json(next_item)
@@ -312,7 +325,7 @@ class Gateway(object):
 
         return obb
 
-    async def reconnect(self, *, resume: bool=False):
+    async def reconnect(self, *, resume: bool = False):
         """
         Reconnects the bot to the gateway.
 
@@ -320,7 +333,7 @@ class Gateway(object):
         """
         self.logger.info("Reconnecting to the gateway")
         if not self.websocket.closed:
-            await self.websocket.close_now()
+            await self.websocket.close_now(code=1001, reason="Forcing a reconnect")
 
         self._open = False
 

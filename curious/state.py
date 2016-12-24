@@ -148,6 +148,7 @@ class State(object):
             await self.client.fire_event("ready")
 
     async def handle_resumed(self, event_data: dict):
+        self.logger.info("Successfully resumed session from a previous connection.")
         await self.client.fire_event("resumed")
 
     async def handle_presence_update(self, event_data: dict):
