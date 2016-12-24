@@ -313,6 +313,7 @@ class HTTPClient(object):
 
         :param channel_id: The channel ID that the message is in.
         :param message_id: The message ID of the message.
+        :param new_content: The new content of the message.
         :return: The new Message object.
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
@@ -321,6 +322,18 @@ class HTTPClient(object):
         }
 
         data = await self.patch(url, "messages:{}".format(channel_id), json=payload)
+        return data
+
+    async def pin_message(self, channel_id: int, message_id: int):
+        """
+        Pins a message to the channel.
+
+        :param channel_id: The channel ID to pin in.
+        :param message_id: The message ID of the message to pin.
+        """
+        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
+
+        data = await self.put(url, "pins", json={})
         return data
 
     async def open_private_channel(self, user_id: int):

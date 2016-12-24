@@ -107,3 +107,10 @@ class Message(Dataclass):
 
         return self
 
+    async def pin(self):
+        """
+        Pins this message.
+
+        You must have MANAGE_MESSAGES in the channel to pin the message.
+        """
+        await self._bot.http.pin_message(self.channel.id, self.id)
