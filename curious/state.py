@@ -20,7 +20,7 @@ class State(object):
     It is also used to parse objects into their representations.
     """
 
-    def __init__(self, client, max_messages: int=500):
+    def __init__(self, client, max_messages: int = 500):
         #: The guilds the bot can see.
         self._guilds = {}
 
@@ -224,7 +224,27 @@ class State(object):
         # Request all members from the guild.
         raise gateway.ChunkGuild(guild)
 
-    def parse_message(self, event_data: dict, cache: bool=True) -> Message:
+    async def handle_guild_delete(self, event_data: dict):
+        """
+        Called when a guild becomes unavailable.
+        """
+        guild_id = int(event_data.get("id", 0))
+        # Check if the `unavailable` flag is there.
+        # If it is, we want to semi-discard this event, because all it means is the guild becomes unavailable.
+        if event_data.get("unavailable", False):
+            # Set the guild to unavailable, but don't delete it.
+            guild = self._guilds.get(guild_id)
+            if guild:
+                guild.unavailable = True
+                await self.client.fire_event("guild_unavailable", guild)
+
+        else:
+            # We've left this guild - clear it from our dictionary of guilds.
+            guild = self._guilds.pop(guild_id, None)
+            if guild:
+                await self.client.fire_event("guild_leave", guild)
+
+    def parse_message(self, event_data: dict, cache: bool = True) -> Message:
         message = Message(self.client, **event_data)
         # discord won't give us the Guild id
         # so we have to search it from the channels
@@ -291,26 +311,6 @@ class State(object):
             return
 
         await self.client.fire_event("message_delete", message)
-
-    async def handle_guild_delete(self, event_data: dict):
-        """
-        Called when a guild becomes unavailable.
-        """
-        guild_id = int(event_data.get("id", 0))
-        # Check if the `unavailable` flag is there.
-        # If it is, we want to semi-discard this event, because all it means is the guild becomes unavailable.
-        if event_data.get("unavailable", False):
-            # Set the guild to unavailable, but don't delete it.
-            guild = self._guilds.get(guild_id)
-            if guild:
-                guild.unavailable = True
-                await self.client.fire_event("guild_unavailable", guild)
-
-        else:
-            # We've left this guild - clear it from our dictionary of guilds.
-            guild = self._guilds.pop(guild_id, None)
-            if guild:
-                await self.client.fire_event("guild_leave", guild)
 
     async def handle_guild_member_add(self, event_data: dict):
         """
@@ -483,4 +483,3 @@ class State(object):
             member = channel.user
 
         await self.client.fire_event("user_typing", channel, member)
-
