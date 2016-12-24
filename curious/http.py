@@ -241,6 +241,10 @@ class HTTPClient(object):
                      *args, **kwargs):
         return await self.request(("DELETE", bucket), method="DELETE", url=url, *args, **kwargs)
 
+    async def patch(self, url: str, bucket: str,
+                    *args, **kwargs):
+        return await self.request(("PATCH", bucket), method="PATCH", url=url, *args, **kwargs)
+
     # Non-generic methods
     async def get_gateway_url(self):
         """
@@ -287,7 +291,7 @@ class HTTPClient(object):
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
         return data
 
-    async def delete_message(self, channel_id: int, message_id: str):
+    async def delete_message(self, channel_id: int, message_id: int):
         """
         Deletes a message.
 
@@ -295,11 +299,28 @@ class HTTPClient(object):
 
         :param channel_id: The channel ID that the message is in.
         :param message_id: The message ID of the message.
-        :return:
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
 
         data = await self.delete(url, "messages:{}".format(channel_id))
+        return data
+
+    async def edit_message(self, channel_id: int, message_id: int, new_content: str):
+        """
+        Edits a message.
+
+        This will only work on your own messages.
+
+        :param channel_id: The channel ID that the message is in.
+        :param message_id: The message ID of the message.
+        :return: The new Message object.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        payload = {
+            "content": new_content
+        }
+
+        data = await self.patch(url, "messages:{}".format(channel_id), json=payload)
         return data
 
     async def open_private_channel(self, user_id: int):

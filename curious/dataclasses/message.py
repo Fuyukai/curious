@@ -85,8 +85,25 @@ class Message(Dataclass):
     # Message methods
     async def delete(self):
         """
-        Deletes the specified message.
+        Deletes this message.
 
         You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own message.
         """
         await self._bot.http.delete_message(self.channel.id, self.id)
+
+    async def edit(self, new_content: str) -> 'Message':
+        """
+        Edits this message.
+
+        You must be the owner of this message to edit it.
+        This edits the message in-place.
+
+        :param new_content: The new content for this message.
+        :return: This message, but edited with the new content.
+        """
+        message_data = await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
+        self.content = message_data.get("content")
+        self.edited_at = to_datetime(message_data.get("edited_timestamp", None))
+
+        return self
+
