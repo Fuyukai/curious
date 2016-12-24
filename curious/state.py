@@ -422,13 +422,15 @@ class State(object):
         if channel.is_private:
             self._private_channels[channel.id] = channel
 
-        guild_id = int(event_data.get("guild_id"))
-        guild = self._guilds.get(guild_id)
+        else:
+            guild_id = int(event_data.get("guild_id"))
+            guild = self._guilds.get(guild_id)
 
-        if not guild:
-            return
+            if not guild:
+                return
 
-        channel.guild = guild
+            channel.guild = guild
+
         await self.client.fire_event("channel_create", channel)
 
     async def handle_channel_update(self, event_data: dict):

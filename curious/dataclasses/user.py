@@ -80,6 +80,7 @@ class User(Dataclass, Messagable):
         if original_channel:
             return original_channel
 
+        # Failing that, open a new private channel.
         channel_data = await self._bot.http.open_private_channel(self.id)
         channel = self._bot.state.new_private_channel(channel_data)
         return channel
