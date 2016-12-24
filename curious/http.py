@@ -336,6 +336,18 @@ class HTTPClient(object):
         data = await self.put(url, "pins", json={})
         return data
 
+    async def unpin_message(self, channel_id: int, message_id: int):
+        """
+        Unpins a message from the channel.
+
+        :param channel_id: The channel ID to unpin in.
+        :param message_id: The message ID of the message to unpin.
+        """
+        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
+
+        data = await self.delete(url, "pins")
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

@@ -114,3 +114,12 @@ class Message(Dataclass):
         You must have MANAGE_MESSAGES in the channel to pin the message.
         """
         await self._bot.http.pin_message(self.channel.id, self.id)
+
+    async def unpin(self):
+        """
+        Unpins this message.
+
+        You must have MANAGE_MESSAGES in this channel to unpin the message.
+        Additionally, the message must already be pinned.
+        """
+        await self._bot.http.unpin_message(self.channel.id, self.id)
