@@ -380,6 +380,25 @@ class HTTPClient(object):
         data = await self.get(url, bucket="messages:{}".format(channel_id), params=payload)
         return data
 
+    async def bulk_delete_messages(self, channel_id: int, message_ids: typing.List[int]):
+        """
+        Deletes multiple messages.
+
+        This will silently discard any messages that don't exist.
+
+        This requires MANAGE_MESSAGES on the channel, regardless of what messages are being deleted.
+
+        :param channel_id: The channel ID to delete messages from.
+        :param message_ids: A list of messages to delete.
+        """
+        url = (self.CHANNEL_BASE + "/messages/bulk-delete").format(channel_id=channel_id)
+        payload = {
+            "messages": [str(message_id) for message_id in message_ids]
+        }
+
+        data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id), json=payload)
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

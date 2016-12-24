@@ -1,12 +1,14 @@
 import collections
 import enum
+import typing
 
 from curious import client as dt_client
-from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.bases import Dataclass
-
+from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import message as dt_message
 from curious.dataclasses import user as dt_user
+from curious.dataclasses import member as dt_member
+from curious.http import Forbidden
 
 
 class ChannelType(enum.Enum):
@@ -164,10 +166,113 @@ class Channel(Dataclass):
         """
         return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
 
+    async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
+        """
+        Deletes messages from a channel.
+
+        This is the low-level delete function - for the high-level function, see :meth:`Channel.purge()`.
+
+        Example for deleting all the last 100 messages:
+
+        .. code:: python
+            history = channel.get_history(limit=100)
+            messages = []
+
+            async for message in history:
+                messages.append(message)
+
+            await channel.delete_messages(messages)
+
+        :param messages: A list of Message objects to delete.
+        """
+        ids = [message.id for message in messages]
+        await self._bot.http.bulk_delete_messages(self.id, ids)
+
+        return None
+
+    async def purge(self, limit: int=100, *,
+                    author: 'dt_member.Member'=None,
+                    content: str=None, predicate: 'typing.Callable[[dt_message.Message], bool]'=None,
+                    fallback_from_bulk: bool=False):
+        """
+        Purges messages from a channel.
+        This will attempt to use ``bulk-delete`` if possible, but otherwise will use the normal delete endpoint
+        (which can get ratelimited severely!) if ``fallback_from_bulk`` is True.
+
+        Example for deleting all messages owned by the bot:
+
+        .. code:: python
+            me = channel.guild.me
+            await channel.purge(limit=100, author=me)
+
+        Custom check functions can also be applied which specify any extra checks. They take one argument (the
+        Message object) and return a boolean (True or False) determining if the message should be deleted.
+
+        For example, to delete all messages with the letter ``i`` in them:
+
+        .. code:: python
+            await channel.purge(limit=100, predicate=lambda message: 'i' in message.content)
+
+        :param limit: The maximum amount of messages to delete. -1 for unbounded size.
+        :param author: Only delete messages made by this author.
+        :param content: Only delete messages that exactly match this content.
+        :param predicate: A callable that determines if a message should be deleted.
+        :param fallback_from_bulk: If this is True, messages will be regular deleted if they cannot be bulk deleted.
+        :return: The number of messages deleted.
+        """
+        checks = []
+        if author:
+            checks.append(lambda m: m.author == author)
+
+        if content:
+            checks.append(lambda m: m.content == content)
+
+        if predicate:
+            checks.append(predicate)
+
+        to_delete = []
+        history = self.get_history(limit=limit)
+
+        async for message in history:
+            if all(check(message) for check in checks):
+                to_delete.append(message)
+
+        can_bulk_delete = True
+
+        # Split into chunks of 100.
+        message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
+        for chunk in message_chunks:
+            message_ids = [message.id for message in chunk]
+            # First, try and bulk delete all the messages.
+            if can_bulk_delete:
+                try:
+                    await self._bot.http.bulk_delete_messages(self.id, message_ids)
+                except Forbidden:
+                    # We might not have MANAGE_MESSAGES.
+                    # Check if we should fallback on normal delete.
+                    can_bulk_delete = False
+                    if not fallback_from_bulk:
+                        # Don't bother, actually.
+                        raise
+
+            # This is an `if not` instead of an `else` because `can_bulk_delete` might've changed.
+            if not can_bulk_delete:
+                # Instead, just delete() the message.
+                for message in chunk:
+                    await message.delete()
+
+        return len(to_delete)
+
     async def send(self, content: str, *,
                    tts: bool = False) -> 'dt_message.Message':
         """
         Sends a message to this channel.
+
+        This requires SEND_MESSAGES permission in the channel.
+        If the content is not a string, it will be automatically stringified.
+
+        .. code:: python
+            await channel.send("Hello, world!")
 
         :param content: The content of the message to send.
         :param tts: Should this message be text to speech?
