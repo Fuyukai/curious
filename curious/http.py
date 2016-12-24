@@ -399,6 +399,24 @@ class HTTPClient(object):
         data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id), json=payload)
         return data
 
+    async def edit_profile(self, username: str=None, avatar: str=None):
+        """
+        Edits the profile of the bot.
+
+        :param username: The new username of the bot, or None if it is not to be changed.
+        :param avatar: The new avatar of the bot, or None if it not to be changed.
+        """
+        url = self.USER_ME
+        payload = {}
+        if username:
+            payload["username"] = username
+
+        if avatar:
+            payload["avatar"] = avatar
+
+        data = await self.patch(url, bucket="users:edit", json=payload)
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

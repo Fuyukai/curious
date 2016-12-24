@@ -1,5 +1,7 @@
+import base64
 import inspect
 import typing
+import imghdr
 
 import curio
 import logging
@@ -136,6 +138,31 @@ class Client(object):
         :param status: The new status. Must be a :class:`Status` object.
         """
         return self.gw.send_status(game, status)
+
+    # HTTP Functions
+    async def edit_profile(self, *,
+                           username: str=None,
+                           avatar: bytes=None):
+        """
+        Edits the profile of this bot.
+
+        The user is **not** edited in-place - instead, you must wait for the `USER_UPDATE` event to be fired on the
+        websocket.
+
+        :param username: The new username of the bot.
+        :param avatar: The bytes-like object that represents the new avatar you wish to use.
+        """
+        if avatar:
+            # Convert the avatar to base64.
+            mimetype = imghdr.what(None, avatar)
+            if not mimetype:
+                raise ValueError("Invalid image type")
+
+            b64_data = base64.b64encode(avatar).decode()
+            avatar = "data:{};base64,{}".format(mimetype, b64_data)
+
+        await self.http.edit_profile(username, avatar)
+
 
     # Utility functions
     async def connect(self, token: str = None):

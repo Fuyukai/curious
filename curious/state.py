@@ -26,7 +26,7 @@ class State(object):
 
         #: The current user of this bot.
         #: This is automatically set after login.
-        self._user = None
+        self._user = None  # type: User
 
         #: The client associated with this connection.
         self.client = client
@@ -145,11 +145,23 @@ class State(object):
 
         # However, if the client has no guilds, we DO want to fire ready.
         if len(self._guilds) == 0:
+            await self._is_ready.set()
             await self.client.fire_event("ready")
 
     async def handle_resumed(self, event_data: dict):
         self.logger.info("Successfully resumed session from a previous connection.")
         await self.client.fire_event("resumed")
+
+    async def handle_user_update(self, event_data: dict):
+        """
+        Called when the bot's user is updated.
+        """
+        id = event_data.get("id")
+
+        self._user.id = int(id)
+        self._user.username = event_data.get("username")
+        self._user.discriminator = event_data.get("discriminator")
+        self._user._avatar_hash = event_data.get("avatar")
 
     async def handle_presence_update(self, event_data: dict):
         """
