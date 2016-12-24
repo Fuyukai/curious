@@ -70,8 +70,12 @@ class Guild(Dataclass):
         return self._members.values()
 
     @property
-    def owner(self):
+    def owner(self) -> 'member.Member':
         return self._members[self._owner_id]
+
+    @property
+    def me(self) -> 'member.Member':
+        return self._members[self._bot.user.id]
 
     @property
     def default_channel(self) -> 'channel.Channel':
