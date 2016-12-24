@@ -323,6 +323,20 @@ class State(object):
 
         await self.client.fire_event("message_delete", message)
 
+    async def handle_message_delete_bulk(self, event_data: dict):
+        """
+        Called when MESSAGE_DELETE_BULK is dispatched.
+        """
+        messages = []
+        for message in event_data.get("ids", []):
+            message = self._find_message(int(message))
+            if not message:
+                continue
+
+            messages.append(message)
+
+        await self.client.fire_event("message_delete_bulk", message)
+
     async def handle_guild_member_add(self, event_data: dict):
         """
         Called when a guild adds a new member.
