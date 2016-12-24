@@ -92,7 +92,10 @@ class State(object):
     def _get_channel(self, channel_id: int) -> Channel:
         # default channel_id == guild id
         if channel_id in self._guilds:
-            return self._guilds[channel_id].default_channel
+            try:
+                return self._guilds[channel_id].default_channel
+            except KeyError:
+                return None
 
         if channel_id in self._private_channels:
             return self._private_channels[channel_id]
@@ -139,6 +142,10 @@ class State(object):
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect")
+
+        # However, if the client has no guilds, we DO want to fire ready.
+        if len(self._guilds) == 0:
+            await self.client.fire_event("ready")
 
     async def handle_resumed(self, event_data: dict):
         await self.client.fire_event("resumed")
