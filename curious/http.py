@@ -348,6 +348,38 @@ class HTTPClient(object):
         data = await self.delete(url, "pins")
         return data
 
+    async def get_messages(self, channel_id: int, *,
+                           before: int=None, after: int=None, around: int=None,
+                           limit: int=100):
+        """
+        Gets a list of messages from a channel.
+
+        This requires READ_MESSAGES on the channel.
+        :param channel_id: The channel ID to receive messages from.
+        :param before: Get messages before this snowflake.
+        :param after: Get messages after this snowflake.
+        :param around: Get messages around this snowflake.
+        :param limit: The maximum number of messages to return.
+
+        :return: A list of message dictionaries.
+        """
+        url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
+        payload = {
+            "limit": str(limit)
+        }
+
+        if before:
+            payload["before"] = str(before)
+
+        if after:
+            payload["after"] = str(after)
+
+        if around:
+            payload["around"] = str(around)
+
+        data = await self.get(url, bucket="messages:{}".format(channel_id), params=payload)
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

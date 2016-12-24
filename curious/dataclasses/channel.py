@@ -1,5 +1,7 @@
+import collections
 import enum
 
+from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.bases import Dataclass
 
@@ -11,6 +13,78 @@ class ChannelType(enum.Enum):
     TEXT = 0
     PRIVATE = 1
     VOICE = 2
+
+
+class HistoryIterator(collections.AsyncIterator):
+    """
+    Returned from the `history` to iterate over history.
+    """
+
+    def __init__(self, channel: 'Channel', client: 'dt_client.Client',
+                 max_messages: int=-1, *,
+                 before: int=None, after: int=None):
+        self.channel = channel
+        self.client = client
+
+        #: The current storage of messages.
+        self.messages = collections.deque()
+
+        #: The current count of messages iterated over.
+        #: This is used to know when to automatically fill new messages.
+        self.current_count = 0
+
+        #: The maximum amount of messages to use.
+        #: If this is <= 0, an infinite amount of messages are returned.
+        self.max_messages = max_messages
+
+        #: The message ID of before to fetch.
+        self.before = before
+
+        #: The message ID of after to fetch.
+        self.after = after
+
+        #: The last message ID that we fetched.
+        if self.before:
+            self.last_message_id = self.before
+        else:
+            self.last_message_id = self.after
+
+    async def _fill_messages(self):
+        """
+        Called to fill the next <n> messages.
+        """
+        if self.max_messages < 0:
+            to_get = 100
+        else:
+            to_get = self.max_messages - self.current_count
+
+        if self.before:
+            messages = await self.client.http.get_messages(self.channel.id, before=self.last_message_id,
+                                                           limit=to_get)
+        else:
+            messages = await self.client.http.get_messages(self.channel.id, after=self.last_message_id)
+            messages = reversed(messages)
+
+        for message in messages:
+            self.messages.append(self.client.state.parse_message(message))
+
+    async def __anext__(self):
+        self.current_count += 1
+        if self.current_count == self.max_messages:
+            raise StopAsyncIteration
+
+        if len(self.messages) <= 0:
+            await self._fill_messages()
+
+        try:
+            message = self.messages.popleft()
+        except IndexError:
+            # No messages to fill, so self._fill_messages didn't return any
+            # This signals the end of iteration.
+            raise StopAsyncIteration
+        self.last_message_id = message.id
+
+        return message
 
 
 class Channel(Dataclass):
@@ -43,6 +117,10 @@ class Channel(Dataclass):
         #: The position of this channel.
         self.position = kwargs.pop("position", 0)
 
+        #: The last message ID of this channel.
+        #: Used for history.
+        self._last_message_id = int(kwargs.pop("last_message_id", 0))
+
     @property
     def is_private(self):
         return self.type not in [ChannelType.TEXT, ChannelType.VOICE]
@@ -57,6 +135,10 @@ class Channel(Dataclass):
 
         return self.recipients[0]
 
+    @property
+    def history(self) -> HistoryIterator:
+        return self.get_history(before=self._last_message_id, limit=-1)
+
     def _copy(self):
         obb = object.__new__(self.__class__)
         obb.name = self.name
@@ -66,6 +148,21 @@ class Channel(Dataclass):
         obb.position = self.position
         obb._bot = self._bot
         return obb
+
+    def get_history(self, before: int=None,
+                    after: int=None,
+                    limit: int=100) -> HistoryIterator:
+        """
+        Gets history for this channel.
+
+        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async iterated over to get
+        message history.
+
+        :param limit: The maximum number of messages to get.
+        :param before: The snowflake ID to get messages before.
+        :param after: The snowflake ID to get messages after.
+        """
+        return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
 
     async def send(self, content: str, *,
                    tts: bool = False) -> 'dt_message.Message':

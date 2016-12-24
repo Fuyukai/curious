@@ -276,6 +276,9 @@ class State(object):
         if not message:
             return
 
+        # Hope that messages are ordered!
+        message.channel._last_message_id = message.id
+
         await self.client.fire_event("message_create", message)
 
     async def handle_message_update(self, event_data: dict):
