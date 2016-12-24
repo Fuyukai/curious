@@ -13,4 +13,8 @@ def to_datetime(timestamp: str) -> datetime.datetime:
     """
     if timestamp is None:
         return
-    return datetime.datetime.strptime(timestamp[:-6], "%Y-%m-%dT%H:%M:%S.%f")
+
+    if timestamp.endswith("+00:00"):
+        return datetime.datetime.strptime(timestamp[:-6], "%Y-%m-%dT%H:%M:%S.%f")
+    else:
+        return datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
