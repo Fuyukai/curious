@@ -81,3 +81,12 @@ class Message(Dataclass):
                 final_mentions.append(obb)
 
         return final_mentions
+
+    # Message methods
+    async def delete(self):
+        """
+        Deletes the specified message.
+
+        You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own message.
+        """
+        await self._bot.http.delete_message(self.channel.id, self.id)

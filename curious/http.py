@@ -153,6 +153,9 @@ class HTTPClient(object):
             for tries in range(0, 5):
                 # Make the request.
                 response = await self.session.request(*args, **kwargs)
+                self.logger.debug("{} {} => {}".format(kwargs.get("method", "???"),
+                                                       kwargs.get("url", "???"),
+                                                       response.status_code))
 
                 if response.status_code == 502:
                     # 502 means that we can retry without worrying about ratelimits.
@@ -224,19 +227,19 @@ class HTTPClient(object):
 
     async def get(self, url: str, bucket: str,
                   *args, **kwargs):
-        return await self.request(("GET", bucket), "GET", url, *args, **kwargs)
+        return await self.request(("GET", bucket), method="GET", url=url, *args, **kwargs)
 
     async def post(self, url: str, bucket: str,
                    *args, **kwargs):
-        return await self.request(("POST", bucket), "POST", url, *args, **kwargs)
+        return await self.request(("POST", bucket), method="POST", url=url, *args, **kwargs)
 
     async def put(self, url: str, bucket: str,
                   *args, **kwargs):
-        return await self.request(("PUT", bucket), "PUT", url, *args, **kwargs)
+        return await self.request(("PUT", bucket), method="PUT", url=url, *args, **kwargs)
 
     async def delete(self, url: str, bucket: str,
                      *args, **kwargs):
-        return await self.request(("DELETE", bucket), "DELETE", url, *args, **kwargs)
+        return await self.request(("DELETE", bucket), method="DELETE", url=url, *args, **kwargs)
 
     # Non-generic methods
     async def get_gateway_url(self):
@@ -282,6 +285,21 @@ class HTTPClient(object):
         }
 
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
+        return data
+
+    async def delete_message(self, channel_id: int, message_id: str):
+        """
+        Deletes a message.
+
+        This requires the MANAGE_MESSAGES permission.
+
+        :param channel_id: The channel ID that the message is in.
+        :param message_id: The message ID of the message.
+        :return:
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+
+        data = await self.delete(url, "messages:{}".format(channel_id))
         return data
 
     async def open_private_channel(self, user_id: int):
