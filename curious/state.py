@@ -335,7 +335,7 @@ class State(object):
 
             messages.append(message)
 
-        await self.client.fire_event("message_delete_bulk", message)
+        await self.client.fire_event("message_delete_bulk", messages)
 
     async def handle_guild_member_add(self, event_data: dict):
         """
