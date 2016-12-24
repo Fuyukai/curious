@@ -163,6 +163,14 @@ class Client(object):
 
         await self.http.edit_profile(username, avatar)
 
+    async def edit_avatar(self, path: str):
+        """
+        A higher-level way to change your avatar.
+
+        :param path: The path-like object to the avatar file.
+        """
+        with open(path, 'rb') as f:
+            await self.edit_profile(avatar=f.read())
 
     # Utility functions
     async def connect(self, token: str = None):
