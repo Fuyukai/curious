@@ -24,5 +24,5 @@ $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
 ## Requirements
 
 Curious only runs on Python 3.5 and higher, due to curio only running on
-those versions. Additionally, curio currently only works on POSIX
+those versions. Additionally, curious currently only works on POSIX
 systems due to curio only running on those systems.
