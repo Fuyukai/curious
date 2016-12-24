@@ -307,7 +307,7 @@ class State(object):
                 await self.client.fire_event("guild_unavailable", guild)
 
         else:
-            # We've left this guild - clear i from our dictionary of guilds.
+            # We've left this guild - clear it from our dictionary of guilds.
             guild = self._guilds.pop(guild_id, None)
             if guild:
                 await self.client.fire_event("guild_leave", guild)
@@ -430,6 +430,25 @@ class State(object):
 
         channel.guild = guild
         await self.client.fire_event("channel_create", channel)
+
+    async def handle_channel_update(self, event_data: dict):
+        """
+        Called when a channel is updated.
+        """
+        channel_id = int(event_data.get("id"))
+        channel = self._get_channel(channel_id)
+
+        if not channel:
+            return
+
+        old_channel = channel._copy()
+
+        channel.name = event_data.get("name", channel.name)
+        channel.position = event_data.get("position", channel.position)
+        channel.topic = event_data.get("topic", channel.topic)
+
+        # TODO: Permission overwrites.
+        await self.client.fire_event("channel_update", old_channel, channel)
 
     async def handle_channel_delete(self, event_data: dict):
         """

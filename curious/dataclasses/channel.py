@@ -34,9 +34,6 @@ class Channel(Dataclass):
         #: The type of channel this channel is.
         self.type = ChannelType(kwargs.pop("type", 0))
 
-        #: Is this channel a private channel?
-        self.is_private = kwargs.pop("is_private", self.type not in [ChannelType.TEXT, ChannelType.VOICE])
-
         #: If it is private, the recipients of the channel.
         self.recipients = []
         if self.is_private:
@@ -47,6 +44,10 @@ class Channel(Dataclass):
         self.position = kwargs.pop("position", 0)
 
     @property
+    def is_private(self):
+        return self.type not in [ChannelType.TEXT, ChannelType.VOICE]
+
+    @property
     def user(self):
         """
         :return: If this channel is a private channel, return the user of the channel.
@@ -55,6 +56,16 @@ class Channel(Dataclass):
             return None
 
         return self.recipients[0]
+
+    def _copy(self):
+        obb = object.__new__(self.__class__)
+        obb.name = self.name
+        obb.type = self.type
+        obb.guild = self.guild
+        obb.recipients = self.recipients
+        obb.position = self.position
+        obb._bot = self._bot
+        return obb
 
     async def send(self, content: str, *,
                    tts: bool = False) -> 'dt_message.Message':
