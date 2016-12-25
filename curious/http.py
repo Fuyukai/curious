@@ -252,8 +252,8 @@ class HTTPClient(object):
         """
         # Use /gateway/bot here to ensure our token is valid.
         url = self.API_BASE + "/gateway/bot"
-        data = await self.get(url, "gateway")
 
+        data = await self.get(url, "gateway")
         return data["url"]
 
     async def get_shard_count(self):
@@ -261,8 +261,8 @@ class HTTPClient(object):
         :return: The recommended number of shards for this bot.
         """
         url = self.API_BASE + "/gateway/bot"
-        data = await self.get(url, "gateway")
 
+        data = await self.get(url, "gateway")
         return data["shards"]
 
     async def get_application_info(self):
@@ -270,8 +270,20 @@ class HTTPClient(object):
         :return: The application info for this bot.
         """
         url = self.API_BASE + "/oauth2/applications/@me"
-        data = await self.get(url, "oauth2:me")
 
+        data = await self.get(url, "oauth2:me")
+        return data
+
+    async def get_user(self, user_id: int):
+        """
+        Gets a user from a user ID.
+
+        :param user_id: The ID of the user to fetch.
+        :return: A user dictionary.
+        """
+        url = (self.API_BASE + "/users/{user_id}").format(user_id=user_id)
+
+        data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
         return data
 
     async def send_message(self, channel_id: int, content: str, tts: bool=False):
