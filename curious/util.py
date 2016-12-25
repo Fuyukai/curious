@@ -3,6 +3,35 @@ Misc utilities shared throughout the library.
 """
 import datetime
 
+import collections
+import typing
+
+
+class AsyncIteratorWrapper(collections.AsyncIterator):
+    """
+    Wraps a function so that it can be iterated over asynchronously.
+    """
+
+    def __init__(self, client, coro: collections.Coroutine):
+        self.client = client
+        self.coro = coro
+
+        self.items = collections.deque()
+
+        self._filled = None
+
+    async def _fill(self):
+        self.items.extend(await self.coro)
+
+    async def __anext__(self):
+        if not self._filled:
+            await self._fill()
+
+        try:
+            return self.items.popleft()
+        except IndexError:
+            raise StopAsyncIteration
+
 
 def to_datetime(timestamp: str) -> datetime.datetime:
     """

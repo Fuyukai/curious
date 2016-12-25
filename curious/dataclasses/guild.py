@@ -10,6 +10,7 @@ from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
+from curious.util import AsyncIteratorWrapper
 
 
 class Guild(Dataclass):
@@ -189,6 +190,10 @@ class Guild(Dataclass):
             channel_obj = channel.Channel(self._bot, **channel_data)
             channel_obj.guild = self
             self._channels[channel_obj.id] = channel_obj
+
+    @property
+    def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
+        return AsyncIteratorWrapper(self._bot, self.get_bans())
 
     # Guild methods.
     async def leave(self):
