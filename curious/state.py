@@ -8,6 +8,7 @@ from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
+from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
 from curious.dataclasses.user import User
 from curious import gateway
@@ -402,6 +403,9 @@ class State(object):
         old_member = member._copy()
         member.user = User(self.client, **event_data["user"])
 
+        # Overwrite roles, we want to get rid of any roles that are stale.
+        member._roles = {}
+
         for role_id in event_data.get("roles", []):
             role_id = int(role_id)
             role = guild.get_role(role_id)
@@ -502,6 +506,70 @@ class State(object):
             del channel.guild._channels[channel.id]
 
         await self.client.fire_event("channel_delete", channel)
+
+    async def handle_guild_role_create(self, event_data: dict):
+        """
+        Called when a role is created.
+        """
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        role = Role(self.client, **event_data.get("role", {}))
+        guild._roles[role.id] = role
+
+        await self.client.fire_event("role_create", role)
+
+    async def handle_guild_role_update(self, event_data: dict):
+        """
+        Called when a role is updated.
+        """
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        role = guild.get_role(int(event_data["role"]["id"]))
+
+        if not role:
+            return
+
+        old_role = role._copy()
+
+        # Update all the fields on the role.
+        event_data = event_data.get("role", {})
+        role.colour = event_data.get("color", 0)
+        role.name = event_data.get("name")
+        role.position = event_data.get("position")
+        role.hoisted = event_data.get("hoisted")
+        role.mentionable = event_data.get("mentionable")
+        role.managed = event_data.get("managed")
+
+        await self.client.fire_event("role_update", old_role, role)
+
+    async def handle_guild_role_delete(self, event_data: dict):
+        """
+        Called when a role is deleted.
+        """
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        role = guild._roles.pop(int(event_data["role_id"]), None)
+
+        if not role:
+            return
+
+        # Remove the role from all members.
+        for member in guild.members:
+            member._roles.pop(role.id, None)
+
+        await self.client.fire_event("role_delete", role)
 
     async def handle_typing_start(self, event_data: dict):
         """

@@ -34,6 +34,19 @@ class Role(Dataclass):
         #: The guild this role is associated with.
         self.guild = None  # type: guild.Guild
 
+    def _copy(self):
+        obb = object.__new__(self.__class__)
+
+        obb.name = self.name
+        obb.colour = self.colour
+        obb.hoisted = self.hoisted
+        obb.permissions = self.permissions
+        obb.managed = self.managed
+        obb.position = self.position
+        obb.guild = self.guild
+
+        return obb
+
     @property
     def is_default_role(self):
         """
