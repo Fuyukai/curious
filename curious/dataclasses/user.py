@@ -31,6 +31,9 @@ class User(Dataclass, Messagable):
         #: If this user has MFA enabled or not.
         self.mfa_enabled = kwargs.pop("mfa_enabled", None)
 
+        #: If this user is a bot.
+        self.bot = kwargs.pop("bot", False)
+
     def _copy(self):
         new_object = object.__new__(self.__class__)
         new_object.id = self.id

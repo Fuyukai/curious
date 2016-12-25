@@ -18,10 +18,11 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
 
         self.items = collections.deque()
 
-        self._filled = None
+        self._filled = False
 
     async def _fill(self):
         self.items.extend(await self.coro)
+        self._filled = True
 
     async def __anext__(self):
         if not self._filled:
