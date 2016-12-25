@@ -1,3 +1,4 @@
+import typing
 from math import ceil
 
 import curio
@@ -62,12 +63,16 @@ class Guild(Dataclass):
         self.from_guild_create(**kwargs)
 
     @property
-    def channels(self):
+    def channels(self) -> 'typing.Iterable[channel.Channel]':
         return self._channels.values()
 
     @property
-    def members(self):
+    def members(self) -> 'typing.Iterable[member.Member]':
         return self._members.values()
+
+    @property
+    def roles(self) -> 'typing.Iterable[role.Role]':
+        return self._roles.values()
 
     @property
     def owner(self) -> 'member.Member':
@@ -83,6 +88,13 @@ class Guild(Dataclass):
         :return: The default channel for this guild.
         """
         return self._channels[self.id]
+
+    @property
+    def default_role(self) -> 'role.Role':
+        """
+        :return: The default role for this guild.
+        """
+        return self._roles[self.id]
 
     def get_member(self, member_id: int) -> 'member.Member':
         return self._members.get(member_id)
