@@ -57,7 +57,7 @@ class Message(Dataclass):
         return self._resolve_mentions(self._mentions, "member")
 
     @property
-    def role_mentions(self) -> typing.List['dt_role.Role']:
+    def role_mentions(self) -> 'typing.List[dt_role.Role]':
         return self._resolve_mentions(self._role_mentions, "role")
 
     @property

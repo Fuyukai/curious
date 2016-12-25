@@ -65,6 +65,12 @@ class Client(object):
         #: The logger for this bot.
         self.logger = logging.getLogger("curious.client")
 
+        # Scan the dict of this object, to check for all events registered under it.
+        # This is useful, for example, for subclasses.
+        for name, obb in self.__dict__.items():
+            if name.startswith("on_") and inspect.iscoroutinefunction(obb):
+                self.add_event(name[3:], obb)
+
     @property
     def user(self) -> User:
         return self.state._user
@@ -84,6 +90,18 @@ class Client(object):
         return self._gw_url
 
     # Events
+    def add_event(self, name: str, func: typing.Callable):
+        """
+        Add an event to the internal registry of events.
+
+        :param name: The event name to register under.
+        :param func: The function to add.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("Event must be a coroutine function")
+
+        self.events.add(name, func)
+
     def event(self, func):
         """
         Marks a function as an event.
@@ -96,11 +114,8 @@ class Client(object):
         if not func.__name__.startswith("on_"):
             raise ValueError("Events must start with on_")
 
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("Event must be a coroutine function")
-
         event = func.__name__[3:]
-        self.events.add(event, func)
+        self.add_event(event, func)
 
     async def _error_wrapper(self, func, *args, **kwargs):
         try:
@@ -130,7 +145,7 @@ class Client(object):
         return tasks
 
     # Gateway functions
-    async def change_status(self, game: Game=None, status: Status=Status.ONLINE):
+    async def change_status(self, game: Game = None, status: Status = Status.ONLINE):
         """
         Changes the bot's current status.
 
@@ -141,8 +156,8 @@ class Client(object):
 
     # HTTP Functions
     async def edit_profile(self, *,
-                           username: str=None,
-                           avatar: bytes=None):
+                           username: str = None,
+                           avatar: bytes = None):
         """
         Edits the profile of this bot.
 
@@ -212,4 +227,3 @@ class Client(object):
             except ReconnectWebsocket:
                 # We've been told to reconnect, try and RESUME.
                 await self.gw.reconnect(resume=True)
-
