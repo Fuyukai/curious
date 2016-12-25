@@ -417,6 +417,24 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="users:edit", json=payload)
         return data
 
+    async def ban_user(self, guild_id: int, user_id: int,
+                       delete_message_days: int=7):
+        """
+        Bans a user from a guild.
+
+        :param guild_id: The ID of the guild to ban on.
+        :param user_id: The user ID to ban from the guild.
+        :param delete_message_days: The number of days to delete messages from this user.
+        """
+        url = (self.GUILD_BASE + "/bans/{user_id}").format(guild_id=guild_id, user_id=user_id)
+        payload = {}
+
+        if delete_message_days:
+            payload["delete-message-days"] = delete_message_days
+
+        data = await self.put(url, bucket="bans:{}".format(guild_id), json=payload)
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

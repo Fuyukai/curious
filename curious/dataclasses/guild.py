@@ -6,6 +6,7 @@ import curio
 from curious import client
 from curious.dataclasses import channel
 from curious.dataclasses import member
+from curious.dataclasses import user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
@@ -195,3 +196,40 @@ class Guild(Dataclass):
         Leaves the guild.
         """
         await self._bot.http.leave_guild(self.id)
+
+    async def ban(self, victim: 'typing.Union[member.Member, user.User]', *,
+                  delete_message_days: int=7):
+        """
+        Bans somebody from the guild.
+
+        This can either ban a Member, in which they must be in the guild. Or this can ban a User, which does not need
+        to be in the guild.
+
+        Example for banning a member:
+
+        .. code:: python
+            member = guild.get_member(80528701850124288)
+            await guild.ban(member)
+
+        Example for banning a user:
+
+        .. code:: python
+            user = client.get_user(80528701850124288)
+            await guild.ban(user)
+
+        :param victim: The person to ban.
+        :param delete_message_days: The number of days to delete messages.
+        """
+        if isinstance(victim, member.Member):
+            if victim.guild != self:
+                raise ValueError("Member must be from this guild (try `member.user` instead)")
+
+            victim_id = victim.user.id
+
+        elif isinstance(victim, user.User):
+            victim_id = victim.id
+
+        else:
+            raise TypeError("Victim must be a Member or a User")
+
+        await self._bot.http.ban_user(guild_id=self.id, user_id=victim_id, delete_message_days=delete_message_days)
