@@ -90,5 +90,14 @@ class Member(Dataclass, Messagable):
         except StopIteration:
             return 0
 
+    # Member methods.
     def send(self, content: str, *args, **kwargs):
         return self.user.send(content, *args, **kwargs)
+
+    def ban(self, delete_message_days: int=7):
+        """
+        Bans this member from the guild.
+
+        :param delete_message_days: The number of days of messages to delete.
+        """
+        return self.guild.ban(self, delete_message_days=delete_message_days)
