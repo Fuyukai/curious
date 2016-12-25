@@ -417,6 +417,18 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="users:edit", json=payload)
         return data
 
+    async def get_bans(self, guild_id: int):
+        """
+        Gets a list of bans from a guild.
+
+        :param guild_id: The guild to get bans from.
+        :return: A list of user dicts containing ban information.
+        """
+        url = (self.GUILD_BASE + "/bans").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="bans:{}".format(guild_id))
+        return data
+
     async def ban_user(self, guild_id: int, user_id: int,
                        delete_message_days: int=7):
         """

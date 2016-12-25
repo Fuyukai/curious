@@ -197,6 +197,21 @@ class Guild(Dataclass):
         """
         await self._bot.http.leave_guild(self.id)
 
+    async def get_bans(self) -> 'typing.List[user.User]':
+        """
+        Gets the bans for this guild.
+        :return: A list of User objects, one for each ban.
+        """
+        bans = await self._bot.http.get_bans(self.id)
+        users = []
+
+        for user_data in bans:
+            # TODO: Audit log stuff, if it ever comes out.
+            user_data = user_data.get("user", None)
+            users.append(user.User(self._bot, **user_data))
+
+        return users
+
     async def ban(self, victim: 'typing.Union[member.Member, user.User]', *,
                   delete_message_days: int=7):
         """
