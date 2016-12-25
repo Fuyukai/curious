@@ -26,7 +26,7 @@ class Guild(Dataclass):
 
         #: If the guild is unavailable or not.
         #: If this is True, many fields return `None`.
-        self.unavailable = kwargs.pop("unavailable", False)
+        self.unavailable = kwargs.get("unavailable", False)
 
         # Placeholder values.
         #: The name of this guild.
@@ -147,7 +147,7 @@ class Guild(Dataclass):
 
         :param data: The GUILD_CREATE data to use.
         """
-        self.unavailable = data.get("unavailable", True)
+        self.unavailable = data.pop("unavailable", False)
 
         if self.unavailable:
             # We can't use any of the extra data here, so don't bother.

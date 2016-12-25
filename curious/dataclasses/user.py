@@ -42,6 +42,7 @@ class User(Dataclass, Messagable):
         new_object._avatar_hash = self._avatar_hash
         new_object.verified = self.verified
         new_object.mfa_enabled = self.mfa_enabled
+        new_object.bot = self.bot
 
         new_object._bot = self._bot
 
