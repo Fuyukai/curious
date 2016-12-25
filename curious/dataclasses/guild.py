@@ -6,7 +6,7 @@ import curio
 from curious import client
 from curious.dataclasses import channel
 from curious.dataclasses import member
-from curious.dataclasses import user
+from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
@@ -197,7 +197,7 @@ class Guild(Dataclass):
         """
         await self._bot.http.leave_guild(self.id)
 
-    async def get_bans(self) -> 'typing.List[user.User]':
+    async def get_bans(self) -> 'typing.List[dt_user.User]':
         """
         Gets the bans for this guild.
         :return: A list of User objects, one for each ban.
@@ -208,7 +208,7 @@ class Guild(Dataclass):
         for user_data in bans:
             # TODO: Audit log stuff, if it ever comes out.
             user_data = user_data.get("user", None)
-            users.append(user.User(self._bot, **user_data))
+            users.append(dt_user.User(self._bot, **user_data))
 
         return users
 
@@ -239,7 +239,7 @@ class Guild(Dataclass):
         Example for banning a user:
 
         .. code:: python
-            user = client.get_user(80528701850124288)
+            user = await client.get_user(80528701850124288)
             await guild.ban(user)
 
         :param victim: The person to ban.
@@ -251,10 +251,32 @@ class Guild(Dataclass):
 
             victim_id = victim.user.id
 
-        elif isinstance(victim, user.User):
+        elif isinstance(victim, dt_user.User):
             victim_id = victim.id
 
         else:
             raise TypeError("Victim must be a Member or a User")
 
         await self._bot.http.ban_user(guild_id=self.id, user_id=victim_id, delete_message_days=delete_message_days)
+
+    async def unban(self, user: 'dt_user.User'):
+        """
+        Unbans a user from this guild.
+
+        Example for unbanning the first banned user:
+
+        .. code:: python
+            user = next(await guild.get_bans())
+            await guild.unban(user)
+
+        To unban an arbitrary user, use :meth:`Client.get_user`.
+
+        .. code:: python
+            user = await client.get_user(80528701850124288)
+            await guild.unban(user)
+
+        :param user: The user to forgive and unban.
+        """
+        forgiven_id = user.id
+
+        await self._bot.http.unban_user(self.id, forgiven_id)

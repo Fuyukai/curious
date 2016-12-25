@@ -459,6 +459,18 @@ class HTTPClient(object):
         data = await self.put(url, bucket="bans:{}".format(guild_id), json=payload)
         return data
 
+    async def unban_user(self, guild_id: int, user_id: int):
+        """
+        Unbans a user from a guild.
+
+        :param guild_id: The ID of the guild to unban on.
+        :param user_id: The user ID that has been forgiven.
+        """
+        url = (self.GUILD_BASE + "/bans/{user_id}").format(guild_id=guild_id, user_id=user_id)
+
+        data = await self.delete(url, bucket="bans:{}".format(guild_id))
+        return data
+
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.

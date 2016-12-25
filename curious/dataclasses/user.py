@@ -2,6 +2,7 @@ from curious import client
 from curious.dataclasses.bases import Dataclass, Messagable
 from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import message as dt_message
+from curious.dataclasses import guild as dt_guild
 
 
 class User(Dataclass, Messagable):
@@ -96,3 +97,11 @@ class User(Dataclass, Messagable):
         message = await channel.send(content)
 
         return message
+
+    def unban_from(self, guild: 'dt_guild.Guild'):
+        """
+        Unbans this user from a guild.
+
+        :param guild: The guild to unban in.
+        """
+        return guild.unban(self)
