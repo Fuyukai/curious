@@ -417,6 +417,18 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="users:edit", json=payload)
         return data
 
+    async def kick_member(self, guild_id: int, member_id: int):
+        """
+        Kicks a member from a guild.
+
+        :param guild_id: The guild ID to kick in.
+        :param member_id: The member ID to kick from the guild.
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+
+        data = await self.delete(url, bucket="members:{}".format(guild_id))
+        return data
+
     async def get_bans(self, guild_id: int):
         """
         Gets a list of bans from a guild.

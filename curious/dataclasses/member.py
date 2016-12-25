@@ -101,3 +101,9 @@ class Member(Dataclass, Messagable):
         :param delete_message_days: The number of days of messages to delete.
         """
         return self.guild.ban(self, delete_message_days=delete_message_days)
+
+    def kick(self):
+        """
+        Kicks this member from the guild.
+        """
+        return self.guild.kick(self)

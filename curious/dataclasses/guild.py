@@ -212,6 +212,16 @@ class Guild(Dataclass):
 
         return users
 
+    async def kick(self, victim: 'member.Member'):
+        """
+        Kicks somebody from the guild.
+
+        :param victim: The member to kick.
+        """
+        victim_id = victim.user.id
+
+        await self._bot.http.kick_member(self.id, victim_id)
+
     async def ban(self, victim: 'typing.Union[member.Member, user.User]', *,
                   delete_message_days: int=7):
         """
