@@ -203,6 +203,9 @@ class HTTPClient(object):
                 # Now, we have that nuisance out of the way, we can try and get the result from the request.
                 result = await self.get_response_data(response)
 
+                # Close the response.
+                await response.close()
+
                 # Status codes between 200 and 300 mean success, so we return the data directly.
                 if 200 <= response.status_code < 300:
                     return result

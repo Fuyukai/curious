@@ -1,4 +1,7 @@
 import logging
+import mimetypes
+import random
+import string
 from functools import partial
 import json as py_json
 import curio
@@ -7,6 +10,9 @@ import cgi
 import multidict
 import yarl
 import h11
+from curio import io
+from h11._events import _EventBundle
+from multidict import MultiDict
 
 logger = logging.getLogger(__name__)
 
@@ -17,14 +23,85 @@ class HTTPError(Exception):
         super().__init__(*args, **kwargs)
 
 
-def get_encoding_from_headers(headers):
-    """Returns encodings from given HTTP Header Dict.
+_BOUNDARY_CHARS = string.digits + string.ascii_letters
 
-    Args:
-        headers (dict): dictionary to extract encoding from.
 
-    Returns:
-        str
+def encode_multipart(fields, files, boundary=None):
+    r"""Encode dict of form fields and dict of files as multipart/form-data.
+    Return tuple of (body_string, headers_dict). Each value in files is a dict
+    with required keys 'filename' and 'content', and optional 'mimetype' (if
+    not specified, tries to guess mime type or uses 'application/octet-stream').
+
+    >>> body, headers = encode_multipart({'FIELD': 'VALUE'},
+    ...                                  {'FILE': {'filename': 'F.TXT', 'content': 'CONTENT'}},
+    ...                                  boundary='BOUNDARY')
+    >>> print('\n'.join(repr(l) for l in body.split('\r\n')))
+    '--BOUNDARY'
+    'Content-Disposition: form-data; name="FIELD"'
+    ''
+    'VALUE'
+    '--BOUNDARY'
+    'Content-Disposition: form-data; name="FILE"; filename="F.TXT"'
+    'Content-Type: text/plain'
+    ''
+    'CONTENT'
+    '--BOUNDARY--'
+    ''
+    >>> print(sorted(headers.items()))
+    [('Content-Length', '193'), ('Content-Type', 'multipart/form-data; boundary=BOUNDARY')]
+    >>> len(body)
+    193
+
+    Copied from: https://code.activestate.com/recipes/578668-encode-multipart-form-data-for-uploading-files-via/
+    """
+
+    def escape_quote(s):
+        return s.replace('"', '\\"')
+
+    if boundary is None:
+        boundary = ''.join(random.choice(_BOUNDARY_CHARS) for i in range(30))
+    lines = []
+
+    for name, value in fields.items():
+        lines.extend((
+            '--{0}'.format(boundary),
+            'Content-Disposition: form-data; name="{0}"'.format(escape_quote(name)),
+            '',
+            str(value),
+        ))
+
+    for name, value in files.items():
+        filename = value['filename']
+        if 'mimetype' in value:
+            mimetype = value['mimetype']
+        else:
+            mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        lines.extend((
+            '--{0}'.format(boundary),
+            'Content-Disposition: form-data; name="{0}"; filename="{1}"'.format(
+                escape_quote(name), escape_quote(filename)),
+            'Content-Type: {0}'.format(mimetype),
+            '',
+            value['content'],
+        ))
+
+    lines.extend((
+        '--{0}--'.format(boundary),
+        '',
+    ))
+    body = '\r\n'.join(lines)
+
+    headers = {
+        'Content-Type': 'multipart/form-data; boundary={0}'.format(boundary),
+        'Content-Length': str(len(body)),
+    }
+
+    return body, headers
+
+
+def get_encoding_from_headers(headers: MultiDict):
+    """
+    Attempts to get the encoding of the request based on the headers.
     """
     content_type = headers.get('content-type')
 
@@ -41,7 +118,9 @@ def get_encoding_from_headers(headers):
 
 
 class _EventIterator:
-    """Receive all remaining data from a connection."""
+    """
+    An iterator that allows you to receive events from a connection.
+    """
 
     def __init__(self, event_source):
         self.event_source = event_source
@@ -61,9 +140,11 @@ class _EventIterator:
 
 
 class Response:
-    """Contains the complete result of an async request."""
+    """
+    A wrapper around the Response from the server.
+    """
 
-    def __init__(self, raw_response, h11_request, conn):
+    def __init__(self, raw_response: h11.Response, h11_request: h11.Request, conn: 'HTTPConnection'):
         self.status_code = raw_response.status_code
         self.http_version = raw_response.http_version.decode('utf-8')
 
@@ -87,6 +168,14 @@ class Response:
             port=self.conn.port,
             target=self.h11_request.target.decode('utf-8'),
         )
+
+    async def close(self):
+        """
+        Closes the current request.
+
+        This should always be called.
+        """
+        await self.conn.close()
 
     def raise_for_status(self):
         """Raises HTTPError, if one occurred."""
@@ -142,16 +231,29 @@ class Response:
 class HTTPConnection:
     """Maries an async socket with an HTTP handler."""
 
-    def __init__(self, host, port, ssl):
+    def __init__(self, host: str, port: int, ssl):
+        """
+        :param host: The host to connect to.
+        :param port: The port to connect to.
+        :param ssl: Any SSL context to use.
+        """
         self.host = host
         self.port = port
         self.ssl = ssl
+
+        #: The current socket connection.
+        self.sock = None  # type: io.Socket
+        #: The H11 connection state.
+        self.state = None  # type: h11.Connection
 
     def __repr__(self):
         return '%s(host=%r, port=%r)' % (
             self.__class__.__name__, self.host, self.port)
 
     async def open(self):
+        """
+        Opens a connection to the server.
+        """
         sock_args = dict(
             host=self.host,
             port=self.port,
@@ -169,6 +271,9 @@ class HTTPConnection:
         logger.debug('Opened %r', self)
 
     async def close(self):
+        """
+        Closes a connection to the server.
+        """
         await self.sock.close()
 
         self.sock = None
@@ -176,13 +281,28 @@ class HTTPConnection:
 
         logger.debug('Closed %r', self)
 
-    async def _send(self, event):
+    async def _send(self, event: _EventBundle):
+        """
+        Sends an event to the server.
+
+        :param event: The event to send.
+        """
         # logger.debug("Sending event: %s", event)
 
         data = self.state.send(event)
         await self.sock.sendall(data)
 
-    async def _next_event(self, maxsize=None):
+    async def _next_event(self, maxsize: int=None) -> _EventBundle:
+        """
+        Gets the next event from the connection.
+
+        This will automatically read data off of the connection.
+
+        :param maxsize: The maximum size to read off the socket.
+            If not specified, 2048 will be used.
+        :return:
+        """
+
         if not maxsize:
             maxsize = 2048
 
@@ -198,31 +318,49 @@ class HTTPConnection:
 
             return event
 
-    async def request(self, h11_request, data=None):
+    async def request(self, h11_request: h11.Request, data=None) -> h11.Response:
+        """
+        Makes a request.
+
+        :param h11_request: The :class:`h11.Request` object to use.
+        :param data: Any request data to send to the server.
+        """
+        # First, send the base request.
         await self._send(h11_request)
 
+        # Send data chunks.
         if data is not None:
             await self._send(h11.Data(data=data))
 
+        # Finally, send the EOF.
         await self._send(h11.EndOfMessage())
 
+        # Read the response off of the server now.
         event = await self._next_event()
 
-        assert type(event) is h11.Response
+        assert isinstance(event, h11.Response)
 
         return event
 
 
-def _prepare_request(method, url, params=None, headers=None, data=None,
-                     json: dict = None):
+def _prepare_request(method: str, url: yarl.URL, *,
+                     params=None, headers=None,
+                     body=None,
+                     json: dict = None, files: dict = None):
     """
-    Args:
-        method (str): The HTTP method.
-        url (URL): A YARL URL object.
-        headers (dict): A dictionary with HTTP headers to send.
-        data (str): Data to send in the request body.
-        json (dict): JSON data to send in the request data.
+    Prepares a new request, creating a :class:`h11.Request` object to be sent.
+    Additionally, this also serializes the body into a bytestring ready to be sent.
+
+    :param method: The method of the request.
+    :param url: The URL to request.
+    :param headers: Optional. The headers of the request.
+        This should be a dict or a MultiDict.
+    :param body: Optional. Any body data to send.
+        If this is a dict, it is encoded as multipart/form-data.
+    :param json: Optional. A dict that should be JSON encoded and sent as the body.
     """
+    url = yarl.URL(url)
+
     if params:
         query_vars = list(url.query.items()) + list(params.items())
         url = url.with_query(query_vars)
@@ -230,19 +368,21 @@ def _prepare_request(method, url, params=None, headers=None, data=None,
     target = str(url.relative())
 
     if headers is None:
-        headers = {}
+        headers = MultiDict()
+    elif not isinstance(headers, MultiDict):
+        headers = MultiDict(headers)
 
     headers.setdefault('Host', url.raw_host)
 
-    if data is not None:
-        body = data.encode('utf-8')
+    if json is not None:
+        body = py_json.dumps(json)
     else:
-        if json is not None:
-            body = py_json.dumps(json).encode("utf-8")
-        else:
-            body = None
+        # Check if the body is a dict.
+        # If so, send it as `multipart/form-data`.
+        if isinstance(body, dict):
+            body = encode_multipart(body, files)
 
-    if body is not None and 'Transfer-Encoding' not in headers:
+    if body is not None:
         headers["Content-Length"] = str(len(body)).encode('utf-8')
 
     if json is not None:
@@ -258,10 +398,15 @@ def _prepare_request(method, url, params=None, headers=None, data=None,
 
 
 class ClientSession:
+    """
+    The session class that is used to send data to the server.
+    """
     def __init__(self):
+        #: A dictionary of all open connections.
         self.open_connections = []
 
-        self.headers = {}
+        #: Any headers that are to be sent on every request.
+        self.headers = MultiDict()
 
     async def __aenter__(self):
         return self
@@ -271,6 +416,12 @@ class ClientSession:
             await conn.close()
 
     async def _request(self, method, url, *args, **kwargs):
+        """
+        Makes a request to the server.
+
+        This method is internal - use `request` instead.
+        """
+
         headers = self.headers.copy()
         kwargs["headers"] = {**headers, **kwargs.get("headers", {})}
 
@@ -291,9 +442,15 @@ class ClientSession:
 
         return Response(raw_response, h11_request, conn)
 
-    async def request(
-            self, method, url, *args, allow_redirects=False, **kwargs):
-        """Perform HTTP request."""
+    async def request(self, method: str, url: str, *args,
+                      allow_redirects=False, **kwargs):
+        """
+        Performs a HTTP request.
+
+        :param method: The HTTP method of the request.
+        :param url: The URL of the request.
+        :param allow_redirects: Should redirects be automatically followed?
+        """
         url = yarl.URL(url)
 
         response = await self._request(method, url, *args, **kwargs)
@@ -321,3 +478,12 @@ class ClientSession:
     def post(self, *args, data=None, **kwargs):
         """Perform HTTP POST request."""
         return self.request('POST', *args, data=data, **kwargs)
+
+    def put(self, *args, **kwargs):
+        return self.request("PUT", *args, **kwargs)
+
+    def patch(self, *args, **kwargs):
+        return self.request("PATCH", *args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        return self.request("DELETE", *args, **kwargs)
