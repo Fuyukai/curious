@@ -2,7 +2,7 @@
 # So here's a helper method.
 
 
-def build_permissions_class(name: str="Permissions"):
+def build_permissions_class(name: str = "Permissions"):
     # Closure methods.
     def __init__(self, value: int = 0):
         """
@@ -83,16 +83,36 @@ def build_permissions_class(name: str="Permissions"):
                        fset=_get_permission_setter(name, bit),
                        doc=_doc_base.format(name, bit)) for (name, bit) in permissions.items()
         }
+
+    # Create some useful classmethods.
+    @classmethod
+    def all(cls):
+        """
+        :return: A new Permissions object with all permissions.
+        """
+        return cls(9007199254740991)
+
+    @classmethod
+    def none(cls):
+        """
+        :return: A new permissions object with no permissions.
+        """
+        return cls(0)
+
     # Create the namespace dict to use in the type declaration.
     namespace = {
         "__init__": __init__,
         "_set_bit": _set_bit,
         "_get_bit": _get_bit,
         "__eq__": __eq__,
+        "__repr__": lambda self: "<Permissions value={}>".format(self.bitfield),
+        "all": all,
+        "none": none,
         **properties
     }
     new_class = type(name, (object,), namespace)
 
     return new_class
+
 
 Permissions = build_permissions_class("Permissions")

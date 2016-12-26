@@ -2,6 +2,7 @@ import copy
 import typing
 
 from curious.dataclasses.bases import Dataclass, Messagable
+from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses import user as dt_user
@@ -97,6 +98,31 @@ class Member(Dataclass, Messagable):
             return next(roles).colour
         except StopIteration:
             return 0
+
+    @property
+    def top_role(self) -> Role:
+        """
+        :return: This member's top-most role.
+        """
+        return next(sorted(self.roles, key=lambda r: r.position, reversed=True))
+
+    @property
+    def guild_permissions(self):
+        """
+        :return: The calculated guild permissions for a member.
+        """
+        if self == self.guild.owner:
+            return Permissions.all()
+
+        bitfield = 0
+        for role in self.roles:
+            bitfield |= role.permissions.bitfield
+
+        permissions = Permissions(bitfield)
+        if permissions.administrator:
+            return Permissions.all()
+
+        return permissions
 
     # Member methods.
     def send(self, content: str, *args, **kwargs):
