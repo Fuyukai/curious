@@ -1,6 +1,8 @@
 import typing
 import re
 
+import curio
+
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import channel as dt_channel
@@ -99,21 +101,38 @@ class Message(Dataclass):
         """
         await self._bot.http.delete_message(self.channel.id, self.id)
 
-    async def edit(self, new_content: str) -> 'Message':
+    async def edit(self, new_content: str, *,
+                   wait: bool=False) -> 'Message':
         """
         Edits this message.
 
         You must be the owner of this message to edit it.
-        This edits the message in-place.
+        This does NOT edit the message in place. Use `wait=True` to return the new, edited message object.
 
         :param new_content: The new content for this message.
+        :param wait: Should we wait for a new message object to be created?
         :return: This message, but edited with the new content.
         """
-        message_data = await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
-        self.content = message_data.get("content")
-        self.edited_at = to_datetime(message_data.get("edited_timestamp", None))
+        coro = self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
+        if wait:
+            event = curio.Event()
+            msg = None
+            async def _listener(client, old_message, new_message: Message):
+                if new_message.id == self.id:
+                    await event.set()
+                    # hacky use of nonlocal
+                    nonlocal msg
+                    msg = new_message
+                    return True
 
-        return self
+            self._bot.add_listener("message_edit", _listener)
+
+            message_data = await coro
+
+            await event.wait()
+            return msg
+        else:
+            message_data = await coro
 
     async def pin(self):
         """

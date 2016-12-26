@@ -92,8 +92,8 @@ def encode_multipart(fields, files, boundary=None):
     body = '\r\n'.join(lines)
 
     headers = {
-        'Content-Type': 'multipart/form-data; boundary={0}'.format(boundary),
-        'Content-Length': str(len(body)),
+        b'Content-Type': b'multipart/form-data; boundary=%s' % boundary.encode(),
+        b'Content-Length': str(len(body)).encode(),
     }
 
     return body, headers
@@ -380,10 +380,13 @@ def _prepare_request(method: str, url: yarl.URL, *,
         # Check if the body is a dict.
         # If so, send it as `multipart/form-data`.
         if isinstance(body, dict):
-            body = encode_multipart(body, files)
+            body, _h = encode_multipart(body, files)
+            headers.extend(_h)
 
     if body is not None:
-        headers["Content-Length"] = str(len(body)).encode('utf-8')
+        if "Content-Length" not in headers:
+            headers["Content-Length"] = str(len(body)).encode('utf-8')
+        body = body.encode()
 
     if json is not None:
         headers["Content-Type"] = b"application/json"
