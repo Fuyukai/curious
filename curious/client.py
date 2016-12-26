@@ -54,6 +54,11 @@ class Client(object):
         #: The current event storage.
         self.events = multidict.MultiDict()
 
+        #: The current "temporary" listener storage.
+        #: Temporary listeners are events that listen, and if they return True the listener is remove.
+        #: They are used in the HTTP method by `wait=`, for example.
+        self._temporary_listeners = multidict.MultiDict()
+
         #: The HTTPClient used for this bot.
         self.http = None  # type: HTTPClient
 
@@ -114,6 +119,18 @@ class Client(object):
 
         self.events.add(name, func)
 
+    def add_listener(self, name: str, func):
+        """
+        Adds a temporary listener.
+
+        :param name: The name of the event to listen under.
+        :param func: The callable to call.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("Listener must be a coroutine function")
+
+        self._temporary_listeners.add(name, func)
+
     def event(self, func):
         """
         Marks a function as an event.
@@ -135,6 +152,27 @@ class Client(object):
         except Exception as e:
             self.logger.exception("Unhandled exception in {}!".format(func.__name__))
 
+    async def _temporary_wrapper(self, event, listener, *args, **kwargs):
+        try:
+            result = await listener(*args, **kwargs)
+        except Exception as e:
+            self.logger.exception("Unhandled exception in {}!".format(listener.__name__))
+            return
+        if result is True:
+            # Complex removal bullshit
+            items = self._temporary_listeners.getall(event)
+            try:
+                items.remove(listener)
+            except ValueError:
+                # race condition bullshit
+                return
+            # remove all keys
+            self._temporary_listeners.pop(event)
+
+            for i in items:
+                # re-add all new items
+                self._temporary_listeners.add(event, i)
+
     async def fire_event(self, event_name: str, *args, **kwargs) -> typing.List[Task]:
         """
         Fires an event to run.
@@ -145,14 +183,21 @@ class Client(object):
         :return: A :class:`list` of :class:`curio.task.Task` representing the events.
         """
         coros = self.events.getall(event_name, [])
-        if not coros:
-            return []
 
-        self.logger.debug("Dispatching event {} to {} listeners".format(event_name, len(coros)))
+        temporary_listeners = self._temporary_listeners.getall(event_name, [])
+
+        if not coros and not temporary_listeners:
+            return
+
+        self.logger.debug(
+            "Dispatching event {} to {} listeners".format(event_name, len(coros) + len(temporary_listeners)))
 
         tasks = []
-        for event in coros:
+        for event in coros.copy():
             tasks.append(await curio.spawn(self._error_wrapper(event, self, *args, **kwargs)))
+
+        for listener in temporary_listeners:
+            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, self, *args, **kwargs)))
 
         return tasks
 
