@@ -14,6 +14,12 @@ from curious.util import AsyncIteratorWrapper
 
 
 class Guild(Dataclass):
+    """
+    :ivar unavailable: If this guild is unavailable or not.
+    :ivar name: The name of this guild.
+    :ivar region: The voice region of this guild.
+    :ivar member_count: The number of members this guild has.
+    """
 
     __slots__ = ("unavailable", "name", "_icon_hash", "_owner_id", "region", "_roles", "_members",
                  "_channels", "member_count", "large")
@@ -66,45 +72,84 @@ class Guild(Dataclass):
 
     @property
     def channels(self) -> 'typing.Iterable[channel.Channel]':
+        """
+        :return: A list of :class:`curious.dataclasses.channel.Channel` objects that represent the channels on this
+        guild.
+        """
         return self._channels.values()
 
     @property
     def members(self) -> 'typing.Iterable[member.Member]':
+        """
+        :return: A list of :class:`curious.dataclasses.member.Member` objects that represent the members on this guild.
+        """
         return self._members.values()
 
     @property
     def roles(self) -> 'typing.Iterable[role.Role]':
+        """
+        :return: A list of :class:`curious.dataclasses.role.Role` objects that represent the roles on this guild.
+        """
         return self._roles.values()
 
     @property
     def owner(self) -> 'member.Member':
+        """
+        :return: A :class:`curious.dataclasses.member.Member` object that represents the owner of this guild.
+        """
         return self._members[self._owner_id]
 
     @property
     def me(self) -> 'member.Member':
+        """
+        :return: A :class:`curious.dataclasses.member.Member` object that represents the current user in this guild.
+        """
         return self._members[self._bot.user.id]
 
     @property
     def default_channel(self) -> 'channel.Channel':
         """
-        :return: The default channel for this guild.
+        :return: A :class:`curious.dataclasses.channel.Channel` object that represents the default channel of this
+        guild.
         """
         return self._channels[self.id]
 
     @property
     def default_role(self) -> 'role.Role':
         """
-        :return: The default role for this guild.
+        :return: :return: A :class:`curious.dataclasses.role.Role` object that represents the default role of this
+        guild.
         """
         return self._roles[self.id]
 
     def get_member(self, member_id: int) -> 'member.Member':
+        """
+        Gets a member from the guild by ID.
+
+        :param member_id: The member ID to lookup.
+        :return: The :class:`curious.dataclasses.member.Member` object that represents the member, or None if they
+        couldn't be found.
+        """
         return self._members.get(member_id)
 
     def get_role(self, role_id: int) -> 'role.Role':
+        """
+        Gets a role from the guild by ID.
+
+        :param role_id: The role ID to look up.
+        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't
+        be found.
+        """
         return self._roles.get(role_id)
 
     def get_channel(self, channel_id: int) -> 'channel.Channel':
+        """
+        Gets a channel from the guild by ID.
+
+        :param role_id: The role ID to look up.
+        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't
+        be found.
+        """
         return self._channels.get(channel_id)
 
     def start_chunking(self):

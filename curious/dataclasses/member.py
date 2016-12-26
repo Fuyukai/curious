@@ -6,11 +6,20 @@ from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild
+from curious.util import to_datetime
 
 
 class Member(Dataclass, Messagable):
     """
     A member is a user attached to a guild.
+
+    :ivar id: The ID of this member.
+    :ivar user: The :class:`curious.dataclasses.user.User` object that this member is associated with.
+    :ivar joined_at: The :class:`datetime.datetime` that represents when this member joined the server.
+    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object that this member is associated with.
+    :ivar nickname: The nickname this member has in the guild.
+    :ivar game: The :class:`curious.dataclasses.status.Game` object that this member is playing. None for no game.
+    :ivar status: The current status of this member.
     """
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -22,8 +31,7 @@ class Member(Dataclass, Messagable):
         self._roles = {}
 
         #: The date the user joined the guild.
-        # TODO: Make this a datetime.
-        self.joined_at = kwargs.pop("joined_at", None)
+        self.joined_at = to_datetime(kwargs.pop("joined_at", None))
 
         #: The member's current nickname.
         self.nickname = kwargs.pop("nick", None)

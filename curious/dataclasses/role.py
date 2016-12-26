@@ -1,11 +1,23 @@
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild
+from curious.dataclasses.permissions import Permissions
 
 
 class Role(Dataclass):
     """
     Represents a role on a server.
+
+    :ivar name: The name of this role.
+    :ivar colour: The integer colour of this role.
+    :ivar hoisted: Is this role hoisted?
+    :ivar mentionable: Is this role mentionable?
+    :ivar permissions: A :class:`curious.dataclasses.permissions.Permissions` object that represents the permissions
+    this role has.
+    :ivar managed: Is this role managed by an integration?
+    :ivar position: The raw position in the role list.
+    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object this role belongs to.
     """
+
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)
 
@@ -22,8 +34,7 @@ class Role(Dataclass):
         self.mentionable = kwargs.pop("mentionable", False)
 
         #: The permissions of this role.
-        #: TODO: Make this use a Permissions object.
-        self.permissions = kwargs.pop("permissions", 0)
+        self.permissions = Permissions(kwargs.pop("permissions", 0))
 
         #: Is this role managed?
         self.managed = kwargs.pop("managed", False)

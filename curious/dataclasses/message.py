@@ -15,6 +15,14 @@ CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 class Message(Dataclass):
     """
     Represents a Message.
+
+    :ivar content: The content of this message.
+    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object that this message was sent in.
+    :ivar channel: The :class:`curious.dataclasses.channel.Channel` object that this message was sent in.
+    :ivar author: The :class:`curious.dataclasses.member.Member` object that this message belongs to.
+        This could also be a :class:`curious.dataclasses.user.User` if the channel is private.
+    :ivar created_at: A :class:`datetime.datetime` representing when this message was created.
+    :ivar edited_at: A :class:`datetime.datetime` representing when this message was edited.
     """
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)

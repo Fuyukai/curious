@@ -92,6 +92,14 @@ class HistoryIterator(collections.AsyncIterator):
 class Channel(Dataclass):
     """
     Represents a channel.
+
+    :ivar name: The name of the channel.
+    :ivar topic: The topic of the channel.
+    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object this channel belongs to.
+        This will be None if the channel is a private channel.
+    :ivar type: The :class:`ChannelType` that this channel is.
+    :ivar recipients: If private, a list of :class:`User` that this channel is associated with.
+    :ivar position: The position of this channel in the channel list.
     """
 
     def __init__(self, client, **kwargs):

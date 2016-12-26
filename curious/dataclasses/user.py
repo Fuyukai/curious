@@ -10,6 +10,13 @@ class User(Dataclass, Messagable):
     This represents a bare user - i.e, somebody without a guild attached.
 
     This is used in DMs and similar. All members are Users, but no Users are Members.
+
+    :ivar id: The ID of the user.
+    :ivar username: The username of the user.
+    :ivar discriminator: The string discriminator of the user.
+    :ivar verified: Is this user verified? Will often be None.
+    :ivar mfa_enabled: Does this user have MFA enabled? Will often be None.
+    :ivar bot: Is this user a bot?
     """
 
     def __init__(self, client, **kwargs):
@@ -26,7 +33,7 @@ class User(Dataclass, Messagable):
         self._avatar_hash = kwargs.pop("avatar", None)
 
         #: If this user is verified or not.
-        self.verified = kwargs.pop("verified", True)
+        self.verified = kwargs.pop("verified", None)
 
         #: If this user has MFA enabled or not.
         self.mfa_enabled = kwargs.pop("mfa_enabled", None)
