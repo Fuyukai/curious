@@ -248,3 +248,22 @@ class Client(object):
             except ReconnectWebsocket:
                 # We've been told to reconnect, try and RESUME.
                 await self.gw.reconnect(resume=True)
+
+    def run(self, token: str = None):
+        """
+        Runs your bot with Curio with the monitor enabled.
+
+        :param token: The token to run with.
+        """
+        kernel = curio.Kernel(with_monitor=True)
+        kernel.run(coro=self.start(token), shutdown=True)
+
+    @classmethod
+    def from_token(cls, token: str = None):
+        """
+        Starts a bot from a token object.
+
+        :param token: The token to use for the bot.
+        """
+        bot = cls(token)
+        return bot.run()
