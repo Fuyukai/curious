@@ -1,4 +1,5 @@
 import base64
+import functools
 import inspect
 import typing
 import imghdr
@@ -69,7 +70,7 @@ class Client(object):
         # This is useful, for example, for subclasses.
         for name, obb in self.__dict__.items():
             if name.startswith("on_") and inspect.iscoroutinefunction(obb):
-                self.add_event(name[3:], obb)
+                self.add_event(name[3:], obb, bound=True)
 
     @property
     def user(self) -> User:
@@ -90,15 +91,26 @@ class Client(object):
         return self._gw_url
 
     # Events
-    def add_event(self, name: str, func: typing.Callable):
+    def add_event(self, name: str, func, *,
+                  bound: bool = False):
         """
         Add an event to the internal registry of events.
 
         :param name: The event name to register under.
         :param func: The function to add.
+        :param bound: If this is True, then the Client won't be passed as the first argument.
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("Event must be a coroutine function")
+
+        if bound:
+            original_func = func
+
+            @functools.wraps(func)
+            async def _bound_wrapper(client: Client, *args, **kwargs):
+                await original_func(*args, **kwargs)
+
+            func = _bound_wrapper
 
         self.events.add(name, func)
 
