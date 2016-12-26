@@ -4,19 +4,17 @@ Curious' HTTP client is a thin wrapper over the `requests` library, running in t
 This is because there is (currently) no native curio HTTP library.
 """
 import functools
-
-import collections
-import json
-import typing
-import weakref
 import logging
-import curio
 import sys
 import time
+import typing
+import weakref
 from math import ceil
 
+import curio
+
 import curious
-from curious.curio_http import ClientSession, Response
+from curious.http.curio_http import ClientSession, Response
 
 
 # HTTP exceptions, used to raise errors.

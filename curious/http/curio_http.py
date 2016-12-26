@@ -421,9 +421,9 @@ class ClientSession:
 
         This method is internal - use `request` instead.
         """
-
-        headers = self.headers.copy()
-        kwargs["headers"] = {**headers, **kwargs.get("headers", {})}
+        headers = MultiDict(self.headers.copy())
+        headers.extend(kwargs.get("headers", {}))
+        kwargs["headers"] = headers
 
         h11_request, body = _prepare_request(
             method, url, *args, **kwargs)
