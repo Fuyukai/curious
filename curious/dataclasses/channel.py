@@ -135,7 +135,10 @@ class Channel(Dataclass):
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
-        for overwrite in kwargs.pop("permission_overwrites", []):
+        self._update_overwrites(kwargs.pop("permission_overwrites", []))
+
+    def _update_overwrites(self, overwrites: list):
+        for overwrite in overwrites:
             id = int(overwrite["id"])
             type_ = overwrite["type"]
 

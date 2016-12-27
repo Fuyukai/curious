@@ -494,7 +494,7 @@ class State(object):
         channel.position = event_data.get("position", channel.position)
         channel.topic = event_data.get("topic", channel.topic)
 
-        # TODO: Permission overwrites.
+        channel._update_overwrites(event_data.get("permission_overwrites", []))
         await self.client.fire_event("channel_update", old_channel, channel, gateway=gateway)
 
     async def handle_channel_delete(self, gateway: 'gateway.Gateway', event_data: dict):
