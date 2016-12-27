@@ -8,6 +8,7 @@ from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
+from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
 from curious.dataclasses.user import User
@@ -550,6 +551,7 @@ class State(object):
         role.hoisted = event_data.get("hoisted")
         role.mentionable = event_data.get("mentionable")
         role.managed = event_data.get("managed")
+        role.permissions = Permissions(event_data.get("permissions", 0))
 
         await self.client.fire_event("role_update", old_role, role, gateway=gateway)
 
