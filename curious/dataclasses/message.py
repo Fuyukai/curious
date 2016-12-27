@@ -62,6 +62,9 @@ class Message(Dataclass):
         #: This is UNORDERED.
         self._role_mentions = kwargs.pop("mention_roles", [])
 
+    def __repr__(self):
+        return "<{0.__class__.__name__} id={0.id} content='{0.content}'>".format(self)
+
     @property
     def mentions(self):
         return self._resolve_mentions(self._mentions, "member")
