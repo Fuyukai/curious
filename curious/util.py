@@ -4,6 +4,7 @@ Misc utilities shared throughout the library.
 import datetime
 
 import collections
+import inspect
 import typing
 
 
@@ -48,3 +49,18 @@ def to_datetime(timestamp: str) -> datetime.datetime:
         return datetime.datetime.strptime(timestamp[:-6], "%Y-%m-%dT%H:%M:%S.%f")
     else:
         return datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+
+
+def _traverse_stack_for(t: type):
+    """
+    Traverses the stack for an object of type `t`.
+
+    :param t: The type of the object.
+    :return: The object, if found.
+    """
+    for fr in inspect.stack():
+        frame = fr.frame
+        locals = frame.locals
+        for object in locals.values():
+            if type(object) is t:
+                return object

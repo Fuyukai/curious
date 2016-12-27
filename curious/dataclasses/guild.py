@@ -48,6 +48,9 @@ class Guild(Dataclass):
         #: The voice region of this guild.
         self.region = None  # type: str
 
+        #: The shard ID this guild is associated with.
+        self.shard_id = None
+
         #: The roles that this guild has.
         self._roles = {}
 

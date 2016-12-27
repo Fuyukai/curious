@@ -67,8 +67,6 @@ class _HeartbeatThread(threading.Thread):
         # This means that Python won't wait on us to shutdown.
         self.daemon = True
 
-        self.logger = logging.getLogger("curious.gateway")
-
     def run(self):
         """
         Heartbeats every <x> seconds.
@@ -95,7 +93,7 @@ class _HeartbeatThread(threading.Thread):
         hb = self.get_heartbeat()
 
         # Enqueue onto the sending queue.
-        self.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
+        self._gateway.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
         self._gateway.send(hb)
 
         self._gateway.heartbeats += 1
@@ -125,7 +123,7 @@ class Gateway(object):
         self.sequence_num = 0
 
         #: The current logger.
-        self.logger = logging.getLogger("curious.gateway")
+        self._logger = None
 
         #: The event send queue.
         #: A threadsafe queue is used here so that the keep-alive worker threads can submit a new heartbeat to it and
@@ -146,13 +144,31 @@ class Gateway(object):
         #: The cached gateway URL.
         self._cached_gateway_url = None  # type: str
 
+        #: The shard ID this gateway is representing.
+        self.shard_id = 0
+
+        #: The number of shards the client is connected to.
+        self.shard_count = 1
+
+        #: The session ID of this connection.
+        self.session_id = None
+
         # Heartbeats and ACKs are tracked by this class to make sure if we send a heartbeat, but the previous one has
         #  not been ACK'd yet, we need to reconnect, as we've lost connection.
+        # TODO: Implement this.
         #: The number of heartbeats this connection has sent.
         self.heartbeats = 0
 
         #: The number of heartbeat ACKs this connection has sent.
         self.heartbeat_acks = 0
+
+    @property
+    def logger(self):
+        if self._logger:
+            return self._logger
+
+        self._logger = logging.getLogger("curious.gateway:shard-{}".format(self.shard_id))
+        return self._logger
 
     async def connect(self, url: str):
         """
@@ -254,7 +270,8 @@ class Gateway(object):
                 },
                 "compress": True,
                 "large_threshold": 250,
-                "v": 6
+                "v": 6,
+                "shard": [self.shard_id, self.shard_count]
             }
         }
 
@@ -269,7 +286,7 @@ class Gateway(object):
             "op": GatewayOp.RESUME,
             "d": {
                 "token": self.token,
-                "session_id": self.state._session_id,
+                "session_id": self.session_id,
                 "seq": self.sequence_num
             }
         }
@@ -301,15 +318,23 @@ class Gateway(object):
         self._send_json(payload)
 
     @classmethod
-    async def from_token(cls, token: str, state: State, gateway_url: str) -> 'Gateway':
+    async def from_token(cls, token: str, state: State, gateway_url: str,
+                         *, shard_id: int=0, shard_count: int=1) -> 'Gateway':
         """
         Creates a new gateway connection from a token.
 
         :param token: The token to pass in.
             This must be a bot user token - user tokens are not supported.
+        :param state: The connection state that is attached to this client.
+        :param gateway_url: The gateway URL to connect.
+        :param shard_id: The shard ID of this bot.
+        :param shard_count: The number of shards to start the bot with.
+
         :return: A new :class:`Gateway` that is connected to the API.
         """
         obb = cls(token, state)
+        obb.shard_id = shard_id
+        obb.shard_count = shard_count
 
         gateway_url += "?v={}&encoding=json".format(cls.GATEWAY_VERSION)
         obb._cached_gateway_url = gateway_url
@@ -400,7 +425,7 @@ class Gateway(object):
         elif op == GatewayOp.HEARTBEAT:
             # Send a heartbeat back.
             hb = self._heartbeat_thread.get_heartbeat()
-            await self._send_json(hb)
+            self._send_json(hb)
             self.heartbeats += 1
 
         elif op == GatewayOp.INVALIDATE_SESSION:
@@ -424,7 +449,7 @@ class Gateway(object):
                 # Yes, handlers are async.
                 # This is because curio requires `spawn()` to be async.
                 try:
-                    await handler(data)
+                    await handler(self, data)
                 except ChunkGuild as e:
                     # We need to download all member chunks from this guild.
                     await curio.spawn(self._get_chunks(e.args[0]))

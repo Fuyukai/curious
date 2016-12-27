@@ -1,5 +1,4 @@
 import base64
-import functools
 import inspect
 import typing
 import imghdr
@@ -12,9 +11,11 @@ from curio.task import Task
 
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
+from curious.event import EventContext
 from curious.gateway import Gateway, ReconnectWebsocket
 from curious.http import HTTPClient
 from curious.state import State
+from curious.util import _traverse_stack_for
 
 
 class AppInfo(object):
@@ -41,9 +42,11 @@ class Client(object):
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
         """
-        #: The gateway connection.
-        #: This is automatically created when `start()` is called on the bot.
-        self.gw = None  # type: Gateway
+        #: The mapping of `shard_id -> gateway` objects.
+        self._gateways = {}  # type: typing.Dict[int, Gateway]
+
+        #: The number of shards this client has.
+        self.shard_count = 0
 
         #: The token for the bot.
         self._token = token
@@ -96,8 +99,7 @@ class Client(object):
         return self._gw_url
 
     # Events
-    def add_event(self, name: str, func, *,
-                  bound: bool = False):
+    def add_event(self, name: str, func):
         """
         Add an event to the internal registry of events.
 
@@ -107,15 +109,6 @@ class Client(object):
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("Event must be a coroutine function")
-
-        if bound:
-            original_func = func
-
-            @functools.wraps(func)
-            async def _bound_wrapper(client: Client, *args, **kwargs):
-                await original_func(*args, **kwargs)
-
-            func = _bound_wrapper
 
         self.events.add(name, func)
 
@@ -182,6 +175,17 @@ class Client(object):
         :param event_name: The event name to fire.
         :return: A :class:`list` of :class:`curio.task.Task` representing the events.
         """
+        if "gateway" not in kwargs:
+            # Traverse through the previous stack to get the `gateway` instance.
+            gateway = _traverse_stack_for(Gateway)
+            if gateway is None:
+                # uh oh
+                raise ValueError("Could not get Gateway instance!")
+
+        else:
+            gateway = kwargs.pop("gateway")
+
+        ctx = EventContext(self, gateway.shard_id)
         coros = self.events.getall(event_name, [])
 
         temporary_listeners = self._temporary_listeners.getall(event_name, [])
@@ -190,26 +194,30 @@ class Client(object):
             return
 
         self.logger.debug(
-            "Dispatching event {} to {} listeners".format(event_name, len(coros) + len(temporary_listeners)))
+            "Dispatching event {} to {} listeners"
+            " on shard {}".format(event_name, len(coros) + len(temporary_listeners), gateway.shard_id)
+        )
 
         tasks = []
         for event in coros.copy():
-            tasks.append(await curio.spawn(self._error_wrapper(event, self, *args, **kwargs)))
+            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs)))
 
         for listener in temporary_listeners:
-            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, self, *args, **kwargs)))
+            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx, *args, **kwargs)))
 
         return tasks
 
     # Gateway functions
-    async def change_status(self, game: Game = None, status: Status = Status.ONLINE):
+    async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
+                            shard_id: int=0):
         """
         Changes the bot's current status.
 
         :param game: The game object to use. None for no game.
         :param status: The new status. Must be a :class:`Status` object.
         """
-        return self.gw.send_status(game, status)
+        gateway = self._gateways[shard_id]
+        return gateway.send_status(game, status)
 
     async def wait_for(self, event_name: str, predicate: callable=None):
         """
@@ -319,7 +327,7 @@ class Client(object):
         return User(self, **(await self.http.get_user(user_id)))
 
     # Utility functions
-    async def connect(self, token: str = None):
+    async def connect(self, token: str = None, shards: int=1):
         """
         Connects the bot to the gateway.
 
@@ -328,45 +336,103 @@ class Client(object):
         if token:
             self._token = token
 
-        self.http = HTTPClient(self._token)
+        if not self.http:
+            self.http = HTTPClient(self._token)
+
+        self.shard_count = shards
 
         self.application_info = AppInfo(self, **(await self.http.get_application_info()))
 
         gateway_url = await self.get_gateway_url()
-        self.gw = await Gateway.from_token(self._token, self.state, gateway_url)
-        await self.gw.websocket.wait_for_ready()
+        for shard in range(0, shards):
+            self._gateways[shard] = await Gateway.from_token(self._token, self.state, gateway_url,
+                                                             shard_id=shard, shard_count=shards)
+            await self._gateways[shard].websocket.wait_for_ready()
 
         return self
 
-    async def start(self, token: str = None):
+    async def poll(self, shard_id: int):
         """
-        Starts the gateway polling loop.
-        """
-        await self.connect(token)
+        Polls the gateway for the next event.
 
+        :param shard_id: The shard ID of the gateway to shard.
+        """
+        gw = self._gateways[shard_id]
         while True:
             try:
-                await self.gw.next_event()
+                await gw.next_event()
             except WebsocketClosedError as e:
                 # Try and handle the close.
                 if e.code not in (1000, 4004):
                     # Try and RESUME.
-                    self.logger.info("Disconnected with close code {}, attempting a reconnect.".format(e.code))
-                    await self.gw.reconnect(resume=True)
+                    self.logger.info("Shard {} disconnected with close code {}, "
+                                     "attempting a reconnect.".format(shard_id, e.code))
+                    await gw.reconnect(resume=True)
                 else:
                     raise
             except ReconnectWebsocket:
                 # We've been told to reconnect, try and RESUME.
-                await self.gw.reconnect(resume=True)
+                await gw.reconnect(resume=True)
 
-    def run(self, token: str = None):
+    async def start(self, token: str = None, shards: int=1):
+        """
+        Starts the gateway polling loop.
+
+        This is a convenience method that polls on all the shards at once. It will **not** restart them automatically.
+        """
+        await self.connect(token, shards=shards)
+
+        tasks = []
+        for shard_id in self._gateways.keys():
+            tasks.append(await curio.spawn(self.poll(shard_id)))
+
+        wait = curio.wait(tasks)
+
+        results = []
+
+        # Wait for the next task.
+        while True:
+            task = await wait.next_done()  # type: curio.Task
+            if task is None:
+                break
+
+            try:
+                result = await task.join()
+            except Exception as e:
+                result = e
+            finally:
+                results.append(result)
+
+        return results
+
+    async def start_autosharded(self, token: str=None):
+        """
+        Starts the bot with an automatically set number of shards.
+        """
+        if token:
+            self._token = token
+
+        if not self.http:
+            self.http = HTTPClient(self._token)
+
+        shards = await self.http.get_shard_count()
+        await self.start(token, shards=shards)
+
+    def run(self, token: str = None, shards: int=1):
         """
         Runs your bot with Curio with the monitor enabled.
 
         :param token: The token to run with.
+        :param shards: The number of shards to run.
+            If this is None, the bot will autoshard.
         """
         kernel = curio.Kernel(with_monitor=True)
-        kernel.run(coro=self.start(token), shutdown=True)
+        if shards is None:
+            coro = self.start_autosharded(token)
+        else:
+            coro = self.start(token, shards=shards)
+
+        return kernel.run(coro=coro, shutdown=True)
 
     @classmethod
     def from_token(cls, token: str = None):
