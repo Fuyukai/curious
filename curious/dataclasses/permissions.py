@@ -1,7 +1,10 @@
+import typing
+
+from curious.dataclasses import member as dt_member, role as dt_role
+
+
 # I'm far too lazy to type out each permission bit manually.
 # So here's a helper method.
-
-
 def build_permissions_class(name: str = "Permissions"):
     # Closure methods.
     def __init__(self, value: int = 0):
@@ -11,6 +14,12 @@ def build_permissions_class(name: str = "Permissions"):
         :param value: The bitfield value of the permissions object.
         """
         self.bitfield = value
+
+    def __new__(cls, value):
+        if isinstance(value, cls):
+            return value
+
+        return super(Permissions, cls).__new__(cls)
 
     def _get_bit(self, bit: int) -> bool:
         """
@@ -102,6 +111,7 @@ def build_permissions_class(name: str = "Permissions"):
     # Create the namespace dict to use in the type declaration.
     namespace = {
         "__init__": __init__,
+        "__new__": __new__,
         "_set_bit": _set_bit,
         "_get_bit": _get_bit,
         "__eq__": __eq__,
@@ -116,3 +126,77 @@ def build_permissions_class(name: str = "Permissions"):
 
 
 Permissions = build_permissions_class("Permissions")
+
+
+class Overwrite(object):
+    """
+    Represents a permission overwrite.
+
+    This has all properties that the base Permissions object, but it takes into accounts the overwrites for the
+    channels. It is always recommended to use this over the server permissions, as it will fall back to the default
+    permissions for the role if it can't find specific overwrites.
+
+    The overwrite has a permission marked as ``True`` if the object has a) an overwrite on the channel OR b) the object
+    has that permission and no overwrite. The overwrite is marked as ``False`` if the object has a) an overwrite on
+    the channel OR b) the object does not have that permission and no overwrite/a deny overwrite.
+
+    You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and False to set a deny
+    overwrite.
+
+    :ivar allow: The :class:`Permissions` object that represents the allowed items for this overwrite.
+    :ivar deny: The :class:`Permissions` object that represents the denied items for this overwrite.
+    :ivar target: The original object that this overwrite is for. This can either be a role or a member.
+    """
+
+    def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions], obb, channel=None):
+        self.target = obb
+
+        self.channel = channel
+
+        self.allow = Permissions(value=allow)
+        self.deny = Permissions(value=deny)
+
+    def __repr__(self):
+        return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target, self.channel, self.allow,
+                                                                               self.deny)
+
+    def __getattr__(self, item):
+        """
+        Attribute getter helper.
+
+        This will check allow first, the deny, then finally the role permissions.
+        """
+        if not hasattr(self.allow, item):
+            raise AttributeError(item)
+
+        if getattr(self.allow, item, None) is True:
+            return True
+
+        if getattr(self.deny, item, None) is True:
+            # Return False because it's denied.
+            return False
+
+        if isinstance(self.target, dt_member.Member):
+            permissions = self.target.guild_permissions
+        elif isinstance(self.target, dt_role.Role):
+            permissions = self.target.permissions
+        else:
+            raise TypeError("Target must be a member or a role")
+
+        return getattr(permissions, item, default=False)
+
+    def __setattr__(self, key, value):
+        """
+        Attribute setter helper.
+        """
+        if not hasattr(Permissions, key):
+            super().__setattr__(key, value)
+            return
+
+        if value is False:
+            setattr(self.deny, key, True)
+        elif value is True:
+            setattr(self.allow, key, True)
+        elif value is None:
+            setattr(self.allow, key, False)
+            setattr(self.deny, key, False)

@@ -60,7 +60,11 @@ def _traverse_stack_for(t: type):
     """
     for fr in inspect.stack():
         frame = fr.frame
-        locals = frame.locals
+        try:
+            locals = frame.locals
+        except AttributeError:
+            # idk
+            continue
         for object in locals.values():
             if type(object) is t:
                 return object

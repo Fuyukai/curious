@@ -1,6 +1,6 @@
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import guild
-from curious.dataclasses.permissions import Permissions
+from curious.dataclasses import guild as dt_guild
+from curious.dataclasses import permissions as dt_permissions
 
 
 class Role(Dataclass):
@@ -34,7 +34,7 @@ class Role(Dataclass):
         self.mentionable = kwargs.pop("mentionable", False)
 
         #: The permissions of this role.
-        self.permissions = Permissions(kwargs.pop("permissions", 0))
+        self.permissions = dt_permissions.Permissions(kwargs.pop("permissions", 0))
 
         #: Is this role managed?
         self.managed = kwargs.pop("managed", False)
@@ -43,7 +43,7 @@ class Role(Dataclass):
         self.position = kwargs.pop("position", 0)
 
         #: The guild this role is associated with.
-        self.guild = None  # type: guild.Guild
+        self.guild = None  # type: dt_guild.Guild
 
     def _copy(self):
         obb = object.__new__(self.__class__)

@@ -117,7 +117,7 @@ class State(object):
 
         :param channel_data: The channel data to cache.
         """
-        channel = Channel(self.client, **channel_data)
+        channel = Channel(self.client, guild=None, **channel_data)
         self._private_channels[channel.id] = channel
 
         return channel
@@ -468,18 +468,12 @@ class State(object):
         """
         Called when a channel is created.
         """
-        channel = Channel(self.client, **event_data)
+        guild_id = int(event_data.get("guild_id"))
+        guild = self._guilds.get(guild_id)
+
+        channel = Channel(self.client, guild=guild, **event_data)
         if channel.is_private:
             self._private_channels[channel.id] = channel
-
-        else:
-            guild_id = int(event_data.get("guild_id"))
-            guild = self._guilds.get(guild_id)
-
-            if not guild:
-                return
-
-            channel.guild = guild
 
         await self.client.fire_event("channel_create", channel, gateway=gateway)
 

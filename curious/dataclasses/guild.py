@@ -149,9 +149,9 @@ class Guild(Dataclass):
         """
         Gets a channel from the guild by ID.
 
-        :param role_id: The role ID to look up.
-        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't
-        be found.
+        :param channel_id: The channel ID to look up.
+        :return: The :class:`curious.dataclasses.channel.Channel` object that represents the Channel, or None if it
+        couldn't be found.
         """
         return self._channels.get(channel_id)
 
@@ -235,7 +235,7 @@ class Guild(Dataclass):
 
         # Create all of the channel objects.
         for channel_data in data.get("channels", []):
-            channel_obj = channel.Channel(self._bot, **channel_data)
+            channel_obj = channel.Channel(self._bot, guild=self, **channel_data)
             channel_obj.guild = self
             self._channels[channel_obj.id] = channel_obj
 

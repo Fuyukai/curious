@@ -8,6 +8,8 @@ from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import message as dt_message
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import member as dt_member
+from curious.dataclasses import role as dt_role
+from curious.dataclasses import permissions as dt_permissions
 from curious.http import Forbidden
 
 
@@ -102,7 +104,7 @@ class Channel(Dataclass):
     :ivar position: The position of this channel in the channel list.
     """
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, guild: 'dt_guild.Guild', **kwargs):
         super().__init__(kwargs.pop("id"), client)
 
         #: The name of this channel.
@@ -113,7 +115,7 @@ class Channel(Dataclass):
 
         #: The guild this channel is associated with.
         #: This can sometimes be None, if this channel is a private channel.
-        self.guild = None  # type: dt_guild.Guild
+        self.guild = guild  # type: dt_guild.Guild
 
         #: The type of channel this channel is.
         self.type = ChannelType(kwargs.pop("type", 0))
@@ -130,6 +132,21 @@ class Channel(Dataclass):
         #: The last message ID of this channel.
         #: Used for history.
         self._last_message_id = int(kwargs.pop("last_message_id", 0))
+
+        #: The internal overwrites for this channel.
+        self._overwrites = {}
+        for overwrite in kwargs.pop("permission_overwrites", []):
+            id = int(overwrite["id"])
+            type_ = overwrite["type"]
+
+            if type_ == "member":
+                obb = self.guild.get_member(id)
+            else:
+                obb = self.guild.get_role(id)
+
+            self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
+                                                            deny=overwrite["deny"],
+                                                            obb=obb, channel=self)
 
     @property
     def is_private(self):
@@ -148,6 +165,16 @@ class Channel(Dataclass):
     @property
     def history(self) -> HistoryIterator:
         return self.get_history(before=self._last_message_id, limit=-1)
+
+    def permissions(self, object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
+        """
+        Gets the permission overwrites for the specified object.
+        """
+        overwrite = self._overwrites.get(object.id)
+        if not overwrite:
+            return dt_permissions.Overwrite(0, 0, object, channel=self)
+
+        return overwrite
 
     def _copy(self):
         obb = object.__new__(self.__class__)
