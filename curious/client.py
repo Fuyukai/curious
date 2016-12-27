@@ -211,6 +211,71 @@ class Client(object):
         """
         return self.gw.send_status(game, status)
 
+    async def wait_for(self, event_name: str, predicate: callable=None):
+        """
+        Wait for an event to happen in the gateway.
+
+        You can specify a check to happen to check if this event is the one to return.
+        For example, to wait for a message with the content `Heck`:
+
+        .. code:: python
+            message = await client.wait_for("message_create", predicate=lambda m: m.content == "Heck")
+
+        You can pass any function to this predicate. If this function takes an error, it will remove the listener,
+        then raise into your code.
+
+        .. code:: python
+            async def _closure(message):
+                if message.author.id != 66237334693085184:
+                    return False
+
+                if message.content == "sparkling water > tap water":
+                    return True
+
+                return False
+
+            wrong = await client.wait_for("message_create", predicate=_closure)
+
+        :param event_name: The name of the event to wait for.
+        :param predicate: An optional check function to return.
+        :return: The result of the event.
+        """
+        event = curio.Event()
+        result = None
+        _exc = None
+
+        async def __event_listener_inner(client: Client, *args, **kwargs):
+            try:
+                is_result = predicate(*args, **kwargs)
+                if inspect.isawaitable(is_result):
+                    is_result = await is_result
+            except Exception as e:
+                # It is NOT the result we want.
+                nonlocal _exc
+                _exc = e
+                await event.set()
+                # Return True so this listener dies.
+                return True
+            else:
+                if is_result:
+                    # It is the result we want, so set the event.
+                    await event.set()
+                    # Then we store the result.
+                    nonlocal result
+                    result = args  # TODO: Figure out keyword arguments
+                    return True
+
+                return False
+
+        self.add_listener(event_name, __event_listener_inner)
+        # Wait on the event to be set.
+        await event.wait()
+        # If it's an exception, raise the exception.
+        if _exc is not None:
+            raise _exc
+        # Otherwise, return the event result.
+        return result
+
     # HTTP Functions
     async def edit_profile(self, *,
                            username: str = None,
