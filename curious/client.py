@@ -9,6 +9,7 @@ import multidict
 from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
+from curious.dataclasses import Guild
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.event import EventContext
@@ -85,6 +86,11 @@ class Client(object):
         return self.state._user
 
     @property
+    def guilds(self) -> typing.Iterable[Guild]:
+        return self.state.guilds
+
+
+    @property
     def invite_url(self):
         """
         :return: The invite URL for this bot.
@@ -97,6 +103,14 @@ class Client(object):
 
         self._gw_url = await self.http.get_gateway_url()
         return self._gw_url
+
+    def guilds_for(self, shard_id: int) -> typing.Iterable[Guild]:
+        """
+        Gets the guilds for this shard.
+
+        :param shard_id: The shard ID to get guilds from.
+        """
+        return self.state.guilds_for_shard(shard_id)
 
     # Events
     def add_event(self, name: str, func):
