@@ -166,6 +166,19 @@ class Overwrite(object):
 
         This will check allow first, the deny, then finally the role permissions.
         """
+        if isinstance(self.target, dt_member.Member):
+            permissions = self.target.guild_permissions
+        elif isinstance(self.target, dt_role.Role):
+            permissions = self.target.permissions
+        else:
+            raise TypeError("Target must be a member or a role")
+
+        if permissions.administrator:
+            # short-circuit to always return True if they have administrator
+            # this is because those overrides are useless
+            # if the user wants to get the override, they can access `allow/deny` directly.
+            return True
+
         if not hasattr(self.allow, item):
             raise AttributeError(item)
 
@@ -175,13 +188,6 @@ class Overwrite(object):
         if getattr(self.deny, item, None) is True:
             # Return False because it's denied.
             return False
-
-        if isinstance(self.target, dt_member.Member):
-            permissions = self.target.guild_permissions
-        elif isinstance(self.target, dt_role.Role):
-            permissions = self.target.permissions
-        else:
-            raise TypeError("Target must be a member or a role")
 
         return getattr(permissions, item, default=False)
 
