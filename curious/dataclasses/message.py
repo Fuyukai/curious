@@ -102,6 +102,16 @@ class Message(Dataclass):
 
         You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own message.
         """
+        if self.guild is None:
+            me = self._bot.user.id
+            has_manage_messages = False
+        else:
+            me = self.guild.me.id
+            has_manage_messages = self.channel.permissions(self.guild.me).manage_messages
+
+        if self.id != me and not has_manage_messages:
+            raise PermissionError("manage_messages")
+
         await self._bot.http.delete_message(self.channel.id, self.id)
 
     async def edit(self, new_content: str) -> 'Message':

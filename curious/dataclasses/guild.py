@@ -10,6 +10,7 @@ from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
+from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper
 
 
@@ -255,6 +256,9 @@ class Guild(Dataclass):
         Gets the bans for this guild.
         :return: A list of User objects, one for each ban.
         """
+        if not self.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
         bans = await self._bot.http.get_bans(self.id)
         users = []
 
@@ -271,11 +275,20 @@ class Guild(Dataclass):
 
         :param victim: The member to kick.
         """
+        if not self.me.guild_permissions.ban_members:
+            raise PermissionsError("kick_members")
+
+        if victim.guild != self:
+            raise ValueError("Member must be from this guild (try `member.user` instead)")
+
+        if victim.top_role >= self.me.top_role:
+            raise HierachyError("Top role is equal to or lower than victim's top role")
+
         victim_id = victim.user.id
 
         await self._bot.http.kick_member(self.id, victim_id)
 
-    async def ban(self, victim: 'typing.Union[member.Member, user.User]', *,
+    async def ban(self, victim: 'typing.Union[member.Member, dt_user.User]', *,
                   delete_message_days: int=7):
         """
         Bans somebody from the guild.
@@ -298,9 +311,18 @@ class Guild(Dataclass):
         :param victim: The person to ban.
         :param delete_message_days: The number of days to delete messages.
         """
+        if not self.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
         if isinstance(victim, member.Member):
+            if self.owner == victim:
+                raise HierachyError("Cannot ban the owner")
+
             if victim.guild != self:
                 raise ValueError("Member must be from this guild (try `member.user` instead)")
+
+            if victim.top_role >= self.me.top_role:
+                raise HierachyError("Top role is equal to or lower than victim's top role")
 
             victim_id = victim.user.id
 
@@ -330,6 +352,9 @@ class Guild(Dataclass):
 
         :param user: The user to forgive and unban.
         """
+        if not self.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
         forgiven_id = user.id
 
         await self._bot.http.unban_user(self.id, forgiven_id)

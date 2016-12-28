@@ -45,6 +45,12 @@ class Role(Dataclass):
         #: The guild this role is associated with.
         self.guild = None  # type: dt_guild.Guild
 
+    def __lt__(self, other: 'Role'):
+        if other.guild != self.guild:
+            raise ValueError("Cannot compare roles between guilds")
+
+        return self.position > other.position if self.position != other.position else self.id > other.id
+
     def _copy(self):
         obb = object.__new__(self.__class__)
 

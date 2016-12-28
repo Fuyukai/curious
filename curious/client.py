@@ -266,7 +266,7 @@ class Client(object):
         result = None
         _exc = None
 
-        async def __event_listener_inner(client: Client, *args, **kwargs):
+        async def __event_listener_inner(ctx: EventContext, *args, **kwargs):
             try:
                 is_result = predicate(*args, **kwargs)
                 if inspect.isawaitable(is_result):

@@ -3,13 +3,10 @@ import enum
 import typing
 
 from curious import client as dt_client
+from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
+    permissions as dt_permissions, role as dt_role, user as dt_user
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import message as dt_message
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import role as dt_role
-from curious.dataclasses import permissions as dt_permissions
+from curious.exc import PermissionsError
 from curious.http import Forbidden
 
 
@@ -202,6 +199,10 @@ class Channel(Dataclass):
         :param before: The snowflake ID to get messages before.
         :param after: The snowflake ID to get messages after.
         """
+        if self.guild:
+            if not self.permissions(self.guild.me).read_message_history:
+                raise PermissionsError("read_message_history")
+
         return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
 
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
@@ -223,6 +224,12 @@ class Channel(Dataclass):
 
         :param messages: A list of Message objects to delete.
         """
+        if not self.guild:
+            raise PermissionsError("manage_messages")
+
+        if not self.permissions(self.guild.me).manage_messages:
+            raise PermissionsError("manage_messages")
+
         ids = [message.id for message in messages]
         await self._bot.http.bulk_delete_messages(self.id, ids)
 
@@ -258,6 +265,12 @@ class Channel(Dataclass):
         :param fallback_from_bulk: If this is True, messages will be regular deleted if they cannot be bulk deleted.
         :return: The number of messages deleted.
         """
+        if not self.guild:
+            raise PermissionsError("manage_messages")
+
+        if not self.permissions(self.guild.me).manage_messages:
+            raise PermissionsError("manage_messages")
+
         checks = []
         if author:
             checks.append(lambda m: m.author == author)
@@ -316,6 +329,10 @@ class Channel(Dataclass):
         :param tts: Should this message be text to speech?
         :return: A new :class:`Message` object.
         """
+        if self.guild:
+            if not self.permissions(self.guild.me).send_messages:
+                raise PermissionsError("send_messages")
+
         if not isinstance(content, str):
             content = str(content)
 
