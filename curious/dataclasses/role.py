@@ -2,6 +2,7 @@ import functools
 
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild as dt_guild
+from curious.dataclasses import member as dt_member
 from curious.dataclasses import permissions as dt_permissions
 
 
@@ -76,3 +77,14 @@ class Role(Dataclass):
         :return: If this role is the default role of the guild.
         """
         return self.guild.id == self.id
+
+    def assign_to(self, member: 'dt_member.Member'):
+        """
+        Assigns this role to a member.
+
+        :param member: The member to assign to.
+        """
+        return self.guild.add_roles(member, self)
+
+    def remove_from(self, member: 'dt_member.Member'):
+        return self.guild.remove_roles(member, self)

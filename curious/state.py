@@ -369,7 +369,7 @@ class State(object):
         if not message:
             return
 
-        await self.client.fire_event("message_delete", message, gateway=gateway)
+        await self.client.fire_event("message_delete", message, gateway=gw)
 
     async def handle_message_delete_bulk(self, gw: 'gateway.Gateway', event_data: dict):
         """
