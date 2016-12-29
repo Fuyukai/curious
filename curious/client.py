@@ -399,6 +399,7 @@ class Client(object):
         tasks = []
         for shard_id in self._gateways.keys():
             tasks.append(await curio.spawn(self.poll(shard_id)))
+            await curio.sleep(5)
 
         wait = curio.wait(tasks)
 
