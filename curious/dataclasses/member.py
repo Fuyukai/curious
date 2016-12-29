@@ -141,3 +141,23 @@ class Member(Dataclass, Messagable):
         Kicks this member from the guild.
         """
         return self.guild.kick(self)
+
+    def add_roles(self, *roles: typing.Iterable[Role]):
+        """
+        Adds roles to this member.
+
+        For more documentation, see :meth:`Guild.add_roles`.
+
+        :param roles: The list of roles to add.
+        """
+        return self.guild.add_roles(self, *roles)
+
+    def remove_roles(self, *roles: typing.Iterable[Role]):
+        """
+        Removes roles from this member.
+
+        For more documentation, see :meth:`Guild.remove_roles`.
+
+        :param roles: The list of roles to remove.
+        """
+        return self.guild.remove_roles(self, *roles)
