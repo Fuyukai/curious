@@ -51,6 +51,9 @@ class Role(Dataclass):
 
         return self.position > other.position if self.position != other.position else self.id > other.id
 
+    def __gt__(self, other):
+        return not (self < other)
+
     def _copy(self):
         obb = object.__new__(self.__class__)
 
