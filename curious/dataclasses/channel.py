@@ -1,3 +1,5 @@
+import sys
+import pathlib
 import collections
 import enum
 import typing
@@ -9,6 +11,8 @@ from curious.dataclasses.bases import Dataclass
 from curious.exc import PermissionsError
 from curious.http import Forbidden
 
+
+PY36 = sys.version_info[0:2] >= (3, 6)
 
 class ChannelType(enum.Enum):
     TEXT = 0
@@ -356,3 +360,75 @@ class Channel(Dataclass):
         obb = self._bot.state.parse_message(data, cache=False)
 
         return obb
+
+    async def send_file(self, file_content: bytes, filename: str,
+                        *, message_content: typing.Optional[str]) -> 'dt_message.Message':
+        """
+        Uploads a message to this channel.
+
+        This requires SEND_MESSAGES and ATTACH_FILES permission in the channel.
+
+        .. code:: python
+
+            with open("/tmp/emilia_best_girl.jpg", 'rb') as f:
+                await channel.send_file(f.read(), "my_waifu.jpg")
+
+
+        :param file_content: The bytes-like file content to upload.
+            This **cannot** be a file-like object.
+        :param filename: The filename of the file.
+        :param message_content: Optional: Any extra content to be sent with the message.
+        :return: The new :class:`Message` created.
+        """
+        if self.guild:
+            if not self.permissions(self.guild.me).send_messages:
+                raise PermissionsError("send_messages")
+
+            if not self.permissions(self.guild.me).attach_files:
+                raise PermissionsError("attach_files")
+
+        data = await self._bot.http.upload_file(self.id, file_content,
+                                                filename=filename, content=message_content)
+        obb = self._bot.state.parse_message(data, cache=False)
+        return obb
+
+    async def upload_file(self, filename: str, *, message_content: str=None) -> 'dt_message.Message':
+        """
+        A higher level interface to `send_file`.
+
+        This allows you to specify one of the following to upload:
+            - A filename (str)
+            - A file-like object
+            - A path-like object
+
+        This will open the file, read it in binary, and upload it to the channel.
+
+        :param filename: The file to send, in the formats specified above.
+        :param message_content: Any extra content to be sent with the message.
+        :return: The new :class:`Message` created.
+        """
+        if self.guild:
+            if not self.permissions(self.guild.me).send_messages:
+                raise PermissionsError("send_messages")
+
+            if not self.permissions(self.guild.me).attach_files:
+                raise PermissionsError("attach_files")
+
+        if hasattr(filename, "read"):
+            # file-like
+            file_data = filename.read()
+            name = getattr(filename, "name", None)
+        else:
+            # assume it's pathlike
+            path = pathlib.Path(filename)
+            name = path.parts[-1]
+
+            if not PY36:
+                # open() on python 3.6+ supports pathlike objects, so no need to stringify the path.
+                # however, we're on 3.5, so stringify it now.
+                path = str(path)
+
+            with open(path, mode='rb') as f:
+                file_data = f.read()
+
+        return await self.send_file(file_data, name, message_content=message_content)

@@ -229,6 +229,7 @@ class Client(object):
 
         :param game: The game object to use. None for no game.
         :param status: The new status. Must be a :class:`Status` object.
+        :param shard_id: The shard to change your status on.
         """
         gateway = self._gateways[shard_id]
         return gateway.send_status(game, status)
