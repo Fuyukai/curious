@@ -1,3 +1,10 @@
+"""
+The HTTP module for Curious.
+
+This code is 100% portable - it will work anywhere that h11 and multidict are also installed.
+"""
+
+
 import logging
 import mimetypes
 import random
@@ -13,6 +20,8 @@ import h11
 from curio import io
 from h11._events import _EventBundle
 from multidict import MultiDict
+
+__version__ = "0.1.0-curious"
 
 logger = logging.getLogger(__name__)
 
@@ -402,6 +411,9 @@ def _prepare_request(method: str, url: yarl.URL, *,
 
     if "Content-Length" not in headers:
         headers["Content-Length"] = b"0"
+
+    if "User-Agent" not in headers:
+        headers["User-Agent"] = "curio_http/{} curio/{}".format(__version__, curio.__version__)
 
     h11_request = h11.Request(
         method=method,
