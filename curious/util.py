@@ -46,9 +46,13 @@ def to_datetime(timestamp: str) -> datetime.datetime:
         return
 
     if timestamp.endswith("+00:00"):
-        return datetime.datetime.strptime(timestamp[:-6], "%Y-%m-%dT%H:%M:%S.%f")
-    else:
+        timestamp = timestamp[:-6]
+
+    try:
         return datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
+    except ValueError:
+        # wonky datetimes
+        return datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
 
 
 def _traverse_stack_for(t: type):
