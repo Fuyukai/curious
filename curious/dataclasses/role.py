@@ -49,9 +49,15 @@ class Role(Dataclass):
         if other.guild != self.guild:
             raise ValueError("Cannot compare roles between guilds")
 
-        return self.position > other.position if self.position != other.position else self.id > other.id
+        return self.position < other.position if self.position != other.position else self.id < other.id
+
+    def __le__(self, other):
+        return not (other < self)
 
     def __gt__(self, other):
+        return other < self
+
+    def __ge__(self, other):
         return not (self < other)
 
     def _copy(self):

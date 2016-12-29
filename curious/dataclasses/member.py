@@ -104,7 +104,7 @@ class Member(Dataclass, Messagable):
         """
         :return: This member's top-most role.
         """
-        return next(sorted(self.roles, key=lambda r: r.position, reverse=True))
+        return sorted(self.roles, key=lambda r: r.position, reverse=True)[0]
 
     @property
     def guild_permissions(self):
