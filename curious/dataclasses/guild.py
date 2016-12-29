@@ -299,13 +299,13 @@ class Guild(Dataclass):
         Example for banning a member:
 
         .. code:: python
-            member = guild.get_member(80528701850124288)
+            member = guild.get_member(66237334693085184)
             await guild.ban(member)
 
         Example for banning a user:
 
         .. code:: python
-            user = await client.get_user(80528701850124288)
+            user = await client.get_user(66237334693085184)
             await guild.ban(user)
 
         :param victim: The person to ban.
@@ -347,7 +347,7 @@ class Guild(Dataclass):
         To unban an arbitrary user, use :meth:`Client.get_user`.
 
         .. code:: python
-            user = await client.get_user(80528701850124288)
+            user = await client.get_user(66237334693085184)
             await guild.unban(user)
 
         :param user: The user to forgive and unban.
