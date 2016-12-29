@@ -449,7 +449,7 @@ class Guild(Dataclass):
         role_ids = set([_r.id for _r in member.roles] + [_r.id for _r in roles])
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
-        await self._bot.http.add_roles(self.id, member.id, role_ids)
+        await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
         # Now wait for the event to happen on the gateway.
         await listener.join()
 

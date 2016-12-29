@@ -511,11 +511,9 @@ class HTTPClient(object):
         data = await self.put(url, bucket="roles:{}".format(guild_id))
         return data
 
-    async def add_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
+    async def modify_member_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
         """
-        Adds a list of roles to a member.
-
-        This must be the *full* list of roles, including any previous roles that the member had.
+        Modifies the roles that a member object contains.
 
         :param guild_id: The guild ID that contains the objects.
         :param member_id: The member ID to add the role to.
