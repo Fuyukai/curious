@@ -63,6 +63,9 @@ class HistoryIterator(collections.AsyncIterator):
         else:
             to_get = self.max_messages - self.current_count
 
+        if to_get <= 0:
+            return
+
         if self.before:
             messages = await self.client.http.get_messages(self.channel.id, before=self.last_message_id,
                                                            limit=to_get)
