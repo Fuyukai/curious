@@ -205,6 +205,22 @@ class Channel(Dataclass):
 
         return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
 
+    async def get_message(self, message_id: int) -> 'dt_message.Message':
+        """
+        Gets a single message from this channel.
+
+        :param message_id: The message ID to retrieve.
+        :return: A new :class:`Message` object.
+        """
+        if self.guild:
+            if not self.permissions(self.guild.me).read_message_history:
+                raise PermissionsError("read_message_history")
+
+        data = await self._bot.http.get_message(self.id, message_id)
+        msg = self._bot.state.parse_message(data)
+
+        return msg
+
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
         """
         Deletes messages from a channel.
@@ -222,7 +238,7 @@ class Channel(Dataclass):
 
             await channel.delete_messages(messages)
 
-        :param messages: A list of Message objects to delete.
+        :param messages: A list of :class:`Message` objects to delete.
         """
         if not self.guild:
             raise PermissionsError("manage_messages")

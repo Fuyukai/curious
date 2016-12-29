@@ -287,7 +287,7 @@ class HTTPClient(object):
         data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
         return data
 
-    async def send_message(self, channel_id: int, content: str, tts: bool=False):
+    async def send_message(self, channel_id: int, content: str, tts: bool = False):
         """
         Sends a message to a channel.
 
@@ -346,7 +346,7 @@ class HTTPClient(object):
         """
         url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
 
-        data = await self.put(url, "pins", json={})
+        data = await self.put(url, "pins:{}".format(channel_id), json={})
         return data
 
     async def unpin_message(self, channel_id: int, message_id: int):
@@ -358,12 +358,25 @@ class HTTPClient(object):
         """
         url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
 
-        data = await self.delete(url, "pins")
+        data = await self.delete(url, "pins:{}".format(channel_id))
+        return data
+
+    async def get_message(self, channel_id: int, message_id: int):
+        """
+        Gets a single message from the channel.
+
+        :param channel_id: The channel ID to get the message from.
+        :param message_id: The message ID of the message to get.
+        :return: The message data.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+
+        data = await self.get(url, "messages:{}".format(channel_id))
         return data
 
     async def get_messages(self, channel_id: int, *,
-                           before: int=None, after: int=None, around: int=None,
-                           limit: int=100):
+                           before: int = None, after: int = None, around: int = None,
+                           limit: int = 100):
         """
         Gets a list of messages from a channel.
 
@@ -412,7 +425,7 @@ class HTTPClient(object):
         data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id), json=payload)
         return data
 
-    async def edit_profile(self, username: str=None, avatar: str=None):
+    async def edit_profile(self, username: str = None, avatar: str = None):
         """
         Edits the profile of the bot.
 
@@ -455,7 +468,7 @@ class HTTPClient(object):
         return data
 
     async def ban_user(self, guild_id: int, user_id: int,
-                       delete_message_days: int=7):
+                       delete_message_days: int = 7):
         """
         Bans a user from a guild.
 
