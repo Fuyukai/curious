@@ -56,6 +56,19 @@ class User(Dataclass, Messagable):
         return new_object
 
     @property
+    def avatar_url(self) -> str:
+        """
+        :return: The avatar URL of this user.
+        """
+        # `a_` signifies Nitro and that they have an animated avatar.
+        if self._avatar_hash.startswith("a_"):
+            suffix = ".gif"  # soon: animated webp
+        else:
+            suffix = ".webp"
+
+        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self._avatar_hash, suffix)
+
+    @property
     def name(self):
         return self.username
 
