@@ -1,8 +1,11 @@
+import functools
+
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import permissions as dt_permissions
 
 
+@functools.total_ordering
 class Role(Dataclass):
     """
     Represents a role on a server.
@@ -46,19 +49,13 @@ class Role(Dataclass):
         self.guild = None  # type: dt_guild.Guild
 
     def __lt__(self, other: 'Role'):
+        if not isinstance(other, Role):
+            return NotImplemented
+
         if other.guild != self.guild:
             raise ValueError("Cannot compare roles between guilds")
 
         return self.position < other.position if self.position != other.position else self.id < other.id
-
-    def __le__(self, other):
-        return not (other < self)
-
-    def __gt__(self, other):
-        return other < self
-
-    def __ge__(self, other):
-        return not (self < other)
 
     def _copy(self):
         obb = object.__new__(self.__class__)
