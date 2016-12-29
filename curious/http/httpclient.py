@@ -14,42 +14,11 @@ from math import ceil
 import curio
 
 import curious
+from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 from curious.http.curio_http import ClientSession, Response
 
 
 # HTTP exceptions, used to raise errors.
-class HTTPException(Exception):
-    """
-    Raised when a HTTP request fails with a 400 <= e < 600 error code.
-    """
-
-    def __init__(self, response: Response, error: dict):
-        self.response = response
-        self.error = error
-
-    def __repr__(self):
-        return repr(self.error)
-
-    def __str__(self):
-        return str(self.error)
-
-
-class Unauthorized(HTTPException):
-    """
-    Raised when your bot token is invalid.
-    """
-
-
-class Forbidden(HTTPException):
-    """
-    Raised when you don't have permission for something.
-    """
-
-
-class NotFound(HTTPException):
-    """
-    Raised when something could not be found.
-    """
 
 
 class HTTPClient(object):

@@ -8,7 +8,7 @@ from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user
 from curious.dataclasses.bases import Dataclass
-from curious.exc import PermissionsError
+from curious.exc import PermissionsError, Forbidden
 from curious.http import Forbidden
 
 
