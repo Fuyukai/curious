@@ -89,7 +89,6 @@ class Client(object):
     def guilds(self) -> typing.Iterable[Guild]:
         return self.state.guilds
 
-
     @property
     def invite_url(self):
         """
