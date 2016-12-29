@@ -242,6 +242,13 @@ class Guild(Dataclass):
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
         return AsyncIteratorWrapper(self._bot, self.get_bans())
 
+    @property
+    def icon_url(self) -> str:
+        """
+        :return: The icon URL for this server.
+        """
+        return "https://cdn.discordapp.com/icons/{}/{}.jpg".format(self.id, self._icon_hash)
+
     # Guild methods.
     async def leave(self):
         """
