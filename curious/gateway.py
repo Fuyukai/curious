@@ -244,12 +244,12 @@ class Gateway(object):
     def send(self, data: typing.Any):
         """
         Enqueues some data to be sent down the websocket.
+
+        This does not send the data immediately - it is enqueued to be sent.
         """
         try:
             self._event_queue.put(data, block=False)
         except queue.Full as e:
-            # what the fuck?
-            # Don't fucking touch my queue!
             raise RuntimeError("Gateway queue is full - this should never happen!") from e
 
     # Sending events.
@@ -275,7 +275,6 @@ class Gateway(object):
             }
         }
 
-        # TODO: Sharding
         self._send_json(payload)
 
     def send_resume(self):
@@ -305,7 +304,7 @@ class Gateway(object):
         }
         self._send_json(payload)
 
-    async def _request_chunk(self, guild):
+    def _request_chunk(self, guild):
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,
             "d": {
@@ -375,12 +374,13 @@ class Gateway(object):
 
         return self
 
-    async def _get_chunks(self, guild):
+    def _get_chunks(self, guild):
         """
         Called to start chunking all guild members.
         """
         guild.start_chunking()
-        await self._request_chunk(guild)
+        self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
+        self._request_chunk(guild)
 
     async def next_event(self):
         """
@@ -452,7 +452,7 @@ class Gateway(object):
                     await handler(self, data)
                 except ChunkGuild as e:
                     # We need to download all member chunks from this guild.
-                    await curio.spawn(self._get_chunks(e.args[0]))
+                    self._get_chunks(e.args[0])
                 except Exception:
                     await self._close()
                     await self.websocket.close_now()
