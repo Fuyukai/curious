@@ -400,6 +400,9 @@ def _prepare_request(method: str, url: yarl.URL, *,
     if json is not None:
         headers["Content-Type"] = b"application/json"
 
+    if "Content-Length" not in headers:
+        headers["Content-Length"] = b"0"
+
     h11_request = h11.Request(
         method=method,
         target=target,
