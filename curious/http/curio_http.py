@@ -56,18 +56,28 @@ def encode_multipart(fields, files, boundary=None):
     """
 
     def escape_quote(s):
-        return s.replace('"', '\\"')
+        return s.replace(b'"', b'\\"')
 
     if boundary is None:
-        boundary = ''.join(random.choice(_BOUNDARY_CHARS) for i in range(30))
+        boundary = b''.join(random.choice(_BOUNDARY_CHARS).encode() for i in range(30))
     lines = []
 
     for name, value in fields.items():
+        if isinstance(name, str):
+            name = name.encode()
+        else:
+            name = str(name).encode()
+
+        if isinstance(value, str):
+            value = value.encode()
+        else:
+            value = str(value).encode()
+
         lines.extend((
-            '--{0}'.format(boundary),
-            'Content-Disposition: form-data; name="{0}"'.format(escape_quote(name)),
-            '',
-            str(value),
+            b'--%s' % boundary,
+            b'Content-Disposition: form-data; name="%s"' % escape_quote(name),
+            b'',
+            value,
         ))
 
     for name, value in files.items():
@@ -77,23 +87,23 @@ def encode_multipart(fields, files, boundary=None):
         else:
             mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
         lines.extend((
-            '--{0}'.format(boundary),
-            'Content-Disposition: form-data; name="{0}"; filename="{1}"'.format(
-                escape_quote(name), escape_quote(filename)),
-            'Content-Type: {0}'.format(mimetype),
-            '',
+            b'--%s' % boundary,
+            b'Content-Disposition: form-data; name="%s"; filename="%s"' % (
+                escape_quote(name.encode()), escape_quote(filename.encode())),
+            b'Content-Type: %s' % mimetype.encode(),
+            b'',
             value['content'],
         ))
 
     lines.extend((
-        '--{0}--'.format(boundary),
-        '',
+        b'--%s--' % boundary,
+        b'',
     ))
-    body = '\r\n'.join(lines)
+    body = b'\r\n'.join(lines)
 
     headers = {
-        b'Content-Type': b'multipart/form-data; boundary=%s' % boundary.encode(),
-        b'Content-Length': str(len(body)).encode(),
+        'Content-Type': 'multipart/form-data; boundary=%s' % boundary.decode(),
+        'Content-Length': str(len(body)),
     }
 
     return body, headers
@@ -375,18 +385,17 @@ def _prepare_request(method: str, url: yarl.URL, *,
     headers.setdefault('Host', url.raw_host)
 
     if json is not None:
-        body = py_json.dumps(json)
+        body = py_json.dumps(json).encode()
     else:
         # Check if the body is a dict.
         # If so, send it as `multipart/form-data`.
         if isinstance(body, dict):
             body, _h = encode_multipart(body, files)
-            headers.extend(_h)
+            headers.update(_h)
 
     if body is not None:
         if "Content-Length" not in headers:
             headers["Content-Length"] = str(len(body)).encode('utf-8')
-        body = body.encode()
 
     if json is not None:
         headers["Content-Type"] = b"application/json"
