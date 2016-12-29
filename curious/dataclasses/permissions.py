@@ -189,7 +189,7 @@ class Overwrite(object):
             # Return False because it's denied.
             return False
 
-        return getattr(permissions, item, default=False)
+        return getattr(permissions, item, False)
 
     def __setattr__(self, key, value):
         """

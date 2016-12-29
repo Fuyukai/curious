@@ -67,7 +67,7 @@ class Message(Dataclass):
         return "<{0.__class__.__name__} id={0.id} content='{0.content}'>".format(self)
 
     @property
-    def mentions(self):
+    def mentions(self) -> 'typing.List[dt_member.Member]':
         return self._resolve_mentions(self._mentions, "member")
 
     @property

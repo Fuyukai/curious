@@ -20,7 +20,7 @@ class PermissionsError(CuriousError):
         self.permission_required = permission_required
 
     def __str__(self):
-        return "You require the permission {} to perform this action".format(self.permission_required)
+        return "Bot requires the permission {} to perform this action".format(self.permission_required)
 
     __repr__ = __str__
 
