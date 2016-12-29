@@ -220,10 +220,10 @@ class State(object):
             await guild._finished_chunking.set()
 
         # Check if we have all chunks.
-        if not self._is_ready(gateway.shard_id).is_set() and self.have_all_chunks(gateway.shard_id):
+        if not self._is_ready(gw.shard_id).is_set() and self.have_all_chunks(gw.shard_id):
             # Dispatch our `on_ready`.
-            self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gateway.shard_id))
-            await self._is_ready(gateway.shard_id).set()
+            self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
+            await self._is_ready(gw.shard_id).set()
             await self.client.fire_event("ready", gateway=gw)
 
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):

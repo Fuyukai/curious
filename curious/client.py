@@ -143,13 +143,25 @@ class Client(object):
         This will copy it to the events dictionary, where it will be used as an event later on.
 
         :param func: The function to mark as an event.
+            This can also be a string, which will allow you to customize the event added.
         :return: The unmodified function.
         """
+        if isinstance(func, str):
+            event = func
+
+            def _inner(func):
+                self.add_event(event, func)
+                return func
+
+            return _inner
+
         if not func.__name__.startswith("on_"):
             raise ValueError("Events must start with on_")
 
         event = func.__name__[3:]
         self.add_event(event, func)
+
+        return func
 
     async def _error_wrapper(self, func, *args, **kwargs):
         try:
@@ -221,7 +233,7 @@ class Client(object):
 
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
-                            shard_id: int=0):
+                            shard_id: int = 0):
         """
         Changes the bot's current status.
 
@@ -232,7 +244,7 @@ class Client(object):
         gateway = self._gateways[shard_id]
         return gateway.send_status(game, status)
 
-    async def wait_for(self, event_name: str, predicate: callable=None):
+    async def wait_for(self, event_name: str, predicate: callable = None):
         """
         Wait for an event to happen in the gateway.
 
@@ -340,7 +352,7 @@ class Client(object):
         return User(self, **(await self.http.get_user(user_id)))
 
     # Utility functions
-    async def connect(self, token: str = None, shards: int=1):
+    async def connect(self, token: str = None, shards: int = 1):
         """
         Connects the bot to the gateway.
 
@@ -387,7 +399,7 @@ class Client(object):
                 # We've been told to reconnect, try and RESUME.
                 await gw.reconnect(resume=True)
 
-    async def start(self, token: str = None, shards: int=1):
+    async def start(self, token: str = None, shards: int = 1):
         """
         Starts the gateway polling loop.
 
@@ -419,7 +431,7 @@ class Client(object):
 
         return results
 
-    async def start_autosharded(self, token: str=None):
+    async def start_autosharded(self, token: str = None):
         """
         Starts the bot with an automatically set number of shards.
         """
@@ -432,7 +444,7 @@ class Client(object):
         shards = await self.http.get_shard_count()
         await self.start(token, shards=shards)
 
-    def run(self, token: str = None, shards: int=1):
+    def run(self, token: str = None, shards: int = 1):
         """
         Runs your bot with Curio with the monitor enabled.
 
