@@ -9,6 +9,7 @@ from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import member as dt_member
 from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
+from curious.exc import CuriousError
 from curious.util import to_datetime
 
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
@@ -123,8 +124,18 @@ class Message(Dataclass):
         :param new_content: The new content for this message.
         :return: This message, but edited with the new content.
         """
+        if self.guild is None:
+            is_me = self.author not in self.channel.recipients
+        else:
+            is_me = self.guild.me == self.author
+
+        if not is_me:
+            raise CuriousError("Cannot edit messages from other users")
+
+        # Prevent race conditions by spawning a listener, then waiting for the task once we've sent the HTTP request.
+        t = await curio.spawn(self._bot.wait_for("message_edit", predicate=lambda o, n: n.id == self.id))
         await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
-        old, new = await self._bot.wait_for("message_edit", predicate=lambda o, n: n.id == self.id)
+        old, new = await t.join()
         return new
 
     async def pin(self):
@@ -133,6 +144,10 @@ class Message(Dataclass):
 
         You must have MANAGE_MESSAGES in the channel to pin the message.
         """
+        if self.guild is not None:
+            if not self.channel.permissions(self.guild.me).manage_messages:
+                raise PermissionError("manage_messages")
+
         await self._bot.http.pin_message(self.channel.id, self.id)
 
     async def unpin(self):
@@ -142,4 +157,8 @@ class Message(Dataclass):
         You must have MANAGE_MESSAGES in this channel to unpin the message.
         Additionally, the message must already be pinned.
         """
+        if self.guild is not None:
+            if not self.channel.permissions(self.guild.me).manage_messages:
+                raise PermissionError("manage_messages")
+
         await self._bot.http.unpin_message(self.channel.id, self.id)
