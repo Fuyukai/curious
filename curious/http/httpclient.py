@@ -304,6 +304,33 @@ class HTTPClient(object):
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
         return data
 
+    async def upload_file(self, channel_id: int, file_content: bytes, *,
+                          filename: str=None, content: str=None):
+        """
+        Uploads a file to the current channel.
+
+        This will encode the data as multipart/form-data.
+
+        :param channel_id: The channel ID to upload to.
+        :param file_content: The content of the file being uploaded.
+        :param filename: The filename of the file being uploaded.
+        :param content: Any optional message content to send with this file.
+        """
+        url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
+        payload = {}
+        if content is not None:
+            payload["content"] = content
+
+        files = {
+            "file": {
+                "filename": filename,
+                "content": file_content
+            }
+        }
+        data = await self.post(url, "messages:{}".format(channel_id),
+                               body=payload, files=files)
+        return data
+
     async def delete_message(self, channel_id: int, message_id: int):
         """
         Deletes a message.
