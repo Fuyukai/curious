@@ -441,7 +441,7 @@ class Client(object):
         :param shards: The number of shards to run.
             If this is None, the bot will autoshard.
         """
-        kernel = curio.Kernel(with_monitor=True)
+        kernel = curio.Kernel(with_monitor=True, warn_if_task_blocks_for=5)
         if shards is None:
             coro = self.start_autosharded(token)
         else:
