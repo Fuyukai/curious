@@ -9,7 +9,7 @@ from curious.dataclasses import guild as dt_guild, member as dt_member, message 
     permissions as dt_permissions, role as dt_role, user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.exc import PermissionsError, Forbidden
-from curious.http import Forbidden
+from curious.exc import Forbidden
 
 
 PY36 = sys.version_info[0:2] >= (3, 6)

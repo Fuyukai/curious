@@ -425,7 +425,7 @@ class Guild(Dataclass):
             await guild.add_roles(member, *roles)
 
         :param member: The member to add roles to.
-        :param roles: The roles to add roles to.
+        :param roles: The roles to add.
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
@@ -451,6 +451,44 @@ class Guild(Dataclass):
 
         await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
         # Now wait for the event to happen on the gateway.
+        await listener.join()
+
+        return member
+
+    async def remove_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
+        """
+        Removes roles from a member.
+
+        This will wait until the gateway fires a GUILD_MEMBER_UPDATE.
+
+        :param member: The member to remove roles from.
+        :param roles: The roles to add.
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        for _r in roles:
+            if _r.position >= self.me.top_role.position:
+                raise HierachyError(
+                    "Cannot remove role {} - it has a higher or equal position to our top role".format(_r.name)
+                )
+
+        async def _listener(before, after: dt_member.Member):
+            if after.id != member.id:
+                return False
+
+            if not all(role not in after.roles for role in roles):
+                return False
+
+            return True
+
+        # Calculate the roles to keep.
+        to_keep = set(member.roles) - set(roles)
+
+        role_ids = set([_r.id for _r in to_keep])
+        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
+
+        await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
         await listener.join()
 
         return member

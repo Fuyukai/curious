@@ -14,7 +14,7 @@ from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.event import EventContext
 from curious.gateway import Gateway, ReconnectWebsocket
-from curious.http import HTTPClient
+from curious.http.httpclient import HTTPClient
 from curious.state import State
 from curious.util import _traverse_stack_for
 
@@ -119,7 +119,6 @@ class Client(object):
 
         :param name: The event name to register under.
         :param func: The function to add.
-        :param bound: If this is True, then the Client won't be passed as the first argument.
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("Event must be a coroutine function")
