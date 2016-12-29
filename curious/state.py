@@ -157,7 +157,7 @@ class State(object):
         self.logger.info("Successfully resumed session on shard ID {}.".format(gateway.shard_id))
         await self.client.fire_event("resumed")
 
-    async def handle_user_update(self, event_data: dict):
+    async def handle_user_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when the bot's user is updated.
         """
@@ -168,7 +168,7 @@ class State(object):
         self._user.discriminator = event_data.get("discriminator")
         self._user._avatar_hash = event_data.get("avatar")
 
-        await self.client.fire_event("user_update", gateway=gateway)
+        await self.client.fire_event("user_update", gateway=gw)
 
     async def handle_presence_update(self, gateway: 'gateway.Gateway', event_data: dict):
         """

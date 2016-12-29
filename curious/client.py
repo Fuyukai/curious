@@ -447,7 +447,28 @@ class Client(object):
         else:
             coro = self.start(token, shards=shards)
 
-        return kernel.run(coro=coro, shutdown=True)
+        try:
+            return kernel.run(coro=coro)
+        except (KeyboardInterrupt, EOFError):
+            self.logger.info("C-c/C-d received, killing bot.")
+            # Cleanup.
+            coros = []
+            for gateway in self._gateways.values():
+                coros.append(gateway.websocket.close_now(1000, reason="Client closed connection"))
+                coros.append(gateway._event_reader.cancel())
+
+            async def __cleanup():
+                tasks = []
+                for task in coros:
+                    tasks.append(await curio.spawn(task))
+
+                self.logger.info("Need to wait for {} task(s) to complete.".format(len(tasks)))
+
+                # silence exceptions
+                await curio.gather(tasks, return_exceptions=True)
+                self.logger.info("Clean-up complete.")
+
+            return kernel.run(coro=__cleanup(), shutdown=True)
 
     @classmethod
     def from_token(cls, token: str = None):
