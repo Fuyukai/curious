@@ -153,8 +153,8 @@ class Overwrite(object):
 
         self.channel = channel
 
-        self.allow = Permissions(value=allow)
-        self.deny = Permissions(value=deny)
+        self.allow = Permissions(value=allow if allow is not None else 0)
+        self.deny = Permissions(value=deny if deny is not None else 0)
 
     def __repr__(self):
         return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target, self.channel, self.allow,
