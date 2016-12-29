@@ -46,8 +46,20 @@ class Guild(Dataclass):
         #: The owner ID of this guild.
         self._owner_id = None  # type: int
 
+        #: The AFK channel ID of this guild.
+        self._afk_channel_id = None  # type: int
+
+        #: The AFK timeout for this guild.
+        self.afk_timeout = None  # type: int
+
         #: The voice region of this guild.
         self.region = None  # type: str
+
+        #: The MFA level of this guild.
+        self.mfa_level = 0  # type: int
+
+        #: The verification level of this guild.
+        self.verification_level = 0  # type: int
 
         #: The shard ID this guild is associated with.
         self.shard_id = None
@@ -73,6 +85,26 @@ class Guild(Dataclass):
         self._chunks_left = 0
 
         self.from_guild_create(**kwargs)
+
+    def _copy(self):
+        obb = object.__new__(self.__class__)
+
+        obb.unavailable = self.unavailable
+        obb.name = self.name
+        obb._icon_hash = self._icon_hash
+        obb._owner_id = self._owner_id
+        obb.region = self.region
+        obb.shard_id = self.shard_id
+        obb._roles = self._roles.copy()
+        obb._members = self._members.copy()
+        obb._channels = self._members.copy()
+        obb.member_count = self.member_count
+        obb.large = self.large
+        obb._afk_channel_id = self._afk_channel_id
+        obb.afk_timeout = self.afk_timeout
+        obb.mfa_level = self.mfa_level
+
+        return obb
 
     @property
     def channels(self) -> 'typing.Iterable[channel.Channel]':
@@ -121,10 +153,21 @@ class Guild(Dataclass):
     @property
     def default_role(self) -> 'role.Role':
         """
-        :return: :return: A :class:`curious.dataclasses.role.Role` object that represents the default role of this
+        :return: A :class:`curious.dataclasses.role.Role` object that represents the default role of this
         guild.
         """
         return self._roles[self.id]
+
+    @property
+    def afk_channel(self) -> 'channel.Channel':
+        """
+        :return: A :class:`Channel` representing the AFK channel for this guild.
+        """
+        try:
+            return self._channels[self._afk_channel_id]
+        except IndexError:
+            # the afk channel CAN be None
+            return None
 
     def get_member(self, member_id: int) -> 'member.Member':
         """
@@ -206,6 +249,14 @@ class Guild(Dataclass):
         self._icon_hash = data.get("icon")  # type: str
         self._owner_id = int(data.get("owner_id"))  # type: int
         self.large = data.get("large", False)
+        self.region = data.get("region")
+        afk_channel_id = data.get("afk_channel_id")
+        if afk_channel_id:
+            afk_channel_id = int(afk_channel_id)
+        self._afk_channel_id = afk_channel_id
+        self.afk_timeout = data.get("afk_timeout")
+        self.verification_level = data.get("verification_level")
+        self.mfa_level = data.get("mfa_level")
 
         self.member_count = data.get("member_count", 0)
 

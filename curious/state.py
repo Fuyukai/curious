@@ -255,6 +255,31 @@ class State(object):
         # Request all members from the guild.
         raise gateway.ChunkGuild(guild)
 
+    async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when GUILD_UPDATE is dispatched.
+        """
+        id = int(event_data.get("id"))
+        guild = self._guilds.get(id)
+
+        if not guild:
+            return
+
+        old_guild = guild._copy()
+
+        guild.unavailable = event_data.get("unavailable", False)
+        guild.name = event_data.get("name")
+        guild.member_count = event_data.get("member_count")
+        guild.large = event_data.get("large")
+        guild._icon_hash = event_data.get("icon")
+        guild.region = event_data.get("region")
+        guild.mfa_level = event_data.get("mfa_level")
+        guild._afk_channel_id = int(event_data.get("afk_channel", 0))
+        guild.afk_timeout = event_data.get("afk_timeout")
+        guild.verification_level = event_data.get("verification_level")
+
+        await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
+
     async def handle_guild_delete(self, gateway: 'gateway.Gateway', event_data: dict):
         """
         Called when a guild becomes unavailable.
