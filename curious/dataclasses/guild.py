@@ -5,11 +5,12 @@ import curio
 
 from curious import client
 from curious.dataclasses import channel
-from curious.dataclasses import member
+from curious.dataclasses import member as dt_member
 from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
+from curious.event import EventContext
 from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper
 
@@ -21,9 +22,6 @@ class Guild(Dataclass):
     :ivar region: The voice region of this guild.
     :ivar member_count: The number of members this guild has.
     """
-
-    __slots__ = ("unavailable", "name", "_icon_hash", "_owner_id", "region", "_roles", "_members",
-                 "_channels", "member_count", "large")
 
     def __init__(self, bot: 'client.Client', **kwargs):
         """
@@ -115,7 +113,7 @@ class Guild(Dataclass):
         return self._channels.values()
 
     @property
-    def members(self) -> 'typing.Iterable[member.Member]':
+    def members(self) -> 'typing.Iterable[dt_member.Member]':
         """
         :return: A list of :class:`curious.dataclasses.member.Member` objects that represent the members on this guild.
         """
@@ -129,14 +127,14 @@ class Guild(Dataclass):
         return self._roles.values()
 
     @property
-    def owner(self) -> 'member.Member':
+    def owner(self) -> 'dt_member.Member':
         """
         :return: A :class:`curious.dataclasses.member.Member` object that represents the owner of this guild.
         """
         return self._members[self._owner_id]
 
     @property
-    def me(self) -> 'member.Member':
+    def me(self) -> 'dt_member.Member':
         """
         :return: A :class:`curious.dataclasses.member.Member` object that represents the current user in this guild.
         """
@@ -169,7 +167,7 @@ class Guild(Dataclass):
             # the afk channel CAN be None
             return None
 
-    def get_member(self, member_id: int) -> 'member.Member':
+    def get_member(self, member_id: int) -> 'dt_member.Member':
         """
         Gets a member from the guild by ID.
 
@@ -224,7 +222,7 @@ class Guild(Dataclass):
             if id in self._members:
                 member_obj = self._members[id]
             else:
-                member_obj = member.Member(self._bot, **member_data)
+                member_obj = dt_member.Member(self._bot, **member_data)
             for role_ in member_data.get("roles", []):
                 role_obj = self._roles.get(int(role_))
                 if role_obj:
@@ -325,7 +323,7 @@ class Guild(Dataclass):
 
         return users
 
-    async def kick(self, victim: 'member.Member'):
+    async def kick(self, victim: 'dt_member.Member'):
         """
         Kicks somebody from the guild.
 
@@ -344,7 +342,7 @@ class Guild(Dataclass):
 
         await self._bot.http.kick_member(self.id, victim_id)
 
-    async def ban(self, victim: 'typing.Union[member.Member, dt_user.User]', *,
+    async def ban(self, victim: 'typing.Union[dt_member.Member, dt_user.User]', *,
                   delete_message_days: int=7):
         """
         Bans somebody from the guild.
@@ -370,7 +368,7 @@ class Guild(Dataclass):
         if not self.me.guild_permissions.ban_members:
             raise PermissionsError("ban_members")
 
-        if isinstance(victim, member.Member):
+        if isinstance(victim, dt_member.Member):
             if self.owner == victim:
                 raise HierachyError("Cannot ban the owner")
 
@@ -414,3 +412,45 @@ class Guild(Dataclass):
         forgiven_id = user.id
 
         await self._bot.http.unban_user(self.id, forgiven_id)
+
+    async def add_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
+        """
+        Adds roles to a member.
+
+        This will wait until the gateway returns the GUILD_MEMBER_UPDATE with the new role list for the member before
+        returning.
+
+        .. code:: python
+            roles = filter(lambda r: "Mod" in r.name, guild.roles)
+            await guild.add_roles(member, *roles)
+
+        :param member: The member to add roles to.
+        :param roles: The roles to add roles to.
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        # Ensure we can add all of these roles.
+        for _r in roles:
+            if _r.position >= self.me.top_role.position:
+                raise HierachyError(
+                    "Cannot add role {} - it has a higher or equal position to our top role".format(_r.name)
+                )
+
+        async def _listener(before, after: dt_member.Member):
+            if after.id != member.id:
+                return False
+
+            if not all(role in after.roles for role in roles):
+                return False
+
+            return True
+
+        role_ids = set([_r.id for _r in member.roles] + [_r.id for _r in roles])
+        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
+
+        await self._bot.http.add_roles(self.id, member.id, role_ids)
+        # Now wait for the event to happen on the gateway.
+        await listener.join()
+
+        return member

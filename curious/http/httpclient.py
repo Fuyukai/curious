@@ -452,6 +452,7 @@ class HTTPClient(object):
         data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id), json=payload)
         return data
 
+    # Profile endpoints
     async def edit_profile(self, username: str = None, avatar: str = None):
         """
         Edits the profile of the bot.
@@ -470,6 +471,7 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="users:edit", json=payload)
         return data
 
+    # Moderation
     async def kick_member(self, guild_id: int, member_id: int):
         """
         Kicks a member from a guild.
@@ -524,6 +526,41 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="bans:{}".format(guild_id))
         return data
 
+    async def add_single_role(self, guild_id: int, member_id: int, role_id: int):
+        """
+        Adds a single role to a member.
+
+        If you want to add multiple roles to a member, use :meth:`add_roles`.
+
+        :param guild_id: The guild ID that contains the objects.
+        :param member_id: The member ID to add the role to.
+        :param role_id: The role ID to add to the member.
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}/roles/{role_id}").format(guild_id=guild_id, member_id=member_id,
+                                                                                role_id=role_id)
+
+        data = await self.put(url, bucket="roles:{}".format(guild_id))
+        return data
+
+    async def add_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
+        """
+        Adds a list of roles to a member.
+
+        This must be the *full* list of roles, including any previous roles that the member had.
+
+        :param guild_id: The guild ID that contains the objects.
+        :param member_id: The member ID to add the role to.
+        :param role_ids: The role IDs to add to the member.
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        payload = {
+            "roles": [str(id) for id in role_ids]
+        }
+
+        data = await self.patch(url, bucket="roles:{}".format(guild_id), json=payload)
+        return data
+
+    # Misc
     async def open_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.
