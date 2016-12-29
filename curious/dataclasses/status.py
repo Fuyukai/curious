@@ -17,13 +17,6 @@ class Game(object):
     """
 
     def __init__(self, **kwargs):
-        #: The current Status of the user.
-        status = kwargs.pop("status", Status.ONLINE)
-        if isinstance(status, str):
-            self.status = Status(status)
-        else:
-            self.status = status
-
         self.type = kwargs.pop("type", None)
         self.url = kwargs.pop("url", None)
         self.name = kwargs.pop("name", None)
