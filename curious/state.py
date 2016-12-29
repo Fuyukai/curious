@@ -374,6 +374,7 @@ class State(object):
         member.guild = guild
 
         guild._members[member.id] = member
+        guild.member_count += 1
         await self.client.fire_event("member_join", member, gateway=gateway)
 
     async def handle_guild_member_remove(self, gateway: 'gateway.Gateway', event_data: dict):
@@ -387,6 +388,7 @@ class State(object):
             return
 
         member = guild._members.pop(int(event_data["user"]["id"]), None)
+        guild.member_count -= 1
         if not member:
             # We can't see the member, so don't fire an event for it.
             return
