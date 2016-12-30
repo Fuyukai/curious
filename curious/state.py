@@ -476,7 +476,7 @@ class State(object):
         if not member:
             # Dispatch to `user_ban` instead of `member_ban`.
             user = User(self.client, **event_data["user"])
-            await self.client.fire_event("user_ban", guild, user)
+            await self.client.fire_event("user_ban", guild, user, gateway=gw)
             return
 
         await self.client.fire_event("member_ban", member, gateway=gw)
