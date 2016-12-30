@@ -269,7 +269,9 @@ class State(object):
 
         guild.unavailable = event_data.get("unavailable", False)
         guild.name = event_data.get("name")
-        guild.member_count = event_data.get("member_count")
+        guild.member_count = event_data.get("member_count", 0)
+        if not guild.member_count:
+            guild.member_count = len(guild._members)
         guild.large = event_data.get("large")
         guild._icon_hash = event_data.get("icon")
         guild.region = event_data.get("region")
