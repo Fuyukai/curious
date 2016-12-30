@@ -504,6 +504,8 @@ class State(object):
         channel = Channel(self.client, guild=guild, **event_data)
         if channel.is_private:
             self._private_channels[channel.id] = channel
+        else:
+            guild._channels[channel.id] = channel
 
         await self.client.fire_event("channel_create", channel, gateway=gw)
 
@@ -532,6 +534,9 @@ class State(object):
         """
         channel_id = int(event_data.get("channel_id", 0))
         channel = self._get_channel(channel_id)
+
+        if not channel:
+            return
 
         if channel.is_private:
             del self._private_channels[channel.id]
