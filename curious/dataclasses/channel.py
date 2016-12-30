@@ -138,7 +138,11 @@ class Channel(Dataclass):
 
         #: The last message ID of this channel.
         #: Used for history.
-        self._last_message_id = int(kwargs.pop("last_message_id", 0))
+        _last_message_id = kwargs.pop("last_message_id", 0)
+        if _last_message_id:
+            self._last_message_id = int(_last_message_id)
+        else:
+            self._last_message_id = None
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
