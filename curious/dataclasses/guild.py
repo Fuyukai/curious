@@ -167,6 +167,31 @@ class Guild(Dataclass):
         """
         return self._members.get(member_id)
 
+    def find_member(self, search_str: str) -> 'dt_member.Member':
+        """
+        Attempts to find a member in this guild by name#discrim.
+        This will also search nicknames.
+
+        The discrim is optional, but if provided allows better matching.
+
+        :param search_str: The name#discrim pair to search for.
+        :return: A :class:`Member` object that represents the member, or None if no member could be found.
+        """
+        sp = search_str.rsplit("#", 1)
+        if len(sp) == 1:
+            # Member name only :(
+            predicate = lambda member: member.user.name == sp[0] or member.nickname == sp[0]
+        else:
+            # Discriminator too!
+            # Don't check nicknames for this.
+            predicate = lambda member: member.user.name == sp[0] and member.user.discriminator == sp[1]
+
+        filtered = filter(predicate, self.members)
+        try:
+            return next(filtered)
+        except StopIteration:
+            return None
+
     def get_role(self, role_id: int) -> 'role.Role':
         """
         Gets a role from the guild by ID.
