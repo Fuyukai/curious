@@ -12,6 +12,7 @@ from curious.dataclasses import guild as dt_guild, member as dt_member, message 
 from curious.dataclasses.bases import Dataclass
 from curious.exc import PermissionsError, Forbidden
 from curious.exc import Forbidden
+from curious.util import AsyncIteratorWrapper
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 
@@ -177,6 +178,10 @@ class Channel(Dataclass):
     def history(self) -> HistoryIterator:
         return self.get_history(before=self._last_message_id, limit=-1)
 
+    @property
+    def pins(self) -> 'typing.AsyncIterator[dt_message.Message]':
+        return AsyncIteratorWrapper(self._bot, self.get_pins())
+
     def permissions(self, object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
@@ -215,6 +220,20 @@ class Channel(Dataclass):
                 raise PermissionsError("read_message_history")
 
         return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
+
+    async def get_pins(self) -> 'typing.List[dt_message.Message]':
+        """
+        Gets the pins for a channel.
+
+        :return: A list of :class:`Message` objects.
+        """
+        msg_data = await self._bot.http.get_pins(self.id)
+
+        messages = []
+        for message in msg_data:
+            messages.append(self._bot.state.parse_message(message))
+
+        return messages
 
     async def get_message(self, message_id: int) -> 'dt_message.Message':
         """

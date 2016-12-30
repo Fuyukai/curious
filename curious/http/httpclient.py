@@ -402,6 +402,17 @@ class HTTPClient(object):
         data = await self.get(url, bucket="messages:{}".format(channel_id), params=payload)
         return data
 
+    async def get_pins(self, channel_id: int):
+        """
+        Gets the pins for a channel.
+
+        :param channel_id: The channel ID to get pins from.
+        """
+        url = (self.CHANNEL_BASE + "/pins").format(channel_id=channel_id)
+
+        data = await self.get(url, bucket="pins:{}".format(channel_id))
+        return data
+
     async def bulk_delete_messages(self, channel_id: int, message_ids: typing.List[int]):
         """
         Deletes multiple messages.
