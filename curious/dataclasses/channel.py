@@ -260,6 +260,7 @@ class Channel(Dataclass):
         Example for deleting all the last 100 messages:
 
         .. code:: python
+
             history = channel.get_history(limit=100)
             messages = []
 
@@ -293,6 +294,7 @@ class Channel(Dataclass):
         Example for deleting all messages owned by the bot:
 
         .. code:: python
+
             me = channel.guild.me
             await channel.purge(limit=100, author=me)
 
@@ -302,6 +304,7 @@ class Channel(Dataclass):
         For example, to delete all messages with the letter ``i`` in them:
 
         .. code:: python
+
             await channel.purge(limit=100, predicate=lambda message: 'i' in message.content)
 
         :param limit: The maximum amount of messages to delete. -1 for unbounded size.
@@ -369,6 +372,7 @@ class Channel(Dataclass):
         If the content is not a string, it will be automatically stringified.
 
         .. code:: python
+
             await channel.send("Hello, world!")
 
         :param content: The content of the message to send.

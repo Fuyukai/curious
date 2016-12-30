@@ -12,23 +12,15 @@ from curious.util import to_datetime
 
 class Member(Dataclass, Messagable):
     """
-    A member is a user attached to a guild.
-
-    :ivar id: The ID of this member.
-    :ivar user: The :class:`curious.dataclasses.user.User` object that this member is associated with.
-    :ivar joined_at: The :class:`datetime.datetime` that represents when this member joined the server.
-    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object that this member is associated with.
-    :ivar nickname: The nickname this member has in the guild.
-    :ivar game: The :class:`curious.dataclasses.status.Game` object that this member is playing. None for no game.
-    :ivar status: The current status of this member.
+    A member represents somebody who is inside a guild.
     """
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
 
-        #: The user object associated with this member.
+        #: The :class:`User` object associated with this member.
         self.user = dt_user.User(client, **kwargs.get("user"))
 
-        #: A dictionary of roles this user has.
+        #: A dictionary of :class:`Role` this user has.
         self._roles = {}
 
         #: The date the user joined the guild.
@@ -37,13 +29,13 @@ class Member(Dataclass, Messagable):
         #: The member's current nickname.
         self.nickname = kwargs.pop("nick", None)
 
-        #: The member's current guild.
+        #: The member's current :class:`Guild`.
         self.guild = None  # type: guild.Guild
 
-        #: The current game this Member is playing.
+        #: The current :class:`Game` this Member is playing.
         self.game = None  # type: Game
 
-        #: The current status of this member.
+        #: The current :class:`Status` of this member.
         self._status = None  # type: Status
 
     def _copy(self):
@@ -66,7 +58,7 @@ class Member(Dataclass, Messagable):
         return new_object
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         :return: The computed display name of this user.
         """
@@ -74,6 +66,10 @@ class Member(Dataclass, Messagable):
 
     @property
     def status(self) -> Status:
+        """
+        :return: The current status of this member.
+        :rtype: Status
+        """
         return self._status
 
     @status.setter
@@ -91,6 +87,7 @@ class Member(Dataclass, Messagable):
     def colour(self) -> int:
         """
         :return: The computed colour of this user.
+        :rtype: int
         """
         roles = sorted(self.roles, key=lambda r: r.position, reverse=True)
         roles = filter(lambda role: role.colour, roles)
@@ -102,7 +99,7 @@ class Member(Dataclass, Messagable):
     @property
     def top_role(self) -> Role:
         """
-        :return: This member's top-most role.
+        :return: This member's top-most :class:`Role`.
         """
         return sorted(self.roles, key=lambda r: r.position, reverse=True)[0]
 
@@ -110,6 +107,7 @@ class Member(Dataclass, Messagable):
     def guild_permissions(self):
         """
         :return: The calculated guild permissions for a member.
+        :rtype: Permissions
         """
         if self == self.guild.owner:
             return Permissions.all()

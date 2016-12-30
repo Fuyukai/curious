@@ -20,6 +20,9 @@ from curious.util import _traverse_stack_for
 
 
 class AppInfo(object):
+    """
+    Represents the application info for a
+    """
     def __init__(self, client: 'Client', **kwargs):
         #: The client ID of this application.
         self.client_id = int(kwargs.pop("id", 0))
@@ -33,11 +36,16 @@ class AppInfo(object):
 
 class Client(object):
     """
-    The main client class.
+    The main client class. This is used to interact with Discord.
 
-    This is used to interact with Discord.
+    When creating a client object, you can either pass a token explicitly, or pass in in the :meth:`start` call or
+    similar.
+
+    .. code:: python
+
+        bot = Client("'a'")  # pass explicitly
+        bot.run("'b'")  # or pass to the run call.
     """
-
     def __init__(self, token: str = None):
         """
         :param token: The current token for this bot.
@@ -70,6 +78,7 @@ class Client(object):
         self._gw_url = None  # type: str
 
         #: The application info for this bot.
+        #: Instance of :class:`AppInfo`.
         self.application_info = None  # type: AppInfo
 
         #: The logger for this bot.
@@ -83,10 +92,16 @@ class Client(object):
 
     @property
     def user(self) -> User:
+        """
+        :return: The :class:`User` that this client is logged in as.
+        """
         return self.state._user
 
     @property
     def guilds(self) -> typing.Iterable[Guild]:
+        """
+        :return: A list of :class:`Guild` that this client can see.
+        """
         return self.state.guilds
 
     @property
@@ -108,6 +123,7 @@ class Client(object):
         Gets the guilds for this shard.
 
         :param shard_id: The shard ID to get guilds from.
+        :return: A list of :class:`Guild` that client can see on the specified shard.
         """
         return self.state.guilds_for_shard(shard_id)
 
@@ -252,12 +268,14 @@ class Client(object):
         For example, to wait for a message with the content `Heck`:
 
         .. code:: python
+
             message = await client.wait_for("message_create", predicate=lambda m: m.content == "Heck")
 
         You can pass any function to this predicate. If this function takes an error, it will remove the listener,
         then raise into your code.
 
         .. code:: python
+
             async def _closure(message):
                 if message.author.id != 66237334693085184:
                     return False
@@ -336,6 +354,7 @@ class Client(object):
     async def edit_avatar(self, path: str):
         """
         A higher-level way to change your avatar.
+        This allows you to provide a path to the avatar file instead of having to read it in manually.
 
         :param path: The path-like object to the avatar file.
         """

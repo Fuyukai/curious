@@ -10,16 +10,6 @@ from curious.dataclasses import permissions as dt_permissions
 class Role(Dataclass):
     """
     Represents a role on a server.
-
-    :ivar name: The name of this role.
-    :ivar colour: The integer colour of this role.
-    :ivar hoisted: Is this role hoisted?
-    :ivar mentionable: Is this role mentionable?
-    :ivar permissions: A :class:`curious.dataclasses.permissions.Permissions` object that represents the permissions
-    this role has.
-    :ivar managed: Is this role managed by an integration?
-    :ivar position: The raw position in the role list.
-    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object this role belongs to.
     """
 
     def __init__(self, client, **kwargs):

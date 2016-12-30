@@ -16,13 +16,6 @@ from curious.util import AsyncIteratorWrapper
 
 
 class Guild(Dataclass):
-    """
-    :ivar unavailable: If this guild is unavailable or not.
-    :ivar name: The name of this guild.
-    :ivar region: The voice region of this guild.
-    :ivar member_count: The number of members this guild has.
-    """
-
     def __init__(self, bot: 'client.Client', **kwargs):
         """
         Creates a new Guild object.
@@ -107,8 +100,7 @@ class Guild(Dataclass):
     @property
     def channels(self) -> 'typing.Iterable[channel.Channel]':
         """
-        :return: A list of :class:`curious.dataclasses.channel.Channel` objects that represent the channels on this
-        guild.
+        :return: A list of :class:`curious.dataclasses.channel.Channel` that represent the channels on this guild.
         """
         return self._channels.values()
 
@@ -143,16 +135,14 @@ class Guild(Dataclass):
     @property
     def default_channel(self) -> 'channel.Channel':
         """
-        :return: A :class:`curious.dataclasses.channel.Channel` object that represents the default channel of this
-        guild.
+        :return: A :class:`curious.dataclasses.channel.Channel` that represents the default channel of this guild.
         """
         return self._channels[self.id]
 
     @property
     def default_role(self) -> 'role.Role':
         """
-        :return: A :class:`curious.dataclasses.role.Role` object that represents the default role of this
-        guild.
+        :return: A :class:`curious.dataclasses.role.Role` that represents the default role of this guild.
         """
         return self._roles[self.id]
 
@@ -172,7 +162,7 @@ class Guild(Dataclass):
         Gets a member from the guild by ID.
 
         :param member_id: The member ID to lookup.
-        :return: The :class:`curious.dataclasses.member.Member` object that represents the member, or None if they
+        :return: The :class:`curious.dataclasses.member.Member` object that represents the member, or None if they \
         couldn't be found.
         """
         return self._members.get(member_id)
@@ -182,7 +172,7 @@ class Guild(Dataclass):
         Gets a role from the guild by ID.
 
         :param role_id: The role ID to look up.
-        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't
+        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't \
         be found.
         """
         return self._roles.get(role_id)
@@ -192,7 +182,7 @@ class Guild(Dataclass):
         Gets a channel from the guild by ID.
 
         :param channel_id: The channel ID to look up.
-        :return: The :class:`curious.dataclasses.channel.Channel` object that represents the Channel, or None if it
+        :return: The :class:`curious.dataclasses.channel.Channel` object that represents the Channel, or None if it \
         couldn't be found.
         """
         return self._channels.get(channel_id)
@@ -353,12 +343,14 @@ class Guild(Dataclass):
         Example for banning a member:
 
         .. code:: python
+
             member = guild.get_member(66237334693085184)
             await guild.ban(member)
 
         Example for banning a user:
 
         .. code:: python
+
             user = await client.get_user(66237334693085184)
             await guild.ban(user)
 
@@ -395,12 +387,14 @@ class Guild(Dataclass):
         Example for unbanning the first banned user:
 
         .. code:: python
+
             user = next(await guild.get_bans())
             await guild.unban(user)
 
         To unban an arbitrary user, use :meth:`Client.get_user`.
 
         .. code:: python
+
             user = await client.get_user(66237334693085184)
             await guild.unban(user)
 
@@ -421,6 +415,7 @@ class Guild(Dataclass):
         returning.
 
         .. code:: python
+
             roles = filter(lambda r: "Mod" in r.name, guild.roles)
             await guild.add_roles(member, *roles)
 

@@ -5,8 +5,22 @@ from curious.dataclasses import member as dt_member, role as dt_role
 
 # I'm far too lazy to type out each permission bit manually.
 # So here's a helper method.
-def build_permissions_class(name: str = "Permissions"):
+def build_permissions_class(name: str = "Permissions") -> type:
+    """
+    Builds the permissions class automagically.
+
+    :param name: The name of the class.
+    :return: A new type representing the permissions class.
+    """
     # Closure methods.
+    __doc__ = """
+    Represents the permissions a user can have.
+    This type is automatically generated based upon a set of constant permission bits.
+
+    Every permission is accessible via a property getter and setter. The raw permissions value is accessible via
+    ``bitfield``.
+    """
+
     def __init__(self, value: int = 0):
         """
         Creates a new Permissions object.
@@ -121,6 +135,7 @@ def build_permissions_class(name: str = "Permissions"):
         **properties
     }
     new_class = type(name, (object,), namespace)
+    new_class.__doc__ = __doc__
 
     return new_class
 
