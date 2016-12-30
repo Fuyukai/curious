@@ -260,11 +260,12 @@ class Client(object):
         gateway = self._gateways[shard_id]
         return gateway.send_status(game, status)
 
-    async def wait_for(self, event_name: str, predicate: callable = None):
+    async def wait_for(self, event_name: str, predicate: typing.Callable = None):
         """
         Wait for an event to happen in the gateway.
 
         You can specify a check to happen to check if this event is the one to return.
+        When the check returns True, the listener is removed and the event data is returned.
         For example, to wait for a message with the content `Heck`:
 
         .. code:: python
@@ -291,6 +292,9 @@ class Client(object):
         :param predicate: An optional check function to return.
         :return: The result of the event.
         """
+        if predicate is None:
+            predicate = lambda *args, **kwargs: True
+
         event = curio.Event()
         result = None
         _exc = None
