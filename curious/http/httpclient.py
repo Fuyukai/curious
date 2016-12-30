@@ -527,6 +527,40 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="roles:{}".format(guild_id), json=payload)
         return data
 
+    async def modify_overwrite(self, channel_id: int, target_id: int, type_: str,
+                               *, allow: int=0, deny: int=0):
+        """
+        Modifies or adds an overwrite.
+
+        :param channel_id: The channel ID to edit.
+        :param target_id: The target of the override.
+        :param type_: The type the target is.
+
+        :param allow: The permission bitfield of permissions to allow.
+        :param deny: The permission bitfield of permissions to deny.
+        """
+        url = (self.CHANNEL_BASE + "/permissions/{target_id}").format(channel_id=channel_id, target_id=target_id)
+        payload = {
+            "allow": allow,
+            "deny": deny,
+            "type": type_
+        }
+
+        data = await self.put(url, bucket="channels:permissions:{}".format(channel_id), json=payload)
+        return data
+
+    async def remove_overwrite(self, channel_id: int, target_id: int):
+        """
+        Removes an overwrite.
+
+        :param channel_id: The channel ID to edit.
+        :param target_id: The target of the override.
+        """
+        url = (self.CHANNEL_BASE + "/permissions/{target_id}".format(channel_id=channel_id, target_id=target_id))
+
+        data = await self.delete(url, bucket="channels:permissions:{}".format(channel_id))
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """

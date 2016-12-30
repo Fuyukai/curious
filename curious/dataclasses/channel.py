@@ -4,6 +4,8 @@ import collections
 import enum
 import typing
 
+import curio
+
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user
@@ -11,8 +13,8 @@ from curious.dataclasses.bases import Dataclass
 from curious.exc import PermissionsError, Forbidden
 from curious.exc import Forbidden
 
-
 PY36 = sys.version_info[0:2] >= (3, 6)
+
 
 class ChannelType(enum.Enum):
     TEXT = 0
@@ -26,8 +28,8 @@ class HistoryIterator(collections.AsyncIterator):
     """
 
     def __init__(self, channel: 'Channel', client: 'dt_client.Client',
-                 max_messages: int=-1, *,
-                 before: int=None, after: int=None):
+                 max_messages: int = -1, *,
+                 before: int = None, after: int = None):
         self.channel = channel
         self.client = client
 
@@ -142,6 +144,8 @@ class Channel(Dataclass):
         self._update_overwrites(kwargs.pop("permission_overwrites", []))
 
     def _update_overwrites(self, overwrites: list):
+        self._overwrites = {}
+
         for overwrite in overwrites:
             id = int(overwrite["id"])
             type_ = overwrite["type"]
@@ -193,9 +197,9 @@ class Channel(Dataclass):
         obb._bot = self._bot
         return obb
 
-    def get_history(self, before: int=None,
-                    after: int=None,
-                    limit: int=100) -> HistoryIterator:
+    def get_history(self, before: int = None,
+                    after: int = None,
+                    limit: int = 100) -> HistoryIterator:
         """
         Gets history for this channel.
 
@@ -258,10 +262,10 @@ class Channel(Dataclass):
 
         return None
 
-    async def purge(self, limit: int=100, *,
-                    author: 'dt_member.Member'=None,
-                    content: str=None, predicate: 'typing.Callable[[dt_message.Message], bool]'=None,
-                    fallback_from_bulk: bool=False):
+    async def purge(self, limit: int = 100, *,
+                    author: 'dt_member.Member' = None,
+                    content: str = None, predicate: 'typing.Callable[[dt_message.Message], bool]' = None,
+                    fallback_from_bulk: bool = False):
         """
         Purges messages from a channel.
         This will attempt to use ``bulk-delete`` if possible, but otherwise will use the normal delete endpoint
@@ -395,7 +399,7 @@ class Channel(Dataclass):
         obb = self._bot.state.parse_message(data, cache=False)
         return obb
 
-    async def upload_file(self, filename: str, *, message_content: str=None) -> 'dt_message.Message':
+    async def upload_file(self, filename: str, *, message_content: str = None) -> 'dt_message.Message':
         """
         A higher level interface to `send_file`.
 
@@ -435,3 +439,50 @@ class Channel(Dataclass):
                 file_data = f.read()
 
         return await self.send_file(file_data, name, message_content=message_content)
+
+    async def change_overwrite(self, target: 'typing.Union[dt_member.Member, dt_role.Role]',
+                               overwrite: 'dt_permissions.Overwrite'):
+        """
+        Changes an overwrite for this channel.
+
+        This overwrite must be an instance of :class:`Overwrite`.
+
+        :param target: The target to add an overwrite for.
+            This can either be a Member or a Role.
+        :param overwrite: The specific overwrite to use.
+            If this is None, the overwrite will be deleted.
+        """
+        if not self.guild:
+            raise PermissionsError("manage_roles")
+
+        if not self.permissions(self.guild.me).manage_roles:
+            raise PermissionsError("manage_roles")
+
+        if isinstance(target, dt_member.Member):
+            type_ = "member"
+        else:
+            type_ = "role"
+
+        if overwrite is None:
+            # Delete the overwrite instead.
+            coro = self._bot.http.remove_overwrite(channel_id=self.id, target_id=target.id)
+            async def _listener(ctx, before, after):
+                if after.id != self.id:
+                    return False
+
+                # probably right /shrug
+                return True
+
+            listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
+        else:
+            coro = self._bot.http.modify_overwrite(self.id, target.id, type_,
+                                                   allow=overwrite.allow, deny=overwrite.deny)
+
+            async def _listener(ctx, before, after):
+                return after.id == self.id
+
+            listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
+
+        await coro
+        await listener.join()
+        return self
