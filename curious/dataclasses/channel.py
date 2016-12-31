@@ -322,10 +322,10 @@ class Channel(Dataclass):
         :param fallback_from_bulk: If this is True, messages will be regular deleted if they cannot be bulk deleted.
         :return: The number of messages deleted.
         """
-        if not self.guild:
+        if not self.guild and not fallback_from_bulk:
             raise PermissionsError("manage_messages")
 
-        if not self.permissions(self.guild.me).manage_messages:
+        if not self.permissions(self.guild.me).manage_messages and not fallback_from_bulk:
             raise PermissionsError("manage_messages")
 
         checks = []
