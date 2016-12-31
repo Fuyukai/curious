@@ -452,7 +452,7 @@ class Guild(Dataclass):
 
         # Ensure we can add all of these roles.
         for _r in roles:
-            if _r.position >= self.me.top_role.position:
+            if _r >= self.me.top_role:
                 raise HierachyError(
                     "Cannot add role {} - it has a higher or equal position to our top role".format(_r.name)
                 )
@@ -488,7 +488,7 @@ class Guild(Dataclass):
             raise PermissionsError("manage_roles")
 
         for _r in roles:
-            if _r.position >= self.me.top_role.position:
+            if _r >= self.me.top_role:
                 raise HierachyError(
                     "Cannot remove role {} - it has a higher or equal position to our top role".format(_r.name)
                 )

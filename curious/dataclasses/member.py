@@ -91,7 +91,7 @@ class Member(Dataclass, Messagable):
         :return: The computed colour of this user.
         :rtype: int
         """
-        roles = sorted(self.roles, key=lambda r: r.position, reverse=True)
+        roles = sorted(self.roles, reverse=True)
         roles = filter(lambda role: role.colour, roles)
         try:
             return next(roles).colour
@@ -103,7 +103,7 @@ class Member(Dataclass, Messagable):
         """
         :return: This member's top-most :class:`Role`.
         """
-        return sorted(self.roles, key=lambda r: r.position, reverse=True)[0]
+        return sorted(self.roles, reverse=True)[0]
 
     @property
     def guild_permissions(self):
