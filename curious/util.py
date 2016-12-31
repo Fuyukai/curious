@@ -69,6 +69,10 @@ def _traverse_stack_for(t: type):
         except AttributeError:
             # idk
             continue
-        for object in locals.values():
-            if type(object) is t:
-                return object
+        else:
+            for object in locals.values():
+                if type(object) is t:
+                    return object
+        finally:
+            # prevent reference cycles
+            del fr
