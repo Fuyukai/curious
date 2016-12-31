@@ -482,7 +482,7 @@ class Client(object):
             coro = self.start(token, shards=shards)
 
         try:
-            return kernel.run(coro=coro)
+            return kernel.run(coro=coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
             self.logger.info("C-c/C-d received, killing bot.")
             # Cleanup.
