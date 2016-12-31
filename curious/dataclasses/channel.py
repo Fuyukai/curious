@@ -9,7 +9,7 @@ import curio
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user
-from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.bases import Dataclass, IDObject
 from curious.exc import PermissionsError, Forbidden
 from curious.exc import Forbidden
 from curious.util import AsyncIteratorWrapper
@@ -47,9 +47,13 @@ class HistoryIterator(collections.AsyncIterator):
 
         #: The message ID of before to fetch.
         self.before = before
+        if isinstance(self.before, IDObject):
+            self.before = self.before.id
 
         #: The message ID of after to fetch.
         self.after = after
+        if isinstance(self.after, IDObject):
+            self.after = self.after.id
 
         #: The last message ID that we fetched.
         if self.before:
