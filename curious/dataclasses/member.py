@@ -74,7 +74,9 @@ class Member(Dataclass, Messagable):
 
     @status.setter
     def status(self, value):
-        self._status = Status(value)
+        if not isinstance(value, Status):
+            value = Status(value)
+        self._status = value
 
     @property
     def roles(self) -> typing.Iterable[Role]:

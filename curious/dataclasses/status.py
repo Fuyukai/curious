@@ -30,3 +30,6 @@ class Game(object):
             d["url"] = self.url
 
         return d
+
+    def __repr__(self):
+        return "<Game name={}>".format(self.name)

@@ -218,7 +218,7 @@ class State(object):
         if guild._chunks_left <= 0:
             # Set the finished chunking event.
             await guild._finished_chunking.set()
-            await self.client.fire_event("guild_available", gateway=gw)
+            await self.client.fire_event("guild_available", guild, gateway=gw)
 
         # Check if we have all chunks.
         if not self._is_ready(gw.shard_id).is_set() and self.have_all_chunks(gw.shard_id):
@@ -243,6 +243,8 @@ class State(object):
             self._guilds[guild.id] = guild
 
         guild.shard_id = gw.shard_id
+        guild.me.game = gw.game
+        guild.me.status = gw.status
 
         # Dispatch the new event before we start chunking.
         if self._is_ready(gw.shard_id).is_set():

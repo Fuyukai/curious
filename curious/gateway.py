@@ -162,6 +162,13 @@ class Gateway(object):
         #: The number of heartbeat ACKs this connection has sent.
         self.heartbeat_acks = 0
 
+        #: The current game for this gateway.
+        #: Only set when sending a change status packet.
+        self.game = None
+
+        #: The current status for this gateway.
+        self.status = None
+
     @property
     def logger(self):
         if self._logger:
@@ -302,6 +309,15 @@ class Gateway(object):
                 "since": None
             }
         }
+
+        self.game = game
+        self.status = status
+
+        # Update our game() object on all guilds on this shard.
+        for guild in self.state.guilds_for_shard(self.shard_id):
+            guild.me.game = game
+            guild.me.status = status
+
         self._send_json(payload)
 
     def _request_chunk(self, guild):
