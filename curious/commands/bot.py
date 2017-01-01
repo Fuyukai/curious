@@ -176,7 +176,7 @@ class CommandsBot(Client):
         if len(mod[1]) == 0:
             raise ValueError("Plugin contained no plugin classes (classes that inherit from Plugin)")
 
-        self._plugin_modules = mod
+        self._plugin_modules[import_name] = mod
 
     def command(self, *args, **kwargs):
         """
