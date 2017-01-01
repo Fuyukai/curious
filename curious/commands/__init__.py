@@ -17,7 +17,7 @@ def command(*args, **kwargs):
     def __inner(func):
         factory = functools.partial(Command, func, *args, **kwargs)
         func.factory = factory
-        return factory
+        return func
 
     return __inner
 

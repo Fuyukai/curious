@@ -117,8 +117,14 @@ class Command(object):
 
         for n, (name, param) in enumerate(self._signature.parameters.items()):
             if n == 0:
-                # Don't convert the `ctx` argument.
+                # Don't convert the `self/ctx` argument.
                 continue
+
+            if self.instance is not None:
+                if n == 1:
+                    # Don't convert the bound `ctx` argument.
+                    continue
+
             assert isinstance(param, inspect.Parameter)
             # We loop over the signature parameters because it's easier to use those to consume.
             # Get the next argument from args.

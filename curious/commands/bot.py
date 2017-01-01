@@ -4,6 +4,7 @@ Commands bot subclass.
 import re
 import inspect
 import importlib
+import traceback
 import typing
 
 import curio
@@ -62,6 +63,7 @@ class CommandsBot(Client):
         try:
             await ctx.invoke()
         except Exception as e:
+            traceback.print_exc()
             gw = self._gateways[ctx.event_context.shard_id]
             await self.fire_event("command_error", ctx, e, gateway=gw)
 
@@ -136,11 +138,12 @@ class CommandsBot(Client):
         for command in commands:
             # Bind the command to the plugin.
             command.instance = plugin_class
+            # aliases incldues the name
+            # so we dont need to add the name normally
             for alias in command.aliases:
                 self.add_command(alias, command)
-            self.add_command(command.name, command)
 
-        self.plugins[plugin_class.__name__] = plugin_class
+        self.plugins[plugin_class.__class__.__name__] = plugin_class
 
     async def load_plugins_from(self, import_name: str, *args, **kwargs):
         """
