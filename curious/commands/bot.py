@@ -225,7 +225,6 @@ class CommandsBot(Client):
         # remove from sys.modules and our own registry to remove all references
         del sys.modules[import_name]
         del self._plugin_modules[import_name]
-        print(gc.get_referrers(mod))
         del mod
 
     def command(self, *args, **kwargs):
