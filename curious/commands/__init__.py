@@ -1,19 +1,23 @@
 """
 Commands helpers.
 """
+import functools
+
 from curious.commands.command import Command
 
 
-def command(*args, **kwargs) -> 'Command':
+def command(*args, **kwargs):
     """
     A decorator to mark a function as a command.
-    This can then be later used to register
+    This will put a `factory` attribute on the function, which can later be called to create the Command instance.
 
     All arguments are passed to the Command class.
     """
 
     def __inner(func):
-        return Command(func, *args, **kwargs)
+        factory = functools.partial(Command, func, *args, **kwargs)
+        func.factory = factory
+        return factory
 
     return __inner
 

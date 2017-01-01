@@ -37,8 +37,10 @@ class Plugin(object):
         commands = []
 
         for name, value in self.__dict__.items():
-            if isinstance(value, Command):
-                commands.append(value)
+            if hasattr(value, "factory"):
+                # this is set by the decorator to create a new command instance
+                cmd = value.factory()
+                commands.append(cmd)
 
             elif hasattr(value, "event"):
                 name = getattr(value, "event")
