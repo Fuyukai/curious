@@ -91,10 +91,24 @@ class Command(object):
 
         #: The plugin instance to pass to this command.
         #: If this is None, it is assumed the command invoker does not need an instance.
-        self.instance = None
+        self._instance = None
 
         #: A list of invokation checks that must all return True before the underlying function is run.
         self.invokation_checks = invokation_checks if invokation_checks else []
+
+    @property
+    def instance(self):
+        return self._instance
+
+    @instance.setter
+    def instance(self, value):
+        if value is None:
+            self._instance = None
+            return
+
+        # add the plugin_check func as a local check
+        self.invokation_checks.append(value.plugin_check)
+        self._instance = value
 
     def _lookup_converter(self, type_: type) -> typing.Callable[[Context, object], str]:
         """

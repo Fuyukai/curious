@@ -48,11 +48,12 @@ class Plugin(object):
         return events, commands
 
     @classmethod
-    def setup(cls, bot: 'c_bot.CommandsBot', *args, **kwargs):
+    async def setup(cls, bot: 'c_bot.CommandsBot', *args, **kwargs):
         """
         Default setup function for a plugin.
 
         This will create a new instance of the class, then add it as a Plugin to the bot.
         """
         instance = cls(bot, *args, **kwargs)
+        await instance.load()
         bot.add_plugin(instance)

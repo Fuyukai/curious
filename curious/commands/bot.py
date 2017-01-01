@@ -8,6 +8,9 @@ import traceback
 import typing
 
 import curio
+import sys
+
+import gc
 
 from curious.client import Client
 from curious.commands.command import Command
@@ -65,7 +68,15 @@ class CommandsBot(Client):
         except Exception as e:
             traceback.print_exc()
             gw = self._gateways[ctx.event_context.shard_id]
-            await self.fire_event("command_error", ctx, e, gateway=gw)
+            await self.fire_event("command_error", e, ctx=ctx, gateway=gw)
+
+    async def on_command_error(self, ctx, e):
+        """
+        Default error handler.
+
+        This is meant to be overriden - normally it will just print the traceback.
+        """
+        traceback.print_exception(None, e, e.__traceback__)
 
     async def handle_commands(self, event_ctx: EventContext, message: Message):
         """
@@ -171,12 +182,51 @@ class CommandsBot(Client):
                 result = await result
 
             # Add it to the list of plugins we need to destroy when unloading.
-            mod[1].append(self.plugins[member.__name__])
+            # We add the type, not the instance, as the instances are destroyed separately.
+            mod[1].append(member)
 
         if len(mod[1]) == 0:
             raise ValueError("Plugin contained no plugin classes (classes that inherit from Plugin)")
 
         self._plugin_modules[import_name] = mod
+
+    async def unload_plugins_from(self, import_name: str):
+        """
+        Unloads plugins from the specified import name.
+
+        This is the opposite to :meth:`load_plugins_from`.
+        """
+        mod, plugins = self._plugin_modules[import_name]
+        # we can't do anything with the module currently because it's still in our locals scope
+        # so we have to wait to delete it
+        # i'm not sure this is how python imports work but better to be safe
+        # (especially w/ custom importers)
+
+        for plugin in plugins:
+            # find all the Command instances with this plugin as the body
+            for name, command in self.commands.copy().items():
+                # isinstance() checks ensures that the type of the instance is this plugin
+                if isinstance(command.instance, plugin):
+                    # make sure the instance isn't lingering around
+                    command.instance = None
+                    # rip
+                    self.commands.pop(name)
+
+            # todo: events
+            # now that all commands are dead, call `unload()` on all of the instances
+            for name, instance in self.plugins.copy().items():
+                if isinstance(instance, plugin):
+                    r = instance.unload()
+                    if inspect.isawaitable(r):
+                        await r
+
+                    self.plugins.pop(name)
+
+        # remove from sys.modules and our own registry to remove all references
+        del sys.modules[import_name]
+        del self._plugin_modules[import_name]
+        print(gc.get_referrers(mod))
+        del mod
 
     def command(self, *args, **kwargs):
         """
@@ -184,7 +234,7 @@ class CommandsBot(Client):
         """
 
         def inner(func):
-            command = Command(cbl=func, *args, **kwargs)
+            command = Command(*args, cbl=func, **kwargs)
             self.commands[command.name] = command
             for alias in command.aliases:
                 self.commands[alias] = command
