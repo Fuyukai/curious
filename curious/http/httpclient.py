@@ -233,7 +233,7 @@ class HTTPClient(object):
         url = self.API_BASE + "/gateway/bot"
 
         data = await self.get(url, "gateway")
-        return data["shards"]
+        return data["url"], data["shards"]
 
     async def get_application_info(self):
         """

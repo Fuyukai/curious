@@ -74,6 +74,9 @@ class Member(Dataclass, Messagable):
 
     @status.setter
     def status(self, value):
+        if value is None:
+            return
+
         if not isinstance(value, Status):
             value = Status(value)
         self._status = value

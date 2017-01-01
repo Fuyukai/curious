@@ -82,13 +82,13 @@ class Client(object):
         self.application_info = None  # type: AppInfo
 
         #: The logger for this bot.
-        self.logger = logging.getLogger("curious.client")
+        self._logger = logging.getLogger("curious.client")
 
         # Scan the dict of this object, to check for all events registered under it.
         # This is useful, for example, for subclasses.
-        for name, obb in self.__dict__.items():
+        for name, obb in self.__class__.__dict__.items():
             if name.startswith("on_") and inspect.iscoroutinefunction(obb):
-                self.add_event(name[3:], obb, bound=True)
+                self.add_event(name[3:], getattr(self, name))
 
     @property
     def user(self) -> User:
@@ -117,6 +117,12 @@ class Client(object):
 
         self._gw_url = await self.http.get_gateway_url()
         return self._gw_url
+
+    async def get_shard_count(self):
+        gw, shards = await self.http.get_shard_count()
+        self._gw_url = gw
+
+        return shards
 
     def guilds_for(self, shard_id: int) -> typing.Iterable[Guild]:
         """
@@ -183,13 +189,13 @@ class Client(object):
         try:
             await func(*args, **kwargs)
         except Exception as e:
-            self.logger.exception("Unhandled exception in {}!".format(func.__name__))
+            self._logger.exception("Unhandled exception in {}!".format(func.__name__))
 
     async def _temporary_wrapper(self, event, listener, *args, **kwargs):
         try:
             result = await listener(*args, **kwargs)
         except Exception as e:
-            self.logger.exception("Unhandled exception in {}!".format(listener.__name__))
+            self._logger.exception("Unhandled exception in {}!".format(listener.__name__))
             return
         if result is True:
             # Complex removal bullshit
@@ -233,7 +239,7 @@ class Client(object):
         if not coros and not temporary_listeners:
             return
 
-        self.logger.debug(
+        self._logger.debug(
             "Dispatching event {} to {} listeners"
             " on shard {}".format(event_name, len(coros) + len(temporary_listeners), gateway.shard_id)
         )
@@ -375,7 +381,7 @@ class Client(object):
         return User(self, **(await self.http.get_user(user_id)))
 
     # Utility functions
-    async def connect(self, token: str = None, shards: int = 1):
+    async def connect(self, token: str = None, shard_id: int = 1):
         """
         Connects the bot to the gateway.
 
@@ -387,15 +393,13 @@ class Client(object):
         if not self.http:
             self.http = HTTPClient(self._token)
 
-        self.shard_count = shards
-
-        self.application_info = AppInfo(self, **(await self.http.get_application_info()))
+        if not self.application_info:
+            self.application_info = AppInfo(self, **(await self.http.get_application_info()))
 
         gateway_url = await self.get_gateway_url()
-        for shard in range(0, shards):
-            self._gateways[shard] = await Gateway.from_token(self._token, self.state, gateway_url,
-                                                             shard_id=shard, shard_count=shards)
-            await self._gateways[shard].websocket.wait_for_ready()
+        self._gateways[shard_id] = await Gateway.from_token(self._token, self.state, gateway_url,
+                                                            shard_id=shard_id, shard_count=self.shard_count)
+        await self._gateways[shard_id].websocket.wait_for_ready()
 
         return self
 
@@ -413,7 +417,7 @@ class Client(object):
                 # Try and handle the close.
                 if e.code not in (1000, 4004):
                     # Try and RESUME.
-                    self.logger.info("Shard {} disconnected with close code {}, "
+                    self._logger.info("Shard {} disconnected with close code {}, "
                                      "attempting a reconnect.".format(shard_id, e.code))
                     await gw.reconnect(resume=True)
                 else:
@@ -428,11 +432,13 @@ class Client(object):
 
         This is a convenience method that polls on all the shards at once. It will **not** restart them automatically.
         """
-        await self.connect(token, shards=shards)
-
+        self._logger.info("Starting bot with {} shards.".format(shards))
+        self.shard_count = shards
         tasks = []
-        for shard_id in self._gateways.keys():
+        for shard_id in range(0, shards):
+            await self.connect(token, shard_id=shard_id)
             tasks.append(await curio.spawn(self.poll(shard_id)))
+            self._logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
         wait = curio.wait(tasks)
@@ -464,7 +470,8 @@ class Client(object):
         if not self.http:
             self.http = HTTPClient(self._token)
 
-        shards = await self.http.get_shard_count()
+        shards = await self.get_shard_count()
+        self.shard_count = shards
         await self.start(token, shards=shards)
 
     def run(self, token: str = None, shards: int = 1):
@@ -484,7 +491,7 @@ class Client(object):
         try:
             return kernel.run(coro=coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
-            self.logger.info("C-c/C-d received, killing bot.")
+            self._logger.info("C-c/C-d received, killing bot.")
             # Cleanup.
             coros = []
             for gateway in self._gateways.values():
@@ -496,11 +503,11 @@ class Client(object):
                 for task in coros:
                     tasks.append(await curio.spawn(task))
 
-                self.logger.info("Need to wait for {} task(s) to complete.".format(len(tasks)))
+                self._logger.info("Need to wait for {} task(s) to complete.".format(len(tasks)))
 
                 # silence exceptions
                 await curio.gather(tasks, return_exceptions=True)
-                self.logger.info("Clean-up complete.")
+                self._logger.info("Clean-up complete.")
 
             return kernel.run(coro=__cleanup(), shutdown=True)
 
