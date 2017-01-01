@@ -231,7 +231,11 @@ class Client(object):
         else:
             gateway = kwargs.pop("gateway")
 
-        ctx = EventContext(self, gateway.shard_id)
+        if "ctx" not in kwargs:
+            ctx = EventContext(self, gateway.shard_id)
+        else:
+            ctx = kwargs.pop("ctx")
+
         coros = self.events.getall(event_name, [])
 
         temporary_listeners = self._temporary_listeners.getall(event_name, [])
