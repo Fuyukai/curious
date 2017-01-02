@@ -185,7 +185,10 @@ class Command(object):
                     f.append(next_arg)
 
                 converter = self._lookup_converter(arg, param.annotation)
-                final_kwargs[param.name] = converter(ctx, " ".join(f))
+                if len(f) == 1:
+                    final_kwargs[param.name] = converter(ctx, f[0])
+                else:
+                    final_kwargs[param.name] = converter(ctx, " ".join(f))
                 continue
 
             if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
