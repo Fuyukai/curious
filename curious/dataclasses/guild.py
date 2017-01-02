@@ -10,7 +10,7 @@ from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
-from curious.event import EventContext
+from curious.dataclasses import emoji as dt_emoji
 from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper
 
@@ -64,6 +64,9 @@ class Guild(Dataclass):
         #: The channels of this guild.
         self._channels = {}
 
+        #: The emojis that this guild has.
+        self._emojis = {}
+
         #: The number of numbers this guild has.
         #: This is automatically updated.
         self.member_count = 0  # type: int
@@ -94,6 +97,7 @@ class Guild(Dataclass):
         obb._afk_channel_id = self._afk_channel_id
         obb.afk_timeout = self.afk_timeout
         obb.mfa_level = self.mfa_level
+        obb._emojis = self._emojis
 
         return obb
 
@@ -117,6 +121,10 @@ class Guild(Dataclass):
         :return: A list of :class:`curious.dataclasses.role.Role` objects that represent the roles on this guild.
         """
         return self._roles.values()
+
+    @property
+    def emojis(self) -> 'typing.Iterable[dt_emoji.Emoji]':
+        return self._emojis.values()
 
     @property
     def owner(self) -> 'dt_member.Member':
@@ -212,6 +220,16 @@ class Guild(Dataclass):
         """
         return self._channels.get(channel_id)
 
+    def get_emoji(self, emoji_id: int) -> 'dt_emoji.Emoji':
+        """
+        Gets an emoji from the guild by ID.
+
+        :param emoji_id: The emoji ID to look up.
+        :return: The :class:`curious.dataclasses.emoji.Emoji` object that represents the emoji, or None if it couldn't \
+        be found.
+        """
+        return self._emojis.get(emoji_id)
+
     def start_chunking(self):
         self._finished_chunking.clear()
         self._chunks_left = ceil(self.member_count / 1000)
@@ -245,6 +263,18 @@ class Guild(Dataclass):
 
             member_obj.guild = self
             self._members[member_obj.id] = member_obj
+
+    def _handle_emojis(self, emojis: list):
+        """
+        Handles the emojis for this guild.
+        """
+        for emoji in emojis:
+            emoji_obj = dt_emoji.Emoji(**emoji)
+            emoji_obj.guild = self
+            for role_id in emoji_obj._role_ids:
+                emoji_obj.roles.append(self.get_role(int(role_id)))
+
+            self._emojis[emoji_obj.id] = emoji_obj
 
     def from_guild_create(self, **data: dict) -> 'Guild':
         """
@@ -301,6 +331,9 @@ class Guild(Dataclass):
             channel_obj = channel.Channel(self._bot, guild=self, **channel_data)
             channel_obj.guild = self
             self._channels[channel_obj.id] = channel_obj
+
+        # Create all of the emoji objects for the server.
+        self._handle_emojis(data.get("emojis", []))
 
     @property
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':

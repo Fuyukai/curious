@@ -305,6 +305,22 @@ class State(object):
             if guild:
                 await self.client.fire_event("guild_leave", guild, gateway=gw)
 
+    async def handle_guild_emojis_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a guild updates its emojis.
+        """
+        guild_id = int(event_data.get("guild_id", 0))
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        old_guild = guild._copy()
+        emojis = event_data.get("emojis", [])
+        guild._handle_emojis(emojis)
+
+        await self.client.fire_event("guild_emojis_update", old_guild, guild, gateway=gw)
+
     def parse_message(self, event_data: dict, cache: bool = True) -> Message:
         message = Message(self.client, **event_data)
         # discord won't give us the Guild id
