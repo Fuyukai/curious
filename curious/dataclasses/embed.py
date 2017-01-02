@@ -84,6 +84,12 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         :param inline: Is this field inline?
         :return: The Embed object.
         """
+        if not name:
+            raise ValueError("Name must not be empty")
+
+        if not value:
+            raise ValueError("Value must not be empty")
+
         self._fields.append(attrdict({"name": name, "value": value, "inline": inline}))
         return self
 
@@ -138,7 +144,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         Converts this embed into a flattened dict.
         """
         payload = {
-            "type": self.type_
+            "type": self.type_ if self.type_ else "rich"
         }
 
         if self.title:
@@ -151,7 +157,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
             payload["url"] = self.url
 
         if self.colour:
-            payload["colour"] = self.colour
+            payload["color"] = self.colour  # american spelling
 
         if self.timestamp:
             payload["timestamp"] = self.timestamp.strftime("%Y-%m-%dT%H:%M:%S.%f")
