@@ -110,14 +110,23 @@ class Command(object):
         self.invokation_checks.append(value.plugin_check)
         self._instance = value
 
-    def _lookup_converter(self, type_: type) -> typing.Callable[[Context, object], str]:
+    def get_help(self):
+        """
+        :return: The help text for this command.
+        """
+        doc = inspect.getdoc(self.callable)
+        if not doc:
+            return "This command has no help."
+        else:
+            return doc
+
+    def _lookup_converter(self, thing, type_: type) -> typing.Callable[[Context, object], str]:
         """
         Gets a converter for the specified type.
         This is provided as a function for command subclasses to be able to override.
-
-        :param type_:
-        :return:
         """
+        if thing is None:
+            return lambda c, i: i
         return converters.get(type_, lambda ctx, x: str(x))
 
     async def _convert(self, ctx, *args):
@@ -158,7 +167,7 @@ class Command(object):
             # Begin the consumption!
             if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
                 # Only add it to the final_args, then continue the loop.
-                converter = self._lookup_converter(param.annotation)
+                converter = self._lookup_converter(arg, param.annotation)
                 final_args.append(converter(ctx, arg))
                 continue
 
@@ -175,7 +184,7 @@ class Command(object):
 
                     f.append(next_arg)
 
-                converter = self._lookup_converter(param.annotation)
+                converter = self._lookup_converter(arg, param.annotation)
                 final_kwargs[param.name] = converter(ctx, " ".join(f))
                 continue
 
@@ -192,7 +201,7 @@ class Command(object):
 
                     f.append(next_arg)
 
-                converter = self._lookup_converter(param.annotation)
+                converter = self._lookup_converter(arg, param.annotation)
                 final_args.append(converter(ctx, " ".join(f)))
 
                 # We *could* get more arguments.
