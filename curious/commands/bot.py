@@ -1,6 +1,7 @@
 """
 Commands bot subclass.
 """
+import random
 import re
 import inspect
 import importlib
@@ -10,13 +11,12 @@ import typing
 import curio
 import sys
 
-import gc
-
 from curious.client import Client
 from curious.commands.command import Command
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
 from curious.dataclasses import Message
+from curious.dataclasses.embed import Embed
 from curious.event import EventContext
 
 
@@ -29,22 +29,96 @@ def splitter(s):
     return parts
 
 
+async def _help_with_embeds(ctx: Context, command: str=None):
+    """
+    The default help command, but with embeds!
+    """
+    if not command:
+        em = Embed(title=ctx.bot.description)
+        em.description = "Type {}help <command> for more information.".format(ctx.prefix)
+
+        for plugin in ctx.bot.plugins.copy().values():
+            gen = list(ctx.bot.get_commands_for(plugin))
+            cmds = sorted(gen, key=lambda c: c.name)
+
+            names = "\n".join("`{}`".format(cmd.name) for cmd in cmds)
+            em.add_field(name=plugin.name, value=names)
+
+    else:
+        command_obb = ctx.bot.commands.get(command)
+        if not command_obb:
+            em = Embed(title=command, description="Command not found.", colour=0xe74c3c)
+        else:
+            em = Embed(title=command_obb.name)
+            em.description = command_obb.get_help()  # Stop. Get help.
+
+    if not em.colour:
+        em.colour = random.randrange(0, 0xFFFFFF)
+
+    await ctx.channel.send(embed=em)
+
+
+async def _help_without_embeds(ctx: Context, command: str = None):
+    """
+    The default help command without embeds.
+    """
+    if not command:
+        base = "**Commands:**\nUse `{}help <command>` for more information about each command.\n\n".format(ctx.prefix)
+
+        for num, plugin in enumerate(ctx.bot.plugins.copy().values()):
+            gen = list(ctx.bot.get_commands_for(plugin))
+            cmds = sorted(gen, key=lambda c: c.name)
+
+            names = " **|** ".join("`{}`".format(cmd.name) for cmd in cmds)
+            base += "**{}. {}**: {}\n".format(num + 1, plugin.name, names)
+
+        msg = base
+    else:
+        command_obj = ctx.bot.commands.get(command)
+        if command_obj is None:
+            msg = "Command not found."
+        else:
+            base = "{}{}\n\n".format(ctx.prefix, ctx.command.name)
+            base += "{}".format(command_obj.get_help())
+            msg = "```{}```".format(base)
+
+    msg += "\n**For a better help command, give the bot Embed Links permission.**"
+
+    await ctx.message.channel.send(msg)
+
+
+async def _help(ctx: Context, *, command: str = None):
+    """
+    The default help command.
+    """
+    if not ctx.channel.permissions(ctx.guild.me).embed_links:
+        # no embeds :(
+        await _help_without_embeds(ctx, command)
+    else:
+        await _help_with_embeds(ctx, command)
+
+
 class CommandsBot(Client):
     """
     A subclass of Client that supports commands.
     """
 
     def __init__(self, token: str = None, *,
-                 command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list]):
+                 command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list],
+                 description: str="The default curious description"):
         """
         :param token: The bot token.
         :param command_prefix: The command prefix to use for this bot.
             This can either be a string, a list of strings, or a callable that takes the bot and message as arguments.
+        :param description: The description of this bot.
         """
         super().__init__(token)
 
         #: The command prefix to use for this bot.
         self._command_prefix = command_prefix
+
+        #: The description of this bot.
+        self.description = description
 
         #: The dictionary of command objects to use.
         self.commands = {}
@@ -56,6 +130,7 @@ class CommandsBot(Client):
 
         # Add the handle_commands as a message_create event.
         self.add_event("message_create", self.handle_commands)
+        self.add_command("help", Command(cbl=_help, name="help"))
 
     async def _wrap_context(self, ctx: Context):
         """
@@ -154,7 +229,7 @@ class CommandsBot(Client):
             for alias in command.aliases:
                 self.add_command(alias, command)
 
-        self.plugins[plugin_class.__class__.__name__] = plugin_class
+        self.plugins[plugin_class.name] = plugin_class
 
     async def load_plugins_from(self, import_name: str, *args, **kwargs):
         """
@@ -172,6 +247,9 @@ class CommandsBot(Client):
                 continue
 
             inherits = inspect.getmro(member)
+            # remove `member` from the mro
+            # this prevents us registering Plugin as a plugin
+            inherits = [i for i in inherits if i != member]
             if Plugin not in inherits:
                 # Only inspect instances of plugin.
                 continue
@@ -240,3 +318,14 @@ class CommandsBot(Client):
             return command
 
         return inner
+
+    def get_commands_for(self, plugin: Plugin) -> typing.Generator[Command, None, None]:
+        """
+        Gets the commands for the specified plugin.
+
+        :param plugin: The plugin instance to get commands of.
+        :return: A list of :class:`Command`.
+        """
+        for command in self.commands.copy().values():
+            if command.instance == plugin:
+                yield command
