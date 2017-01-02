@@ -9,6 +9,7 @@ from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import member as dt_member
 from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
+from curious.dataclasses.embed import Embed, Attachment
 from curious.exc import CuriousError
 from curious.util import to_datetime
 
@@ -54,6 +55,17 @@ class Message(Dataclass):
             self.edited_at = to_datetime(edited_timestamp)
         else:
             self.edited_at = None
+
+        #: The list of embeds this message contains.
+        self.embeds = []
+        for embed in kwargs.get("embeds", []):
+            self.embeds.append(Embed(**embed))
+
+        #: The list of attachments this message contains.
+        self.attachments = []
+
+        for attachment in kwargs.get("attachments", []):
+            self.attachments.append(Attachment(**attachment))
 
         #: The mentions for this message.
         #: This is UNORDERED.

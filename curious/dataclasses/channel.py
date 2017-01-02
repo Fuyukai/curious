@@ -9,7 +9,8 @@ import curio
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user
-from curious.dataclasses.bases import Dataclass, IDObject
+from curious.dataclasses.bases import Dataclass, IDObject, Messagable
+from curious.dataclasses.embed import Embed
 from curious.exc import PermissionsError, Forbidden
 from curious.exc import Forbidden
 from curious.util import AsyncIteratorWrapper
@@ -102,7 +103,7 @@ class HistoryIterator(collections.AsyncIterator):
         return message
 
 
-class Channel(Dataclass):
+class Channel(Dataclass, Messagable):
     """
     Represents a channel.
 
@@ -371,8 +372,8 @@ class Channel(Dataclass):
 
         return len(to_delete)
 
-    async def send(self, content: str, *,
-                   tts: bool = False) -> 'dt_message.Message':
+    async def send(self, content: str=None, *,
+                   tts: bool = False, embed: Embed=None) -> 'dt_message.Message':
         """
         Sends a message to this channel.
 
@@ -385,16 +386,20 @@ class Channel(Dataclass):
 
         :param content: The content of the message to send.
         :param tts: Should this message be text to speech?
+        :param embed: An embed object to send with this message.
         :return: A new :class:`Message` object.
         """
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_messages")
 
-        if not isinstance(content, str):
+        if not isinstance(content, str) and content is not None:
             content = str(content)
 
-        data = await self._bot.http.send_message(self.id, content, tts=tts)
+        if embed is not None:
+            embed = embed.to_dict()
+
+        data = await self._bot.http.send_message(self.id, content, tts=tts, embed=embed)
         obb = self._bot.state.parse_message(data, cache=False)
 
         return obb

@@ -256,7 +256,7 @@ class HTTPClient(object):
         data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
         return data
 
-    async def send_message(self, channel_id: int, content: str, tts: bool = False):
+    async def send_message(self, channel_id: int, content: str, tts: bool = False, embed: dict=None):
         """
         Sends a message to a channel.
 
@@ -266,9 +266,14 @@ class HTTPClient(object):
         """
         url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
         params = {
-            "content": content,
             "tts": tts,
         }
+
+        if content is not None:
+            params["content"] = content
+
+        if embed is not None:
+            params["embed"] = embed
 
         data = await self.post(url, "messages:{}".format(channel_id), json=params)
         return data

@@ -11,11 +11,13 @@ DISCORD_EPOCH = 1420070400000
 
 class Messagable(abc.ABC):
     @abc.abstractmethod
-    async def send(self, content: str, *args, **kwargs):
+    async def send(self, content: str=None, *, tts: bool=False, embed=None):
         """
         Send a message to the target.
 
         :param content: The content to return.
+        :param tts: Is this message a text to speech message?
+        :param embed: The embed to send instead of a message.
         :return: A new :class:`Message` representing the message returned.
         """
 
