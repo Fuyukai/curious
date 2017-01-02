@@ -12,6 +12,15 @@ class Plugin(object):
     def __init__(self, bot: 'c_bot.CommandsBot'):
         self.bot = bot
 
+    @property
+    def name(self):
+        """
+        Gets the name of this plugin.
+
+        This is mostly for usage in subclasses to customize the name of the plugin from the default type name.
+        """
+        return self.__class__.__name__
+
     async def load(self):
         """
         Called just after the plugin has loaded, before any commands have been registered. Used for async loading.
