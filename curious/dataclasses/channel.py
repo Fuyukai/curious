@@ -1,6 +1,7 @@
 import sys
 import pathlib
 import collections
+import contextlib
 import enum
 import typing
 
@@ -22,6 +23,29 @@ class ChannelType(enum.Enum):
     TEXT = 0
     PRIVATE = 1
     VOICE = 2
+
+
+class _TypingCtxManager:
+    """
+    A context manager that when entered, starts typing, and cancels when exited.
+    """
+
+    def __init__(self, channel: 'Channel'):
+        self._channel = channel
+
+        self._t = None  # type: curio.Task
+
+    async def __aenter__(self):
+        self._t = await curio.spawn(self._type())
+        return None
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self._t.cancel()
+
+    async def _type(self):
+        while True:
+            await self._channel.send_typing()
+            await curio.sleep(5)
 
 
 class HistoryIterator(collections.AsyncIterator):
@@ -152,6 +176,8 @@ class Channel(Dataclass, Messagable):
         #: The internal overwrites for this channel.
         self._overwrites = {}
         self._update_overwrites(kwargs.pop("permission_overwrites", []))
+
+        self.typing = self._typing
 
     def _update_overwrites(self, overwrites: list):
         self._overwrites = {}
@@ -372,8 +398,22 @@ class Channel(Dataclass, Messagable):
 
         return len(to_delete)
 
-    async def send(self, content: str=None, *,
-                   tts: bool = False, embed: Embed=None) -> 'dt_message.Message':
+    async def send_typing(self):
+        """
+        Starts typing in the channel for 5 seconds.
+        """
+        if self.guild:
+            if not self.permissions(self.guild.me).send_messages:
+                raise PermissionsError("send_message")
+
+        await self._bot.http.send_typing(self.id)
+
+    @property
+    def _typing(self):
+        return _TypingCtxManager(self)
+
+    async def send(self, content: str = None, *,
+                   tts: bool = False, embed: Embed = None) -> 'dt_message.Message':
         """
         Sends a message to this channel.
 
@@ -502,6 +542,7 @@ class Channel(Dataclass, Messagable):
         if overwrite is None:
             # Delete the overwrite instead.
             coro = self._bot.http.remove_overwrite(channel_id=self.id, target_id=target.id)
+
             async def _listener(ctx, before, after):
                 if after.id != self.id:
                     return False

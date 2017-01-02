@@ -256,6 +256,17 @@ class HTTPClient(object):
         data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
         return data
 
+    async def send_typing(self, channel_id: str):
+        """
+        Starts typing in a channel.
+
+        :param channel_id: The ID of the channel to type in.
+        """
+        url = (self.CHANNEL_BASE + "/typing").format(channel_id=channel_id)
+
+        data = await self.post(url, bucket="typing:{}".format(channel_id))
+        return data
+
     async def send_message(self, channel_id: int, content: str, tts: bool = False, embed: dict=None):
         """
         Sends a message to a channel.
