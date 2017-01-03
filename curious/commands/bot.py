@@ -45,12 +45,20 @@ async def _help_with_embeds(ctx: Context, command: str=None):
             em.add_field(name=plugin.name, value=names)
 
     else:
-        command_obb = ctx.bot.commands.get(command)
+        command_obb = ctx.bot.get_command(command)
         if not command_obb:
             em = Embed(title=command, description="Command not found.", colour=0xe74c3c)
         else:
-            em = Embed(title=command_obb.name)
+            if command_obb.name != command:
+                title = "{} (alias for `{}`)".format(command, command_obb.name)
+            else:
+                title = command_obb.name
+            em = Embed(title=title)
             em.description = command_obb.get_help()  # Stop. Get help.
+
+            if len(command_obb.aliases) != 1:
+                b = "\n".join("`{}`".format(n) for n in command_obb.aliases if n != command)
+                em.add_field(name="Aliases", value=b)
 
     if not em.colour:
         em.colour = random.randrange(0, 0xFFFFFF)
@@ -74,11 +82,16 @@ async def _help_without_embeds(ctx: Context, command: str = None):
 
         msg = base
     else:
-        command_obj = ctx.bot.commands.get(command)
+        command_obj = ctx.bot.get_command(command)
         if command_obj is None:
             msg = "Command not found."
         else:
-            base = "{}{}\n\n".format(ctx.prefix, ctx.command.name)
+            if command_obj.name != command:
+                title = "{} (alias for `{}`)".format(command, command_obj.name)
+            else:
+                title = command_obj.name
+
+            base = "{}{}\n\n".format(ctx.prefix, title)
             base += "{}".format(command_obj.get_help())
             msg = "```{}```".format(base)
 
@@ -187,15 +200,19 @@ class CommandsBot(Client):
 
         # Split out the command word from the command prefix.
         command_word = tokens[0]
-        if command_word in self.commands:
-            # Create the context object that will be passed in.
-            ctx = Context(self, command=self.commands[command_word], message=message,
-                          event_ctx=event_ctx)
-            ctx.prefix = prefix
-            ctx.name = command_word
-            ctx.raw_args = tokens[1:]
 
-            await curio.spawn(self._wrap_context(ctx))
+        command = self.get_command(command_word)
+        if command is None:
+            return
+
+        # Create the context object that will be passed in.
+        ctx = Context(self, command=command, message=message,
+                      event_ctx=event_ctx)
+        ctx.prefix = prefix
+        ctx.name = command_word
+        ctx.raw_args = tokens[1:]
+
+        await curio.spawn(self._wrap_context(ctx))
 
     def add_command(self, command_name: str, command: Command):
         """
@@ -224,10 +241,8 @@ class CommandsBot(Client):
         for command in commands:
             # Bind the command to the plugin.
             command.instance = plugin_class
-            # aliases incldues the name
-            # so we dont need to add the name normally
-            for alias in command.aliases:
-                self.add_command(alias, command)
+            # dont add any aliases
+            self.add_command(command.name, command)
 
         self.plugins[plugin_class.name] = plugin_class
 
@@ -329,3 +344,16 @@ class CommandsBot(Client):
         for command in self.commands.copy().values():
             if command.instance == plugin:
                 yield command
+
+    def get_command(self, command_name: str) -> typing.Union[Command, None]:
+        """
+        Gets a command object for the specified command name.
+
+        :param command_name: The name of the command.
+        :return: The command object if found, otherwise None.
+        """
+        def _f(cmd: Command):
+            return cmd.name == command_name or command_name in cmd.aliases
+
+        f = filter(_f, self.commands.values())
+        return next(f, None)
