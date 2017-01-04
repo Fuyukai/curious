@@ -190,10 +190,9 @@ class State(object):
         old_member = member._copy()
 
         game = event_data.get("game", {})
-        if game is None:
-            game = {}
+        if game is not None:
+            member.game = Game(**game, status=event_data.get("status"))
 
-        member.game = Game(**game, status=event_data.get("status"))
         member.status = event_data.get("status")
 
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
