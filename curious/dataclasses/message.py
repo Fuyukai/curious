@@ -71,9 +71,12 @@ class Message(Dataclass):
         #: This is UNORDERED.
         self._mentions = kwargs.pop("mentions", [])
 
-        #: The role mentions for this array.
+        #: The role mentions for this message.
         #: This is UNORDERED.
         self._role_mentions = kwargs.pop("mention_roles", [])
+
+        #: The reactions for this message.
+        self.reactions = []
 
     def __repr__(self):
         return "<{0.__class__.__name__} id={0.id} content='{0.content}'>".format(self)

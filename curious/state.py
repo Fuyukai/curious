@@ -9,6 +9,7 @@ from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
+from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
 from curious.dataclasses.user import User
@@ -339,6 +340,18 @@ class State(object):
         else:
             message.author = message.guild.get_member(author_id)
 
+        for reaction_data in event_data.get("reactions", []):
+            emoji = reaction_data.pop("emoji")
+            reaction = Reaction(**reaction_data)
+
+            if "id" in emoji and emoji["id"] is not None:
+                emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+            else:
+                emoji_obb = emoji.get("name", None)
+
+            reaction.emoji = emoji_obb
+            message.reactions.append(reaction)
+
         if cache:
             self._messages.append(message)
 
@@ -404,6 +417,104 @@ class State(object):
             messages.append(message)
 
         await self.client.fire_event("message_delete_bulk", messages, gateway=gw)
+
+    async def handle_message_reaction_add(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a reaction is added to a message.
+        """
+        message_id = event_data.get("message_id")
+        if not message_id:
+            return
+
+        message_id = int(message_id)
+        message = self._find_message(message_id)
+
+        if not message:
+            return
+
+        # complex filter
+        def _f(r: Reaction):
+            if not r.emoji:
+                return False
+
+            if isinstance(r.emoji, str):
+                return r.emoji == event_data["emoji"]["name"]
+
+            else:
+                return r.emoji.id == int(event_data["emoji"]["id"])
+
+        reaction = next(filter(_f, message.reactions), None)
+
+        if not reaction:
+            emoji = event_data.pop("emoji", {})
+            # no useful args are added
+            reaction = Reaction()
+
+            if "id" in emoji and emoji["id"] is not None:
+                emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+            else:
+                emoji_obb = emoji.get("name", None)
+
+            reaction.emoji = emoji_obb
+            message.reactions.append(reaction)
+        else:
+            # up the count
+            reaction.count += 1
+            # if our user id matches, we obviously voted on it
+            if int(event_data["user_id"]) == self._user.id:
+                reaction.me = True
+
+        await self.client.fire_event("message_reaction_add", message, reaction, gateway=gw)
+
+    async def handle_message_reaction_remove_all(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when all reactions are removed from a message.
+        """
+        message = self._find_message(int(event_data.get("message_id", 0)))
+        if not message:
+            return
+
+        reactions = message.reactions.copy()
+        message.reactions = []
+        await self.client.fire_event("message_reaction_remove_all", message, reactions, gateway=gw)
+
+    async def handle_message_reaction_remove(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a reaction is removed from a message.
+        """
+        message_id = event_data.get("message_id")
+        if not message_id:
+            return
+
+        message_id = int(message_id)
+        message = self._find_message(message_id)
+
+        if not message:
+            return
+
+        def _f(r: Reaction):
+            if not r.emoji:
+                return False
+
+            if isinstance(r.emoji, str):
+                return r.emoji == event_data["emoji"]["name"]
+
+            else:
+                return r.emoji.id == int(event_data["emoji"]["id"])
+
+        reaction = next(filter(_f, message.reactions), None)
+        if not reaction:
+            # nothing to do
+            return
+
+        reaction.count -= 1
+        if int(event_data["user_id"]) == self._user.id:
+            reaction.me = False
+
+        if reaction.count == 0:
+            message.reactions.remove(reaction)
+
+        await self.client.fire_event("message_reaction_remove", message, reaction)
 
     async def handle_guild_member_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
