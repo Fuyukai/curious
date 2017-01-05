@@ -10,6 +10,7 @@ from curious.dataclasses import member as dt_member
 from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
 from curious.dataclasses.embed import Embed, Attachment
+from curious.dataclasses.emoji import Emoji
 from curious.exc import CuriousError
 from curious.util import to_datetime
 
@@ -111,6 +112,18 @@ class Message(Dataclass):
 
         return final_mentions
 
+    def reacted(self, emoji: 'typing.Union[Emoji, str]') -> bool:
+        """
+        Checks if this message was reacted to with the specified emoji.
+
+        :param emoji: The emoji to check.
+        """
+        for reaction in self.reactions:
+            if reaction.emoji == emoji:
+                return True
+
+        return False
+
     # Message methods
     async def delete(self):
         """
@@ -177,3 +190,25 @@ class Message(Dataclass):
                 raise PermissionError("manage_messages")
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
+
+    async def react(self, emoji: 'typing.Union[Emoji, str]'):
+        """
+        Reacts to a message with an emoji.
+
+        This requires an Emoji object for reacting to messages with custom reactions, or a string containing the
+        literal unicode (e.g ™) for normal emoji reactions.
+
+        :param emoji: The emoji to react with.
+        """
+        if self.guild:
+            if not self.channel.permissions(self.guild.me).add_reactions:
+                # we can still add already reacted emojis
+                # so make sure to check for that
+                if not self.reacted(emoji):
+                    raise PermissionError("add_reactions")
+
+        if isinstance(emoji, Emoji):
+            # undocumented!
+            emoji = "{}:{}".format(emoji.name, emoji.id)
+
+        await self._bot.http.react_to_message(self.channel.id, self.id, emoji)

@@ -10,6 +10,7 @@ import time
 import typing
 import weakref
 from math import ceil
+from urllib.parse import quote
 
 import curio
 
@@ -339,7 +340,6 @@ class HTTPClient(object):
         :param channel_id: The channel ID that the message is in.
         :param message_id: The message ID of the message.
         :param new_content: The new content of the message.
-        :return: The new Message object.
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
         payload = {
@@ -347,6 +347,21 @@ class HTTPClient(object):
         }
 
         data = await self.patch(url, "messages:{}".format(channel_id), json=payload)
+        return data
+
+    async def react_to_message(self, channel_id: int, message_id: int, emoji: str):
+        """
+        Reacts to a message.
+
+        :param channel_id: The channel ID that the message is in.
+        :param message_id: The message ID of the message.
+        :param emoji: The emoji to react with.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/@me").format(channel_id=channel_id,
+                                                                                          message_id=message_id,
+                                                                                          emoji=emoji)
+
+        data = await self.put(url, "reactions:{}".format(channel_id))
         return data
 
     async def pin_message(self, channel_id: int, message_id: int):
