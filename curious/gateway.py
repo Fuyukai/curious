@@ -235,7 +235,10 @@ class Gateway(object):
 
         This will actually send the data down the websocket, unlike `send` which only pretends to.
         """
-        await self.websocket.send(data)
+        try:
+            await self.websocket.send(data)
+        except WebsocketClosedError:
+            await self._close()
 
     def _send_json(self, payload: dict):
         """
@@ -402,6 +405,9 @@ class Gateway(object):
         """
         Gets the next event, in decoded form.
         """
+        if not self._open:
+            raise WebsocketClosedError(1006, reason="Connection lost")
+
         try:
             event = await self.websocket.poll()
         except WebsocketClosedError:
