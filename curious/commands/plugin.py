@@ -35,6 +35,7 @@ class Plugin(object):
         """
         Added as a check for every command in this plugin.
         """
+        return True
 
     def _scan_body(self) -> typing.Tuple[list, list]:
         """
