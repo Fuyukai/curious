@@ -164,3 +164,11 @@ class Member(Dataclass, Messagable):
         :param roles: The list of roles to remove.
         """
         return self.guild.remove_roles(self, *roles)
+
+    def change_nickname(self, new_nickname: typing.Union[str, None]):
+        """
+        Changes the nickname of this member.
+
+        :param new_nickname: The nickname to change to, None to remove the nickname.
+        """
+        return self.guild.change_nickname(self, new_nickname)

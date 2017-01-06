@@ -566,7 +566,29 @@ class HTTPClient(object):
             "roles": [str(id) for id in role_ids]
         }
 
-        data = await self.patch(url, bucket="roles:{}".format(guild_id), json=payload)
+        data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
+        return data
+
+    async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int=None, me: bool=False):
+        """
+        Changes the nickname of a member.
+
+        If `me` is True, then `member_id` is not required. Otherwise, `member_id` is required.
+
+        :param guild_id: The guild ID that contains the member.
+        :param nickname: The nickname to set, None to reset.
+        :param member_id: The member ID to change the nickname of.
+        :param me: If this should change our own nickname.
+        """
+        if me:
+            url = (self.GUILD_BASE + "/members/@me/nick").format(guild_id=guild_id)
+        else:
+            url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        payload = {
+            "nick": nickname
+        }
+
+        data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
         return data
 
     async def modify_overwrite(self, channel_id: int, target_id: int, type_: str,

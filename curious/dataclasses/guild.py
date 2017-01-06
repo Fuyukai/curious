@@ -377,7 +377,7 @@ class Guild(Dataclass):
 
         :param victim: The member to kick.
         """
-        if not self.me.guild_permissions.ban_members:
+        if not self.me.guild_permissions.kick_members:
             raise PermissionsError("kick_members")
 
         if victim.guild != self:
@@ -391,7 +391,7 @@ class Guild(Dataclass):
         await self._bot.http.kick_member(self.id, victim_id)
 
     async def ban(self, victim: 'typing.Union[dt_member.Member, dt_user.User]', *,
-                  delete_message_days: int=7):
+                  delete_message_days: int = 7):
         """
         Bans somebody from the guild.
 
@@ -542,6 +542,34 @@ class Guild(Dataclass):
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
         await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+        await listener.join()
+
+        return member
+
+    async def change_nickname(self, member: 'dt_member.Member', new_nickname: str):
+        """
+        Changes the nickname of a member.
+
+        :param member: The member to change the nickname of.
+        :param new_nickname: The new nickname.
+        """
+        me = False
+        if member == self.me:
+            me = True
+            if not self.me.guild_permissions.change_nickname:
+                raise PermissionsError("change_nickname")
+        else:
+            if not self.me.guild_permissions.manage_nicknames:
+                raise PermissionsError("manage_nicknames")
+
+        coro = self._bot.http.change_nickname(self.id, new_nickname,
+                                              member_id=member.id, me=me)
+
+        async def _listener(before, after):
+            return after.guild == self and after.nickname == member.nickname
+
+        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
+        await coro
         await listener.join()
 
         return member
