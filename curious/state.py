@@ -418,6 +418,17 @@ class State(object):
 
         await self.client.fire_event("message_delete_bulk", messages, gateway=gw)
 
+    def _find_emoji(self, emoji_data: dict):
+        if emoji_data.get("id", None) is None:
+            # str only
+            return emoji_data["name"]
+
+        # try and get it from the guilds
+        for guild in self.guilds:
+            em = guild.get_emoji(int(emoji_data["id"]))
+            if em:
+                return em
+
     async def handle_message_reaction_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when a reaction is added to a message.
@@ -437,11 +448,12 @@ class State(object):
             if not r.emoji:
                 return False
 
-            if isinstance(r.emoji, str):
-                return r.emoji == event_data["emoji"]["name"]
+            e = self._find_emoji(event_data["emoji"])
+            if not e:
+                # ¯\_(ツ)_/¯
+                return False
 
-            else:
-                return r.emoji.id == int(event_data["emoji"]["id"])
+            return r.emoji == e
 
         reaction = next(filter(_f, message.reactions), None)
 
@@ -496,11 +508,10 @@ class State(object):
             if not r.emoji:
                 return False
 
-            if isinstance(r.emoji, str):
-                return r.emoji == event_data["emoji"]["name"]
-
-            else:
-                return r.emoji.id == int(event_data["emoji"]["id"])
+            e = self._find_emoji(event_data["emoji"])
+            if not e:
+                # ¯\_(ツ)_/¯
+                return False
 
         reaction = next(filter(_f, message.reactions), None)
         if not reaction:
