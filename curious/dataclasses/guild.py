@@ -599,3 +599,13 @@ class Guild(Dataclass):
         image = base64ify(icon_content)
         await self._bot.http.modify_guild(self.id,
                                           icon_content=image)
+
+    def upload_icon(self, path):
+        """
+        Uploads a new icon for the guild.
+
+        :param path: A path-like object to use to upload.
+        """
+        with open(path, 'rb') as f:
+            return self.change_icon(f.read())
+
