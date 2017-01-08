@@ -573,3 +573,19 @@ class Guild(Dataclass):
         await listener.join()
 
         return member
+
+    async def change_role_positions(self, roles: 'typing.Union[typing.Dict[role.Role, int], '
+                                                 'typing.List[typing.Tuple[role.Role, int]]]'):
+        """
+        Changes the positions of a mapping of roles.
+
+        :param roles: A dict or iterable of two-item tuples of new roles that is in the format of (role, position).
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        if isinstance(roles, dict):
+            roles = roles.items()
+
+        to_send = [(str(r.id), new_position) for (r, new_position) in roles]
+        await self._bot.http.change_roles_position(to_send)

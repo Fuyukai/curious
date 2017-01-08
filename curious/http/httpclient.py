@@ -550,7 +550,7 @@ class HTTPClient(object):
         url = (self.GUILD_BASE + "/members/{member_id}/roles/{role_id}").format(guild_id=guild_id, member_id=member_id,
                                                                                 role_id=role_id)
 
-        data = await self.put(url, bucket="roles:{}".format(guild_id))
+        data = await self.put(url, bucket="member_edit:{}".format(guild_id))
         return data
 
     async def modify_member_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
@@ -567,6 +567,19 @@ class HTTPClient(object):
         }
 
         data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
+        return data
+
+    async def change_roles_position(self, guild_id: int, role_mapping: typing.List[typing.Tuple[str, int]]):
+        """
+        Changes the position of a set of roles.
+
+        :param guild_id: The guild ID that contains the roles.
+        :param role_mapping: An iterable of `(role_id, new_position)` values.
+        """
+        url = (self.GUILD_BASE + "/roles").format(guild_id=guild_id)
+        payload = [(str(r_id), position) for r_id, position in role_mapping]
+
+        data = await self.patch(url, bucket="roles", json=payload)
         return data
 
     async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int=None, me: bool=False):
