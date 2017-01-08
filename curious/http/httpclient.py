@@ -537,6 +537,49 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="bans:{}".format(guild_id))
         return data
 
+    async def modify_guild(self, guild_id: int, *,
+                           name: str=None, icon_content: bytes=None,
+                           region: str=None, verification_level: int=None,
+                           default_message_notifications: int=None,
+                           afk_channel_id: int=None, afk_timeout: int=None,
+                           splash_content: bytes=None):
+        """
+        Modifies a guild.
+
+        https://discordapp.com/developers/docs/resources/guild#modify-guild
+        """
+        url = self.GUILD_BASE.format(guild_id=guild_id)
+        payload = {}
+
+        if name:
+            payload["name"] = name
+
+        if icon_content:
+            payload["icon"] = icon_content
+
+        if region:
+            payload["region"] = region
+
+        if verification_level is not None:
+            payload["verification_level"] = verification_level
+
+        if default_message_notifications is not None:
+            payload["default_message_notifications"] = default_message_notifications
+
+        if afk_channel_id == 0:
+            payload["afk_channel_id"] = None
+        elif afk_channel_id:
+            payload["afk_channel_id"] = afk_channel_id
+
+        if afk_timeout:
+            payload["afk_timeout"] = afk_timeout
+
+        if splash_content:
+            payload["splash"] = splash_content
+
+        data = await self.patch(url, bucket="guild_edit:{}".format(guild_id), json=payload)
+        return data
+
     async def add_single_role(self, guild_id: int, member_id: int, role_id: int):
         """
         Adds a single role to a member.

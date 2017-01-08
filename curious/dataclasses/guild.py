@@ -12,7 +12,7 @@ from curious.dataclasses import role
 from curious.dataclasses.status import Game
 from curious.dataclasses import emoji as dt_emoji
 from curious.exc import PermissionsError, HierachyError
-from curious.util import AsyncIteratorWrapper
+from curious.util import AsyncIteratorWrapper, base64ify
 
 
 class Guild(Dataclass):
@@ -589,3 +589,13 @@ class Guild(Dataclass):
 
         to_send = [(str(r.id), new_position) for (r, new_position) in roles]
         await self._bot.http.change_roles_position(to_send)
+
+    async def change_icon(self, icon_content: bytes):
+        """
+        Changes the icon for this guild.
+
+        :param icon_content: The bytes that represent the icon of the guild.
+        """
+        image = base64ify(icon_content)
+        await self._bot.http.modify_guild(self.id,
+                                          icon_content=image)
