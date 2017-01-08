@@ -16,7 +16,7 @@ from curious.event import EventContext
 from curious.gateway import Gateway, ReconnectWebsocket
 from curious.http.httpclient import HTTPClient
 from curious.state import State
-from curious.util import _traverse_stack_for
+from curious.util import _traverse_stack_for, base64ify
 
 
 class AppInfo(object):
@@ -355,13 +355,7 @@ class Client(object):
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
         """
         if avatar:
-            # Convert the avatar to base64.
-            mimetype = imghdr.what(None, avatar)
-            if not mimetype:
-                raise ValueError("Invalid image type")
-
-            b64_data = base64.b64encode(avatar).decode()
-            avatar = "data:{};base64,{}".format(mimetype, b64_data)
+            avatar = base64ify(avatar)
 
         await self.http.edit_profile(username, avatar)
 

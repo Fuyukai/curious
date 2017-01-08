@@ -1,9 +1,11 @@
 """
 Misc utilities shared throughout the library.
 """
+import base64
 import datetime
 
 import collections
+import imghdr
 import inspect
 import typing
 
@@ -33,6 +35,22 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
             return self.items.popleft()
         except IndexError:
             raise StopAsyncIteration
+
+
+def base64ify(image_data: bytes):
+    """
+    Base64-ifys an image to send to discord.
+
+    :param image_data: The data of the image to use.
+    :return: A string containing the encoded image.
+    """
+    # Convert the avatar to base64.
+    mimetype = imghdr.what(None, image_data)
+    if not mimetype:
+        raise ValueError("Invalid image type")
+
+    b64_data = base64.b64encode(image_data).decode()
+    return "data:{};base64,{}".format(mimetype, b64_data)
 
 
 def to_datetime(timestamp: str) -> datetime.datetime:
