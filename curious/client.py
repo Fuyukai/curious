@@ -250,10 +250,11 @@ class Client(object):
 
         tasks = []
         for event in coros.copy():
-            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs)))
+            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs), daemon=True))
 
         for listener in temporary_listeners:
-            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx, *args, **kwargs)))
+            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx, *args, **kwargs),
+                                           daemon=True))
 
         return tasks
 
