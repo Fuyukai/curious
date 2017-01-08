@@ -590,6 +590,18 @@ class Guild(Dataclass):
         to_send = [(str(r.id), new_position) for (r, new_position) in roles]
         await self._bot.http.change_roles_position(to_send)
 
+    async def modify_guild(self, **kwargs):
+        """
+        Edits this guild.
+
+        For a list of available arguments, see https://discordapp.com/developers/docs/resources/guild#modify-guild.
+        """
+        if "afk_channel" in kwargs:
+            kwargs["afk_channel_id"] = kwargs.pop("afk_channel").id
+
+        await self._bot.http.modify_guild(self.id, **kwargs)
+        return self
+
     async def change_icon(self, icon_content: bytes):
         """
         Changes the icon for this guild.

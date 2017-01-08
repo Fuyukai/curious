@@ -569,7 +569,7 @@ class HTTPClient(object):
         if afk_channel_id == 0:
             payload["afk_channel_id"] = None
         elif afk_channel_id:
-            payload["afk_channel_id"] = afk_channel_id
+            payload["afk_channel_id"] = str(afk_channel_id)
 
         if afk_timeout:
             payload["afk_timeout"] = afk_timeout
