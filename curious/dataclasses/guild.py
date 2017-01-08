@@ -659,6 +659,10 @@ class Guild(Dataclass):
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
 
+        if permissions is not None:
+            if isinstance(permissions, dt_permissions.Permissions):
+                permissions = permissions.bitfield
+
         await self._bot.http.edit_role(self.id, role.id,
                                        name=name, permissions=permissions, colour=colour, hoist=hoist,
                                        position=position, mentionable=mentionable)
