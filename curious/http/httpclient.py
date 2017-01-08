@@ -268,7 +268,7 @@ class HTTPClient(object):
         data = await self.post(url, bucket="typing:{}".format(channel_id))
         return data
 
-    async def send_message(self, channel_id: int, content: str, tts: bool = False, embed: dict=None):
+    async def send_message(self, channel_id: int, content: str, tts: bool = False, embed: dict = None):
         """
         Sends a message to a channel.
 
@@ -291,7 +291,7 @@ class HTTPClient(object):
         return data
 
     async def upload_file(self, channel_id: int, file_content: bytes, *,
-                          filename: str=None, content: str=None):
+                          filename: str = None, content: str = None):
         """
         Uploads a file to the current channel.
 
@@ -538,11 +538,11 @@ class HTTPClient(object):
         return data
 
     async def modify_guild(self, guild_id: int, *,
-                           name: str=None, icon_content: bytes=None,
-                           region: str=None, verification_level: int=None,
-                           default_message_notifications: int=None,
-                           afk_channel_id: int=None, afk_timeout: int=None,
-                           splash_content: bytes=None):
+                           name: str = None, icon_content: bytes = None,
+                           region: str = None, verification_level: int = None,
+                           default_message_notifications: int = None,
+                           afk_channel_id: int = None, afk_timeout: int = None,
+                           splash_content: bytes = None):
         """
         Modifies a guild.
 
@@ -578,6 +578,63 @@ class HTTPClient(object):
             payload["splash"] = splash_content
 
         data = await self.patch(url, bucket="guild_edit:{}".format(guild_id), json=payload)
+        return data
+
+    async def create_role(self, guild_id: int) -> int:
+        """
+        Creates a role in a guild.
+
+        :param guild_id: The guild to create the role in.
+        :return: The ID of the new role.
+        """
+        url = (self.GUILD_BASE + "/roles").format(guild_id=guild_id)
+
+        data = await self.post(url, bucket="guild_roles:{}".format(guild_id))
+        return int(data["id"])
+
+    async def edit_role(self, guild_id: int, role_id: int,
+                        name: str = None, permissions: int = None, position: int = None,
+                        colour: int = None, hoist: bool = None, mentionable: bool = None):
+        """
+        Edits a role.
+
+        :param guild_id: The guild ID that contains the role.
+        :param role_id: The role ID to edit.
+        """
+        url = (self.GUILD_BASE + "/roles/{role_id}").format(guild_id=guild_id, role_id=role_id)
+        payload = {}
+
+        if name:
+            payload["name"] = name
+
+        if permissions is not None:
+            payload["permissions"] = permissions
+
+        if position is not None:
+            payload["position"] = position
+
+        if colour:
+            payload["color"] = colour
+
+        if hoist is not None:
+            payload["hoist"] = hoist
+
+        if mentionable is not None:
+            payload["mentionable"] = mentionable
+
+        data = await self.patch(url, bucket="guild_roles:{}".format(guild_id), json=payload)
+        return data
+
+    async def delete_role(self, guild_id: int, role_id: int):
+        """
+        Deletes a role.
+
+        :param guild_id: The guild ID that contains the role.
+        :param role_id: The role ID to delete.
+        """
+        url = (self.GUILD_BASE + "/roles/{role_id}").format(guild_id=guild_id, role_id=role_id)
+
+        data = await self.delete(url, bucket="guild_roles:{}".format(guild_id))
         return data
 
     async def add_single_role(self, guild_id: int, member_id: int, role_id: int):
@@ -625,7 +682,7 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="roles", json=payload)
         return data
 
-    async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int=None, me: bool=False):
+    async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int = None, me: bool = False):
         """
         Changes the nickname of a member.
 
@@ -648,7 +705,7 @@ class HTTPClient(object):
         return data
 
     async def modify_overwrite(self, channel_id: int, target_id: int, type_: str,
-                               *, allow: int=0, deny: int=0):
+                               *, allow: int = 0, deny: int = 0):
         """
         Modifies or adds an overwrite.
 

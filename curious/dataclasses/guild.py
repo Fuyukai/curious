@@ -11,6 +11,7 @@ from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import role
 from curious.dataclasses.status import Game
 from curious.dataclasses import emoji as dt_emoji
+from curious.dataclasses import permissions as dt_permissions
 from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper, base64ify
 
@@ -596,6 +597,9 @@ class Guild(Dataclass):
 
         For a list of available arguments, see https://discordapp.com/developers/docs/resources/guild#modify-guild.
         """
+        if not self.me.guild_permissions.manage_server:
+            raise PermissionsError("manage_server")
+
         if "afk_channel" in kwargs:
             kwargs["afk_channel_id"] = kwargs.pop("afk_channel").id
 
@@ -608,6 +612,9 @@ class Guild(Dataclass):
 
         :param icon_content: The bytes that represent the icon of the guild.
         """
+        if not self.me.guild_permissions.manage_server:
+            raise PermissionsError("manage_server")
+
         image = base64ify(icon_content)
         await self._bot.http.modify_guild(self.id,
                                           icon_content=image)
@@ -621,3 +628,50 @@ class Guild(Dataclass):
         with open(path, 'rb') as f:
             return self.change_icon(f.read())
 
+    async def create_role(self, **kwargs):
+        """
+        Creates a new role in this guild.
+
+        This does *not* edit the role in-place.
+        :return: A new :class:`Role`.
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        role_id = await self._bot.http.create_role(self.id)
+        return await self.edit_role(self._roles[role_id])
+
+    async def edit_role(self, role: 'role.Role', *,
+                        name: str = None, permissions: 'dt_permissions.Permissions' = None,
+                        colour: int = None, position: int = None,
+                        hoist: bool = None, mentionable: bool = None):
+        """
+        Edits a role.
+
+        :param role: The role to edit.
+        :param name: The name of the role.
+        :param permissions: The permissions that the role has.
+        :param colour: The colour of the role.
+        :param position: The position in the sorting list that the role has.
+        :param hoist: Is this role hoisted (shows separately in the role list)?
+        :param mentionable: Is this mentionable by everyone?
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        await self._bot.http.edit_role(self.id, role.id,
+                                       name=name, permissions=permissions, colour=colour, hoist=hoist,
+                                       position=position, mentionable=mentionable)
+
+        return role
+
+    async def delete_role(self, role: 'role.Role'):
+        """
+        Deletes a role.
+
+        :param role: The role to delete.
+        """
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        await self._bot.http.delete_role(self.id, role.id)

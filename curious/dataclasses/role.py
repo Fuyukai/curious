@@ -68,6 +68,10 @@ class Role(Dataclass):
         """
         return self.guild.id == self.id
 
+    @property
+    def mention(self):
+        return "<&{}>".format(self.id)
+
     def assign_to(self, member: 'dt_member.Member'):
         """
         Assigns this role to a member.
@@ -78,3 +82,6 @@ class Role(Dataclass):
 
     def remove_from(self, member: 'dt_member.Member'):
         return self.guild.remove_roles(member, self)
+
+    def delete(self):
+        return self.guild.delete_role(self)
