@@ -85,3 +85,6 @@ class Role(Dataclass):
 
     def delete(self):
         return self.guild.delete_role(self)
+
+    def edit(self, **kwargs):
+        return self.guild.edit_role(self, **kwargs)

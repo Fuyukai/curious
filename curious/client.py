@@ -417,7 +417,7 @@ class Client(object):
                 if e.code not in (1000, 4004, 4011):
                     # Try and RESUME.
                     self._logger.info("Shard {} disconnected with close code {}, "
-                                     "attempting a reconnect.".format(shard_id, e.code))
+                                      "attempting a reconnect.".format(shard_id, e.code))
                     await gw.reconnect(resume=True)
                 else:
                     raise
