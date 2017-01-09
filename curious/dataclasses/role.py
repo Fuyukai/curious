@@ -70,7 +70,7 @@ class Role(Dataclass):
 
     @property
     def mention(self):
-        return "<&{}>".format(self.id)
+        return "<@&{}>".format(self.id)
 
     def assign_to(self, member: 'dt_member.Member'):
         """
