@@ -98,7 +98,7 @@ class Guild(Dataclass):
         obb._afk_channel_id = self._afk_channel_id
         obb.afk_timeout = self.afk_timeout
         obb.mfa_level = self.mfa_level
-        obb._emojis = self._emojis
+        obb._emojis = self._emojis.copy()
 
         return obb
 
