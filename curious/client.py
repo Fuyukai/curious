@@ -507,6 +507,7 @@ class Client(object):
                 # silence exceptions
                 await curio.gather(tasks, return_exceptions=True)
                 self._logger.info("Clean-up complete.")
+                raise SystemExit()
 
             return kernel.run(coro=__cleanup(), shutdown=True)
 
