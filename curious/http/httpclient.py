@@ -277,17 +277,17 @@ class HTTPClient(object):
         :param tts: Is this message a text to speech message?
         """
         url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
-        params = {
+        payload = {
             "tts": tts,
         }
 
         if content is not None:
-            params["content"] = content
+            payload["content"] = content
 
         if embed is not None:
-            params["embed"] = embed
+            payload["embed"] = embed
 
-        data = await self.post(url, "messages:{}".format(channel_id), json=params)
+        data = await self.post(url, "messages:{}".format(channel_id), json=payload)
         return data
 
     async def upload_file(self, channel_id: int, file_content: bytes, *,
@@ -746,11 +746,11 @@ class HTTPClient(object):
         :param user_id: The user ID of the user to open with.
         """
         url = self.USER_ME + "/channels"
-        params = {
+        payload = {
             "recipient_id": user_id
         }
 
-        data = await self.post(url, "channels:private:create", json=params)
+        data = await self.post(url, "channels:private:create", json=payload)
         return data
 
     async def leave_guild(self, guild_id: str):
