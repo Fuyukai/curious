@@ -36,7 +36,7 @@ class _TypingCtxManager:
         self._t = None  # type: curio.Task
 
     async def __aenter__(self):
-        self._t = await curio.spawn(self._type())
+        self._t = await curio.spawn(self._type(), daemon=True)
         return None
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
