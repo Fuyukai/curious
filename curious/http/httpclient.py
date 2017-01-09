@@ -637,6 +637,84 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="guild_roles:{}".format(guild_id))
         return data
 
+    async def create_channel(self, guild_id: int, name: str, type_: int, *,
+                             bitrate: int=None, user_limit: int=None,
+                             permission_overwrites: list=None):
+        """
+        Creates a new channel.
+
+        :param guild_id: The guild ID to create the channel in.
+        :param name: The name of the channel.
+        :param type_: The type of the channel (text/voice).
+        :param bitrate: The bitrate of the channel, if it is a voice channel.
+        :param user_limit: The maximum number of users that can be in the channel.
+        :param permission_overwrites: The list of permission overwrites to use for this channel.
+        """
+        url = (self.GUILD_BASE + "/channels").format(guild_id=guild_id)
+        payload = {
+            "name": name,
+            "type": type_
+        }
+
+        if type_ == 2:
+            if bitrate is not None:
+                payload["bitrate"] = bitrate
+
+            if user_limit is not None:
+                payload["user_limit"] = user_limit
+
+        if permission_overwrites is not None:
+            payload["permission_overwrites"] = permission_overwrites
+
+        data = await self.post(url, bucket="guild_channels:{}".format(guild_id), json=payload)
+        return data
+
+    async def edit_channel(self, channel_id: int, *,
+                           name: str=None, position: int=None,
+                           topic: str=None,
+                           bitrate: int=None, user_limit: int=-1):
+        """
+        Edits a channel.
+
+        :param channel_id: The channel ID to edit.
+        :param name: The new name of the channel.
+        :param position: The new position of the channel.
+        :param topic: The new topic of the channel.
+        :param bitrate: The new bitrate of the channel.
+        :param user_limit: The user limit of the channel.
+        """
+        url = self.CHANNEL_BASE.format(channel_id)
+        payload = {}
+
+        if name is not None:
+            payload["name"] = name
+
+        if position is not None:
+            payload["position"] = position
+
+        if topic is not None:
+            payload["topic"] = topic
+
+        if bitrate is not None:
+            payload["bitrate"] = bitrate
+
+        if user_limit != -1:
+            payload["user_limit"] = user_limit
+
+        data = await self.patch(url, bucket="channels:{}".format(channel_id), json=payload)
+        return data
+
+    async def delete_channel(self, channel_id: int):
+        """
+        Deletes a channel.
+
+        :param channel_id: The channel ID to delete.
+        """
+        url = self.CHANNEL_BASE.format(channel_id)
+
+        data = await self.delete(url, bucket="channels:{}".format(channel_id))
+        return data
+
     async def add_single_role(self, guild_id: int, member_id: int, role_id: int):
         """
         Adds a single role to a member.
