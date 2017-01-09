@@ -167,6 +167,7 @@ class Command(object):
             # Begin the consumption!
             if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
                 # Only add it to the final_args, then continue the loop.
+                arg = arg.replace('"', '')
                 converter = self._lookup_converter(arg, param.annotation)
                 final_args.append(converter(ctx, arg))
                 continue
