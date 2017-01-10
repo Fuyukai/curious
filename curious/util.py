@@ -73,6 +73,47 @@ def to_datetime(timestamp: str) -> datetime.datetime:
         return datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S")
 
 
+def replace_quotes(item: str) -> str:
+    """
+    Replaces the quotes in a string, but only if they are un-escaped.
+
+    :param item: The string to scan.
+    :return: The string, with quotes replace.
+    """
+    # A list is used because it can be appended easily.
+    final_str_arr = []
+
+    for n, char in enumerate(item):
+        # only operate if the previous char actually exists
+        if n - 1 < 0:
+            final_str_arr.append(char)
+            continue
+
+        # Complex quoting rules!
+        # If it's a SINGLE backslash, don't append it.
+        # If it's a double backslash, append it.
+        if char == '\\':
+            if item[n - 1] == "\\":
+                # double backslash, append it
+                final_str_arr.append(char)
+
+            continue
+
+        if char == '"':
+            # check to see if it's escaped
+            if item[n - 1] == '\\':
+                # if the last char on final_str_arr is NOT a backslash, we want to keep it.
+                if len(final_str_arr) > 0 and final_str_arr[-1] != '\\':
+                    final_str_arr.append('"')
+
+            continue
+
+        # None of the above were hit, so add it anyway and continue.
+        final_str_arr.append(char)
+
+    return "".join(final_str_arr)
+
+
 def _traverse_stack_for(t: type):
     """
     Traverses the stack for an object of type `t`.

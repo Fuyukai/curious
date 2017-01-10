@@ -7,6 +7,7 @@ from curious.commands.exc import CheckFailureError, MissingArgumentError, Comman
 # Default converters.
 from curious.dataclasses import Channel
 from curious.dataclasses.member import Member
+from curious.util import replace_quotes
 
 
 def convert_member(ctx: Context, arg: str):
@@ -167,7 +168,7 @@ class Command(object):
             # Begin the consumption!
             if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
                 # Only add it to the final_args, then continue the loop.
-                arg = arg.replace('"', '')
+                arg = replace_quotes(arg)
                 converter = self._lookup_converter(arg, param.annotation)
                 final_args.append(converter(ctx, arg))
                 continue
