@@ -35,6 +35,10 @@ class Guild(Dataclass):
         #: Used to construct the icon URL later.
         self._icon_hash = None  # type: str
 
+        #: The splash hash of this guild.
+        #: Used to construct the splash URL later.
+        self._splash_hash = None  # type: str
+
         #: The owner ID of this guild.
         self._owner_id = None  # type: int
 
@@ -87,6 +91,7 @@ class Guild(Dataclass):
         obb.unavailable = self.unavailable
         obb.name = self.name
         obb._icon_hash = self._icon_hash
+        obb._splash_hash = self._splash_hash
         obb._owner_id = self._owner_id
         obb.region = self.region
         obb.shard_id = self.shard_id
@@ -291,6 +296,7 @@ class Guild(Dataclass):
 
         self.name = data.get("name")  # type: str
         self._icon_hash = data.get("icon")  # type: str
+        self._splash_hash = data.get("splash")  # type: str
         self._owner_id = int(data.get("owner_id"))  # type: int
         self.large = data.get("large", False)
         self.region = data.get("region")
@@ -343,9 +349,19 @@ class Guild(Dataclass):
     @property
     def icon_url(self) -> str:
         """
-        :return: The icon URL for this server.
+        :return: The icon URL for this guild, or None if one isn't set.
         """
-        return "https://cdn.discordapp.com/icons/{}/{}.jpg".format(self.id, self._icon_hash)
+        if self._icon_hash:
+            return "https://cdn.discordapp.com/icons/{}/{}.webp".format(self.id, self._icon_hash)
+
+    @property
+    def splash_url(self) -> str:
+        """
+        :return: The splash URL for this guild, or None if one isn't set.
+        """
+        if self._splash_hash:
+            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id, self._splash_hash)
+
 
     # Guild methods.
     async def leave(self):
