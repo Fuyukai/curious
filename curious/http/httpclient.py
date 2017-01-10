@@ -125,7 +125,7 @@ class HTTPClient(object):
                                                        kwargs.get("url", "???"),
                                                        response.status_code))
 
-                if response.status_code == 502:
+                if response.status_code in [500, 502]:
                     # 502 means that we can retry without worrying about ratelimits.
                     # Perform exponential backoff to prevent spamming discord.
                     sleep_time = 1 + (tries * 2)
