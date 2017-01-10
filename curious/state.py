@@ -277,6 +277,7 @@ class State(object):
             guild.member_count = len(guild._members)
         guild.large = event_data.get("large")
         guild._icon_hash = event_data.get("icon")
+        guild._splash_hash = event_data.get("splash")
         guild.region = event_data.get("region")
         guild.mfa_level = event_data.get("mfa_level")
         guild._afk_channel_id = int(event_data.get("afk_channel", 0))
