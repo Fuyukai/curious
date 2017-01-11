@@ -323,6 +323,19 @@ class Gateway(object):
 
         self._send_json(payload)
 
+    def send_voice_state_update(self, guild_id: int, channel_id: int):
+        payload = {
+            "op": GatewayOp.VOICE_STATE,
+            "d": {
+                "guild_id": str(guild_id),
+                "channel_id": str(channel_id),
+                "self_mute": False,
+                "self_deaf": False,
+            }
+        }
+
+        self._send_json(payload)
+
     def _request_chunk(self, guild):
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,

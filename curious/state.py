@@ -49,6 +49,7 @@ class State(object):
         self._messages = collections.deque(maxlen=max_messages)
 
         self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: curio.Event())
+        self.__voice_state_crap = collections.defaultdict(lambda *args, **kwargs: ((curio.Event(), curio.Event()), {}))
 
     def _is_ready(self, shard_id: int):
         return self.__shards_is_ready[shard_id]
@@ -123,6 +124,21 @@ class State(object):
         self._private_channels[channel.id] = channel
 
         return channel
+
+    async def wait_for_voice_data(self, guild_id: int):
+        """
+        Waits for the two voice data packets to be received for the specified guild.
+        """
+        events, state = self.__voice_state_crap[guild_id]  # state is a pointer
+
+        for event in events:
+            print("waiting for {}".format(event))
+            await event.wait()
+
+        # pop out the event data for laeter reconnects
+        self.__voice_state_crap.pop(guild_id)
+
+        return state
 
     # Event handlers.
     # These parse the events and deconstruct them.
@@ -770,3 +786,45 @@ class State(object):
             member = channel.user
 
         await self.client.fire_event("user_typing", channel, member, gateway=gw)
+
+    # Voice bullshit
+    async def handle_voice_server_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a voice server update packet is dispatched.
+        """
+        # This is an internal event, so we do NOT dispatch it.
+        # Instead, store some state internally.
+        guild_id = event_data.get("guild_id")
+        if not guild_id:
+            # thanks
+            return
+
+        events, state = self.__voice_state_crap[int(guild_id)]
+
+        state.update({
+                "token": event_data.get("token"),
+                "endpoint": event_data.get("endpoint"),
+        })
+
+        # Set the VOICE_SERVER_UPDATE event.
+        await events[0].set()
+
+    async def handle_voice_state_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a member's voice state changes.
+        """
+        guild_id = int(event_data.get("guild_id"))
+
+        # If it has a session_id, it's for voice connection bullshit
+        session_id = event_data.get("session_id")
+        if session_id is not None:
+            # YAY
+            events, state = self.__voice_state_crap[guild_id]
+            state.update({
+                "session_id": event_data.get("session_id")
+            })
+            # 2nd one is voice_state_update event
+            await events[1].set()
+            return
+
+        # todo: other users
