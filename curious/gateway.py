@@ -465,9 +465,15 @@ class Gateway(object):
 
         elif op == GatewayOp.INVALIDATE_SESSION:
             # Clean up our session.
-            self.sequence_num = 0
-            self.state._reset()
-            self.send_identify()
+            should_resume = data
+            if should_resume is True:
+                self.logger.debug("Sending RESUME again")
+                self.send_resume()
+            else:
+                self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
+                self.sequence_num = 0
+                self.state._reset()
+                self.send_identify()
 
         elif op == GatewayOp.RECONNECT:
             # Try and reconnect to the gateway.
