@@ -8,6 +8,8 @@ class CheckFailureError(Exception):
         self.check = check
 
     def __repr__(self):
+        if isinstance(self.check, list):
+            return "The checks for {.name} failed.".format(self.ctx)
         return "The check {.__name__} for {.name} failed.".format(self.check, self.ctx)
 
     __str__ = __repr__

@@ -111,7 +111,50 @@ class Command(object):
         self.invokation_checks.append(value.plugin_check)
         self._instance = value
 
-    def get_help(self):
+    def get_usage(self, ctx: Context, invoked_as: str) -> str:
+        """
+        :return: The usage text for this command.
+        """
+        final = ["{}{}".format(ctx.prefix, invoked_as)]
+
+        for n, (name, param) in enumerate(self._signature.parameters.items()):
+            # always skip the first arg
+            if n == 0:
+                continue
+
+            if self.instance is not None:
+                # skip the 2nd arg if we're bound to a plugin
+                if n == 1:
+                    continue
+
+            # switch based on kind (again...)
+            assert isinstance(param, inspect.Parameter)
+            if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
+                if param.annotation is not inspect.Parameter.empty:
+                    s = "<{}: {}>".format(param.name, param.annotation.__name__)
+                else:
+                    s = "<{}>".format(param.name)
+
+            elif param.kind in [inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_POSITIONAL]:
+                if param.default is not inspect.Parameter.empty:
+                    if param.annotation is not inspect.Parameter.empty:
+                        s = "[{}: {} (default: {})]".format(param.name, param.annotation.__name__,
+                                                            repr(param.default))
+                    else:
+                        s = "[{} (default: {})]".format(param.name, repr(param.default))
+                else:
+                    if param.annotation is not inspect.Parameter.empty:
+                        s = "<{}: {}>".format(param.name, param.annotation.__name__ )
+                    else:
+                        s = "<{}>".format(param.name)
+            else:
+                s = ""
+
+            final.append(s)
+
+        return " ".join(final)
+
+    def get_help(self, ctx: Context, invoked_as: str) -> str:
         """
         :return: The help text for this command.
         """
@@ -221,16 +264,36 @@ class Command(object):
 
         return final_args, final_kwargs
 
-    async def invoke(self, ctx: Context, *args):
-        for check in self.invokation_checks:
-            # Checks can either be regular callables or coroutine functions.
-            # Support both with an isawaitable() call.
-            result = check(ctx)
-            if inspect.isawaitable(result):
-                result = await result
+    async def can_run(self, ctx: Context) -> typing.Tuple[int, typing.List[typing.Tuple[str, typing.Any]]]:
+        """
+        Checks if this command can run.
 
-            if not result:
-                raise CheckFailureError(ctx, check)
+        This will return a two-item tuple: the number of checks that failed, the results of the checks.
+
+        :param ctx: The command context.
+        :return: The tuple described above.
+        """
+        failed, results = len(self.invokation_checks), []
+
+        for check in self.invokation_checks:
+            try:
+                result = check(ctx)
+                if inspect.isawaitable(result):
+                    result = await result
+            except CheckFailureError as e:
+                result = repr(e)
+
+            if not isinstance(result, CheckFailureError) and result:  # truthy value means succeeded
+                failed -= 1
+
+            results.append((check.__name__, result))
+
+        return failed, results
+
+    async def invoke(self, ctx: Context, *args):
+        failed, _ = await self.can_run(ctx)
+        if failed:
+            raise CheckFailureError(ctx, _)
 
         final_args, final_kwargs = await self._convert(ctx, *args)
 

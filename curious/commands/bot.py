@@ -29,7 +29,7 @@ def splitter(s):
     return parts
 
 
-async def _help_with_embeds(ctx: Context, command: str=None):
+async def _help_with_embeds(ctx: Context, command: str = None):
     """
     The default help command, but with embeds!
     """
@@ -45,7 +45,7 @@ async def _help_with_embeds(ctx: Context, command: str=None):
             em.add_field(name=plugin.name, value=names)
 
     else:
-        command_obb = ctx.bot.get_command(command)
+        command_obb = ctx.bot.get_command(command)  # type: Command
         if not command_obb:
             em = Embed(title=command, description="Command not found.", colour=0xe74c3c)
         else:
@@ -54,11 +54,21 @@ async def _help_with_embeds(ctx: Context, command: str=None):
             else:
                 title = command_obb.name
             em = Embed(title=title)
-            em.description = command_obb.get_help()  # Stop. Get help.
+            em.description = command_obb.get_help(ctx, command)  # Stop. Get help.
 
             if len(command_obb.aliases) != 1:
                 b = "\n".join("`{}`".format(n) for n in command_obb.aliases if n != command)
                 em.add_field(name="Aliases", value=b)
+
+            # Check if they can run the command.
+            if len(command_obb.invokation_checks) > 0:
+                failed, result = await command_obb.can_run(ctx)
+                if failed:
+                    em.description += "\n\nYou **cannot** run this command. (`{}` checks failed.)".format(failed)
+                    em.colour = 0xFF0000
+
+            usage = command_obb.get_usage(ctx, command)
+            em.add_field(name="Usage", value=usage)
 
     if not em.colour:
         em.colour = random.randrange(0, 0xFFFFFF)
@@ -118,7 +128,7 @@ class CommandsBot(Client):
 
     def __init__(self, token: str = None, *,
                  command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list],
-                 description: str="The default curious description"):
+                 description: str = "The default curious description"):
         """
         :param token: The bot token.
         :param command_prefix: The command prefix to use for this bot.
@@ -352,6 +362,7 @@ class CommandsBot(Client):
         :param command_name: The name of the command.
         :return: The command object if found, otherwise None.
         """
+
         def _f(cmd: Command):
             return cmd.name == command_name or command_name in cmd.aliases
 
