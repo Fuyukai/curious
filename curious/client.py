@@ -355,6 +355,7 @@ class Client(object):
         except curio.CancelledError:
             # remove the listener
             self.remove_listener_early(event_name, __event_listener_inner)
+            raise
         # If it's an exception, raise the exception.
         if _exc is not None:
             raise _exc
