@@ -86,7 +86,9 @@ def replace_quotes(item: str) -> str:
     for n, char in enumerate(item):
         # only operate if the previous char actually exists
         if n - 1 < 0:
-            final_str_arr.append(char)
+            if char != '"':
+                final_str_arr.append(char)
+
             continue
 
         # Complex quoting rules!

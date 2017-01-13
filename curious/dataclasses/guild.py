@@ -583,7 +583,7 @@ class Guild(Dataclass):
                                               member_id=member.id, me=me)
 
         async def _listener(before, after):
-            return after.guild == self and after.nickname in [member.nickname, new_nickname]
+            return after.guild == self and after.id == member.id
 
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
         await coro
