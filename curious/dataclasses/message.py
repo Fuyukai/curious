@@ -162,7 +162,11 @@ class Message(Dataclass):
 
         # Prevent race conditions by spawning a listener, then waiting for the task once we've sent the HTTP request.
         t = await curio.spawn(self._bot.wait_for("message_edit", predicate=lambda o, n: n.id == self.id))
-        await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
+        try:
+            await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
+        except:
+            await t.cancel()
+            raise
         old, new = await t.join()
         return new
 

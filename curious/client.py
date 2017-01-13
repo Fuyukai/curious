@@ -212,6 +212,21 @@ class Client(object):
                 # re-add all new items
                 self._temporary_listeners.add(event, i)
 
+    def remove_listener_early(self, event, listener):
+        """
+        Removes a listener early.
+
+        :param event: The event to remove from.
+        :param listener: The listener to remove.
+        """
+        all = self._temporary_listeners.getall(event)
+        if listener in all:
+            all.remove(listener)
+
+        self._temporary_listeners.pop(event)
+        for i in all:
+            self._temporary_listeners.add(event, i)
+
     async def fire_event(self, event_name: str, *args, **kwargs) -> typing.List[Task]:
         """
         Fires an event to run.
@@ -335,7 +350,11 @@ class Client(object):
 
         self.add_listener(event_name, __event_listener_inner)
         # Wait on the event to be set.
-        await event.wait()
+        try:
+            await event.wait()
+        except curio.CancelledError:
+            # remove the listener
+            self.remove_listener_early(event_name, __event_listener_inner)
         # If it's an exception, raise the exception.
         if _exc is not None:
             raise _exc

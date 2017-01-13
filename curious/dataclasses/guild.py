@@ -519,7 +519,12 @@ class Guild(Dataclass):
         role_ids = set([_r.id for _r in member.roles] + [_r.id for _r in roles])
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
-        await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+        try:
+            await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+        except:
+            await listener.cancel()
+            raise
+
         # Now wait for the event to happen on the gateway.
         await listener.join()
 
@@ -558,7 +563,11 @@ class Guild(Dataclass):
         role_ids = set([_r.id for _r in to_keep])
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
-        await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+        try:
+            await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+        except:
+            await listener.cancel()
+            raise
         await listener.join()
 
         return member
@@ -579,14 +588,21 @@ class Guild(Dataclass):
             if not self.me.guild_permissions.manage_nicknames:
                 raise PermissionsError("manage_nicknames")
 
+        if member.top_role >= self.me.top_role:
+            raise HierachyError("Top role is equal to or lower than victim's top role")
+
         coro = self._bot.http.change_nickname(self.id, new_nickname,
                                               member_id=member.id, me=me)
 
         async def _listener(before, after):
             return after.guild == self and after.id == member.id
 
-        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
-        await coro
+        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))  # type: curio.Task
+        try:
+            await coro
+        except:
+            await listener.cancel()
+            raise
         await listener.join()
 
         return member

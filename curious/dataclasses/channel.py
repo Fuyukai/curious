@@ -573,6 +573,10 @@ class Channel(Dataclass, Messagable):
 
             listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
 
-        await coro
+        try:
+            await coro
+        except:
+            await listener.cancel()
+            raise
         await listener.join()
         return self
