@@ -48,8 +48,10 @@ def convert_channel(ctx: Context, arg: str):
             raise ConversionFailedError(ctx, arg, Channel)
     else:
         try:
-            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels))
-        except StopIteration:
+            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels), None)
+            if channel is None:
+                channel = next(filter(lambda c: c.id == int(arg), ctx.guild.channels))
+        except (StopIteration, ValueError):
             raise ConversionFailedError(ctx, arg, Channel)
 
     return channel
@@ -57,7 +59,8 @@ def convert_channel(ctx: Context, arg: str):
 
 converters = {
     int: lambda ctx, x: int(x),
-    Member: convert_member
+    Member: convert_member,
+    Channel: convert_channel
 }
 
 
