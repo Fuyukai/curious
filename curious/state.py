@@ -132,7 +132,6 @@ class State(object):
         events, state = self.__voice_state_crap[guild_id]  # state is a pointer
 
         for event in events:
-            print("waiting for {}".format(event))
             await event.wait()
 
         # pop out the event data for laeter reconnects
