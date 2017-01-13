@@ -4,15 +4,17 @@ import collections
 import contextlib
 import enum
 import typing
+from math import floor
 
 import curio
+import time
 
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user
 from curious.dataclasses.bases import Dataclass, IDObject, Messagable
 from curious.dataclasses.embed import Embed
-from curious.exc import PermissionsError, Forbidden
+from curious.exc import PermissionsError, Forbidden, CuriousError
 from curious.exc import Forbidden
 from curious.util import AsyncIteratorWrapper
 
@@ -312,7 +314,13 @@ class Channel(Dataclass, Messagable):
         if not self.permissions(self.guild.me).manage_messages:
             raise PermissionsError("manage_messages")
 
-        ids = [message.id for message in messages]
+        minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+        ids = []
+        for message in messages:
+            if message.id < minimum_allowed:
+                raise CuriousError("Cannot delete messages older than {}".format(minimum_allowed))
+            ids.append(message.id)
+
         await self._bot.http.bulk_delete_messages(self.id, ids)
 
         return None
@@ -377,7 +385,12 @@ class Channel(Dataclass, Messagable):
         # Split into chunks of 100.
         message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
         for chunk in message_chunks:
-            message_ids = [message.id for message in chunk]
+            minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+            message_ids = []
+            for message in chunk:
+                if message.id < minimum_allowed:
+                    raise CuriousError("Cannot delete messages older than {}".format(minimum_allowed))
+                message_ids.append(message.id)
             # First, try and bulk delete all the messages.
             if can_bulk_delete:
                 try:
