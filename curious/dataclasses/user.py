@@ -86,6 +86,9 @@ class User(Dataclass, Messagable):
         """
         return self.timestamp
 
+    def __repr__(self):
+        return "<User id={} name={} discrim={}>".format(self.id, self.name, self.discriminator)
+
     def __str__(self):
         return "{}#{}".format(self.username, self.discriminator)
 

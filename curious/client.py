@@ -12,6 +12,7 @@ from curio.task import Task
 from curious.dataclasses import Guild
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
+from curious.dataclasses.webhook import Webhook
 from curious.event import EventContext
 from curious.gateway import Gateway, ReconnectWebsocket
 from curious.http.httpclient import HTTPClient
@@ -398,6 +399,15 @@ class Client(object):
         :return: A new User object.
         """
         return User(self, **(await self.http.get_user(user_id)))
+
+    async def get_webhook(self, webhook_id: int) -> Webhook:
+        """
+        Gets a webhook by ID.
+
+        :param webhook_id: The ID of the webhook to get.
+        :return: A new Webhook object.
+        """
+        return self.state._make_webhook(await self.http.get_webhook(webhook_id))
 
     # Utility functions
     async def connect(self, token: str = None, shard_id: int = 1):

@@ -816,6 +816,18 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="channels:permissions:{}".format(channel_id))
         return data
 
+    # Webhooks
+    async def get_webhook(self, webhook_id: int):
+        """
+        Gets a webhook object for the specified ID.
+
+        :param webhook_id: The ID of the webhook to get.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+
+        data = await self.get(url, bucket="webhooks")  # not a major param?
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """
