@@ -4,6 +4,7 @@ from curious.dataclasses.bases import IDObject, Dataclass
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import channel as dt_channel
+from curious.dataclasses import embed as dt_embed
 from curious.util import base64ify
 
 
@@ -89,6 +90,18 @@ class Webhook(Dataclass):
         """
         return channel.create_webhook(name=name, avatar=avatar)
 
+    async def get_token(self):
+        """
+        Gets the token for this webhook, if no token was set earlier.
+        :return: The token for the webhook.
+        """
+        if self.token:
+            return self.token
+
+        us = await self._bot.http.get_webhook(self.id)
+        self.token = us.get("token")
+        return self.token
+
     async def delete(self):
         """
         Deletes the webhook.
@@ -125,3 +138,29 @@ class Webhook(Dataclass):
             await self.channel.edit_webhook(self, name=name, avatar=avatar)
 
         return self
+
+    async def execute(self, *,
+                      content: str = None, username: str = None, avatar_url: str = None,
+                      embeds: 'typing.List[dt_embed.Embed]'=None, wait: bool = False) -> typing.Union[None, str]:
+        """
+        Executes the webhook.
+
+        :param content: Any raw content to send.
+        :param username: A username to override the default username of the webhook with.
+        :param avatar_url: The URL for the avatar to override the default avatar with.
+        :param embeds: A list of embeds to add to the message.
+        :param wait: Should we wait for the message to arrive before returning?
+        """
+        if embeds:
+            embeds = [embed.to_dict() for embed in embeds]
+
+        if self.token is None:
+            await self.get_token()
+
+        data = await self._bot.http.execute_webhook(self.id, self.token,
+                                                    content=content, embeds=embeds,
+                                                    username=username, avatar_url=avatar_url,
+                                                    wait=wait)
+
+        if wait:
+            return self._bot.state.parse_message(data, cache=False)
