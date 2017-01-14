@@ -934,6 +934,42 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="webhooks")
         return data
 
+    async def execute_webhook(self, webhook_id: int, webhook_token: str, *,
+                              content: str=None, embeds: typing.List[typing.Dict]=None,
+                              username: str=None, avatar_url: str=None,
+                              wait: bool=False):
+        """
+        Executes a webhook.
+
+        :param webhook_id: The ID of the webhook to execute.
+        :param webhook_token: The token of this webhook.
+        :param content: Any message content to send.
+        :param embeds: A list of embeds to send.
+        :param username: The username to override with.
+        :param avatar_url: The avatar URL to send.
+        :param wait: If we should wait for the message to send.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=webhook_token)
+        payload = {}
+
+        if content:
+            payload["content"] = content
+
+        if embeds:
+            payload["embeds"] = embeds
+
+        if username:
+            payload["username"] = username
+
+        if avatar_url:
+            payload["avatar_url"] = avatar_url
+
+        # URL params, not payload
+        params = {"wait": str(wait)}
+        data = await self.post(url, bucket="webhooks", json=payload, params=params)
+
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """
