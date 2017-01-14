@@ -1,7 +1,6 @@
 import sys
 import pathlib
 import collections
-import contextlib
 import enum
 import typing
 from math import floor
@@ -11,7 +10,7 @@ import time
 
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
-    permissions as dt_permissions, role as dt_role, user as dt_user
+    permissions as dt_permissions, role as dt_role, user as dt_user, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass, IDObject, Messagable
 from curious.dataclasses.embed import Embed
 from curious.exc import PermissionsError, Forbidden, CuriousError
@@ -271,6 +270,20 @@ class Channel(Dataclass, Messagable):
             messages.append(self._bot.state.parse_message(message))
 
         return messages
+
+    async def get_webhooks(self) -> 'typing.List[dt_webhook.Webhook]':
+        """
+        Gets the webhooks for this channel.
+
+        :return: A list of :class:`Webhook` objects for the channel.
+        """
+        webhooks = await self._bot.http.get_webhooks_for_channel(self.id)
+        obbs = []
+
+        for webhook in webhooks:
+            obbs.append(self._bot.state._make_webhook(webhook))
+
+        return obbs
 
     async def get_message(self, message_id: int) -> 'dt_message.Message':
         """

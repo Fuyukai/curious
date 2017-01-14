@@ -825,7 +825,29 @@ class HTTPClient(object):
         """
         url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
 
-        data = await self.get(url, bucket="webhooks")  # not a major param?
+        data = await self.get(url, bucket="webhooks")  # not a major param :(
+        return data
+
+    async def get_webhooks_for_guild(self, guild_id: int):
+        """
+        Gets the webhooks for the specified guild.
+
+        :param guild_id: The ID of the guild to get the webhooks for.
+        """
+        url = (self.GUILD_BASE + "/webhooks").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="webhooks:{}".format(guild_id))
+        return data
+
+    async def get_webhooks_for_channel(self, channel_id: int):
+        """
+        Gets the webhooks for the specified channel.
+
+        :param channel_id: The ID of the channel to get the webhooks for.
+        """
+        url = (self.CHANNEL_BASE + "/webhooks").format(channel_id=channel_id)
+
+        data = await self.get(url, bucket="webhooks:{}".format(channel_id))
         return data
 
     # Misc

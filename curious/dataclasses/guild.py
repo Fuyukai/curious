@@ -12,6 +12,7 @@ from curious.dataclasses import role
 from curious.dataclasses.status import Game
 from curious.dataclasses import emoji as dt_emoji
 from curious.dataclasses import permissions as dt_permissions
+from curious.dataclasses import webhook as dt_webhook
 from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper, base64ify
 
@@ -362,7 +363,6 @@ class Guild(Dataclass):
         if self._splash_hash:
             return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id, self._splash_hash)
 
-
     # Guild methods.
     async def leave(self):
         """
@@ -481,6 +481,20 @@ class Guild(Dataclass):
         forgiven_id = user.id
 
         await self._bot.http.unban_user(self.id, forgiven_id)
+
+    async def get_webhooks(self) -> 'typing.List[dt_webhook.Webhook]':
+        """
+        Gets the webhooks for this guild.
+
+        :return: A list of :class:`Webhook` objects for the guild.
+        """
+        webhooks = await self._bot.http.get_webhooks_for_guild(self.id)
+        obbs = []
+
+        for webhook in webhooks:
+            obbs.append(self._bot.state._make_webhook(webhook))
+
+        return obbs
 
     async def add_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
         """
