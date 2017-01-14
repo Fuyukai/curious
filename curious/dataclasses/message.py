@@ -9,6 +9,7 @@ from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import member as dt_member
 from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
+from curious.dataclasses import webhook as dt_webhook
 from curious.dataclasses.embed import Embed, Attachment
 from curious.dataclasses.emoji import Emoji
 from curious.exc import CuriousError
@@ -43,7 +44,7 @@ class Message(Dataclass):
         self.channel = None  # type: dt_channel.Channel
 
         #: The author of this message.
-        self.author = None  # type: dt_member.Member
+        self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
 
         #: The true timestamp of this message.
         #: This is not the snowflake timestamp.

@@ -14,6 +14,7 @@ from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
 from curious.dataclasses.user import User
 from curious import gateway
+from curious.dataclasses.webhook import Webhook
 
 
 class State(object):
@@ -113,6 +114,28 @@ class State(object):
         for message in reversed(self._messages):
             if message.id == message_id:
                 return message
+
+    def _make_webhook(self, event_data: dict) -> Webhook:
+        if "content" in event_data:
+            # message object, so we have to do a minor bit of remapping
+            user = event_data.get("author", {})
+            webhook_id = int(event_data.get("webhook_id", 0))
+        else:
+            user = event_data.get("user", {})
+            webhook_id = event_data.get("id")
+
+        channel = self._get_channel(int(event_data.get("channel_id")))
+        user = User(self.client, **user)
+        webhook = Webhook(client=self.client, webhook_id=webhook_id)
+        webhook.channel = channel
+        webhook.user = user
+        webhook.token = event_data.get("token", None)
+
+        # default fields, these are lazily loaded by properties
+        webhook._default_name = event_data.get("name", None)
+        webhook._default_avatar = event_data.get("avatar", None)
+
+        return webhook
 
     def new_private_channel(self, channel_data: dict) -> Channel:
         """
@@ -354,7 +377,11 @@ class State(object):
         if message.channel.is_private:
             message.author = message.channel.user
         else:
-            message.author = message.guild.get_member(author_id)
+            # Webhooks also exist.
+            if event_data.get("webhook_id") is not None:
+                message.author = self._make_webhook(event_data)
+            else:
+                message.author = message.guild.get_member(author_id)
 
         for reaction_data in event_data.get("reactions", []):
             emoji = reaction_data.pop("emoji")
