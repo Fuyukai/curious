@@ -15,7 +15,7 @@ from curious.dataclasses.bases import Dataclass, IDObject, Messagable
 from curious.dataclasses.embed import Embed
 from curious.exc import PermissionsError, Forbidden, CuriousError
 from curious.exc import Forbidden
-from curious.util import AsyncIteratorWrapper
+from curious.util import AsyncIteratorWrapper, base64ify
 
 PY36 = sys.version_info[0:2] >= (3, 6)
 
@@ -300,6 +300,25 @@ class Channel(Dataclass, Messagable):
         msg = self._bot.state.parse_message(data)
 
         return msg
+
+    async def create_webhook(self, *, name: str=None, avatar: bytes=None) -> 'dt_webhook.Webhook':
+        """
+        Create a webhook in this channel.
+
+        :param name: The name of the new webhook.
+        :param avatar: The bytes content of the new webhook.
+        :return: A :class:`Webhook` that represents the webhook created.
+        """
+        if not self.permissions(self.guild.me).manage_webhooks:
+            raise PermissionsError("manage_webhooks")
+
+        if avatar is not None:
+            avatar = base64ify(avatar)
+
+        data = await self._bot.http.create_webhook(self.id, name=name, avatar=avatar)
+        webook = self._bot.state._make_webhook(data)
+
+        return webook
 
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
         """

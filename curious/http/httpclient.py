@@ -638,8 +638,8 @@ class HTTPClient(object):
         return data
 
     async def create_channel(self, guild_id: int, name: str, type_: int, *,
-                             bitrate: int=None, user_limit: int=None,
-                             permission_overwrites: list=None):
+                             bitrate: int = None, user_limit: int = None,
+                             permission_overwrites: list = None):
         """
         Creates a new channel.
 
@@ -670,9 +670,9 @@ class HTTPClient(object):
         return data
 
     async def edit_channel(self, channel_id: int, *,
-                           name: str=None, position: int=None,
-                           topic: str=None,
-                           bitrate: int=None, user_limit: int=-1):
+                           name: str = None, position: int = None,
+                           topic: str = None,
+                           bitrate: int = None, user_limit: int = -1):
         """
         Edits a channel.
 
@@ -848,6 +848,24 @@ class HTTPClient(object):
         url = (self.CHANNEL_BASE + "/webhooks").format(channel_id=channel_id)
 
         data = await self.get(url, bucket="webhooks:{}".format(channel_id))
+        return data
+
+    async def create_webhook(self, channel_id: int, *,
+                             name: str = None, avatar: str = None):
+        """
+        Creates a webhook.
+
+        :param channel_id: The channel ID to create the webhook in.
+        :param name: The name of the webhook to create.
+        :param avatar: The base64 encoded avatar to send.
+        """
+        url = (self.CHANNEL_BASE + "/webhooks").format(channel_id=channel_id)
+        payload = {"name": name}
+
+        if avatar is not None:
+            payload["avatar"] = avatar
+
+        data = await self.post(url, bucket="webhooks:{}".format(channel_id), json=payload)
         return data
 
     async def delete_webhook(self, webhook_id: int):
