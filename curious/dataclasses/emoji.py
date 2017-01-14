@@ -26,6 +26,12 @@ class Emoji(IDObject):
         #: The guild this emoji is associated with.
         self.guild = None  # type: dt_guild.Guild
 
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return False
+
+        return self.id == other.id
+
     def __str__(self):
         return "<:{}:{}>".format(self.name, self.id)
 
