@@ -866,3 +866,10 @@ class State(object):
             return
 
         # todo: other users
+
+    async def handle_webhooks_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a channel has a webhook updated.
+
+        This event is effectively useless.
+        """
