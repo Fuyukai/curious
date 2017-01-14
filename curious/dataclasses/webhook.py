@@ -1,3 +1,5 @@
+import typing
+
 from curious.dataclasses.bases import IDObject, Dataclass
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild as dt_guild
@@ -73,6 +75,19 @@ class Webhook(Dataclass):
         """
         # this is kept so you can easily do `message.author.name` all the time.
         return self.user.name or self.default_name
+
+    @classmethod
+    def create(cls, channel: 'dt_channel.Channel', *,
+                     name: str, avatar: bytes) -> 'typing.Awaitable[Webhook]':
+        """
+        Creates a new webhook.
+
+        :param channel: The channel to create the webhook in.
+        :param name: The name of the webhook to create.
+        :param avatar: The bytes data for the webhook's default avatar.
+        :return: A new :class:`Webhook`.
+        """
+        return channel.create_webhook(name=name, avatar=avatar)
 
     async def delete(self):
         """
