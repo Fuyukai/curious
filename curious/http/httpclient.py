@@ -868,6 +868,49 @@ class HTTPClient(object):
         data = await self.post(url, bucket="webhooks:{}".format(channel_id), json=payload)
         return data
 
+    async def edit_webhook(self, webhook_id: int, *,
+                           name: str = None, avatar: str = None):
+        """
+        Edits a webhook.
+
+        :param webhook_id: The ID of the webhook to edit.
+        :param name: The name of the webhook.
+        :param avatar: The base64 encoded avatar to send.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+        payload = {}
+
+        if avatar is not None:
+            payload["avatar"] = avatar
+
+        if name is not None:
+            payload["name"] = name
+
+        data = await self.patch(url, bucket="webhooks", json=payload)
+        return data
+
+    async def edit_webhook_with_token(self, webhook_id: int, token: str, *,
+                                      name: str = None, avatar: str = None):
+        """
+        Edits a webhook, with a token.
+
+        :param webhook_id: The ID of the webhook to edit.
+        :param token: The token of the webhook to edit.
+        :param name: The name of the webhook to edit.
+        :param avatar: The base64 encoded avatar to send.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=token)
+        payload = {}
+
+        if avatar is not None:
+            payload["avatar"] = avatar
+
+        if name is not None:
+            payload["name"] = name
+
+        data = await self.patch(url, bucket="webhooks", json=payload)
+        return data
+
     async def delete_webhook(self, webhook_id: int):
         """
         Deletes a webhook.
