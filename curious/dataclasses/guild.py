@@ -496,25 +496,6 @@ class Guild(Dataclass):
 
         return obbs
 
-    async def delete_webhook(self, webhook: 'dt_webhook.Webhook'):
-        """
-        Deletes a webhook.
-
-        You must have MANAGE_WEBHOOKS to delete this webhook.
-
-        :param webhook: The webhook to delete.
-        """
-        if webhook.token is not None:
-            # Delete it unconditionally.
-            await self._bot.http.delete_webhook_with_token(webhook.id, webhook.token)
-            return webhook
-
-        if not self.me.guild_permissions.manage_webhooks:
-            raise PermissionsError("manage_webhooks")
-
-        await self._bot.http.delete_webhook(webhook.id)
-        return webhook
-
     async def add_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
         """
         Adds roles to a member.

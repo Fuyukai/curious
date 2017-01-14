@@ -2,6 +2,7 @@ from curious.dataclasses.bases import IDObject, Dataclass
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import channel as dt_channel
+from curious.util import base64ify
 
 
 class Webhook(Dataclass):
@@ -83,3 +84,29 @@ class Webhook(Dataclass):
             return await self._bot.http.delete_webhook_with_token(self.id, self.token)
         else:
             return await self.guild.delete_webhook(self)
+
+    async def edit(self, *,
+                   name: str=None, avatar: bytes=None):
+        """
+        Edits this webhook.
+
+        :param name: The new name for this webhook.
+        :param avatar: The bytes-encoded content of the new avatar.
+        :return: The webhook object.
+        """
+        if avatar is not None:
+            avatar = base64ify(avatar)
+
+        if self.token is not None:
+            # edit with token, don't pass to guild
+            data = await self._bot.http.edit_webhook_with_token(self.id, name=name, avatar=avatar)
+            self._default_name = data.get("name")
+            self._default_avatar = data.get("avatar")
+
+            # Update the user too
+            self.user.username = data.get("name")
+            self.user._avatar_hash = data.get("avatar")
+        else:
+            await self.channel.edit_webhook(self, name=name, avatar=avatar)
+
+        return self

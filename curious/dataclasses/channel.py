@@ -320,6 +320,56 @@ class Channel(Dataclass, Messagable):
 
         return webook
 
+    async def edit_webhook(self, webhook: 'dt_webhook.Webhook', *,
+                           name: str=None, avatar: bytes=None) -> 'dt_webhook.Webhook':
+        """
+        Edits a webhook.
+
+        :param webhook: The webhook to edit.
+        :param name: The new name for the webhook.
+        :param avatar: The new bytes for the avatar.
+        :return: The modified webhook object.
+        """
+        if avatar is not None:
+            avatar = base64ify(avatar)
+
+        if webhook.token is not None:
+            # Edit it unconditionally.
+            await self._bot.http.edit_webhook_with_token(webhook.id, webhook.token,
+                                                         name=name, avatar=avatar)
+
+        if not self.permissions(self.guild.me).manage_webhooks:
+            raise PermissionsError("manage_webhooks")
+
+        data = await self._bot.http.edit_webhook(webhook.id,
+                                                 name=name, avatar=avatar)
+        webhook._default_name = data.get("name")
+        webhook._default_avatar = data.get("avatar")
+
+        webhook.user.username = data.get("name")
+        webhook.user._avatar_hash = data.get("avatar")
+
+        return webhook
+
+    async def delete_webhook(self, webhook: 'dt_webhook.Webhook'):
+        """
+        Deletes a webhook.
+
+        You must have MANAGE_WEBHOOKS to delete this webhook.
+
+        :param webhook: The webhook to delete.
+        """
+        if webhook.token is not None:
+            # Delete it unconditionally.
+            await self._bot.http.delete_webhook_with_token(webhook.id, webhook.token)
+            return webhook
+
+        if not self.permissions(self.guild.me).manage_webhooks:
+            raise PermissionsError("manage_webhooks")
+
+        await self._bot.http.delete_webhook(webhook.id)
+        return webhook
+
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
         """
         Deletes messages from a channel.
