@@ -78,7 +78,7 @@ class Webhook(Dataclass):
 
     @classmethod
     def create(cls, channel: 'dt_channel.Channel', *,
-                     name: str, avatar: bytes) -> 'typing.Awaitable[Webhook]':
+               name: str, avatar: bytes) -> 'typing.Awaitable[Webhook]':
         """
         Creates a new webhook.
 
@@ -101,7 +101,7 @@ class Webhook(Dataclass):
             return await self.guild.delete_webhook(self)
 
     async def edit(self, *,
-                   name: str=None, avatar: bytes=None):
+                   name: str = None, avatar: bytes = None):
         """
         Edits this webhook.
 
