@@ -27,6 +27,9 @@ class Webhook(Dataclass):
         #: This is None if the webhook was received from a Message object.
         self.token = kwargs.get("token", None)  # type: str
 
+        #: The owner of this webhook.
+        self.owner = None  # type: dt_user.User
+
         #: The default name of this webhook.
         self._default_name = None  # type: str
 
@@ -34,7 +37,10 @@ class Webhook(Dataclass):
         self._default_avatar = None  # type: str
 
     def __repr__(self):
-        return "<Webhook id={} name={} channel={}>".format(self.id, self.name, self.channel)
+        return "<Webhook id={} name={} channel={} owner={}>".format(self.id, self.name,
+                                                                    repr(self.channel), repr(self.owner))
+
+    __str__ = __repr__
 
     @property
     def default_name(self):

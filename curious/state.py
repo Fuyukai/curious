@@ -120,16 +120,28 @@ class State(object):
             # message object, so we have to do a minor bit of remapping
             user = event_data.get("author", {})
             webhook_id = int(event_data.get("webhook_id", 0))
+            owner = {}
         else:
-            user = event_data.get("user", {})
+            # make a "fake" user
             webhook_id = event_data.get("id")
+            user = {
+                "id": webhook_id,
+                "discriminator": "0000",
+                "avatar": event_data.get("avatar"),
+                "username": event_data.get("username")
+            }
+            owner = event_data.get("user", {})
 
         channel = self._get_channel(int(event_data.get("channel_id")))
         user = User(self.client, **user)
-        webhook = Webhook(client=self.client, webhook_id=webhook_id)
+        webhook = Webhook(client=self.client, webhook_id=webhook_id, **event_data)
         webhook.channel = channel
         webhook.user = user
         webhook.token = event_data.get("token", None)
+
+        if owner:
+            # only create Owner if the data was returned
+            webhook.owner = User(client=self.client, **owner)
 
         # default fields, these are lazily loaded by properties
         webhook._default_name = event_data.get("name", None)
