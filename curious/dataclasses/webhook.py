@@ -72,3 +72,14 @@ class Webhook(Dataclass):
         """
         # this is kept so you can easily do `message.author.name` all the time.
         return self.user.name or self.default_name
+
+    async def delete(self):
+        """
+        Deletes the webhook.
+
+        You must either be the owner of this webhook, or the webhook must have a token associated to delete it.
+        """
+        if self.token is not None:
+            return await self._bot.http.delete_webhook_with_token(self.id, self.token)
+        else:
+            return await self.guild.delete_webhook(self)

@@ -850,6 +850,29 @@ class HTTPClient(object):
         data = await self.get(url, bucket="webhooks:{}".format(channel_id))
         return data
 
+    async def delete_webhook(self, webhook_id: int):
+        """
+        Deletes a webhook.
+
+        :param webhook_id: The ID of the webhook to delete.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+
+        data = await self.delete(url, bucket="webhooks")
+        return data
+
+    async def delete_webhook_with_token(self, webhook_id: int, token: str):
+        """
+        Deletes a webhook with a token.
+
+        :param webhook_id: The ID of the webhook to delete.
+        :param token: The token of the webhook.
+        """
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=token)
+
+        data = await self.delete(url, bucket="webhooks")
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """
