@@ -181,7 +181,7 @@ class State(object):
         Called when READY is dispatched.
         """
         self.logger.info("Ready received for shard {}. Delaying until all guilds are chunked.".format(gw.shard_id))
-        gateway.session_id = event_data.get("session_id")
+        gw.session_id = event_data.get("session_id")
 
         # Create our bot user.
         self._user = User(self.client, **event_data.get("user"))
