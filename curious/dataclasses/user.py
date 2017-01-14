@@ -52,6 +52,9 @@ class User(Dataclass, Messagable):
         """
         :return: The avatar URL of this user.
         """
+        if not self._avatar_hash:
+            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(int(self.discriminator) % 5)
+
         # `a_` signifies Nitro and that they have an animated avatar.
         if self._avatar_hash.startswith("a_"):
             suffix = ".gif"  # soon: animated webp
