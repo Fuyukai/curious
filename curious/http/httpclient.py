@@ -580,17 +580,16 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="guild_edit:{}".format(guild_id), json=payload)
         return data
 
-    async def create_role(self, guild_id: int) -> int:
+    async def create_role(self, guild_id: int) -> dict:
         """
         Creates a role in a guild.
 
         :param guild_id: The guild to create the role in.
-        :return: The ID of the new role.
         """
         url = (self.GUILD_BASE + "/roles").format(guild_id=guild_id)
 
         data = await self.post(url, bucket="guild_roles:{}".format(guild_id))
-        return int(data["id"])
+        return data
 
     async def edit_role(self, guild_id: int, role_id: int,
                         name: str = None, permissions: int = None, position: int = None,

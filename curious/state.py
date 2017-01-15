@@ -700,7 +700,10 @@ class State(object):
         if channel.is_private:
             self._private_channels[channel.id] = channel
         else:
-            guild._channels[channel.id] = channel
+            if channel.id not in guild._channels:
+                guild._channels[channel.id] = channel
+            else:
+                channel = guild._channels[channel.id]
 
         await self.client.fire_event("channel_create", channel, gateway=gw)
 
@@ -750,8 +753,11 @@ class State(object):
         if not guild:
             return
 
-        role = Role(self.client, **event_data.get("role", {}))
-        guild._roles[role.id] = role
+        if int(event_data.get("id")) not in guild._roles:
+            role = Role(self.client, **event_data.get("role", {}))
+            guild._roles[role.id] = role
+
+        role = guild._roles[int(event_data.get("id"))]
 
         await self.client.fire_event("role_create", role, gateway=gw)
 

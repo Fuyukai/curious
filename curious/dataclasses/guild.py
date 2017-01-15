@@ -674,6 +674,55 @@ class Guild(Dataclass):
         with open(path, 'rb') as f:
             return self.change_icon(f.read())
 
+    async def create_channel(self, **kwargs):
+        """
+        Creates a new channel in this guild.
+        """
+        if not self.me.guild_permissions.manage_channels:
+            raise PermissionsError("manage_channels")
+
+        if "type_" in kwargs:
+            kwargs["type"] = kwargs["type_"]
+
+        if "type" not in kwargs:
+            kwargs["type"] = channel.ChannelType.TEXT
+
+        channel_data = await self._bot.http.create_channel(self.id, **kwargs)
+        channel_object = channel.Channel(client=self._bot, **channel_data)
+        channel_object.guild = self
+
+        return channel_object
+
+    async def edit_channel(self, channel_object: 'channel.Channel', **kwargs):
+        """
+        Edits a channel in this guild.
+
+        :param channel_object: The channel to edit.
+        """
+        if not channel_object.permissions(self.me).manage_channels:
+            raise PermissionsError("manage_channels")
+
+        if "type_" in kwargs:
+            kwargs["type"] = kwargs["type_"]
+
+        if "type" not in kwargs:
+            kwargs["type"] = channel.ChannelType.TEXT
+
+        await self._bot.http.edit_channel(channel_object.id, **kwargs)
+        return channel_object
+
+    async def delete_channel(self, channel: 'channel.Channel'):
+        """
+        Deletes a channel in this guild.
+
+        :param channel: The channel to delete.
+        """
+        if not channel.permissions(self.me).manage_channels:
+            raise PermissionsError("manaqe_channels")
+
+        await self._bot.http.delete_channel(channel.id)
+        return channel
+
     async def create_role(self, **kwargs):
         """
         Creates a new role in this guild.
@@ -684,8 +733,10 @@ class Guild(Dataclass):
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
 
-        role_id = await self._bot.http.create_role(self.id)
-        return await self.edit_role(self._roles[role_id])
+        role_obb = role.Role(client=self._bot, **(await self._bot.http.create_role(self.id)))
+        self._roles[role_obb.id] = role_obb
+        role_obb.guild = self
+        return await self.edit_role(role_obb, **kwargs)
 
     async def edit_role(self, role: 'role.Role', *,
                         name: str = None, permissions: 'dt_permissions.Permissions' = None,

@@ -662,3 +662,21 @@ class Channel(Dataclass, Messagable):
             raise
         await listener.join()
         return self
+
+    def edit(self, **kwargs):
+        """
+        Edits this channel.
+        """
+        if self.guild is None:
+            raise NotImplementedError("Can only edit channels in a Guild")
+
+        return self.guild.edit_channel(self, **kwargs)
+
+    def delete(self):
+        """
+        Deletes this channel.
+        """
+        if self.guild is None:
+            raise NotImplementedError("Can only delete channels in a Guild")
+
+        return self.guild.delete_channel(self)
