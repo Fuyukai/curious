@@ -95,6 +95,11 @@ class State(object):
             for channel in guild.channels:
                 yield channel
 
+    def get_all_members(self):
+        for guild in self.guilds:
+            for member in guild.members:
+                yield member
+
     def _get_channel(self, channel_id: int) -> Channel:
         # default channel_id == guild id
         if channel_id in self._guilds:
@@ -333,6 +338,7 @@ class State(object):
         guild._afk_channel_id = int(event_data.get("afk_channel", 0))
         guild.afk_timeout = event_data.get("afk_timeout")
         guild.verification_level = event_data.get("verification_level")
+        guild._owner_id = int(event_data.get("owner_id", 0))
 
         await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
 
