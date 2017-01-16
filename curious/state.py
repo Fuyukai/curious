@@ -753,7 +753,7 @@ class State(object):
         if not guild:
             return
 
-        if int(event_data.get("id")) not in guild._roles:
+        if int(event_data.get("role", {}).get("id", 0)) not in guild._roles:
             role = Role(self.client, **event_data.get("role", {}))
             guild._roles[role.id] = role
 
