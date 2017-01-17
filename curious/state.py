@@ -408,6 +408,8 @@ class State(object):
 
             if "id" in emoji and emoji["id"] is not None:
                 emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+                if emoji_obb is None:
+                    emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
             else:
                 emoji_obb = emoji.get("name", None)
 
