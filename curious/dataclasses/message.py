@@ -222,12 +222,12 @@ class Message(Dataclass):
 
         await self._bot.http.react_to_message(self.channel.id, self.id, emoji)
 
-    async def unreact(self, reaction: 'typing.Union[Emoji, str]', victim: 'dt_member.Member'):
+    async def unreact(self, reaction: 'typing.Union[Emoji, str]', victim: 'dt_member.Member'=None):
         """
         Removes a reaction from a user.
 
         :param reaction: The reaction to remove.
-        :param victim: The victim to remove the reaction of. Can be yourself.
+        :param victim: The victim to remove the reaction of. Can be None to signify ourselves.
         """
         if not self.guild:
             raise CuriousError("Cannot delete other reactions in a DM")
@@ -238,8 +238,10 @@ class Message(Dataclass):
 
         if isinstance(reaction, Emoji):
             emoji = "{}:{}".format(reaction.name, reaction.id)
+        else:
+            emoji = reaction
 
-        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji)
+        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji, victim=victim.id if victim else None)
 
     async def remove_all_reactions(self):
         """
