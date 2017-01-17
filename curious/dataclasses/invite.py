@@ -1,7 +1,7 @@
 import typing
 
 from curious import util
-from curious.client import Client
+from curious import client
 from curious.dataclasses import guild as dt_guild, channel as dt_channel
 from curious.dataclasses.bases import IDObject
 
@@ -22,6 +22,11 @@ class InviteGuild(IDObject):
 
         #: The icon hash of this guild.
         self._icon_hash = kwargs.get("icon")  # type: str
+
+    def __repr__(self):
+        return "<InviteGuild id={} name='{}'>".format(self.id, self.name)
+
+    __str__ = __repr__
 
     @property
     def icon_url(self) -> str:
@@ -54,11 +59,15 @@ class InviteChannel(IDObject):
         #: The type of this channel.
         self.type = dt_channel.ChannelType(kwargs.pop("type"))
 
+    def __repr__(self):
+        return "<InviteChannel name={}>".format(self.name)
+
 
 class InviteMetadata(object):
     """
     Represents metadata attached to an invite.
     """
+
     def __init__(self, **kwargs):
         #: The number of times this invite was used.
         self.uses = kwargs.pop("uses", 0)  # type: int
@@ -84,7 +93,7 @@ class Invite(object):
     Represents an invite object.
     """
 
-    def __init__(self, client: Client, **kwargs):
+    def __init__(self, client: 'client.Client', **kwargs):
         self._bot = client
 
         #: The invite code.
@@ -94,7 +103,7 @@ class Invite(object):
         # check to see if it's in our state first, failing that construct an InviteGuild object.
         if guild_id in client.state._guilds:
             self._real_guild = client.state._guilds[guild_id]
-            self._real_channel = self._real_guild._channels(int(kwargs["channel"]["id"]))
+            self._real_channel = self._real_guild._channels[int(kwargs["channel"]["id"])]
         else:
             self._real_guild = None
             self._real_channel = None
@@ -113,6 +122,9 @@ class Invite(object):
             self._invite_metadata = None
         else:
             self._invite_metadata = InviteMetadata(**kwargs)
+
+    def __repr__(self):
+        return "<Invite code={} guild={} channel={}>".format(self.code, self.guild, self.channel)
 
     @property
     def guild(self) -> 'typing.Union[dt_guild.Guild, InviteGuild]':

@@ -380,7 +380,7 @@ class Guild(Dataclass):
         Gets the invites for this guild.
         :return: A list of invite objects.
         """
-        invites = self._bot.http.get_invites_for(self.id)
+        invites = await self._bot.http.get_invites_for(self.id)
         invites = [dt_invite.Invite(self._bot, **i) for i in invites]
 
         return invites
