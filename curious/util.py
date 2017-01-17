@@ -15,7 +15,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
     Wraps a function so that it can be iterated over asynchronously.
     """
 
-    def __init__(self, client, coro: collections.Coroutine):
+    def __init__(self, client, coro: typing.Awaitable[typing.List]):
         self.client = client
         self.coro = coro
 
