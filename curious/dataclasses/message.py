@@ -144,7 +144,8 @@ class Message(Dataclass):
 
         await self._bot.http.delete_message(self.channel.id, self.id)
 
-    async def edit(self, new_content: str) -> 'Message':
+    async def edit(self, new_content: str=None, *,
+                   embed: Embed=None) -> 'Message':
         """
         Edits this message.
 
@@ -161,10 +162,13 @@ class Message(Dataclass):
         if not is_me:
             raise CuriousError("Cannot edit messages from other users")
 
+        if embed:
+            embed = embed.to_dict()
+
         # Prevent race conditions by spawning a listener, then waiting for the task once we've sent the HTTP request.
         t = await curio.spawn(self._bot.wait_for("message_edit", predicate=lambda o, n: n.id == self.id))
         try:
-            await self._bot.http.edit_message(self.channel.id, self.id, new_content=new_content)
+            await self._bot.http.edit_message(self.channel.id, self.id, content=new_content, embed=embed)
         except:
             await t.cancel()
             raise

@@ -331,7 +331,7 @@ class HTTPClient(object):
         data = await self.delete(url, "messages:{}".format(channel_id))
         return data
 
-    async def edit_message(self, channel_id: int, message_id: int, new_content: str):
+    async def edit_message(self, channel_id: int, message_id: int, content: str=None, embed: dict=None):
         """
         Edits a message.
 
@@ -342,9 +342,13 @@ class HTTPClient(object):
         :param new_content: The new content of the message.
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
-        payload = {
-            "content": new_content
-        }
+        payload = {}
+
+        if content is not None:
+            payload["content"] = content
+
+        if embed is not None:
+            payload["embed"] = embed
 
         data = await self.patch(url, "messages:{}".format(channel_id), json=payload)
         return data
