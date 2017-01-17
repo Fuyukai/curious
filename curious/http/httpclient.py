@@ -364,6 +364,37 @@ class HTTPClient(object):
         data = await self.put(url, "reactions:{}".format(channel_id))
         return data
 
+    async def delete_reaction(self, channel_id: int, message_id: int, emoji: str,
+                              victim: int = None):
+        """
+        Deletes a reaction from a message.
+
+        :param channel_id: The channel ID of the channel containing the message.
+        :param message_id: The message ID to remove reactions from.
+        :param emoji: The emoji to remove.
+        :param victim: The victim to remove.
+            If this is None, our own reaction is removed.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/{me}") \
+            .format(channel_id=channel_id, message_id=message_id, emoji=emoji,
+                    me="@me" if not victim else victim)
+
+        data = await self.delete(url, bucket="reactions:{}".format(channel_id))
+        return data
+
+    async def delete_all_reactions(self, channel_id: int, message_id: int):
+        """
+        Removes all reactions from a message.
+
+        :param channel_id: The channel ID of the channel containing the message.
+        :param message_id: The message ID to remove reactions from.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions").format(channel_id=channel_id,
+                                                                              message_id=message_id)
+
+        data = await self.delete(url, bucket="reactions:{}".format(channel_id))
+        return data
+
     async def pin_message(self, channel_id: int, message_id: int):
         """
         Pins a message to the channel.
@@ -934,9 +965,9 @@ class HTTPClient(object):
         return data
 
     async def execute_webhook(self, webhook_id: int, webhook_token: str, *,
-                              content: str=None, embeds: typing.List[typing.Dict]=None,
-                              username: str=None, avatar_url: str=None,
-                              wait: bool=False):
+                              content: str = None, embeds: typing.List[typing.Dict] = None,
+                              username: str = None, avatar_url: str = None,
+                              wait: bool = False):
         """
         Executes a webhook.
 

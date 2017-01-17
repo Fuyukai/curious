@@ -12,7 +12,7 @@ from curious.dataclasses import user as dt_user
 from curious.dataclasses import webhook as dt_webhook
 from curious.dataclasses.embed import Embed, Attachment
 from curious.dataclasses.emoji import Emoji
-from curious.exc import CuriousError
+from curious.exc import CuriousError, PermissionsError
 from curious.util import to_datetime
 
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
@@ -140,7 +140,7 @@ class Message(Dataclass):
             has_manage_messages = self.channel.permissions(self.guild.me).manage_messages
 
         if self.id != me and not has_manage_messages:
-            raise PermissionError("manage_messages")
+            raise PermissionsError("manage_messages")
 
         await self._bot.http.delete_message(self.channel.id, self.id)
 
@@ -179,7 +179,7 @@ class Message(Dataclass):
         """
         if self.guild is not None:
             if not self.channel.permissions(self.guild.me).manage_messages:
-                raise PermissionError("manage_messages")
+                raise PermissionsError("manage_messages")
 
         await self._bot.http.pin_message(self.channel.id, self.id)
 
@@ -192,7 +192,7 @@ class Message(Dataclass):
         """
         if self.guild is not None:
             if not self.channel.permissions(self.guild.me).manage_messages:
-                raise PermissionError("manage_messages")
+                raise PermissionsError("manage_messages")
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
 
@@ -210,10 +210,41 @@ class Message(Dataclass):
                 # we can still add already reacted emojis
                 # so make sure to check for that
                 if not self.reacted(emoji):
-                    raise PermissionError("add_reactions")
+                    raise PermissionsError("add_reactions")
 
         if isinstance(emoji, Emoji):
             # undocumented!
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
         await self._bot.http.react_to_message(self.channel.id, self.id, emoji)
+
+    async def unreact(self, reaction: 'typing.Union[Emoji, str]', victim: 'dt_member.Member'):
+        """
+        Removes a reaction from a user.
+
+        :param reaction: The reaction to remove.
+        :param victim: The victim to remove the reaction of. Can be yourself.
+        """
+        if not self.guild:
+            raise CuriousError("Cannot delete other reactions in a DM")
+
+        if victim != self:
+            if not self.channel.permissions(self.guild.me).manage_messages:
+                raise PermissionsError("manage_messages")
+
+        if isinstance(reaction, Emoji):
+            emoji = "{}:{}".format(reaction.name, reaction.id)
+
+        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji)
+
+    async def remove_all_reactions(self):
+        """
+        Removes all reactions from a message.
+        """
+        if not self.guild:
+            raise CuriousError("Cannot delete other reactions in a DM")
+
+        if not self.channel.permissions(self.guild.me).manage_messages:
+            raise PermissionsError("manage_messages")
+
+        await self._bot.http.delete_all_reactions(self.channel.id, self.id)
