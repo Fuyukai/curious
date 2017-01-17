@@ -542,7 +542,14 @@ class State(object):
             if int(event_data["user_id"]) == self._user.id:
                 reaction.me = True
 
-        await self.client.fire_event("message_reaction_add", message, reaction, gateway=gw)
+        member_id = int(event_data.get("user_id", 0))
+        channel = self._get_channel(int(event_data.get("channel_id", 0)))
+        if channel.guild:
+            author = channel.guild.get_member(member_id)
+        else:
+            author = channel.user
+
+        await self.client.fire_event("message_reaction_add", message, author, reaction, gateway=gw)
 
     async def handle_message_reaction_remove_all(self, gw: 'gateway.Gateway', event_data: dict):
         """
