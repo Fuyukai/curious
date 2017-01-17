@@ -13,6 +13,7 @@ from curious.dataclasses.status import Game
 from curious.dataclasses import emoji as dt_emoji
 from curious.dataclasses import permissions as dt_permissions
 from curious.dataclasses import webhook as dt_webhook
+from curious.dataclasses import invite as dt_invite
 from curious.exc import PermissionsError, HierachyError
 from curious.util import AsyncIteratorWrapper, base64ify
 
@@ -348,6 +349,10 @@ class Guild(Dataclass):
         return AsyncIteratorWrapper(self._bot, self.get_bans())
 
     @property
+    def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
+        return AsyncIteratorWrapper(self._bot, self.get_invites())
+
+    @property
     def icon_url(self) -> str:
         """
         :return: The icon URL for this guild, or None if one isn't set.
@@ -369,6 +374,16 @@ class Guild(Dataclass):
         Leaves the guild.
         """
         await self._bot.http.leave_guild(self.id)
+
+    async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
+        """
+        Gets the invites for this guild.
+        :return: A list of invite objects.
+        """
+        invites = self._bot.http.get_invites_for(self.id)
+        invites = [dt_invite.Invite(self._bot, **i) for i in invites]
+
+        return invites
 
     async def get_bans(self) -> 'typing.List[dt_user.User]':
         """
