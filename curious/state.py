@@ -5,6 +5,7 @@ import curio
 import logging
 
 from curious.dataclasses.channel import Channel
+from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
@@ -525,6 +526,8 @@ class State(object):
 
             if "id" in emoji and emoji["id"] is not None:
                 emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+                if emoji_obb is None:
+                    emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
             else:
                 emoji_obb = emoji.get("name", None)
 
