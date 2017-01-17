@@ -10,6 +10,7 @@ from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
 from curious.dataclasses import Guild
+from curious.dataclasses.invite import Invite
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.dataclasses.webhook import Webhook
@@ -408,6 +409,15 @@ class Client(object):
         :return: A new Webhook object.
         """
         return self.state._make_webhook(await self.http.get_webhook(webhook_id))
+
+    async def get_invite(self, invite_code: str) -> Invite:
+        """
+        Gets an invite by code.
+
+        :param invite_code: The invite code to get.
+        :return: A new Invite object.
+        """
+        return Invite(self, **(await self.http.get_invite(invite_code)))
 
     # Utility functions
     async def connect(self, token: str = None, shard_id: int = 1):
