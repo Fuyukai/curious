@@ -969,6 +969,40 @@ class HTTPClient(object):
 
         return data
 
+    # Invites
+    async def get_invite(self, invite_code: str):
+        """
+        Gets an invite by code.
+
+        :param invite_code: The invite to get.
+        """
+        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
+
+        data = await self.get(url, bucket="invites")
+        return data
+
+    async def get_invites_for(self, guild_id: int):
+        """
+        Gets the invites for the specified guild.
+
+        :param guild_id: The guild ID to get invites inside.
+        """
+        url = (self.GUILD_BASE + "/invites").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="invites:{}".format(guild_id))
+        return data
+
+    async def delete_invite(self, invite_code: str):
+        """
+        Deletes the invite specified by the code.
+
+        :param invite_code: The code of the invite to delete.
+        """
+        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code)
+
+        data = await self.delete(url, bucket="invites")
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """
