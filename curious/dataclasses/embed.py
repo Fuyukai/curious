@@ -84,10 +84,10 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         :param inline: Is this field inline?
         :return: The Embed object.
         """
-        if not name:
+        if isinstance(name, str) and len(name) == 0:
             raise ValueError("Name must not be empty")
 
-        if not value:
+        if isinstance(value, str) and len(value) == 0:
             raise ValueError("Value must not be empty")
 
         self._fields.append(attrdict({"name": name, "value": value, "inline": inline}))
