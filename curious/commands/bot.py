@@ -41,7 +41,16 @@ async def _help_with_embeds(ctx: Context, command: str = None):
             gen = list(ctx.bot.get_commands_for(plugin))
             cmds = sorted(gen, key=lambda c: c.name)
 
-            names = "\n".join("`{}`".format(cmd.name) for cmd in cmds)
+            names = []
+            for cmd in cmds:
+                failed, result = await cmd.can_run(ctx)
+                if not failed:
+                    names.append("`{}`".format(cmd.name))
+
+            names = "\n".join(names)
+            if not names:
+                continue
+
             em.add_field(name=plugin.name, value=names)
 
     else:
