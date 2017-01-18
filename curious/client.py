@@ -474,7 +474,15 @@ class Client(object):
                 await gw.next_event()
             except WebsocketClosedError as e:
                 # Try and handle the close.
-                if e.code not in (1000, 4004, 4011):
+                if e.reason == "Client closed connection":
+                    # internal
+                    return
+
+                if e.code == 1000:
+                    self._logger.info("Shard {} disconnected cleanly, reconnecting.".format(shard_id))
+                    self.state._reset()
+                    await gw.reconnect(resume=False)
+                elif e.code not in (4004, 4011):
                     # Try and RESUME.
                     self._logger.info("Shard {} disconnected with close code {}, "
                                       "attempting a reconnect.".format(shard_id, e.code))
