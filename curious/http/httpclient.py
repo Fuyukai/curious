@@ -816,6 +816,32 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
         return data
 
+    async def edit_member_voice_state(self, guild_id: int, member_id: int, *,
+                                      deaf: bool=None, mute: bool=None, channel_id: int=None):
+        """
+        Edits the voice state of a member.
+
+        :param guild_id: The guild ID to edit in.
+        :param member_id: The member ID to edit.
+        :param deaf: Should the member be deafened?
+        :param mute: Should the member be muted?
+        :param channel_id: What channel should the member be moved to?
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        payload = {}
+
+        if deaf is not None:
+            payload["deaf"] = deaf
+
+        if mute is not None:
+            payload["mute"] = mute
+
+        if channel_id is not None:
+            payload["channel_id"] = channel_id
+
+        data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
+        return data
+
     async def modify_overwrite(self, channel_id: int, target_id: int, type_: str,
                                *, allow: int = 0, deny: int = 0):
         """

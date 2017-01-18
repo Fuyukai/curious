@@ -14,7 +14,8 @@ from curious.dataclasses import emoji as dt_emoji
 from curious.dataclasses import permissions as dt_permissions
 from curious.dataclasses import webhook as dt_webhook
 from curious.dataclasses import invite as dt_invite
-from curious.exc import PermissionsError, HierachyError
+from curious.dataclasses import voice_state as dt_vs
+from curious.exc import PermissionsError, HierachyError, CuriousError
 from curious.util import AsyncIteratorWrapper, base64ify
 
 
@@ -341,6 +342,21 @@ class Guild(Dataclass):
             channel_obj.guild = self
             self._channels[channel_obj.id] = channel_obj
 
+        # Create all of the voice states.
+        for vs_data in data.get("voice_states", []):
+            user_id = int(vs_data.get("user_id", 0))
+            member = self.get_member(user_id)
+            if not member:
+                # o well
+                continue
+
+            voice_state = dt_vs.VoiceState(member.user, **vs_data)
+
+            vs_channel = self.get_channel(int(vs_data.get("channel_id", 0)))
+            voice_state.channel = vs_channel
+            voice_state.guild = self
+            member.voice = voice_state
+
         # Create all of the emoji objects for the server.
         self._handle_emojis(data.get("emojis", []))
 
@@ -559,7 +575,7 @@ class Guild(Dataclass):
 
         return member
 
-    async def remove_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
+    async def remove_roles(self, member: 'dt_member.Member', *roles: 'typing.List[role.Role]'):
         """
         Removes roles from a member.
 
@@ -651,6 +667,20 @@ class Guild(Dataclass):
 
         to_send = [(str(r.id), new_position) for (r, new_position) in roles]
         await self._bot.http.change_roles_position(to_send)
+
+    async def change_voice_state(self, member: 'dt_member.Member', *,
+                                 deaf: bool = None, mute: bool = None):
+        """
+        Changes the voice state of a member.
+
+        :param member: The member to change the voice state of.
+        :param deaf: Should this member be deafened?
+        :param mute: Should this member be muted?
+        """
+        if member.voice is None:
+            raise CuriousError("Cannot change voice state of member not in voice")
+
+        await self._bot.http.edit_member_voice_state(self.id, member.id, deaf=deaf, mute=mute)
 
     async def modify_guild(self, **kwargs):
         """

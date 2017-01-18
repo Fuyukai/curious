@@ -5,6 +5,7 @@ from curious.dataclasses.bases import Dataclass, Messagable
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
+from curious.dataclasses import voice_state as dt_vs
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild
 from curious.util import to_datetime
@@ -37,6 +38,9 @@ class Member(Dataclass, Messagable):
 
         #: The current :class:`Status` of this member.
         self._status = None  # type: Status
+
+        #: The current :class:`VoiceState` of this member.
+        self.voice = None  # type: dt_vs.VoiceState
 
     def _copy(self):
         """

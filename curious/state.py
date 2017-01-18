@@ -15,6 +15,7 @@ from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
 from curious.dataclasses.user import User
 from curious import gateway
+from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
 
@@ -859,11 +860,11 @@ class State(object):
         """
         Called when a member's voice state changes.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
 
-        # If it has a session_id, it's for voice connection bullshit
-        session_id = event_data.get("session_id")
-        if session_id is not None:
+        # If user_id == self._user.id, it's voice conn bullshit
+        user_id = int(event_data.get("user_id", 0))
+        if user_id == self._user.id:
             # YAY
             events, state = self.__voice_state_crap[guild_id]
             state.update({
@@ -873,7 +874,30 @@ class State(object):
             await events[1].set()
             return
 
-        # todo: other users
+        # get the guild and member
+        guild = self._guilds.get(guild_id)
+
+        if not guild:
+            return
+
+        member = guild.get_member(user_id)
+        if not member:
+            return
+
+        channel_id = event_data.get("channel_id", 0)
+        if channel_id is None:
+            # disconnect!
+            new_voice_state = None
+        else:
+            new_voice_state = VoiceState(member.user, **event_data)
+            new_voice_state.guild = guild
+            new_voice_state.channel = guild.get_channel(new_voice_state._channel_id)
+
+        old_voice_state = member.voice
+
+        member.voice = new_voice_state
+
+        await self.client.fire_event("voice_state_update", member, old_voice_state, new_voice_state, gateway=gw)
 
     async def handle_webhooks_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
