@@ -315,7 +315,12 @@ class CommandsBot(Client):
                     # rip
                     self.commands.pop(name)
 
-            # todo: events
+            # remove all events registered
+            for name, event in self.events.copy().items():
+                if isinstance(event.plugin, plugin):
+                    event.plugins = None
+                    self.remove_event(name, event)
+
             # now that all commands are dead, call `unload()` on all of the instances
             for name, instance in self.plugins.copy().items():
                 if isinstance(instance, plugin):
