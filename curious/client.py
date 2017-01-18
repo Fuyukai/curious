@@ -160,6 +160,21 @@ class Client(object):
 
         self._temporary_listeners.add(name, func)
 
+    def remove_event(self, name: str, func):
+        """
+        Removes a function event.
+
+        :param name: The name the event is registered under/.
+        :param func: The function to remove.
+        """
+        a = self.events.getall(name)
+        if func in a:
+            a.remove(func)
+
+        self.events.pop(name)
+        for item in a:
+            self.events.add(name, item)
+
     def event(self, func):
         """
         Marks a function as an event.
