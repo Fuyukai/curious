@@ -164,7 +164,6 @@ class CommandsBot(Client):
         try:
             await ctx.invoke()
         except Exception as e:
-            traceback.print_exc()
             gw = self._gateways[ctx.event_context.shard_id]
             await self.fire_event("command_error", e, ctx=ctx, gateway=gw)
 
@@ -174,6 +173,11 @@ class CommandsBot(Client):
 
         This is meant to be overriden - normally it will just print the traceback.
         """
+        if len(self.events.getall("command_error")) >= 2:
+            # remove ourselves
+            self.remove_event("command_errr", self.on_command_error)
+            return
+
         traceback.print_exception(None, e, e.__traceback__)
 
     async def handle_commands(self, event_ctx: EventContext, message: Message):
