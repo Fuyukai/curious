@@ -36,10 +36,6 @@ class State(object):
         #: The client associated with this connection.
         self.client = client
 
-        #: Have we got all guilds?
-        #: This is set once all guilds have received a GUILD_CREATE, and are no longer unavailable.
-        self._have_all_guilds = curio.Event()
-
         #: The private channel cache.
         self._private_channels = {}
 
@@ -61,21 +57,6 @@ class State(object):
         Called after session is invalidated, to reset our state.
         """
         self._session_id = None
-
-        self._have_all_guilds.clear()
-        self._messages.clear()
-
-    async def _check_all_guilds(self):
-        """
-        Checks to make sure all guilds are here.
-
-        This will ensure all guilds are not marked `unavailable`.
-        """
-        have_all = all(guild.unavailable is False for guild in self._guilds.values())
-        if have_all:
-            await self._have_all_guilds.set()
-
-        return have_all or self._have_all_guilds.set()
 
     @property
     def guilds(self):
