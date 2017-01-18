@@ -201,7 +201,12 @@ class Client(object):
             return
         if result is True:
             # Complex removal bullshit
-            items = self._temporary_listeners.getall(event)
+            try:
+                items = self._temporary_listeners.getall(event)
+            except KeyError:
+                # early removal done already, ignore
+                return
+
             try:
                 items.remove(listener)
             except ValueError:
