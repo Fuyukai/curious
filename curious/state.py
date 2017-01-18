@@ -52,11 +52,14 @@ class State(object):
     def _is_ready(self, shard_id: int):
         return self.__shards_is_ready[shard_id]
 
-    def _reset(self):
+    def _reset(self, shard_id: int):
         """
         Called after session is invalidated, to reset our state.
         """
-        self._session_id = None
+        self.__shards_is_ready.pop(shard_id)
+
+        for guild in self.guilds_for_shard(shard_id):
+            guild._finished_chunking.clear()
 
     @property
     def guilds(self):

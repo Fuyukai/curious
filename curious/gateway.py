@@ -395,6 +395,11 @@ class Gateway(object):
         :param resume: Should a RESUME be attempted?
         """
         self.logger.info("Reconnecting to the gateway")
+
+        # reset our heartbeat count
+        self.heartbeats = 0
+        self.heartbeat_acks = 0
+
         if not self.websocket.closed:
             await self.websocket.close_now(code=1001, reason="Forcing a reconnect")
 
@@ -479,7 +484,7 @@ class Gateway(object):
             else:
                 self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
                 self.sequence_num = 0
-                self.state._reset()
+                self.state._reset(self.shard_id)
                 self.send_identify()
 
         elif op == GatewayOp.RECONNECT:

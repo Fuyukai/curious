@@ -480,7 +480,7 @@ class Client(object):
 
                 if e.code == 1000:
                     self._logger.info("Shard {} disconnected cleanly, reconnecting.".format(shard_id))
-                    self.state._reset()
+                    self.state._reset(gw.shard_id)
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
                     # Try and RESUME.
