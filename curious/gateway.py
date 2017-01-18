@@ -235,6 +235,13 @@ class Gateway(object):
 
         This will actually send the data down the websocket, unlike `send` which only pretends to.
         """
+        # Check if heartbeats have drifted.
+        if self.heartbeat_acks + 2 < self.heartbeats:
+            self.logger.error("Heartbeats have drifted, closing connection!")
+            await self.websocket.close_now(reason="Heartbeats timed out!")
+            await self._close()
+            raise ReconnectWebsocket
+
         try:
             await self.websocket.send(data)
         except WebsocketClosedError:
