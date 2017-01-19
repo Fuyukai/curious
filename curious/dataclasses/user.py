@@ -3,6 +3,7 @@ from curious.dataclasses.bases import Dataclass, Messagable
 from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import message as dt_message
 from curious.dataclasses import guild as dt_guild
+from curious.exc import CuriousError
 
 
 class User(Dataclass, Messagable):
@@ -98,8 +99,10 @@ class User(Dataclass, Messagable):
 
         :return: The newly created private channel.
         """
-        # First, try and access the channel from the channel cache.
+        if self.discriminator == "0000":
+            raise CuriousError("Cannot open a private channel with a webhook")
 
+        # First, try and access the channel from the channel cache.
         original_channel = self._bot.state._get_channel(self.id)
         if original_channel:
             return original_channel
