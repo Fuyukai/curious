@@ -478,8 +478,8 @@ class Client(object):
                     # internal
                     return
 
-                if e.code == 1000:
-                    self._logger.info("Shard {} disconnected cleanly, reconnecting.".format(shard_id))
+                if e.code in [1000, 4007]:
+                    self._logger.info("Shard {} disconnected, creating new session".format(shard_id))
                     self.state._reset(gw.shard_id)
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
