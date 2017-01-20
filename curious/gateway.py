@@ -414,6 +414,7 @@ class Gateway(object):
             self.send_resume()
         else:
             self.logger.info("Sending IDENTIFY...")
+            self.sequence_num = 0
             self.send_identify()
 
         return self
