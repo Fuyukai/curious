@@ -314,7 +314,7 @@ class Gateway(object):
             "op": GatewayOp.PRESENCE,
             "d": {
                 "game": game.to_dict() if game else None,
-                "status": status.name,
+                "status": status.value,
                 "afk": False,
                 "since": None
             }
