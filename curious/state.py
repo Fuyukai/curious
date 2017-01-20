@@ -239,6 +239,8 @@ class State(object):
         game = event_data.get("game", {})
         if game is not None:
             member.game = Game(**game, status=event_data.get("status"))
+        else:
+            member.game = None
 
         member.status = event_data.get("status")
 
