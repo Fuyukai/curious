@@ -86,6 +86,11 @@ class State(object):
             for member in guild.members:
                 yield member
 
+    def get_all_roles(self):
+        for guild in self.guilds:
+            for role in guild.roles:
+                yield role
+
     def _get_channel(self, channel_id: int) -> Channel:
         # default channel_id == guild id
         if channel_id in self._guilds:
