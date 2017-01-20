@@ -218,6 +218,16 @@ class Channel(Dataclass, Messagable):
     def pins(self) -> 'typing.AsyncIterator[dt_message.Message]':
         return AsyncIteratorWrapper(self._bot, self.get_pins())
 
+    @property
+    def voice_members(self) -> 'typing.List[dt_member.Member]':
+        """
+        :return: A list of members that are in this voice channel.
+        """
+        if self.type != ChannelType.VOICE:
+            raise NotImplementedError("No members for channels that aren't voice channels")
+
+        return list(filter(lambda member: member.voice.channel == self, self.guild.members))
+
     def permissions(self, object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
