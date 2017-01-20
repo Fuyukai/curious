@@ -120,7 +120,7 @@ class User(Dataclass, Messagable):
         :return: A new :class:`Message` representing the sent message.
         """
         channel = await self.open_private_channel()
-        message = await channel.send(content)
+        message = await channel.send(content, *args, **kwargs)
 
         return message
 
@@ -131,3 +131,27 @@ class User(Dataclass, Messagable):
         :param guild: The guild to unban in.
         """
         return guild.unban(self)
+
+
+class BotUser(User):
+    """
+    A special type of user that represents ourselves.
+    """
+    async def open_private_channel(self):
+        raise NotImplementedError("Cannot open a private channel with yourself")
+
+    async def send(self, *args, **kwargs):
+        raise NotImplementedError("Cannot send messages to your own user")
+
+    def edit(self, *args, **kwargs):
+        """
+        Edits the bot's current profile.
+        """
+        return self._bot.edit_profile(*args, **kwargs)
+
+    def upload_avatar(self, path: str):
+        """
+        Edits the bot's current avatar.
+        """
+        return self._bot.edit_avatar(path)
+

@@ -13,7 +13,7 @@ from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
-from curious.dataclasses.user import User
+from curious.dataclasses.user import User, BotUser
 from curious import gateway
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
@@ -180,7 +180,7 @@ class State(object):
         gw.session_id = event_data.get("session_id")
 
         # Create our bot user.
-        self._user = User(self.client, **event_data.get("user"))
+        self._user = BotUser(self.client, **event_data.get("user"))
 
         # Create all of the guilds.
         for guild in event_data.get("guilds"):
