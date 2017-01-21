@@ -57,8 +57,15 @@ def convert_channel(ctx: Context, arg: str):
     return channel
 
 
+def convert_int(ctx: Context, arg: str):
+    try:
+        return int(arg)
+    except ValueError as e:
+        raise ConversionFailedError(ctx, arg, int)
+
+
 converters = {
-    int: lambda ctx, x: int(x),
+    int: convert_int,
     Member: convert_member,
     Channel: convert_channel
 }
@@ -147,7 +154,7 @@ class Command(object):
                         s = "[{} (default: {})]".format(param.name, repr(param.default))
                 else:
                     if param.annotation is not inspect.Parameter.empty:
-                        s = "<{}: {}>".format(param.name, param.annotation.__name__ )
+                        s = "<{}: {}>".format(param.name, param.annotation.__name__)
                     else:
                         s = "<{}>".format(param.name)
             else:
