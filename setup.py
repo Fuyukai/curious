@@ -11,6 +11,10 @@ setup(
     description='A curio library for the Discord API',
     install_requires=[
         "cuiows>=0.1.5",
-        "curio==0.4.0"
+        "curio==0.4.0",
+        "h11",
+        "multidict",
+        "pylru",
+        "yarl",
     ]
 )
