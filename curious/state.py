@@ -242,6 +242,16 @@ class State(object):
         else:
             member.game = None
 
+        roles = event_data.get("roles", [])
+        for role_id in roles:
+            role_id = int(role_id)
+            role = guild.get_role(role_id)
+
+            if not role:
+                continue
+
+            member._roles[role.id] = role
+
         member.status = event_data.get("status")
 
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
