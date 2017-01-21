@@ -64,17 +64,15 @@ def convert_int(ctx: Context, arg: str):
         raise ConversionFailedError(ctx, arg, int)
 
 
-converters = {
-    int: convert_int,
-    Member: convert_member,
-    Channel: convert_channel
-}
-
-
 class Command(object):
     """
     A command object represents a command.
     """
+    converters = {
+        int: convert_int,
+        Member: convert_member,
+        Channel: convert_channel
+    }
 
     def __init__(self, cbl, *,
                  name: str = None, aliases: typing.List[str] = None,
@@ -181,7 +179,7 @@ class Command(object):
         """
         if thing is None:
             return lambda c, i: i
-        return converters.get(type_, lambda ctx, x: str(x))
+        return self.converters.get(type_, lambda ctx, x: str(x))
 
     async def _convert(self, ctx, *args):
         """
