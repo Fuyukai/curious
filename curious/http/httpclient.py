@@ -8,9 +8,25 @@ import logging
 import sys
 import time
 import typing
+import warnings
 import weakref
 from math import ceil
-from urllib.parse import quote
+
+# try and load a C impl of LRU first
+try:
+    from lru import LRU as c_lru
+
+    def _make_lru_dict(size):
+        return c_lru(size)
+
+except ImportError:
+    # fall back to a pure-python (the default) version
+    from pylru import lrucache as py_lru
+
+    warnings.warn("Using pure-python `pylru` library over `lru-dict` faster C library!")
+
+    def _make_lru_dict(size):
+        return py_lru(size)
 
 import curio
 
@@ -48,7 +64,7 @@ class HTTPClient(object):
         self._rate_limits = weakref.WeakValueDictionary()
 
         #: Ratelimit remaining times
-        self._ratelimit_remaining = {}
+        self._ratelimit_remaining = _make_lru_dict(32)
 
         self.logger = logging.getLogger("curious.http")
 
