@@ -11,18 +11,19 @@ Curious is a WIP - not everything is implemented yet.
 
 ## Installation
 
-Curious is not currently available on PyPI, which means you need to 
-install it from `git`, instead.
+Curious is available on PyPI under `discord-curious`:
 
 ```bash
-# install dependencies
-$ pip install -U curio curio_websocket multidict
-# install the library
+$ pip install -U discord-curious
+```
+
+Or for the latest development version:
+
+```bash
 $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
 ```
 
 ## Requirements
 
 Curious only runs on Python 3.5 and higher, due to curio only running on
-those versions. Additionally, curious currently only works on POSIX
-systems due to curio only running on those systems.
+those versions.
