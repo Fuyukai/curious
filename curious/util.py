@@ -137,3 +137,11 @@ def _traverse_stack_for(t: type):
         finally:
             # prevent reference cycles
             del fr
+
+
+attrdict = type("attrdict", (dict,), {
+    "__getattr__": dict.__getitem__,
+    "__setattr__": dict.__setitem__,
+    "__doc__": "A dict that allows attribute access as well as item access for "
+               "keys."
+})

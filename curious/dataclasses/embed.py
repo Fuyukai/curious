@@ -1,14 +1,7 @@
 import datetime
 
-# attrdict, useful for embed parts
 from curious.dataclasses.bases import IDObject
-
-attrdict = type("attrdict", (dict,), {
-    "__getattr__": dict.__getitem__,
-    "__setattr__": dict.__setitem__,
-    "__doc__": "A dict that allows attribute access as well as item access for "
-               "keys."
-})
+from curious.util import attrdict
 
 
 def _(s, n, v): raise KeyError(n)

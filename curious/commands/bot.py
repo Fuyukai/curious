@@ -18,6 +18,7 @@ from curious.commands.plugin import Plugin
 from curious.dataclasses import Message
 from curious.dataclasses.embed import Embed
 from curious.event import EventContext
+from curious.util import attrdict
 
 
 def splitter(s):
@@ -153,7 +154,7 @@ class CommandsBot(Client):
         self.description = description
 
         #: The dictionary of command objects to use.
-        self.commands = {}
+        self.commands = attrdict()
 
         #: The dictionary of plugins to use.
         self.plugins = {}

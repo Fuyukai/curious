@@ -48,6 +48,9 @@ class Plugin(object):
 
         for name, value in self.__class__.__dict__.items():
             if hasattr(value, "factory"):
+                if getattr(value, "_subcommand", False):
+                    # don't add subcommands
+                    continue
                 # this is set by the decorator to create a new command instance
                 cmd = value.factory()
                 commands.append(cmd)

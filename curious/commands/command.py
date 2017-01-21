@@ -76,13 +76,14 @@ class Command(object):
 
     def __init__(self, cbl, *,
                  name: str = None, aliases: typing.List[str] = None,
-                 invokation_checks: list = None):
+                 invokation_checks: list = None, group: bool = False):
         """
         :param cbl: The callable to use.
         :param name: The name of this command.
             If this isn't provided, it will be automatically determined from the callable name.
 
         :param aliases: A list of aliases that this command can be called as.
+        :param group: Is this the root command for a group?
         """
         self.callable = cbl
 
@@ -105,6 +106,19 @@ class Command(object):
         #: A list of invokation checks that must all return True before the underlying function is run.
         self.invokation_checks = invokation_checks if invokation_checks else []
 
+        #: Is this a group command?
+        self._is_group = group
+
+        #: The subcommands for this command.
+        self.subcommands = []  # type: typing.List[Command]
+
+        if self._is_group:
+            # Scan our callable for subcommands.
+            factories = self.callable.subcommands
+            for f in factories:
+                subcommand = f()  # type: Command
+                self.subcommands.append(subcommand)
+
     @property
     def instance(self):
         return self._instance
@@ -118,6 +132,12 @@ class Command(object):
         # add the plugin_check func as a local check
         self.invokation_checks.append(value.plugin_check)
         self._instance = value
+
+        for subcommand in self.subcommands:
+            subcommand.instance = value
+
+    def __repr__(self):
+        return "<Command name='{}' plugin='{}' subcommands={}>".format(self.name, self.instance, self.subcommands)
 
     @classmethod
     def add_converter(cls, type_: type, func: typing.Callable[[Context, typing.Any], str]):
@@ -308,10 +328,40 @@ class Command(object):
 
         return failed, results
 
+    async def can_be_invoked_by(self, ctx: Context, token: str) -> bool:
+        """
+        Checks if this command can be invoked by the specified token.
+
+        :param ctx: The context object.
+        :param token: The token to check.
+        :return: True if it can, False if it can't.
+        """
+        if self.name == token:
+            return True
+
+        if token in self.aliases:
+            return True
+
+        return False
+
     async def invoke(self, ctx: Context, *args):
         failed, _ = await self.can_run(ctx)
         if failed:
             raise CheckFailureError(ctx, _)
+
+        # check if we can run a subcommand, first.
+        try:
+            subcommand_token = args[0]
+
+            for subcommand in self.subcommands:
+                if await subcommand.can_be_invoked_by(ctx, subcommand_token):
+                    await subcommand.invoke(ctx, *args[1:])
+                    # never invoke groups if a subcommand hit
+                    return
+
+        except IndexError:
+            # no subcommand to invoke
+            pass
 
         final_args, final_kwargs = await self._convert(ctx, *args)
 
