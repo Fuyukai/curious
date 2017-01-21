@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='curious',
     version='0.1.0',
-    packages=['curious', 'curious.http', 'curious.commands', 'curious.dataclasses'],
+    packages=['curious', 'curious.http', 'curious.commands', 'curious.dataclasses', 'curious.ext'],
     url='https://github.com/SunDwarf/curious',
     license='MIT',
     author='Laura Dickinson',

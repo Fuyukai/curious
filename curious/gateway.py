@@ -2,14 +2,18 @@
 Websocket gateway code.
 """
 import enum
-import json
 import threading
 import typing
 import queue
 import sys
 import logging
 import zlib
-from math import ceil
+
+# alternative JSON implementations for speed
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 import curio
 from curio.task import Task
