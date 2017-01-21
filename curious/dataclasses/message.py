@@ -230,9 +230,10 @@ class Message(Dataclass):
         :param victim: The victim to remove the reaction of. Can be None to signify ourselves.
         """
         if not self.guild:
-            raise CuriousError("Cannot delete other reactions in a DM")
+            if victim and victim != self:
+                raise CuriousError("Cannot delete other reactions in a DM")
 
-        if victim != self:
+        if victim and victim != self:
             if not self.channel.permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 

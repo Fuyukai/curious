@@ -28,7 +28,7 @@ class State(object):
 
     def __init__(self, client, max_messages: int = 500):
         #: The guilds the bot can see.
-        self._guilds = {}
+        self._guilds = {}  # type: typing.Dict[Guild]
 
         #: The current user of this bot.
         #: This is automatically set after login.
