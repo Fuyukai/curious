@@ -119,6 +119,16 @@ class Command(object):
         self.invokation_checks.append(value.plugin_check)
         self._instance = value
 
+    @classmethod
+    def add_converter(cls, type_: type, func: typing.Callable[[Context, typing.Any], str]):
+        """
+        Adds a converter to the local dict of converters.
+
+        :param func: The function to add.
+        :param type_: The type to convert.
+        """
+        cls.converters[type_] = func
+
     def get_usage(self, ctx: Context, invoked_as: str) -> str:
         """
         :return: The usage text for this command.
