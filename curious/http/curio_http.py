@@ -10,8 +10,10 @@ import mimetypes
 import random
 import string
 from functools import partial
-import json as py_json
-import curio
+try:
+    import ujson as py_json
+except ImportError:
+    import json as py_json
 import cgi
 
 import multidict
@@ -20,6 +22,7 @@ import h11
 from curio import io
 from h11._events import _EventBundle
 from multidict import MultiDict
+import curio
 
 __version__ = "0.1.0-curious"
 
@@ -502,9 +505,9 @@ class ClientSession:
         return self.request(
             'GET', *args, allow_redirects=allow_redirects, **kwargs)
 
-    def post(self, *args, data=None, **kwargs):
+    def post(self, *args, **kwargs):
         """Perform HTTP POST request."""
-        return self.request('POST', *args, data=data, **kwargs)
+        return self.request('POST', *args, **kwargs)
 
     def put(self, *args, **kwargs):
         return self.request("PUT", *args, **kwargs)
