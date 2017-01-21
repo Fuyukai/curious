@@ -314,7 +314,8 @@ class State(object):
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
         # Request all members from the guild.
-        raise gateway.ChunkGuild(guild)
+        if not guild.unavailable:
+            raise gateway.ChunkGuild(guild)
 
     async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
