@@ -512,6 +512,7 @@ class Gateway(object):
                     # We need to download all member chunks from this guild.
                     self._get_chunks(e.args[0])
                 except Exception:
+                    self.logger.exception("Error decoding {}".format(data))
                     await self._close()
                     await self.websocket.close_now()
                     raise
