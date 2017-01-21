@@ -3,7 +3,6 @@ Curious' HTTP client is a thin wrapper over the `requests` library, running in t
 
 This is because there is (currently) no native curio HTTP library.
 """
-import functools
 import logging
 import sys
 import time
@@ -80,18 +79,6 @@ class HTTPClient(object):
             return lock
 
     # Special wrapper functions
-
-    async def __perform_request(self, *args, **kwargs) -> Response:
-        """
-        A wrapper for requests' request that uses curio.abide().
-
-        This only performs the request - it does NOT do any ratelimiting.
-        Hence, this method is unsafe, and is private. It should not be used by client code.
-        """
-        partial = functools.partial(self.session.request, *args, **kwargs)
-        coro = curio.timeout_after(5, curio.abide(partial))
-        return await coro
-
     async def get_response_data(self, response: Response) -> typing.Union[str, dict]:
         """
         Return either the text of a request or the JSON.
