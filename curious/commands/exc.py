@@ -9,8 +9,8 @@ class CheckFailureError(Exception):
 
     def __repr__(self):
         if isinstance(self.check, list):
-            return "The checks for {.name} failed.".format(self.ctx)
-        return "The check {.__name__} for {.name} failed.".format(self.check, self.ctx)
+            return "The checks for `{.name}` failed.".format(self.ctx)
+        return "The check `{.__name__}` for `{.name}` failed.".format(self.check, self.ctx)
 
     __str__ = __repr__
 
@@ -21,7 +21,7 @@ class MissingArgumentError(Exception):
         self.arg = arg
 
     def __repr__(self):
-        return "Missing required argument {} in {.name}.".format(self.arg, self.ctx)
+        return "Missing required argument `{}` in `{.name}`.".format(self.arg, self.ctx)
 
     __str__ = __repr__
 
@@ -31,7 +31,7 @@ class CommandInvokeError(Exception):
         self.ctx = ctx
 
     def __repr__(self):
-        return "Command {.name} failed to invoke with error {}".format(self.ctx, self.__cause__)
+        return "Command {.name} failed to invoke with error `{}`.".format(self.ctx, self.__cause__)
 
     __str__ = __repr__
 
@@ -43,6 +43,6 @@ class ConversionFailedError(Exception):
         self.to_type = to_type
 
     def __repr__(self):
-        return "Cannot convert {} to type {.__name__}".format(self.arg, self.to_type)
+        return "Cannot convert `{}` to type `{.__name__}`.".format(self.arg, self.to_type)
 
     __str__ = __repr__
