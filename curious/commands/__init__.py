@@ -2,6 +2,7 @@
 Commands helpers.
 """
 import functools
+import typing
 
 from curious.commands.command import Command
 

@@ -73,10 +73,6 @@ class User(Dataclass, Messagable):
         """
         :return: A string that mentions this user.
         """
-        nick = getattr(self, "nickname", None)
-        if nick:
-            return "<@!{}>".format(self.id)
-
         return "<@{}>".format(self.id)
 
     @property

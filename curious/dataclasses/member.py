@@ -69,6 +69,13 @@ class Member(Dataclass, Messagable):
         return self.nickname if self.nickname else self.user.username
 
     @property
+    def mention(self):
+        if self.nickname:
+            return "<@!{}>".format(self.id)
+
+        return self.user.mention
+
+    @property
     def status(self) -> Status:
         """
         :return: The current status of this member.
