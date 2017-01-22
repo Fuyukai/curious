@@ -382,8 +382,6 @@ class CommandsBot(Client):
         def inner(func):
             command = Command(*args, cbl=func, **kwargs)
             self.commands[command.name] = command
-            for alias in command.aliases:
-                self.commands[alias] = command
             return command
 
         return inner
