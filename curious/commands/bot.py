@@ -55,7 +55,20 @@ async def _help_with_embeds(ctx: Context, command: str = None):
             em.add_field(name=plugin.name, value=names)
 
     else:
+        initial_name = command
+        parts = command.split(" ")
+        command = parts[0]
+
+        # get the initial command object
         command_obb = ctx.bot.get_command(command)  # type: Command
+
+        for token in parts[1:]:
+            command = token
+            command_obb = command_obb.find_subcommand(token)
+            if command_obb is None:
+                # exit early
+                break
+
         if not command_obb:
             em = Embed(title=command, description="Command not found.", colour=0xe74c3c)
         else:
@@ -77,7 +90,7 @@ async def _help_with_embeds(ctx: Context, command: str = None):
                     em.description += "\n\nYou **cannot** run this command. (`{}` checks failed.)".format(failed)
                     em.colour = 0xFF0000
 
-            usage = command_obb.get_usage(ctx, command)
+            usage = command_obb.get_usage(ctx, initial_name)
             em.add_field(name="Usage", value=usage)
 
     if not em.colour:
@@ -102,17 +115,30 @@ async def _help_without_embeds(ctx: Context, command: str = None):
 
         msg = base
     else:
-        command_obj = ctx.bot.get_command(command)
-        if command_obj is None:
+        initial_name = command
+        parts = command.split(" ")
+        command = parts[0]
+
+        # get the initial command object
+        command_obb = ctx.bot.get_command(command)  # type: Command
+
+        for token in parts[1:]:
+            command = token
+            command_obb = command_obb.find_subcommand(token)
+            if command_obb is None:
+                # exit early
+                break
+
+        if command_obb is None:
             msg = "Command not found."
         else:
-            if command_obj.name != command:
-                title = "{} (alias for `{}`)".format(command, command_obj.name)
+            if command_obb.name != command:
+                title = "{} (alias for `{}`)".format(command, command_obb.name)
             else:
-                title = command_obj.name
+                title = command_obb.name
 
-            base = "{}{}\n\n".format(ctx.prefix, title)
-            base += "{}".format(command_obj.get_help())
+            base = command_obb.get_usage(ctx, initial_name) + "\n\n"
+            base += "{}".format(command_obb.get_help(ctx, initial_name))
             msg = "```{}```".format(base)
 
     msg += "\n**For a better help command, give the bot Embed Links permission.**"

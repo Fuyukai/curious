@@ -149,6 +149,17 @@ class Command(object):
         """
         cls.converters[type_] = func
 
+    def find_subcommand(self, name: str) -> 'typing.Union[None, Command]':
+        """
+        Finds a subcommand by name.
+
+        :param name: The name of the command to fetch.
+        :return: A command object, if found.
+        """
+        for command in self.subcommands:
+            if command.can_be_invoked_by(name):
+                return command
+
     def get_usage(self, ctx: Context, invoked_as: str) -> str:
         """
         :return: The usage text for this command.
@@ -328,11 +339,10 @@ class Command(object):
 
         return failed, results
 
-    async def can_be_invoked_by(self, ctx: Context, token: str) -> bool:
+    def can_be_invoked_by(self, token: str) -> bool:
         """
         Checks if this command can be invoked by the specified token.
 
-        :param ctx: The context object.
         :param token: The token to check.
         :return: True if it can, False if it can't.
         """
@@ -354,7 +364,7 @@ class Command(object):
             subcommand_token = args[0]
 
             for subcommand in self.subcommands:
-                if await subcommand.can_be_invoked_by(ctx, subcommand_token):
+                if subcommand.can_be_invoked_by(subcommand_token):
                     await subcommand.invoke(ctx, *args[1:])
                     # never invoke groups if a subcommand hit
                     return
