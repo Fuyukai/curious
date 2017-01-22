@@ -484,8 +484,8 @@ class Client(object):
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
                     # Try and RESUME.
-                    self._logger.info("Shard {} disconnected with close code {}, "
-                                      "attempting a reconnect.".format(shard_id, e.code))
+                    self._logger.info("Shard {} disconnected with close code {}, reason {}, "
+                                      "attempting a reconnect.".format(shard_id, e.code, e.reason))
                     await gw.reconnect(resume=True)
                 else:
                     raise

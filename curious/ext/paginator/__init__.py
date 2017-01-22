@@ -102,12 +102,17 @@ class ReactionsPaginator(object):
             if reaction.emoji == self.BUTTON_FORWARD:
                 if self.page < len(self._message_chunks) - 1:
                     self.page += 1
-                    await self.send_current_page()
+                else:
+                    self.page = 0
+                await self.send_current_page()
 
             if reaction.emoji == self.BUTTON_BACKWARDS:
                 if self.page > 0:
                     self.page -= 1
-                    await self.send_current_page()
+                else:
+                    self.page = len(self._message_chunks) - 1
+
+                await self.send_current_page()
 
             if reaction.emoji == self.BUTTON_STOP:
                 # remove all reactions were done here
