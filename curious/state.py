@@ -725,7 +725,7 @@ class State(object):
         """
         Called when a channel is created.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         channel = Channel(self.client, guild=guild, **event_data)
