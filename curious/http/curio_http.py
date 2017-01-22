@@ -437,8 +437,9 @@ class ClientSession:
 
         #: Any headers that are to be sent on every request.
         self.headers = MultiDict()
+        self.headers.setdefault("User-Agent", "curio-http/{} (bundled with curious)".format(__version__))
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'ClientSession':
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
