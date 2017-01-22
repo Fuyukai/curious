@@ -159,7 +159,6 @@ class Gateway(object):
 
         # Heartbeats and ACKs are tracked by this class to make sure if we send a heartbeat, but the previous one has
         #  not been ACK'd yet, we need to reconnect, as we've lost connection.
-        # TODO: Implement this.
         #: The number of heartbeats this connection has sent.
         self.heartbeats = 0
 
