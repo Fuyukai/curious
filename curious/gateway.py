@@ -414,6 +414,9 @@ class Gateway(object):
 
         self._open = False
 
+        # Re-initialize the queue, to empty it.
+        self._event_queue._init(0)
+
         await self.connect(self._cached_gateway_url)
         self._event_reader = await curio.spawn(self._send_events())
 
