@@ -406,7 +406,7 @@ class CommandsBot(Client):
         """
 
         def _f(cmd: Command):
-            return cmd.name == command_name or command_name in cmd.aliases
+            return cmd.can_be_invoked_by(command_name)
 
         f = filter(_f, self.commands.values())
         return next(f, None)
