@@ -329,8 +329,13 @@ class Gateway(object):
 
         # Update our game() object on all guilds on this shard.
         for guild in self.state.guilds_for_shard(self.shard_id):
-            guild.me.game = game
-            guild.me.status = status
+            try:
+                guild.me.game = game
+                guild.me.status = status
+            except KeyError:
+                # sent before our member object exists - i.e just after READY happens
+                # we can ignore this
+                pass
 
         self._send_json(payload)
 
