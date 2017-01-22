@@ -57,7 +57,7 @@ class State(object):
         """
         Called after session is invalidated, to reset our state.
         """
-        self.__shards_is_ready.pop(shard_id)
+        self.__shards_is_ready.pop(shard_id, None)
 
         for guild in self.guilds_for_shard(shard_id):
             guild._finished_chunking.clear()
