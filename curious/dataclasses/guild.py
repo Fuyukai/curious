@@ -325,7 +325,7 @@ class Guild(Dataclass):
             self._roles[role_obj.id] = role_obj
 
         # Create all the Member objects for the server.
-        self._handle_member_chunk(data.get("members"))
+        self._handle_member_chunk(data.get("members", []))
 
         for presence in data.get("presences", []):
             member_id = int(presence["user"]["id"])

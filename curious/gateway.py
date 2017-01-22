@@ -477,6 +477,7 @@ class Gateway(object):
             heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
             self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
             self._start_heartbeating(heartbeat_interval)
+            self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
 
         elif op == GatewayOp.HEARTBEAT_ACK:
             self.heartbeat_acks += 1
