@@ -93,6 +93,10 @@ async def _help_with_embeds(ctx: Context, command: str = None):
             usage = command_obb.get_usage(ctx, initial_name)
             em.add_field(name="Usage", value=usage)
 
+            sbb = "\n".join([subcommand.name for subcommand in command_obb.subcommands])
+            if sbb:
+                em.add_field(name="Subcommands", value=sbb)
+
     if not em.colour:
         em.colour = random.randrange(0, 0xFFFFFF)
 
