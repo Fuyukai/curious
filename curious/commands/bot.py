@@ -356,6 +356,9 @@ class CommandsBot(Client):
 
             # remove all events registered
             for name, event in self.events.copy().items():
+                # not a plugin event
+                if not hasattr(event, "plugin"):
+                    continue
                 if isinstance(event.plugin, plugin):
                     event.plugins = None
                     self.remove_event(name, event)

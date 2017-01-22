@@ -1,6 +1,7 @@
 """
 The base class for a plugin.
 """
+import functools
 import typing
 
 from curious.commands import bot as c_bot
@@ -59,7 +60,11 @@ class Plugin(object):
                 commands.append(cmd)
 
             elif hasattr(value, "event"):
-                events.append(value)
+                @functools.wraps(value)
+                def _event_wrapper(*args, **kwargs):
+                    return value(*args, **kwargs)
+
+                events.append(_event_wrapper)
 
         return events, commands
 
