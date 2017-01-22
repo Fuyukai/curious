@@ -185,6 +185,7 @@ class State(object):
         # Create all of the guilds.
         for guild in event_data.get("guilds"):
             new_guild = Guild(self.client, **guild)
+            new_guild.shard_id = gw.shard_id
             self._guilds[new_guild.id] = new_guild
 
         # Create all of the private channels.
@@ -313,9 +314,19 @@ class State(object):
                 # Hence, we fire a `guild_join` event.
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
-        # Request all members from the guild.
-        if not guild.unavailable:
+        if not guild.unavailable and guild.large:
+            # only chunk on large guilds
             raise gateway.ChunkGuild(guild)
+        else:
+            if self._is_ready(gw.shard_id).is_set():
+                # already ready, do not refire
+                return
+            # we might be READY anyway, if all guilds are small.
+            await guild._finished_chunking.set()
+            if self.have_all_chunks(gw.shard_id) is True:
+                self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
+                await self._is_ready(gw.shard_id).set()
+                await self.client.fire_event("ready", gateway=gw)
 
     async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
         """

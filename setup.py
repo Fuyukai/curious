@@ -10,7 +10,7 @@ setup(
     author_email='l@veriny.tf',
     description='A curio library for the Discord API',
     install_requires=[
-        "cuiows>=0.1.6",
+        "cuiows>=0.1.9",
         "curio==0.4.0",
         "h11==0.7.0",
         "multidict==2.1.4",
