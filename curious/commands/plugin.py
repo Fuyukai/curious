@@ -12,6 +12,9 @@ class Plugin(object):
     def __init__(self, bot: 'c_bot.CommandsBot'):
         self.bot = bot
 
+    def __repr__(self):
+        return "<Plugin name='{}'>".format(self.name, self.bot)
+
     @property
     def name(self):
         """
