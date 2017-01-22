@@ -397,8 +397,9 @@ class Client(object):
         :param username: The new username of the bot.
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
         """
-        if not 2 <= len(username) <= 32:
-            raise ValueError("Username must be 2-32 characters")
+        if username:
+            if not 2 <= len(username) <= 32:
+                raise ValueError("Username must be 2-32 characters")
 
         if avatar:
             avatar = base64ify(avatar)
