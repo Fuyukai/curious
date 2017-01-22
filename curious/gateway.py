@@ -413,8 +413,15 @@ class Gateway(object):
 
         self._open = False
 
-        # Re-initialize the queue, to empty it.
-        self._event_queue._init(0)
+        # Orphan the previous queue.
+        _q = self._event_queue
+        del self._event_queue
+
+        # Put something on it to make the old waiter die.
+        _q.put(None)
+
+        # Re-create a new event queue.
+        self._event_queue = queue.Queue()
 
         await self.connect(self._cached_gateway_url)
         self._event_reader = await curio.spawn(self._send_events())
