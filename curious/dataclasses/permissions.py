@@ -132,6 +132,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
         "__repr__": lambda self: "<Permissions value={}>".format(self.bitfield),
         "all": all,
         "none": none,
+        "__slots__": ("bitfield",),
         **properties
     }
     new_class = type(name, (object,), namespace)
@@ -162,6 +163,8 @@ class Overwrite(object):
     :ivar deny: The :class:`Permissions` object that represents the denied items for this overwrite.
     :ivar target: The original object that this overwrite is for. This can either be a role or a member.
     """
+
+    __slots__ = "target", "channel", "allow", "deny"
 
     def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions], obb, channel=None):
         self.target = obb

@@ -6,6 +6,8 @@ from curious.dataclasses import guild as dt_guild
 
 
 class Emoji(IDObject):
+    __slots__ = ("id", "name", "roles", "_role_ids", "require_colons", "managed", "guild")
+
     def __init__(self, **kwargs):
         super().__init__(int(kwargs.pop("id")))
 

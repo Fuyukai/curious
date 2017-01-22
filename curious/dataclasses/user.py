@@ -1,16 +1,18 @@
 from curious import client
-from curious.dataclasses.bases import Dataclass, Messagable
+from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import channel as dt_channel
 from curious.dataclasses import message as dt_message
 from curious.dataclasses import guild as dt_guild
 from curious.exc import CuriousError
 
 
-class User(Dataclass, Messagable):
+class User(Dataclass):
     """
     This represents a bare user - i.e, somebody without a guild attached.
     This is used in DMs and similar. All member objects have a reference to their user on ``.user``.
     """
+
+    __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot", "_bot")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)
@@ -133,6 +135,8 @@ class BotUser(User):
     """
     A special type of user that represents ourselves.
     """
+    __slots__ = ()
+
     async def open_private_channel(self):
         raise NotImplementedError("Cannot open a private channel with yourself")
 

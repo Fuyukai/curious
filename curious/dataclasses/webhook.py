@@ -13,6 +13,8 @@ class Webhook(Dataclass):
     Represents a webhook member on the server.
     """
 
+    __slots__ = "user", "guild", "channel", "token", "owner", "_default_name", "_default_avatar"
+
     def __init__(self, client, **kwargs):
         # Use the webhook ID is provided (i.e created from a message object).
         # If that doesn't exist, we use the ID of the data instead (it's probably right!).

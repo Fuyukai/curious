@@ -68,6 +68,8 @@ class InviteMetadata(object):
     Represents metadata attached to an invite.
     """
 
+    __slots__ = "uses", "max_uses", "max_age", "temporary", "created_at", "revoked",
+
     def __init__(self, **kwargs):
         #: The number of times this invite was used.
         self.uses = kwargs.pop("uses", 0)  # type: int
@@ -92,6 +94,8 @@ class Invite(object):
     """
     Represents an invite object.
     """
+
+    __slots__ = "_bot", "code", "_real_guild", "_real_channel", "_invite_guild", "_invite_channel", "_invite_metadata"
 
     def __init__(self, client: 'client.Client', **kwargs):
         self._bot = client

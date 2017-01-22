@@ -30,6 +30,10 @@ class Message(Dataclass):
     :ivar created_at: A :class:`datetime.datetime` representing when this message was created.
     :ivar edited_at: A :class:`datetime.datetime` representing when this message was edited.
     """
+
+    __slots__ = ("content", "guild", "author", "channel", "created_at", "edited_at", "embeds", "attachments",
+                 "_mentions", "_role_mentions", "reactions")
+
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)
 

@@ -7,10 +7,16 @@ from curious.util import attrdict
 def _(s, n, v): raise KeyError(n)
 
 
-class Attachment(IDObject, attrdict):
+class Attachment(attrdict):
     def __init__(self, **kwargs):
-        IDObject.__init__(self, int(kwargs.pop("id", 0)))
+        self.id = int(kwargs.pop("id", 0))
         attrdict.__init__(self, **kwargs)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
 
 
 class Embed(object):  # not an IDObject! Embeds don't have IDs.

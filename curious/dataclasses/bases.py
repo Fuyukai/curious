@@ -9,25 +9,14 @@ from curious import client
 DISCORD_EPOCH = 1420070400000
 
 
-class Messagable(abc.ABC):
-    @abc.abstractmethod
-    async def send(self, content: str=None, *, tts: bool=False, embed=None):
-        """
-        Send a message to the target.
-
-        :param content: The content to return.
-        :param tts: Is this message a text to speech message?
-        :param embed: The embed to send instead of a message.
-        :return: A new :class:`Message` representing the message returned.
-        """
-
-
 class IDObject(object):
     """
     This object is comparable using the snowflake as an ID.
 
     It is also hashable, using the ID as a hash.
     """
+
+    __slots__ = "id",
 
     def __init__(self, id: int):
         """
@@ -63,6 +52,8 @@ class Dataclass(IDObject):
 
     These contain a reference to the current bot as `_bot`.
     """
+
+    __slots__ = "_bot",
 
     def __init__(self, id: int, client: 'client.Client'):
         super().__init__(id)

@@ -20,6 +20,11 @@ from curious.util import AsyncIteratorWrapper, base64ify
 
 
 class Guild(Dataclass):
+    __slots__ = ("id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
+                 "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles", "_members",
+                 "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left"
+                 )
+
     def __init__(self, bot: 'client.Client', **kwargs):
         """
         Creates a new Guild object.

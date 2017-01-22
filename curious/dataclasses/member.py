@@ -1,7 +1,7 @@
 import copy
 import typing
 
-from curious.dataclasses.bases import Dataclass, Messagable
+from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
@@ -11,10 +11,13 @@ from curious.dataclasses import guild
 from curious.util import to_datetime
 
 
-class Member(Dataclass, Messagable):
+class Member(Dataclass):
     """
     A member represents somebody who is inside a guild.
     """
+
+    __slots__ = ("user", "_roles", "joined_at", "nickname", "guild", "game", "_status", "voice",)
+
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
 

@@ -11,7 +11,7 @@ import time
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
     permissions as dt_permissions, role as dt_role, user as dt_user, webhook as dt_webhook
-from curious.dataclasses.bases import Dataclass, IDObject, Messagable
+from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import PermissionsError, Forbidden, CuriousError
 from curious.exc import Forbidden
@@ -128,7 +128,7 @@ class HistoryIterator(collections.AsyncIterator):
         return message
 
 
-class Channel(Dataclass, Messagable):
+class Channel(Dataclass):
     """
     Represents a channel.
 
@@ -140,6 +140,9 @@ class Channel(Dataclass, Messagable):
     :ivar recipients: If private, a list of :class:`User` that this channel is associated with.
     :ivar position: The position of this channel in the channel list.
     """
+
+    __slots__ = ("id", "name", "topic", "guild", "type", "recipients", "position", "_last_message_id", "_overwrites",
+                 "typing", "_bot")
 
     def __init__(self, client, guild: 'dt_guild.Guild', **kwargs):
         super().__init__(kwargs.pop("id"), client)
@@ -311,7 +314,7 @@ class Channel(Dataclass, Messagable):
 
         return msg
 
-    async def create_webhook(self, *, name: str=None, avatar: bytes=None) -> 'dt_webhook.Webhook':
+    async def create_webhook(self, *, name: str = None, avatar: bytes = None) -> 'dt_webhook.Webhook':
         """
         Create a webhook in this channel.
 
@@ -331,7 +334,7 @@ class Channel(Dataclass, Messagable):
         return webook
 
     async def edit_webhook(self, webhook: 'dt_webhook.Webhook', *,
-                           name: str=None, avatar: bytes=None) -> 'dt_webhook.Webhook':
+                           name: str = None, avatar: bytes = None) -> 'dt_webhook.Webhook':
         """
         Edits a webhook.
 

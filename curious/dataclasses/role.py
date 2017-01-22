@@ -11,6 +11,7 @@ class Role(Dataclass):
     """
     Represents a role on a server.
     """
+    __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", "guild"
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)
