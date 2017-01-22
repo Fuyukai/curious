@@ -1,6 +1,8 @@
 """
 A reactions-based paginator.
 """
+import typing
+
 from curious.dataclasses import Channel, User, Member
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.message import Message
@@ -15,7 +17,7 @@ class ReactionsPaginator(object):
     BUTTON_FORWARD   = "▶"
     BUTTON_STOP      = "⏹"
 
-    def __init__(self, content: str, channel: Channel, respond_to: User,
+    def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel, respond_to: User,
                  break_at: int=2000):
         """
         :param content: The content to page through.
@@ -30,7 +32,10 @@ class ReactionsPaginator(object):
         self.bot = self.channel._bot  # hacky af
 
         # chunk the message up
-        self._message_chunks = [self._content[i:i + break_at] for i in range(0, len(self._content), break_at)]
+        if isinstance(content, list):
+            self._message_chunks = content
+        else:
+            self._message_chunks = [self._content[i:i + break_at] for i in range(0, len(self._content), break_at)]
 
         #: The current page this paginator is on.
         self.page = 0
