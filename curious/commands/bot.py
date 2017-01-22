@@ -136,11 +136,6 @@ async def _help_without_embeds(ctx: Context, command: str = None):
         if command_obb is None:
             msg = "Command not found."
         else:
-            if command_obb.name != command:
-                title = "{} (alias for `{}`)".format(command, command_obb.name)
-            else:
-                title = command_obb.name
-
             base = command_obb.get_usage(ctx, initial_name) + "\n\n"
             base += "{}".format(command_obb.get_help(ctx, initial_name))
             msg = "```{}```".format(base)
@@ -215,7 +210,7 @@ class CommandsBot(Client):
         """
         if len(self.events.getall("command_error")) >= 2:
             # remove ourselves
-            self.remove_event("command_errr", self.on_command_error)
+            self.remove_event("command_error", self.on_command_error)
             return
 
         traceback.print_exception(None, e, e.__traceback__)
