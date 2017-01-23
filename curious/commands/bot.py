@@ -56,11 +56,11 @@ async def _help_with_embeds(ctx: Context, command: str = None):
                 if not failed:
                     names.append("`{}`".format(cmd.name))
 
-            names = "\n".join(names)
+            names = ", ".join(names)
             if not names:
                 continue
 
-            em.add_field(name=plugin.name, value=names)
+            em.add_field(name=plugin.name, value=names, inline=False)
 
     else:
         initial_name = command
