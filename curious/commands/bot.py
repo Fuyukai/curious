@@ -21,11 +21,19 @@ from curious.event import EventContext
 from curious.util import attrdict
 
 
-def splitter(s):
+def split_message_content(content: str, delim: str=" ") -> typing.List[str]:
+    """
+    Splits a message into individual parts by `delim`, returning a list of strings.
+    This method preserves quotes.
+
+    :param content: The message content to split.
+    :param delim: The delimiter to split on.
+    :return: A list of items split
+    """
     def replacer(m):
         return m.group(0).replace(" ", "\x00")
 
-    parts = re.sub(r'".+?"', replacer, s).split()
+    parts = re.sub(r'".+?"', replacer, content).split()
     parts = [p.replace("\x00", " ") for p in parts]
     return parts
 
@@ -162,7 +170,8 @@ class CommandsBot(Client):
     """
 
     def __init__(self, token: str = None, *,
-                 command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list],
+                 command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list] = None,
+                 message_check: typing.Callable[['CommandsBot', Message], bool] = None,
                  description: str = "The default curious description"):
         """
         :param token: The bot token.
@@ -174,6 +183,12 @@ class CommandsBot(Client):
 
         #: The command prefix to use for this bot.
         self._command_prefix = command_prefix
+
+        #: The message check function to use for this bot.
+        self._message_check = message_check
+
+        if not self._message_check and not self._command_prefix:
+            raise TypeError("Must provide one of `command_prefix` or `message_check`")
 
         #: The description of this bot.
         self.description = description
@@ -225,41 +240,63 @@ class CommandsBot(Client):
             # Minor optimization - don't fire on empty messages.
             return
 
-        command_prefix = self._command_prefix
-        if isinstance(command_prefix, str):
-            command_prefix = [command_prefix]
+        if self._message_check is not None:
+            # use the message check function
+            _ = self._message_check(self, message)
+            if inspect.isawaitable(_):
+                _ = await _
 
-        if callable(command_prefix):
-            command_prefix = command_prefix(self, message)
+            if not _:
+                # not a command, do not bother
+                return
 
-        if inspect.isawaitable(command_prefix):
-            command_prefix = await command_prefix
-        # Check if the prefix matches.
-        # If so, break the loop, which will set the prefix variable to the one that matched.
-        for prefix in command_prefix:
-            if message.content.startswith(prefix):
-                break
+            # func should return command_word and args for the command
+            command_word, args = _
+            command = self.get_command(command_word)
+            if command is None:
+                return
+
+            # no prefix was provided soo
+            prefix = None
+
         else:
-            return
+            command_prefix = self._command_prefix
+            if isinstance(command_prefix, str):
+                command_prefix = [command_prefix]
 
-        non_prefix_content = message.content[len(prefix):]
+            if callable(command_prefix):
+                command_prefix = command_prefix(self, message)
 
-        # Split the message out
-        tokens = splitter(non_prefix_content)
+            if inspect.isawaitable(command_prefix):
+                command_prefix = await command_prefix
+            # Check if the prefix matches.
+            # If so, break the loop, which will set the prefix variable to the one that matched.
+            for prefix in command_prefix:
+                if message.content.startswith(prefix):
+                    break
+            else:
+                return
 
-        # Split out the command word from the command prefix.
-        command_word = tokens[0]
+            content = message.content[len(prefix):]
 
-        command = self.get_command(command_word)
-        if command is None:
-            return
+            # Split the message out
+            tokens = split_message_content(content)
+
+            # Split out the command word from the command prefix.
+            command_word = tokens[0]
+
+            command = self.get_command(command_word)
+            if command is None:
+                return
+
+            args = tokens[1:]
 
         # Create the context object that will be passed in.
         ctx = Context(self, command=command, message=message,
                       event_ctx=event_ctx)
         ctx.prefix = prefix
         ctx.name = command_word
-        ctx.raw_args = tokens[1:]
+        ctx.raw_args = args
 
         await curio.spawn(self._wrap_context(ctx))
 
