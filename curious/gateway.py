@@ -9,11 +9,30 @@ import sys
 import logging
 import zlib
 
-# alternative JSON implementations for speed
 try:
-    import ujson as json
+    # Prefer ETF data.
+    import earl
+
+    def _loader(data: dict):
+        return earl.unpack(data)
+
+    def _dumper(data: dict):
+        return earl.pack(data)
+
+    _fmt = "etf"
 except ImportError:
-    import json
+    try:
+        import ujson as json
+    except ImportError:
+        import json
+
+    def _loader(data: dict):
+        return json.dumps(data)
+
+    def _dumper(data: dict):
+        return json.loads(data)
+
+    _fmt = "json"
 
 import curio
 from curio.task import Task
@@ -219,7 +238,7 @@ class Gateway(object):
                 return
             if isinstance(next_item, dict):
                 # this'll come back around in a sec
-                self._send_json(next_item)
+                self._send_dict(next_item)
             else:
                 self.logger.debug("Sending websocket data {}".format(next_item))
                 await self._send(next_item)
@@ -252,15 +271,15 @@ class Gateway(object):
         except WebsocketClosedError:
             await self._close()
 
-    def _send_json(self, payload: dict):
+    def _send_dict(self, payload: dict):
         """
-        Sends a JSON payload down the websocket.
+        Sends a dict to be packed down the gateway.
 
         This is a private method - use :meth:`send` instead.
 
         :param payload: The payload to send.
         """
-        data = json.dumps(payload)
+        data = _dumper(payload)
         return self.send(data)
 
     def send(self, data: typing.Any):
@@ -297,7 +316,7 @@ class Gateway(object):
             }
         }
 
-        self._send_json(payload)
+        self._send_dict(payload)
 
     def send_resume(self):
         """
@@ -312,7 +331,7 @@ class Gateway(object):
             }
         }
 
-        self._send_json(payload)
+        self._send_dict(payload)
 
     def send_status(self, game: Game, status: Status):
         payload = {
@@ -338,7 +357,7 @@ class Gateway(object):
                 # we can ignore this
                 pass
 
-        self._send_json(payload)
+        self._send_dict(payload)
 
     def send_voice_state_update(self, guild_id: int, channel_id: int):
         payload = {
@@ -351,7 +370,7 @@ class Gateway(object):
             }
         }
 
-        self._send_json(payload)
+        self._send_dict(payload)
 
     def _request_chunks(self, guilds):
         payload = {
@@ -363,7 +382,7 @@ class Gateway(object):
             }
         }
 
-        self._send_json(payload)
+        self._send_dict(payload)
 
     @classmethod
     async def from_token(cls, token: str, state: State, gateway_url: str,
@@ -384,7 +403,7 @@ class Gateway(object):
         obb.shard_id = shard_id
         obb.shard_count = shard_count
 
-        gateway_url += "?v={}&encoding=json".format(cls.GATEWAY_VERSION)
+        gateway_url += "?v={}&encoding={}".format(cls.GATEWAY_VERSION, _fmt)
         obb._cached_gateway_url = gateway_url
 
         await obb.connect(gateway_url)
@@ -463,7 +482,7 @@ class Gateway(object):
             await self._close()
             raise
 
-        if isinstance(event, (bytes, bytearray)):
+        if isinstance(event, (bytes, bytearray)) and _fmt == "json":
             # decompress the message
             event = zlib.decompress(event, 15, 10490000)
             event = event.decode("utf-8")
@@ -471,7 +490,7 @@ class Gateway(object):
         if event is None:
             return
 
-        event_data = json.loads(event)
+        event_data = _loader(event)
         # self.logger.debug("Got event {}".format(event_data))
 
         op = event_data.get('op')
