@@ -31,7 +31,7 @@ class ReconnectWebsocket(Exception):
     """
 
 
-class ChunkGuild(Exception):
+class ChunkGuilds(Exception):
     """
     Signals that we need to begin downloading all guild member chunks.
     """
@@ -171,6 +171,8 @@ class Gateway(object):
 
         #: The current status for this gateway.
         self.status = None
+
+        self._enqueued_guilds = []
 
     @property
     def logger(self):
@@ -351,11 +353,11 @@ class Gateway(object):
 
         self._send_json(payload)
 
-    def _request_chunk(self, guild):
+    def _request_chunks(self, guilds):
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,
             "d": {
-                "guild_id": str(guild.id),
+                "guild_id": [str(guild.id) for guild in guilds],
                 "query": "",
                 "limit": 0  # Request ALL!
             }
@@ -437,13 +439,15 @@ class Gateway(object):
 
         return self
 
-    def _get_chunks(self, guild):
+    def _get_chunks(self):
         """
         Called to start chunking all guild members.
         """
-        guild.start_chunking()
-        self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
-        self._request_chunk(guild)
+        for guild in self._enqueued_guilds:
+            guild.start_chunking()
+            self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
+        self._request_chunks(self._enqueued_guilds)
+        self._enqueued_guilds.clear()
 
     async def next_event(self):
         """
@@ -523,9 +527,9 @@ class Gateway(object):
                 # This is because curio requires `spawn()` to be async.
                 try:
                     await handler(self, data)
-                except ChunkGuild as e:
+                except ChunkGuilds as e:
                     # We need to download all member chunks from this guild.
-                    self._get_chunks(e.args[0])
+                    self._get_chunks()
                 except Exception:
                     self.logger.exception("Error decoding {}".format(data))
                     await self._close()

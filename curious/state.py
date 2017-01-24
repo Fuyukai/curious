@@ -62,6 +62,22 @@ class State(object):
         for guild in self.guilds_for_shard(shard_id):
             guild._finished_chunking.clear()
 
+    def _mark_for_chunking(self, gw: 'gateway.Gateway', guild: Guild):
+        """
+        Marks a guild for chunking.
+        """
+        if all(not g.unavailable for g in self.guilds_for_shard(guild.shard_id)):
+            gw._enqueued_guilds.append(guild)
+            # we have all guilds anyway, so raise ChunkGuilds NOW
+            raise gateway.ChunkGuilds
+
+        if len(gw._enqueued_guilds) >= 74:
+            # bump it up to 74
+            gw._enqueued_guilds.append(guild)
+            raise gateway.ChunkGuilds
+
+        gw._enqueued_guilds.append(guild)
+
     @property
     def guilds(self):
         return self._guilds.values()
@@ -315,8 +331,8 @@ class State(object):
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
         if not guild.unavailable and guild.large:
-            # only chunk on large guilds
-            raise gateway.ChunkGuild(guild)
+            # mark this guild as a chunking guild
+            self._mark_for_chunking(gw, guild)
         else:
             if self._is_ready(gw.shard_id).is_set():
                 # already ready, do not refire
