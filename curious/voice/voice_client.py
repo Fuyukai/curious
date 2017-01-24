@@ -1,19 +1,6 @@
 """
 Represents a voice client.
 
-Copied from discord.py:
-- Our main web socket (mWS) sends opcode 4 with a server ID and channel ID.
-- The mWS receives VOICE_STATE_UPDATE and VOICE_SERVER_UPDATE.
-- We pull the session_id from VOICE_STATE_UPDATE.
-- We pull the token, endpoint and guild_id from VOICE_SERVER_UPDATE.
-- Then we initiate the voice web socket (vWS) pointing to the endpoint.
-- We send opcode 0 with the user_id, guild_id, session_id and token using the vWS.
-- The vWS sends back opcode 2 with an ssrc, port, modes(array) and hearbeat_interval.
-- We send a UDP discovery packet to endpoint:port and receive our IP and our port in LE.
-- Then we send our IP and port via vWS with opcode 1.
-- When that's all done, we receive opcode 4 from the vWS.
-- Finally we can transmit data to endpoint:port.
-
 Other documentation:
 
 - Timestamp increases by 48 * 20 every time (samples * frame length).
