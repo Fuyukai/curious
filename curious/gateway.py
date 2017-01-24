@@ -311,7 +311,7 @@ class Gateway(object):
                 },
                 "compress": True,
                 "large_threshold": 250,
-                "v": 6,
+                "v": self.GATEWAY_VERSION,
                 "shard": [self.shard_id, self.shard_count]
             }
         }
