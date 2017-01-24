@@ -21,7 +21,7 @@ from curious.event import EventContext
 from curious.util import attrdict
 
 
-def split_message_content(content: str, delim: str=" ") -> typing.List[str]:
+def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     """
     Splits a message into individual parts by `delim`, returning a list of strings.
     This method preserves quotes.
@@ -30,8 +30,9 @@ def split_message_content(content: str, delim: str=" ") -> typing.List[str]:
     :param delim: The delimiter to split on.
     :return: A list of items split
     """
+
     def replacer(m):
-        return m.group(0).replace(" ", "\x00")
+        return m.group(0).replace(delim, "\x00")
 
     parts = re.sub(r'".+?"', replacer, content).split()
     parts = [p.replace("\x00", " ") for p in parts]
@@ -44,7 +45,10 @@ async def _help_with_embeds(ctx: Context, command: str = None):
     """
     if not command:
         em = Embed(title=ctx.bot.description)
-        em.description = "Type {}help <command> for more information.".format(ctx.prefix)
+        if ctx.prefix is not None:
+            em.description = "Type {}help <command> for more information.".format(ctx.prefix)
+        else:
+            em.description = "Use `help <command>` for more information."
 
         for plugin in ctx.bot.plugins.copy().values():
             gen = list(ctx.bot.get_commands_for(plugin))
@@ -164,13 +168,40 @@ async def _help(ctx: Context, *, command: str = None):
         await _help_with_embeds(ctx, command)
 
 
+def _default_msg_func_factory(prefix: str):
+    def __inner(bot: CommandsBot, message: Message):
+        matched = None
+        match = False
+        if isinstance(prefix, str):
+            match = message.content.startswith(prefix)
+            matched = prefix
+
+        elif isinstance(prefix, list):
+            for i in prefix:
+                if message.content.startswith(i):
+                    matched = i
+                    match = True
+                    break
+
+        if not matched:
+            return None
+
+        tokens = split_message_content(message.content)
+        command_word = tokens[0][len(matched):]
+
+        return command_word, tokens[1:], matched
+
+    __inner.prefix = prefix
+    return __inner
+
+
 class CommandsBot(Client):
     """
     A subclass of Client that supports commands.
     """
 
     def __init__(self, token: str = None, *,
-                 command_prefix: typing.Union[str, typing.Callable[['CommandsBot', Message], str], list] = None,
+                 command_prefix: typing.Union[str, list] = None,
                  message_check: typing.Callable[['CommandsBot', Message], bool] = None,
                  description: str = "The default curious description"):
         """
@@ -180,15 +211,10 @@ class CommandsBot(Client):
         :param description: The description of this bot.
         """
         super().__init__(token)
-
-        #: The command prefix to use for this bot.
-        self._command_prefix = command_prefix
-
-        #: The message check function to use for this bot.
-        self._message_check = message_check
-
-        if not self._message_check and not self._command_prefix:
+        if not command_prefix and not message_check:
             raise TypeError("Must provide one of `command_prefix` or `message_check`")
+
+        self._message_check = message_check or _default_msg_func_factory(command_prefix)
 
         #: The description of this bot.
         self.description = description
@@ -240,56 +266,20 @@ class CommandsBot(Client):
             # Minor optimization - don't fire on empty messages.
             return
 
-        if self._message_check is not None:
-            # use the message check function
-            _ = self._message_check(self, message)
-            if inspect.isawaitable(_):
-                _ = await _
+        # use the message check function
+        _ = self._message_check(self, message)
+        if inspect.isawaitable(_):
+            _ = await _
 
-            if not _:
-                # not a command, do not bother
-                return
+        if not _:
+            # not a command, do not bother
+            return
 
-            # func should return command_word and args for the command
-            command_word, args = _
-            command = self.get_command(command_word)
-            if command is None:
-                return
-
-            # no prefix was provided soo
-            prefix = None
-
-        else:
-            command_prefix = self._command_prefix
-            if isinstance(command_prefix, str):
-                command_prefix = [command_prefix]
-
-            if callable(command_prefix):
-                command_prefix = command_prefix(self, message)
-
-            if inspect.isawaitable(command_prefix):
-                command_prefix = await command_prefix
-            # Check if the prefix matches.
-            # If so, break the loop, which will set the prefix variable to the one that matched.
-            for prefix in command_prefix:
-                if message.content.startswith(prefix):
-                    break
-            else:
-                return
-
-            content = message.content[len(prefix):]
-
-            # Split the message out
-            tokens = split_message_content(content)
-
-            # Split out the command word from the command prefix.
-            command_word = tokens[0]
-
-            command = self.get_command(command_word)
-            if command is None:
-                return
-
-            args = tokens[1:]
+        # func should return command_word and args for the command
+        command_word, args, prefix = _
+        command = self.get_command(command_word)
+        if command is None:
+            return
 
         # Create the context object that will be passed in.
         ctx = Context(self, command=command, message=message,
