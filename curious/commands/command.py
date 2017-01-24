@@ -167,7 +167,7 @@ class Command(object):
         if ctx.prefix is not None:
             final = ["{}{}".format(ctx.prefix, invoked_as)]
         else:
-            finalo = [invoked_as]
+            final = [invoked_as]
 
         for n, (name, param) in enumerate(self._signature.parameters.items()):
             # always skip the first arg
