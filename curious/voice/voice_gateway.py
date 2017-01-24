@@ -229,6 +229,17 @@ class VoiceGateway(object):
         self._heartbeat_thread = t
         return t
 
+    async def _close(self):
+        if not self.websocket.closed:
+            await self.websocket.close_now(code=1000, reason="Client disconnected")
+
+        self._open = False
+        self._heartbeat_thread._stop_heartbeating.set()
+        await self._sender_task.cancel()
+        # put something on the queue to kill the old task
+        self._event_queue.put(None)
+        del self._event_queue
+
     @classmethod
     async def from_gateway(cls, gw: Gateway, guild_id: int, channel_id: int) -> 'VoiceGateway':
         """

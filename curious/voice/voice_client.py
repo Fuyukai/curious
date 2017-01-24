@@ -70,12 +70,18 @@ class VoiceClient(object):
         #: The UDP socket that we are connected to.
         self._sock = None  # type: socket.socket
 
+        self.main_task = None  # type: curio.Task
+
         # Header related stuff
         self.sequence = 0  # sequence is 2 bytes
         self.timestamp = 0  # timestamp is 4 bytes
 
         self.encoder = Encoder(48000, 2, 'audio')
         self.encoder.bitrate = 96000
+
+    @property
+    def open(self):
+        return self.vs_ws._open
 
     # Voice encoder related things.
     def _get_packet_header(self):
@@ -167,6 +173,10 @@ class VoiceClient(object):
         while True:
             await self.vs_ws.next_event()
 
+    async def close(self):
+        await self.vs_ws._close()
+        await self.main_task.cancel()
+
     async def connect(self, timeout=10):
         """
         Connects the voice client to the UDP server.
@@ -189,7 +199,12 @@ class VoiceClient(object):
         self._sock.sendto(packet, (self.vs_ws.endpoint, self.vs_ws.port))
 
         # Wait for our local IP to be received.
-        packet_data, addr = await curio.abide(self._sock.recvfrom, 70)
+        try:
+            packet_data, addr = await curio.timeout_after(timeout, curio.abide(self._sock.recvfrom, 70))
+        except curio.TaskTimeout:
+            self._sock.close()
+            self.vs_ws._close()
+            raise
         logger.debug("Got IP discovery packet!")
 
         # IP is encoded in ASCII, from the forth byte to the first \x00 byte.
