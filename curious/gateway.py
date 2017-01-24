@@ -517,7 +517,7 @@ class Gateway(object):
         elif op == GatewayOp.HEARTBEAT:
             # Send a heartbeat back.
             hb = self._heartbeat_thread.get_heartbeat()
-            self._send_json(hb)
+            self._send_dict(hb)
             self.heartbeats += 1
 
         elif op == GatewayOp.INVALIDATE_SESSION:
