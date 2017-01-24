@@ -7,6 +7,7 @@ import typing
 import queue
 import sys
 import logging
+import warnings
 import zlib
 
 try:
@@ -27,12 +28,13 @@ except ImportError:
         import json
 
     def _loader(data: dict):
-        return json.dumps(data)
-
-    def _dumper(data: dict):
         return json.loads(data)
 
+    def _dumper(data: dict):
+        return json.dumps(data)
+
     _fmt = "json"
+    warnings.warn("Using JSON parser for gateway - install `Earl` to use ETF!")
 
 import curio
 from curio.task import Task
