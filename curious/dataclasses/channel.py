@@ -693,3 +693,9 @@ class Channel(Dataclass):
             raise NotImplementedError("Can only delete channels in a Guild")
 
         return self.guild.delete_channel(self)
+
+    def connect(self):
+        """
+        Connects to voice in this channel.
+        """
+        return self.guild.connect_to_voice(self)

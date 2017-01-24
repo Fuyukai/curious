@@ -18,11 +18,16 @@ from curious.dataclasses import voice_state as dt_vs
 from curious.exc import PermissionsError, HierachyError, CuriousError
 from curious.util import AsyncIteratorWrapper, base64ify
 
+try:
+    from curious.voice.voice_client import VoiceClient
+except ImportError:
+    VoiceClient = None
+
 
 class Guild(Dataclass):
     __slots__ = ("id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
                  "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles", "_members",
-                 "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left"
+                 "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left", "voice_client",
                  )
 
     def __init__(self, bot: 'client.Client', **kwargs):
@@ -90,6 +95,9 @@ class Guild(Dataclass):
         #: Has this guild finished chunking?
         self._finished_chunking = curio.Event()
         self._chunks_left = 0
+
+        #: The current voice client associated with this guild.
+        self.voice_client = None  # type: VoiceClient
 
         self.from_guild_create(**kwargs)
 
@@ -395,6 +403,27 @@ class Guild(Dataclass):
         Leaves the guild.
         """
         await self._bot.http.leave_guild(self.id)
+
+    async def connect_to_voice(self, channel: 'channel.Channel') -> VoiceClient:
+        """
+        Connects to a voice channel in this guild.
+
+        :param channel: The channel to connect to.
+        :return: The :class:`VoiceClient` that was connected to this guild.
+        """
+        if VoiceClient is None:
+            raise RuntimeError("Cannot to voice - voice support is not installed")
+
+        if channel.guild != self:
+            raise CuriousError("Cannot use channel from a different guild")
+
+        if self.voice_client is not None and self.voice_client.open:
+            raise CuriousError("Voice client already exists in this guild")
+
+        gw = self._bot._gateways[self.shard_id]
+        self.voice_client = await VoiceClient.create(self._bot, gw, channel)
+        await self.voice_client.connect()
+        return self.voice_client
 
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """
