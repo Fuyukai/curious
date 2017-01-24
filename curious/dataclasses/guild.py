@@ -652,6 +652,9 @@ class Guild(Dataclass):
         if member.top_role >= self.me.top_role:
             raise HierachyError("Top role is equal to or lower than victim's top role")
 
+        if new_nickname is not None and len(new_nickname) > 32:
+            raise ValueError("Nicknames cannot be longer than 32 characters")
+
         coro = self._bot.http.change_nickname(self.id, new_nickname,
                                               member_id=member.id, me=me)
 
