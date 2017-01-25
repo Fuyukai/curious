@@ -248,8 +248,7 @@ class HTTPClient(object):
 
         :return: The websocket gateway URL to get.
         """
-        # Use /gateway/bot here to ensure our token is valid.
-        url = self.API_BASE + "/gateway/bot"
+        url = self.API_BASE + "/gateway"
 
         data = await self.get(url, "gateway")
         return data["url"]
