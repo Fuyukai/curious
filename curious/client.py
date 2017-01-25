@@ -18,6 +18,8 @@ from curious.http.httpclient import HTTPClient
 from curious.state import State
 from curious.util import _traverse_stack_for, base64ify
 
+AUTOSHARD = object()
+
 
 class AppInfo(object):
     """
@@ -561,7 +563,7 @@ class Client(object):
         self.shard_count = shards
         await self.start(token, shards=shards)
 
-    def run(self, token: str = None, shards: int = 1):
+    def run(self, token: str = None, shards: typing.Union[int, AUTOSHARD] = 1):
         """
         Runs your bot with Curio with the monitor enabled.
 
@@ -574,7 +576,7 @@ class Client(object):
         except TypeError:
             # old vers of curio
             kernel = curio.Kernel(with_monitor=True)
-        if shards is None:
+        if shards == AUTOSHARD:
             coro = self.start_autosharded(token)
         else:
             coro = self.start(token, shards=shards)
