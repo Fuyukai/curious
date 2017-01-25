@@ -818,8 +818,6 @@ class State(object):
             role = Role(self.client, **event_data.get("role", {}))
             guild._roles[role.id] = role
 
-        role = guild._roles[int(event_data.get("id"))]
-
         await self.client.fire_event("role_create", role, gateway=gw)
 
     async def handle_guild_role_update(self, gw: 'gateway.Gateway', event_data: dict):
