@@ -118,7 +118,8 @@ class HTTPClient(object):
                 if tries <= 0:
                     # We need to sleep for a bit before we can start making another request.
                     sleep_time = ceil(reset_time - time.time())
-                    self.logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
+                    self.logger.debug("Potentially hit ratelimit - sleeping with lock open for {} seconds.".format(
+                        sleep_time))
                     await curio.sleep(sleep_time)
 
             for tries in range(0, 5):
@@ -149,27 +150,6 @@ class HTTPClient(object):
 
                 # Update the ratelimit headers.
                 self._ratelimit_remaining[bucket] = remaining, reset
-
-                # Next, check if we need to sleep.
-                # Check if we need to sleep.
-                # This is signaled by Ratelimit-Remaining being 0 or Ratelimit-Global being True.
-                should_sleep = remaining == 0 or \
-                               response.headers.get("X-Ratelimit-Global") == "true"
-
-                if should_sleep:
-                    # The time until the reset is given by X-Ratelimit-Reset.
-                    # Failing that, it's also given by the Retry-After header, which is in ms.
-                    reset = response.headers.get("X-Ratelimit-Reset")
-                    if reset:
-                        sleep_time = int(reset) - time.time()
-                    else:
-                        sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
-
-                    self.logger.debug("Being ratelimited under bucket {}, waking in {} seconds".format(bucket,
-                                                                                                       sleep_time))
-
-                    # Sleep that amount of time.
-                    await curio.sleep(sleep_time)
 
                 # Now, we have that nuisance out of the way, we can try and get the result from the request.
                 result = await self.get_response_data(response)
