@@ -14,11 +14,14 @@ try:
     # Prefer ETF data.
     import earl
 
+
     def _loader(data: dict):
         return earl.unpack(data)
 
+
     def _dumper(data: dict):
         return earl.pack(data)
+
 
     _fmt = "etf"
 except ImportError:
@@ -27,17 +30,21 @@ except ImportError:
     except ImportError:
         import json
 
+
     def _loader(data: dict):
         return json.loads(data)
 
+
     def _dumper(data: dict):
         return json.dumps(data)
+
 
     _fmt = "json"
     warnings.warn("Using JSON parser for gateway - install `Earl` to use ETF!")
 
 import curio
 from curio.task import Task
+from curio.thread import AWAIT, async_thread
 from cuiows.exc import WebsocketClosedError
 from cuiows import WSClient
 
@@ -74,54 +81,31 @@ class GatewayOp(enum.IntEnum):
     GUILD_SYNC = 12
 
 
-class _HeartbeatThread(threading.Thread):
+@async_thread
+def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     """
-    A subclass of threading.Thread that sends heartbeats every <x> seconds.
+    Heartbeat looper that loops and sends heartbeats to the gateway.
+
+    :param gw: The gateway to handle.
     """
+    # async threads!
 
-    def __init__(self, gw: 'Gateway', heartbeat_interval: float, *args, **kwargs):
-        # super() isn't used anywhere else so I'm scared to use it here
-        threading.Thread.__init__(self, *args, **kwargs)
-        self._gateway = gw
-        self._hb_interval = heartbeat_interval
-
-        # The event that tells us to stop heartbeating.
-        self._stop_heartbeating = threading.Event()
-
-        # This thread doesn't need to die before Python closes, so we can daemonize.
-        # This means that Python won't wait on us to shutdown.
-        self.daemon = True
-
-    def run(self):
-        """
-        Heartbeats every <x> seconds.
-        """
-        # This uses `Event.wait()` to wait for the next heartbeat.
-        # This is effectively a bootleg sleep(), but we can signal it at any time to stop.
-        # Which is really cool!
-
-        # Send the first heartbeat.
-        self._send_heartbeat()
-        while not self._stop_heartbeating.wait(self._hb_interval):
-            self._send_heartbeat()
-
-    def get_heartbeat(self):
-        """
-        :return: A heartbeat packet.
-        """
-        return {
-            "op": int(GatewayOp.HEARTBEAT),
-            "d": self._gateway.sequence_num
-        }
-
-    def _send_heartbeat(self):
-        hb = self.get_heartbeat()
-
-        # Enqueue onto the sending queue.
-        self._gateway.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
-        self._gateway.send(hb)
-
-        self._gateway.heartbeats += 1
+    # send the first heartbeat
+    hb = gw._get_heartbeat()
+    gw.logger.debug("Sending initial heartbeat.")
+    AWAIT(gw.send(hb))
+    while True:
+        # this is similar to the normal threaded event waiter
+        # it will time out after heartbeat_interval seconds.
+        try:
+            AWAIT(curio.timeout_after(heartbeat_interval, gw._stop_heartbeating.wait()))
+        except curio.TaskTimeout:
+            pass
+        else:
+            break
+        hb = gw._get_heartbeat()
+        gw.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
+        AWAIT(gw.send(hb))
 
 
 class Gateway(object):
@@ -149,19 +133,6 @@ class Gateway(object):
 
         #: The current logger.
         self._logger = None
-
-        #: The event send queue.
-        #: A threadsafe queue is used here so that the keep-alive worker threads can submit a new heartbeat to it and
-        #: send the heartbeat through the websocket safely.
-        #: All events end up here, and are taken care of in the background.
-        self._event_queue = queue.Queue()
-
-        #: The queue reader task.
-        #: This reads messages off of the queue and sends them to the gateway.
-        self._event_reader = None  # type: Task
-
-        #: The heartbeat thread instance.
-        self._heartbeat_thread = None  # type: _HeartbeatThread
 
         #: The connection state used for this connection.
         self.state = connection_state
@@ -194,6 +165,7 @@ class Gateway(object):
         self.status = None
 
         self._enqueued_guilds = []
+        self._stop_heartbeating = curio.Event()
 
     @property
     def logger(self):
@@ -216,44 +188,30 @@ class Gateway(object):
         self._open = True
         return self.websocket
 
-    def _start_heartbeating(self, heartbeat_interval: float) -> threading.Thread:
+    async def _start_heartbeating(self, heartbeat_interval: float) -> threading.Thread:
         """
         Starts the heartbeat thread.
         :param heartbeat_interval: The number of seconds between each heartbeat.
         """
-        if self._heartbeat_thread:
-            self._heartbeat_thread._stop_heartbeating.set()
+        if not self._stop_heartbeating.is_set():
+            # cancel some poor thread elsewhere
+            await self._stop_heartbeating.set()
+            del self._stop_heartbeating
 
-        t = _HeartbeatThread(self, heartbeat_interval)
-        t.start()
-        self._heartbeat_thread = t
-        return t
+        self._stop_heartbeating = curio.Event()
 
-    # Queue manager.
-    async def _send_events(self):
-        while self._open:
-            # this is cool!
-            try:
-                next_item = await curio.abide(self._event_queue.get)
-            except curio.CancelledError:
-                self._event_queue.put_nowait(next_item)
-                return
-            if isinstance(next_item, dict):
-                # this'll come back around in a sec
-                self._send_dict(next_item)
-            else:
-                self.logger.debug("Sending websocket data {}".format(next_item))
-                await self._send(next_item)
+        # dont reference the task - it'll die by itself
+        task = await curio.spawn(_heartbeat_loop(self, heartbeat_interval), daemon=True)
+
+        return task
 
     # Utility methods.
     async def _close(self):
         """
         Closes the connection.
         """
-        await self._event_reader.cancel()
         self._open = False
-
-        self._heartbeat_thread._stop_heartbeating.set()
+        await self._stop_heartbeating.set()
 
     async def _send(self, data):
         """
@@ -282,21 +240,24 @@ class Gateway(object):
         :param payload: The payload to send.
         """
         data = _dumper(payload)
-        return self.send(data)
+        return self._send(data)
 
-    def send(self, data: typing.Any):
+    async def send(self, data: typing.Any):
         """
         Enqueues some data to be sent down the websocket.
 
         This does not send the data immediately - it is enqueued to be sent.
         """
         try:
-            self._event_queue.put(data, block=False)
+            if isinstance(data, dict):
+                await self._send_dict(data)
+            else:
+                await self._send(data)
         except queue.Full as e:
             raise RuntimeError("Gateway queue is full - this should never happen!") from e
 
     # Sending events.
-    def send_identify(self):
+    async def send_identify(self):
         """
         Sends an IDENTIFY packet.
         """
@@ -318,9 +279,9 @@ class Gateway(object):
             }
         }
 
-        self._send_dict(payload)
+        await self._send_dict(payload)
 
-    def send_resume(self):
+    async def send_resume(self):
         """
         Sends a RESUME packet.
         """
@@ -333,9 +294,9 @@ class Gateway(object):
             }
         }
 
-        self._send_dict(payload)
+        await self._send_dict(payload)
 
-    def send_status(self, game: Game, status: Status):
+    async def send_status(self, game: Game, status: Status):
         payload = {
             "op": GatewayOp.PRESENCE,
             "d": {
@@ -359,9 +320,9 @@ class Gateway(object):
                 # we can ignore this
                 pass
 
-        self._send_dict(payload)
+        await self._send_dict(payload)
 
-    def send_voice_state_update(self, guild_id: int, channel_id: int):
+    async def send_voice_state_update(self, guild_id: int, channel_id: int):
         payload = {
             "op": GatewayOp.VOICE_STATE,
             "d": {
@@ -372,9 +333,9 @@ class Gateway(object):
             }
         }
 
-        self._send_dict(payload)
+        await self._send_dict(payload)
 
-    def _request_chunks(self, guilds):
+    async def _request_chunks(self, guilds):
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,
             "d": {
@@ -384,11 +345,11 @@ class Gateway(object):
             }
         }
 
-        self._send_dict(payload)
+        await self._send_dict(payload)
 
     @classmethod
     async def from_token(cls, token: str, state: State, gateway_url: str,
-                         *, shard_id: int=0, shard_count: int=1) -> 'Gateway':
+                         *, shard_id: int = 0, shard_count: int = 1) -> 'Gateway':
         """
         Creates a new gateway connection from a token.
 
@@ -410,12 +371,9 @@ class Gateway(object):
 
         await obb.connect(gateway_url)
 
-        # Create the event sender task.
-        obb._event_reader = await curio.spawn(obb._send_events())
-
         # send IDENTIFY
         obb.logger.info("Sending IDENTIFY...")
-        obb.send_identify()
+        await obb.send_identify()
 
         return obb
 
@@ -436,39 +394,34 @@ class Gateway(object):
 
         self._open = False
 
-        # Orphan the previous queue.
-        _q = self._event_queue
-        del self._event_queue
-
-        # Put something on it to make the old waiter die.
-        _q.put(None)
-
-        # Re-create a new event queue.
-        self._event_queue = queue.Queue()
-
         await self.connect(self._cached_gateway_url)
-        self._event_reader = await curio.spawn(self._send_events())
 
         if resume:
             # Send the RESUME packet, instead of the IDENTIFY packet.
             self.logger.info("Sending RESUME...")
-            self.send_resume()
+            await self.send_resume()
         else:
             self.logger.info("Sending IDENTIFY...")
             self.sequence_num = 0
-            self.send_identify()
+            await self.send_identify()
 
         return self
 
-    def _get_chunks(self):
+    async def _get_chunks(self):
         """
         Called to start chunking all guild members.
         """
         for guild in self._enqueued_guilds:
             guild.start_chunking()
             self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
-        self._request_chunks(self._enqueued_guilds)
+        await self._request_chunks(self._enqueued_guilds)
         self._enqueued_guilds.clear()
+
+    def _get_heartbeat(self):
+        return {
+            "op": GatewayOp.HEARTBEAT,
+            "d": self.sequence_num
+        }
 
     async def next_event(self):
         """
@@ -508,7 +461,7 @@ class Gateway(object):
             # Start heartbeating, with the specified heartbeat duration.
             heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
             self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
-            self._start_heartbeating(heartbeat_interval)
+            await self._start_heartbeating(heartbeat_interval)
             self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
 
         elif op == GatewayOp.HEARTBEAT_ACK:
@@ -516,8 +469,8 @@ class Gateway(object):
 
         elif op == GatewayOp.HEARTBEAT:
             # Send a heartbeat back.
-            hb = self._heartbeat_thread.get_heartbeat()
-            self._send_dict(hb)
+            hb = self._get_heartbeat()
+            await self._send_dict(hb)
             self.heartbeats += 1
 
         elif op == GatewayOp.INVALIDATE_SESSION:
@@ -525,12 +478,12 @@ class Gateway(object):
             should_resume = data
             if should_resume is True:
                 self.logger.debug("Sending RESUME again")
-                self.send_resume()
+                await self.send_resume()
             else:
                 self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
                 self.sequence_num = 0
                 self.state._reset(self.shard_id)
-                self.send_identify()
+                await self.send_identify()
 
         elif op == GatewayOp.RECONNECT:
             # Try and reconnect to the gateway.
@@ -550,7 +503,7 @@ class Gateway(object):
                     await handler(self, data)
                 except ChunkGuilds as e:
                     # We need to download all member chunks from this guild.
-                    self._get_chunks()
+                    await self._get_chunks()
                 except Exception:
                     self.logger.exception("Error decoding {}".format(data))
                     await self._close()

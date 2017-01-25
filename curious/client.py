@@ -306,7 +306,7 @@ class Client(object):
         :param shard_id: The shard to change your status on.
         """
         gateway = self._gateways[shard_id]
-        return gateway.send_status(game, status)
+        return await gateway.send_status(game, status)
 
     async def wait_for(self, event_name: str, predicate: typing.Callable = None):
         """
@@ -571,7 +571,7 @@ class Client(object):
             coros = []
             for gateway in self._gateways.values():
                 coros.append(gateway.websocket.close_now(1000, reason="Client closed connection"))
-                coros.append(gateway._event_reader.cancel())
+                coros.append(gateway._close())
 
             async def __cleanup():
                 tasks = []
@@ -585,7 +585,7 @@ class Client(object):
                 self._logger.info("Clean-up complete.")
                 raise SystemExit()
 
-            return kernel.run(coro=__cleanup(), shutdown=True)
+            return kernel.run(coro=__cleanup())
 
     @classmethod
     def from_token(cls, token: str = None):
