@@ -62,10 +62,12 @@ class Client(object):
         bot = Client("'a'")  # pass explicitly
         bot.run("'b'")  # or pass to the run call.
     """
-    def __init__(self, token: str = None):
+    def __init__(self, token: str = None, *,
+                 state_klass: type = State):
         """
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
+        :param state_klass: The class to construct the connection state from.
         """
         #: The mapping of `shard_id -> gateway` objects.
         self._gateways = {}  # type: typing.Dict[int, Gateway]
@@ -77,7 +79,7 @@ class Client(object):
         self._token = token
 
         #: The current connection state for the bot.
-        self.state = State(self)
+        self.state = state_klass(self)
 
         #: The current event storage.
         self.events = multidict.MultiDict()
