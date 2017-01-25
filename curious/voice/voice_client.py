@@ -43,6 +43,13 @@ def simulate_overflow(value: int, bits: int, signed: bool):
 
 
 class VoiceClient(object):
+    """
+    The voice client instance controls connecting to Discord's voice servers.
+
+    This should ***not*** be created directly - instead use :class:`Channel.connect()` to connect to a voice channel,
+    and use the instance returned from.
+    """
+
     def __init__(self, main_client: 'client.Client',
                  channel: 'dt_channel.Channel'):
         #: The main client this voice client is associated with.
@@ -128,7 +135,7 @@ class VoiceClient(object):
 
     def send_opus_data(self, opus_data: bytes):
         """
-        Sends some opus data off of the ffmpeg buffer.
+        Sends an opus-encoded voice packet.
 
         :param opus_data: The data to send.
         """
@@ -138,6 +145,8 @@ class VoiceClient(object):
     def send_voice_packet(self, voice_data: bytes):
         """
         Sends voice data from a PCM buffer.
+
+        :param voice_data: The raw PCM voice data to send.
         """
         try:
             data = self.encoder.encode(voice_data, 960)

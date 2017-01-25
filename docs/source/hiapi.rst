@@ -13,6 +13,13 @@ Client
     :members:
 
 
+Voice
+-----
+
+.. autoclass:: curious.voice.voice_client.VoiceClient
+    :members: send_voice_packet, send_opus_data, play_file
+
+
 Dataclasses
 -----------
 

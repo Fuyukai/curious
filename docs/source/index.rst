@@ -9,10 +9,38 @@ Welcome to curious's documentation!
 ``curious`` is a Python 3.5+ library to interact with the `Discord <https://discordapp.com>`_ API. It is based on top
 of `curio <https://github.com/dabeaz/curio>`_.
 
+Curious **only supports bot accounts**. There will be zero effort made to support any client-only features, or other
+features that only user accounts can use.
+
+Installation
+------------
+
+Curious is available on PyPI under ``discord-curious``:
+
+.. code-block:: bash
+
+   $ pip install -U discord-curious
+
+
+Or for the latest development version:
+
+.. code-block:: bash
+
+   $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
+
+
+Additionally, curious requires the usage of an as-of-yet unreleased version of ``curio``:
+
+.. code-block:: bash
+
+   $ pip install -U git+https://github.com/dabeaz/curio.git
+
+
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
 
+   speedups
    hiapi
    loapi
 
@@ -21,5 +49,4 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`

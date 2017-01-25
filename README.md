@@ -7,8 +7,6 @@ Curious **only supports bot accounts**. There will be zero effort made
 to support any client-only features, or other features that only user
 accounts can use.
 
-Curious is a WIP - not everything is implemented yet.
-
 ## Installation
 
 Curious is available on PyPI under `discord-curious`:
