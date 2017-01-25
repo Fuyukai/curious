@@ -327,7 +327,7 @@ class State(object):
         guild.me.game = gw.game
         guild.me.status = gw.status
 
-        # Dispatch the new event before we start chunking.
+        # Dispatch the event if we're ready (i.e not streaming)
         if self._is_ready(gw.shard_id).is_set():
             if had_guild:
                 await self.client.fire_event("guild_available", guild, gateway=gw)
@@ -335,6 +335,8 @@ class State(object):
                 # We didn't have it before, so we just joined it.
                 # Hence, we fire a `guild_join` event.
                 await self.client.fire_event("guild_join", guild, gateway=gw)
+        else:
+            self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
 
         if not guild.unavailable and guild.large:
             # mark this guild as a chunking guild
@@ -343,12 +345,17 @@ class State(object):
             if self._is_ready(gw.shard_id).is_set():
                 # already ready, do not refire
                 return
+
             # we might be READY anyway, if all guilds are small.
             await guild._finished_chunking.set()
             if self.have_all_chunks(gw.shard_id) is True:
                 self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
                 await self._is_ready(gw.shard_id).set()
                 await self.client.fire_event("ready", gateway=gw)
+            else:
+                # check if we need to fire a ChunkGuilds anyway because this might be the last guild (small)
+                if all(not g.unavailable for g in self.guilds_for_shard(guild.shard_id)):
+                    raise gateway.ChunkGuilds
 
     async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
