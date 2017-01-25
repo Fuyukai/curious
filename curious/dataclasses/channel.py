@@ -10,7 +10,7 @@ import time
 
 from curious import client as dt_client
 from curious.dataclasses import guild as dt_guild, member as dt_member, message as dt_message, \
-    permissions as dt_permissions, role as dt_role, user as dt_user, webhook as dt_webhook
+    permissions as dt_permissions, role as dt_role, user as dt_user, webhook as dt_webhook, invite as dt_invite
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import PermissionsError, Forbidden, CuriousError
@@ -382,6 +382,21 @@ class Channel(Dataclass):
 
         await self._bot.http.delete_webhook(webhook.id)
         return webhook
+
+    async def create_invite(self, **kwargs):
+        """
+        Creates an invite in this channel.
+        """
+        if not self.guild:
+            raise PermissionsError("create_instant_invite")
+
+        if not self.permissions(self.guild.me).create_instant_invite:
+            raise PermissionsError("create_instant_invite")
+
+        inv = await self._bot.http.create_invite(self.id, **kwargs)
+        invite = dt_invite.Invite(self._bot, **inv)
+
+        return invite
 
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
         """
