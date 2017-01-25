@@ -563,7 +563,7 @@ class Client(object):
         self.shard_count = shards
         await self.start(token, shards=shards)
 
-    def run(self, token: str = None, shards: typing.Union[int, AUTOSHARD] = 1):
+    def run(self, token: str = None, shards: typing.Union[int, object] = 1):
         """
         Runs your bot with Curio with the monitor enabled.
 
