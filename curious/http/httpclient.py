@@ -427,6 +427,21 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="reactions:{}".format(channel_id))
         return data
 
+    async def get_reaction_users(self, channel_id: int, message_id: int, emoji: str):
+        """
+        Gets a list of users who reacted to this message with the specified reaction.
+
+        :param channel_id: The channel ID to check in.
+        :param message_id: The message ID to check.
+        :param emoji: The emoji to get reactions for.
+        """
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}").format(channel_id=channel_id,
+                                                                                      message_id=message_id,
+                                                                                      emoji=emoji)
+
+        data = await self.get(url, bucket="reactions:{}".format(channel_id))
+        return data
+
     async def pin_message(self, channel_id: int, message_id: int):
         """
         Pins a message to the channel.
