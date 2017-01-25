@@ -10,10 +10,11 @@ Welcome to curious's documentation!
 of `curio <https://github.com/dabeaz/curio>`_.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
-   api
+   hiapi
+   loapi
 
 
 Indices and tables

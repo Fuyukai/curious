@@ -294,7 +294,7 @@ class Channel(Dataclass):
         obbs = []
 
         for webhook in webhooks:
-            obbs.append(self._bot.state._make_webhook(webhook))
+            obbs.append(self._bot.state.make_webhook(webhook))
 
         return obbs
 
@@ -329,7 +329,7 @@ class Channel(Dataclass):
             avatar = base64ify(avatar)
 
         data = await self._bot.http.create_webhook(self.id, name=name, avatar=avatar)
-        webook = self._bot.state._make_webhook(data)
+        webook = self._bot.state.make_webhook(data)
 
         return webook
 

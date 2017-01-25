@@ -34,10 +34,21 @@ from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 from curious.http.curio_http import ClientSession, Response
 
 
-# HTTP exceptions, used to raise errors.
-
-
 class HTTPClient(object):
+    """
+    The HTTP client object used to make requests to Discord's servers.
+
+    If a particular method is not listed here, you can use one of the five following methods to make a manual request:
+
+        - :meth:`get`
+        - :meth:`post`
+        - :meth:`put`
+        - :meth:`delete`
+        - :meth:`patch`
+
+    All of these functions require a **ratelimit bucket** which will be used to prevent the client from hitting 429
+    ratelimits.
+    """
     API_BASE = "https://discordapp.com/api/v6"
     GUILD_BASE = API_BASE + "/guilds/{guild_id}"
     CHANNEL_BASE = API_BASE + "/channels/{channel_id}"
@@ -181,27 +192,60 @@ class HTTPClient(object):
 
     async def get(self, url: str, bucket: str,
                   *args, **kwargs):
+        """
+        Makes a GET request.
+
+        :param url: The URL to request.
+        :param bucket: The ratelimit bucket to file this request under.
+        """
         return await self.request(("GET", bucket), method="GET", url=url, *args, **kwargs)
 
     async def post(self, url: str, bucket: str,
                    *args, **kwargs):
+        """
+        Makes a POST request.
+
+        :param url: The URL to request.
+        :param bucket: The ratelimit bucket to file this request under.
+        """
         return await self.request(("POST", bucket), method="POST", url=url, *args, **kwargs)
 
     async def put(self, url: str, bucket: str,
                   *args, **kwargs):
+        """
+        Makes a PUT request.
+
+        :param url: The URL to request.
+        :param bucket: The ratelimit bucket to file this request under.
+        """
         return await self.request(("PUT", bucket), method="PUT", url=url, *args, **kwargs)
 
     async def delete(self, url: str, bucket: str,
                      *args, **kwargs):
+        """
+        Makes a DELETE request.
+
+        :param url: The URL to request.
+        :param bucket: The ratelimit bucket to file this request under.
+        """
         return await self.request(("DELETE", bucket), method="DELETE", url=url, *args, **kwargs)
 
     async def patch(self, url: str, bucket: str,
                     *args, **kwargs):
+        """
+        Makes a PATCH request.
+
+        :param url: The URL to request.
+        :param bucket: The ratelimit bucket to file this request under.
+        """
         return await self.request(("PATCH", bucket), method="PATCH", url=url, *args, **kwargs)
 
     # Non-generic methods
     async def get_gateway_url(self):
         """
+        It is not recommended to use this method - use :meth:`HTTPClient.get_shard_count` instead. That method
+        provides the gateway URL as well.
+
         :return: The websocket gateway URL to get.
         """
         # Use /gateway/bot here to ensure our token is valid.
@@ -322,7 +366,8 @@ class HTTPClient(object):
 
         :param channel_id: The channel ID that the message is in.
         :param message_id: The message ID of the message.
-        :param new_content: The new content of the message.
+        :param content: The new content of the message.
+        :param embed: The new embed of the message.
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
         payload = {}
@@ -359,7 +404,7 @@ class HTTPClient(object):
         :param channel_id: The channel ID of the channel containing the message.
         :param message_id: The message ID to remove reactions from.
         :param emoji: The emoji to remove.
-        :param victim: The victim to remove.
+        :param victim: The victim to remove. \
             If this is None, our own reaction is removed.
         """
         url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/{me}") \
@@ -426,12 +471,12 @@ class HTTPClient(object):
         Gets a list of messages from a channel.
 
         This requires READ_MESSAGES on the channel.
+
         :param channel_id: The channel ID to receive messages from.
         :param before: Get messages before this snowflake.
         :param after: Get messages after this snowflake.
         :param around: Get messages around this snowflake.
         :param limit: The maximum number of messages to return.
-
         :return: A list of message dictionaries.
         """
         url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
@@ -564,7 +609,7 @@ class HTTPClient(object):
         """
         Modifies a guild.
 
-        https://discordapp.com/developers/docs/resources/guild#modify-guild
+        See https://discordapp.com/developers/docs/resources/guild#modify-guild for the fields available.
         """
         url = self.GUILD_BASE.format(guild_id=guild_id)
         payload = {}

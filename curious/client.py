@@ -7,15 +7,14 @@ import multidict
 from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
-from curious.dataclasses import Guild
+from curious.dataclasses.guild import Guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.dataclasses.webhook import Webhook
 from curious.event import EventContext
-from curious.gateway import Gateway, ReconnectWebsocket
 from curious.http.httpclient import HTTPClient
-from curious.state import State
+from curious import state as md_state
 from curious.util import _traverse_stack_for, base64ify
 
 AUTOSHARD = object()
@@ -65,7 +64,7 @@ class Client(object):
         bot.run("'b'")  # or pass to the run call.
     """
     def __init__(self, token: str = None, *,
-                 state_klass: type = State):
+                 state_klass: type = None):
         """
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
@@ -81,6 +80,8 @@ class Client(object):
         self._token = token
 
         #: The current connection state for the bot.
+        if state_klass is None:
+            state_klass = md_state.State
         self.state = state_klass(self)
 
         #: The current event storage.
@@ -91,7 +92,7 @@ class Client(object):
         #: They are used in the HTTP method by `wait=`, for example.
         self._temporary_listeners = multidict.MultiDict()
 
-        #: The HTTPClient used for this bot.
+        #: The :class:`HTTPClient` used for this bot.
         self.http = None  # type: HTTPClient
 
         #: The cached gateway URL.
@@ -276,15 +277,7 @@ class Client(object):
         :param event_name: The event name to fire.
         :return: A :class:`list` of :class:`curio.task.Task` representing the events.
         """
-        if "gateway" not in kwargs:
-            # Traverse through the previous stack to get the `gateway` instance.
-            gateway = _traverse_stack_for(Gateway)
-            if gateway is None:
-                # uh oh
-                raise ValueError("Could not get Gateway instance!")
-
-        else:
-            gateway = kwargs.pop("gateway")
+        gateway = kwargs.pop("gateway")
 
         if "ctx" not in kwargs:
             ctx = EventContext(self, gateway.shard_id)
@@ -450,7 +443,7 @@ class Client(object):
         :param webhook_id: The ID of the webhook to get.
         :return: A new Webhook object.
         """
-        return self.state._make_webhook(await self.http.get_webhook(webhook_id))
+        return self.state.make_webhook(await self.http.get_webhook(webhook_id))
 
     async def get_invite(self, invite_code: str) -> Invite:
         """
@@ -468,6 +461,8 @@ class Client(object):
 
         This will NOT poll for events - only open a websocket connection!
         """
+        from curious.gateway import Gateway
+
         if token:
             self._token = token
 
@@ -490,6 +485,7 @@ class Client(object):
 
         :param shard_id: The shard ID of the gateway to shard.
         """
+        from curious.gateway import ReconnectWebsocket
         gw = self._gateways[shard_id]
         while True:
             try:

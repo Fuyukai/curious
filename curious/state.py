@@ -127,7 +127,13 @@ class State(object):
             if message.id == message_id:
                 return message
 
-    def _make_webhook(self, event_data: dict) -> Webhook:
+    def make_webhook(self, event_data: dict) -> Webhook:
+        """
+        Creates a new webhook object from the event data.
+
+        :param event_data: The event data.
+        :return: A :class:`Webhook`.
+        """
         if "content" in event_data:
             # message object, so we have to do a minor bit of remapping
             user = event_data.get("author", {})
@@ -428,7 +434,7 @@ class State(object):
         else:
             # Webhooks also exist.
             if event_data.get("webhook_id") is not None:
-                message.author = self._make_webhook(event_data)
+                message.author = self.make_webhook(event_data)
             else:
                 message.author = message.guild.get_member(author_id)
 

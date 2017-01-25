@@ -557,7 +557,7 @@ class Guild(Dataclass):
         obbs = []
 
         for webhook in webhooks:
-            obbs.append(self._bot.state._make_webhook(webhook))
+            obbs.append(self._bot.state.make_webhook(webhook))
 
         return obbs
 

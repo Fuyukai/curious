@@ -43,13 +43,12 @@ except ImportError:
     warnings.warn("Using JSON parser for gateway - install `Earl` to use ETF!")
 
 import curio
-from curio.task import Task
 from curio.thread import AWAIT, async_thread
 from cuiows.exc import WebsocketClosedError
 from cuiows import WSClient
 
 from curious.dataclasses.status import Game, Status
-from curious.state import State
+from curious import state as md_state
 
 
 # Signalling exceptions.
@@ -115,7 +114,7 @@ class Gateway(object):
 
     GATEWAY_VERSION = 6
 
-    def __init__(self, token: str, connection_state: State):
+    def __init__(self, token: str, connection_state: 'md_state.State'):
         """
         :param token: The bot token to connect with.
         """
@@ -244,9 +243,7 @@ class Gateway(object):
 
     async def send(self, data: typing.Any):
         """
-        Enqueues some data to be sent down the websocket.
-
-        This does not send the data immediately - it is enqueued to be sent.
+        Sends a variable type of data down the gateway.
         """
         try:
             if isinstance(data, dict):
@@ -297,6 +294,12 @@ class Gateway(object):
         await self._send_dict(payload)
 
     async def send_status(self, game: Game, status: Status):
+        """
+        Sends a PRESENCE_UPDATE packet.
+
+        :param game: The game object to send.
+        :param status: The status object to send.
+        """
         payload = {
             "op": GatewayOp.PRESENCE,
             "d": {
@@ -323,6 +326,13 @@ class Gateway(object):
         await self._send_dict(payload)
 
     async def send_voice_state_update(self, guild_id: int, channel_id: int):
+        """
+        Sends a voice state update packet.
+
+        :param guild_id: The guild ID to update in.
+        :param channel_id: The channel ID to update in.
+        """
+
         payload = {
             "op": GatewayOp.VOICE_STATE,
             "d": {
@@ -335,7 +345,12 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def _request_chunks(self, guilds):
+    async def request_chunks(self, guilds):
+        """
+        Requests member chunks from a guild.
+
+        :param guilds: A list of guild IDs to request chunks for.
+        """
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,
             "d": {
@@ -348,7 +363,7 @@ class Gateway(object):
         await self._send_dict(payload)
 
     @classmethod
-    async def from_token(cls, token: str, state: State, gateway_url: str,
+    async def from_token(cls, token: str, state: 'md_state.State', gateway_url: str,
                          *, shard_id: int = 0, shard_count: int = 1) -> 'Gateway':
         """
         Creates a new gateway connection from a token.
@@ -414,7 +429,7 @@ class Gateway(object):
         for guild in self._enqueued_guilds:
             guild.start_chunking()
             self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
-        await self._request_chunks(self._enqueued_guilds)
+        await self.request_chunks(self._enqueued_guilds)
         self._enqueued_guilds.clear()
 
     def _get_heartbeat(self):
