@@ -63,7 +63,7 @@ class HTTPClient(object):
         self._rate_limits = weakref.WeakValueDictionary()
 
         #: Ratelimit remaining times
-        self._ratelimit_remaining = _make_lru_dict(32)
+        self._ratelimit_remaining = _make_lru_dict(1024)
 
         self.logger = logging.getLogger("curious.http")
 
