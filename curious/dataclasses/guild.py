@@ -678,7 +678,7 @@ class Guild(Dataclass):
             if not self.me.guild_permissions.manage_nicknames:
                 raise PermissionsError("manage_nicknames")
 
-        if member.top_role >= self.me.top_role:
+        if member.top_role >= self.me.top_role and member != self.me:
             raise HierachyError("Top role is equal to or lower than victim's top role")
 
         if new_nickname is not None and len(new_nickname) > 32:
