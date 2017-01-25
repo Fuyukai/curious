@@ -73,13 +73,13 @@ async def _help_with_embeds(ctx: Context, command: str = None):
 
         # get the initial command object
         command_obb = ctx.bot.get_command(command)  # type: Command
-
-        for token in parts[1:]:
-            command = token
-            command_obb = command_obb.find_subcommand(token)
-            if command_obb is None:
-                # exit early
-                break
+        if command_obb is not None:
+            for token in parts[1:]:
+                command = token
+                command_obb = command_obb.find_subcommand(token)
+                if command_obb is None:
+                    # exit early
+                    break
 
         if not command_obb:
             em = Embed(title=command, description="Command not found.", colour=0xe74c3c)
@@ -137,13 +137,13 @@ async def _help_without_embeds(ctx: Context, command: str = None):
 
         # get the initial command object
         command_obb = ctx.bot.get_command(command)  # type: Command
-
-        for token in parts[1:]:
-            command = token
-            command_obb = command_obb.find_subcommand(token)
-            if command_obb is None:
-                # exit early
-                break
+        if command_obb:
+            for token in parts[1:]:
+                command = token
+                command_obb = command_obb.find_subcommand(token)
+                if command_obb is None:
+                    # exit early
+                    break
 
         if command_obb is None:
             msg = "Command not found."
