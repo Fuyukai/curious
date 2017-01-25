@@ -404,18 +404,6 @@ class CommandsBot(Client):
         del self._plugin_modules[import_name]
         del mod
 
-    def command(self, *args, **kwargs):
-        """
-        Registers a command to the bot.
-        """
-
-        def inner(func):
-            command = Command(*args, cbl=func, **kwargs)
-            self.commands[command.name] = command
-            return command
-
-        return inner
-
     def get_commands_for(self, plugin: Plugin) -> typing.Generator[Command, None, None]:
         """
         Gets the commands for the specified plugin.
