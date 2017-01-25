@@ -1,10 +1,8 @@
-import base64
 import inspect
 import typing
-import imghdr
+import logging
 
 import curio
-import logging
 import multidict
 from cuiows.exc import WebsocketClosedError
 from curio.task import Task
@@ -34,6 +32,22 @@ class AppInfo(object):
 
         #: The description of this application.
         self.description = kwargs.pop("description")
+
+        #: Is this bot public?
+        self.public = kwargs.pop("public", None)
+
+        #: The icon hash for this bot.
+        self._icon_hash = kwargs.pop("icon", None)
+
+    @property
+    def icon_url(self):
+        """
+        :return: The icon url for this bot.
+        """
+        if self._icon_hash is None:
+            return None
+
+        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id, self._icon_hash)
 
 
 class Client(object):
