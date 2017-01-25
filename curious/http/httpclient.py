@@ -1096,6 +1096,36 @@ class HTTPClient(object):
         data = await self.get(url, bucket="invites:{}".format(guild_id))
         return data
 
+    async def create_invite(self, channel_id: int, *,
+                            max_age: int=None, max_uses: int=None,
+                            temporary: bool=None, unique: bool=None):
+        """
+        Creates an invite.
+
+        :param channel_id: The channel ID to create the invite in.
+        :param max_age: The maximum age of the invite.
+        :param max_uses: The maximum uses of the invite.
+        :param temporary: Is this invite temporary?
+        :param unique: Is this invite unique?
+        """
+        url = (self.CHANNEL_BASE + "/invites").format(channel_id=channel_id)
+        payload = {}
+
+        if max_age is not None:
+            payload["max_age"] = max_age
+
+        if max_uses is not None:
+            payload["max_uses"] = max_uses
+
+        if temporary is not None:
+            payload["temporary"] = temporary
+
+        if unique is not None:
+            payload["unique"] = unique
+
+        data = await self.post(url, bucket="invites:{}".format(channel_id), json=payload)
+        return data
+
     async def delete_invite(self, invite_code: str):
         """
         Deletes the invite specified by the code.
