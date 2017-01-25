@@ -1,10 +1,10 @@
 import typing
 
 from curious.client import Client
-from curious.dataclasses import Channel
-from curious.dataclasses import Guild
-from curious.dataclasses import Member
-from curious.dataclasses import Message
+from curious.dataclasses.channel import Channel
+from curious.dataclasses.guild import Guild
+from curious.dataclasses.member import Member
+from curious.dataclasses.message import Message
 from curious.event import EventContext
 
 

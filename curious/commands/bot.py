@@ -15,7 +15,7 @@ from curious.client import Client
 from curious.commands.command import Command
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
-from curious.dataclasses import Message
+from curious.dataclasses.message import Message
 from curious.dataclasses.embed import Embed
 from curious.event import EventContext
 from curious.util import attrdict

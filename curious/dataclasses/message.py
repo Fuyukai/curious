@@ -205,7 +205,7 @@ class Message(Dataclass):
         await self._bot.http.unpin_message(self.channel.id, self.id)
 
     async def get_who_reacted(self, emoji: 'typing.Union[Emoji, str]') \
-            -> typing.List[typing.Union[dt_user.User, dt_member.Member]]:
+            -> 'typing.List[typing.Union[dt_user.User, dt_member.Member]]':
         """
         Fetches who reacted to this message.
 

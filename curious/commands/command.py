@@ -5,7 +5,7 @@ from curious.commands.context import Context
 from curious.commands.exc import CheckFailureError, MissingArgumentError, CommandInvokeError, ConversionFailedError
 
 # Default converters.
-from curious.dataclasses import Channel
+from curious.dataclasses.channel import Channel
 from curious.dataclasses.member import Member
 from curious.util import replace_quotes
 

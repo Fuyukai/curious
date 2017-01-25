@@ -3,7 +3,9 @@ A reactions-based paginator.
 """
 import typing
 
-from curious.dataclasses import Channel, User, Member
+from curious.dataclasses.channel import Channel
+from curious.dataclasses.user import User
+from curious.dataclasses.member import Member
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.message import Message
 from curious.dataclasses.reaction import Reaction
