@@ -174,7 +174,8 @@ def _default_msg_func_factory(prefix: str):
         match = False
         if isinstance(prefix, str):
             match = message.content.startswith(prefix)
-            matched = prefix
+            if match:
+                matched = prefix
 
         elif isinstance(prefix, list):
             for i in prefix:
