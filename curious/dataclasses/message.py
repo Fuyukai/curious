@@ -148,8 +148,8 @@ class Message(Dataclass):
 
         await self._bot.http.delete_message(self.channel.id, self.id)
 
-    async def edit(self, new_content: str=None, *,
-                   embed: Embed=None) -> 'Message':
+    async def edit(self, new_content: str = None, *,
+                   embed: Embed = None) -> 'Message':
         """
         Edits this message.
 
@@ -204,6 +204,33 @@ class Message(Dataclass):
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
 
+    async def get_who_reacted(self, emoji: 'typing.Union[Emoji, str]') \
+            -> typing.List[typing.Union[dt_user.User, dt_member.Member]]:
+        """
+        Fetches who reacted to this message.
+
+        :param emoji: The emoji to check.
+        :return: A list of either :class:`Member` or :class:`User` that reacted to this message.
+        """
+        if isinstance(emoji, Emoji):
+            emoji = "{}:{}".format(emoji.name, emoji.id)
+
+        reactions = await self._bot.http.get_reaction_users(self.channel.id, self.id, emoji)
+        result = []
+
+        for user in reactions:
+            member_id = int(user.get("id"))
+            if self.guild is None:
+                result.append(dt_user.User(self._bot, **user))
+            else:
+                member = self.guild.get_member(member_id)
+                if not member:
+                    result.append(dt_user.User(self._bot, **user))
+                else:
+                    result.append(member)
+
+        return result
+
     async def react(self, emoji: 'typing.Union[Emoji, str]'):
         """
         Reacts to a message with an emoji.
@@ -226,7 +253,7 @@ class Message(Dataclass):
 
         await self._bot.http.react_to_message(self.channel.id, self.id, emoji)
 
-    async def unreact(self, reaction: 'typing.Union[Emoji, str]', victim: 'dt_member.Member'=None):
+    async def unreact(self, reaction: 'typing.Union[Emoji, str]', victim: 'dt_member.Member' = None):
         """
         Removes a reaction from a user.
 
