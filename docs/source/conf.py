@@ -37,7 +37,8 @@ import sphinx_rtd_theme
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.viewcode',
-              'sphinx_autodoc_typehints']  # https://github.com/agronholm/sphinx-autodoc-typehints
+              'sphinx_autodoc_typehints',  # https://github.com/agronholm/sphinx-autodoc-typehints
+              'sphinxcontrib.asyncio']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -1,7 +1,6 @@
 """
 Special helpers for events.
 """
-from curious import client
 
 
 class EventContext(object):
@@ -12,7 +11,7 @@ class EventContext(object):
     :ivar shard_id: The shard ID that this event was sent on.
     """
 
-    def __init__(self, cl: 'client.Client', shard_id: int):
+    def __init__(self, cl, shard_id: int):
         self.client = cl
         self.shard_id = shard_id
         self.shard_count = cl.shard_count

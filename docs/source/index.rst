@@ -35,6 +35,11 @@ Additionally, curious requires the usage of an as-of-yet unreleased version of `
 
    $ pip install -U git+https://github.com/dabeaz/curio.git
 
+Examples
+--------
+
+Examples for how to use the library are available at https://github.com/SunDwarf/curious/tree/master/examples.
+
 
 .. toctree::
    :maxdepth: 3
