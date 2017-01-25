@@ -3,17 +3,20 @@ Curious' HTTP client is a thin wrapper over the `requests` library, running in t
 
 This is because there is (currently) no native curio HTTP library.
 """
+import datetime
 import logging
 import sys
 import time
 import typing
 import warnings
 import weakref
+from email.utils import parsedate
 from math import ceil
 
 # try and load a C impl of LRU first
 try:
     from lru import LRU as c_lru
+
 
     def _make_lru_dict(size):
         return c_lru(size)
@@ -24,6 +27,7 @@ except ImportError:
 
     warnings.warn("Using pure-python `pylru` library over `lru-dict` faster C library!")
 
+
     def _make_lru_dict(size):
         return py_lru(size)
 
@@ -32,6 +36,16 @@ import curio
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 from curious.http.curio_http import ClientSession, Response
+
+
+def parse_date_header(header: str) -> datetime.datetime:
+    """
+    Parses a date header.
+
+    :param header: The contents of the header to parse.
+    :return: A :class:`datetime.datetime` that corresponds to the date header.
+    """
+    return datetime.datetime(*parsedate(header)[:6])
 
 
 class HTTPClient(object):
@@ -165,14 +179,16 @@ class HTTPClient(object):
                 # Check if we need to sleep.
                 # This is signaled by Ratelimit-Remaining being 0 or Ratelimit-Global being True.
                 should_sleep = remaining == 0 or \
-                               response.headers.get("X-Ratelimit-Global") == "true"
+                               response.headers.get("X-Ratelimit-Global", None) is not None
 
                 if should_sleep:
                     # The time until the reset is given by X-Ratelimit-Reset.
                     # Failing that, it's also given by the Retry-After header, which is in ms.
                     reset = response.headers.get("X-Ratelimit-Reset")
+                    # Parse Discord's Date header to use their time rather than local time.
+                    parsed_time = parse_date_header(response.headers.get("Date")).timestamp()
                     if reset:
-                        sleep_time = int(reset) - time.time()
+                        sleep_time = int(reset) - parsed_time
                     else:
                         sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
 
@@ -377,7 +393,7 @@ class HTTPClient(object):
         data = await self.delete(url, "messages:{}".format(channel_id))
         return data
 
-    async def edit_message(self, channel_id: int, message_id: int, content: str=None, embed: dict=None):
+    async def edit_message(self, channel_id: int, message_id: int, content: str = None, embed: dict = None):
         """
         Edits a message.
 
@@ -879,7 +895,7 @@ class HTTPClient(object):
         return data
 
     async def edit_member_voice_state(self, guild_id: int, member_id: int, *,
-                                      deaf: bool=None, mute: bool=None, channel_id: int=None):
+                                      deaf: bool = None, mute: bool = None, channel_id: int = None):
         """
         Edits the voice state of a member.
 
@@ -1116,8 +1132,8 @@ class HTTPClient(object):
         return data
 
     async def create_invite(self, channel_id: int, *,
-                            max_age: int=None, max_uses: int=None,
-                            temporary: bool=None, unique: bool=None):
+                            max_age: int = None, max_uses: int = None,
+                            temporary: bool = None, unique: bool = None):
         """
         Creates an invite.
 
