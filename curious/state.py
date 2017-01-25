@@ -641,7 +641,7 @@ class State(object):
         if reaction.count == 0:
             message.reactions.remove(reaction)
 
-        await self.client.fire_event("message_reaction_remove", message, reaction)
+        await self.client.fire_event("message_reaction_remove", message, reaction, gateway=gw)
 
     async def handle_guild_member_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -817,6 +817,8 @@ class State(object):
         if int(event_data.get("role", {}).get("id", 0)) not in guild._roles:
             role = Role(self.client, **event_data.get("role", {}))
             guild._roles[role.id] = role
+        else:
+            role = guild._roles[event_data["role"].get("id", 0)]
 
         await self.client.fire_event("role_create", role, gateway=gw)
 
