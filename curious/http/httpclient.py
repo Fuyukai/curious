@@ -319,6 +319,74 @@ class HTTPClient(object):
         data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
         return data
 
+    async def get_guild(self, guild_id: int):
+        """
+        Gets a guild by guild ID.
+
+        :param guild_id: The ID of the guild to get.
+        :return: A guild object.
+        """
+        url = self.GUILD_BASE.format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="guild:{}".format(guild_id))
+        return data
+
+    async def get_guild_channels(self, guild_id: int):
+        """
+        Gets a list of channels in a guild.
+
+        :param guild_id: The ID of the guild to get.
+        :return: A list of channel objects.
+        """
+        url = (self.GUILD_BASE + "/channels").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="guild:{}".format(guild_id))
+        return data
+
+    async def get_guild_members(self, guild_id: int, *,
+                                limit: int=None, after: int=None):
+        """
+        Gets guild members for the specified guild.
+
+        :param guild_id: The ID of the guild to get.
+        :param limit: The maximum number of members to get.
+        :param after: The ID to fetch members after.
+        """
+        url = (self.GUILD_BASE + "/members").format(guild_id=guild_id)
+        params = {}
+
+        if limit is not None:
+            params["limit"] = limit
+
+        if after is not None:
+            params["after"] = after
+
+        data = await self.get(url, bucket="guild:{}".format(guild_id), params=params)
+        return data
+
+    async def get_guild_member(self, guild_id: int, member_id: int):
+        """
+        Gets a guild member.
+
+        :param guild_id: The guild ID to get.
+        :param member_id: The member ID to get.
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+
+        data = await self.get(url, bucket="guild:{}".format(guild_id))
+        return data
+
+    async def get_channel(self, channel_id: int):
+        """
+        Gets a channel.
+
+        :param channel_id: The channel ID to get.
+        """
+        url = self.CHANNEL_BASE.format(channel_id=channel_id)
+
+        data = await self.get(url, bucket="channel:{}".format(channel_id))
+        return data
+
     async def send_typing(self, channel_id: str):
         """
         Starts typing in a channel.
