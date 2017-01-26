@@ -145,6 +145,22 @@ class Client(object):
 
         return shards
 
+    def get_guild(self, guild_id: int) -> typing.Union[None, Guild]:
+        """
+        Gets a guild by ID.
+
+        :param guild_id: The guild ID to get.
+        """
+        return self.state._guilds.get(guild_id, None)
+
+    def get_channel(self, channel_id: int):
+        """
+        Gets a channel by ID.
+
+        :param channel_id: The channel ID to get.
+        """
+        return self.state._get_channel(channel_id)
+
     def guilds_for(self, shard_id: int) -> typing.Iterable[Guild]:
         """
         Gets the guilds for this shard.
