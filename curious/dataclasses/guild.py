@@ -343,10 +343,9 @@ class Guild(Dataclass):
                 continue
 
             game = presence.get("game", {})
-            if game is None:
-                game = {}
+            if game is not None:
+                member_obj.game = Game(**game)
 
-            member_obj.game = Game(**game)
             member_obj.status = presence.get("status")
 
         # Create all of the channel objects.
