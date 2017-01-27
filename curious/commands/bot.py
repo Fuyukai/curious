@@ -187,8 +187,8 @@ def _default_msg_func_factory(prefix: str):
         if not matched:
             return None
 
-        tokens = split_message_content(message.content)
-        command_word = tokens[0][len(matched):]
+        tokens = split_message_content(message.content[len(matched):])
+        command_word = tokens[0]
 
         return command_word, tokens[1:], matched
 
