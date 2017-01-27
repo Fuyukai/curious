@@ -83,13 +83,38 @@ class State(object):
         return self._guilds.values()
 
     def have_all_chunks(self, shard_id: int):
-        return all(guild._finished_chunking.is_set() for guild in self.guilds if guild.shard_id == shard_id)
+        """
+        Checks if we have all the chunks for the specified shard.
+
+        :param shard_id: The shard ID to check.
+        """
+        return all(guild._finished_chunking.is_set()
+                   for guild in self.guilds
+                   if guild.shard_id == shard_id)
 
     def guilds_for_shard(self, shard_id: int):
         """
         Gets all the guilds for a particular shard.
         """
         return [guild for guild in self.guilds if guild.shard_id == shard_id]
+
+    async def _check_ready(self, gw: 'gateway.Gateway', guild: Guild):
+        """
+        Checks if we should dispatch ready for this shard.
+        """
+        if self._is_ready(gw.shard_id).is_set():
+            # Already ready, don't bother.
+            return
+
+        if self.have_all_chunks(gw.shard_id):
+            # Have all chunks anyway, dispatch now.
+            self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
+            await self.client.fire_event("ready", gateway=gw)
+            await self._is_ready(gw.shard_id).set()
+
+        # Check if we need to forcibly fire ChunkGuilds.
+        if all(g.unavailable is False for g in self.guilds_for_shard(gw.shard_id)):
+            raise gateway.ChunkGuilds
 
     # get_all_* methods
     def get_all_channels(self):
@@ -302,11 +327,7 @@ class State(object):
             await self.client.fire_event("guild_available", guild, gateway=gw)
 
         # Check if we have all chunks.
-        if not self._is_ready(gw.shard_id).is_set() and self.have_all_chunks(gw.shard_id):
-            # Dispatch our `on_ready`.
-            self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
-            await self._is_ready(gw.shard_id).set()
-            await self.client.fire_event("ready", gateway=gw)
+        await self._check_ready(gw, guild)
 
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -342,20 +363,10 @@ class State(object):
             # mark this guild as a chunking guild
             self._mark_for_chunking(gw, guild)
         else:
-            if self._is_ready(gw.shard_id).is_set():
-                # already ready, do not refire
-                return
-
-            # we might be READY anyway, if all guilds are small.
+            # set finished_chunking now
             await guild._finished_chunking.set()
-            if self.have_all_chunks(gw.shard_id) is True:
-                self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
-                await self._is_ready(gw.shard_id).set()
-                await self.client.fire_event("ready", gateway=gw)
-            else:
-                # check if we need to fire a ChunkGuilds anyway because this might be the last guild (small)
-                if all(not g.unavailable for g in self.guilds_for_shard(guild.shard_id)):
-                    raise gateway.ChunkGuilds
+
+        await self._check_ready(gw, guild)
 
     async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
