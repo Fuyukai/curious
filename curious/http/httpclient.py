@@ -90,6 +90,9 @@ class HTTPClient(object):
         #: Ratelimit remaining times
         self._ratelimit_remaining = _make_lru_dict(1024)
 
+        # Global ratelimit lock
+        self.global_lock = curio.Lock()
+
         self.logger = logging.getLogger("curious.http")
 
     def get_ratelimit_lock(self, bucket: object):
@@ -133,6 +136,10 @@ class HTTPClient(object):
         # lock.
 
         lock = self.get_ratelimit_lock(bucket)
+        # If we're being globally ratelimited, this will block until the global lock is finished.
+        await self.global_lock.acquire()
+        # Immediately release it because we're no longer being globally ratelimited.
+        await self.global_lock.release()
         try:
             await lock.acquire()
 
@@ -180,6 +187,7 @@ class HTTPClient(object):
                 # This is signaled by Ratelimit-Remaining being 0 or Ratelimit-Global being True.
                 should_sleep = remaining == 0 or \
                                response.headers.get("X-Ratelimit-Global", None) is not None
+                is_global = response.headers.get("X-Ratelimit-Global", None) is not None
 
                 if should_sleep:
                     # The time until the reset is given by X-Ratelimit-Reset.
@@ -192,11 +200,17 @@ class HTTPClient(object):
                     else:
                         sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
 
-                    self.logger.debug("Being ratelimited under bucket {}, waking in {} seconds".format(bucket,
-                                                                                                       sleep_time))
-
+                    if is_global:
+                        self.logger.debug("Reached the global ratelimit, acquiring global lock.")
+                        await self.global_lock.acquire()
+                    else:
+                        self.logger.debug("Being ratelimited under bucket {}, waking in {} seconds".format(bucket,
+                                                                                                           sleep_time))
                     # Sleep that amount of time.
                     await curio.sleep(sleep_time)
+                    # If the global lock is acquired, unlock it now
+                    if is_global:
+                        await self.global_lock.release()
 
                 # Now, we have that nuisance out of the way, we can try and get the result from the request.
                 result = await self.get_response_data(response)
@@ -225,6 +239,9 @@ class HTTPClient(object):
 
         finally:
             await lock.release()
+            # Only release the global lock if we need to
+            if self.global_lock.locked():
+                await self.global_lock.release()
 
     async def get(self, url: str, bucket: str,
                   *args, **kwargs):
