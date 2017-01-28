@@ -320,6 +320,7 @@ class State(object):
                          "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
 
         guild._handle_member_chunk(event_data.get("members"))
+        await self.client.fire_event("guild_chunk", guild, gateway=gw)
 
         if guild._chunks_left <= 0:
             # Set the finished chunking event.
@@ -358,6 +359,7 @@ class State(object):
                 await self.client.fire_event("guild_join", guild, gateway=gw)
         else:
             self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
+            await self.client.fire_event("guild_streamed", guild, gateway=gw)
 
         if not guild.unavailable and guild.large:
             # mark this guild as a chunking guild
