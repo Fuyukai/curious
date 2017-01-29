@@ -26,7 +26,6 @@ from opuslib.exceptions import OpusError
 
 from curious import client
 from curious.dataclasses import channel as dt_channel
-from curious.gateway import Gateway
 from curious.voice.voice_gateway import VoiceGateway
 from curious.voice import voice_player as vp
 
@@ -181,7 +180,18 @@ class VoiceClient(object):
         # Now, you may be wondering why we use raw UDP sockets instead of using "nice" sockets.
         # This is because we need a voice thread to be able to access it.
         # This prevents blocking actions from killing the entire voice connection.
-        new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        addrinfo = await curio.abide(socket.getaddrinfo, self.vs_ws.endpoint, self.vs_ws.port,
+                                     type=socket.SOCK_DGRAM)
+
+        for item in addrinfo:
+            try:
+                new_socket = socket.socket(item[0], item[1])
+                break
+            except:
+                continue
+        else:
+            raise ConnectionError("Could not create voice socket")
+
         self._sock = new_socket
 
         # Send an IP discovery packet.
@@ -220,7 +230,7 @@ class VoiceClient(object):
 
     @classmethod
     async def create(cls, main_client: 'client.Client',
-                     gateway: Gateway, channel: 'dt_channel.Channel') -> 'VoiceClient':
+                     gateway, channel: 'dt_channel.Channel') -> 'VoiceClient':
         """
         Creates a new VoiceClient from a channel and a gateway instance.
 

@@ -1,3 +1,4 @@
+import traceback
 import typing
 from math import ceil
 
@@ -19,9 +20,11 @@ from curious.exc import PermissionsError, HierachyError, CuriousError
 from curious.util import AsyncIteratorWrapper, base64ify
 
 try:
-    from curious.voice.voice_client import VoiceClient
+    from curious.voice import voice_client
 except ImportError:
     VoiceClient = None
+else:
+    VoiceClient = voice_client.VoiceClient
 
 
 class Guild(Dataclass):

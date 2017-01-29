@@ -48,7 +48,6 @@ from cuiows.exc import WebsocketClosedError
 from cuiows import WSClient
 
 from curious.dataclasses.status import Game, Status
-from curious import state as md_state
 
 
 # Signalling exceptions.
@@ -114,7 +113,7 @@ class Gateway(object):
 
     GATEWAY_VERSION = 6
 
-    def __init__(self, token: str, connection_state: 'md_state.State'):
+    def __init__(self, token: str, connection_state):
         """
         :param token: The bot token to connect with.
         """

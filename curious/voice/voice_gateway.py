@@ -250,7 +250,7 @@ class VoiceGateway(object):
         :param channel_id: The channel ID we're connecting to.
         """
         # Send our VOICE_STATE_UPDATE to tell Discord to start connecting us to voice.
-        gw.send_voice_state_update(guild_id, channel_id)
+        await gw.send_voice_state_update(guild_id, channel_id)
         state = await gw.state.wait_for_voice_data(guild_id)
         user_id = gw.state._user.id
 
