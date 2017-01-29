@@ -110,6 +110,7 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     hb = gw._get_heartbeat()
     gw.logger.debug("Sending initial heartbeat.")
     AWAIT(gw.send(hb))
+    gw.hb_stats.heartbeats += 1
     gw.hb_stats.last_heartbeat = time.monotonic()
     while True:
         # this is similar to the normal threaded event waiter
@@ -123,6 +124,7 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
         hb = gw._get_heartbeat()
         gw.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
         AWAIT(gw.send(hb))
+        gw.hb_stats.heartbeats += 1
         gw.hb_stats.last_heartbeat = time.monotonic()
 
 
