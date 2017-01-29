@@ -76,7 +76,8 @@ class Command(object):
 
     def __init__(self, cbl, *,
                  name: str = None, aliases: typing.List[str] = None,
-                 invokation_checks: list = None, group: bool = False):
+                 invokation_checks: list = None, group: bool = False,
+                 overridable: bool=False):
         """
         :param cbl: The callable to use.
         :param name: The name of this command.
@@ -84,6 +85,7 @@ class Command(object):
 
         :param aliases: A list of aliases that this command can be called as.
         :param group: Is this the root command for a group?
+        :param overridable: Can this command be overridden?
         """
         self.callable = cbl
 
@@ -108,6 +110,9 @@ class Command(object):
 
         #: Is this a group command?
         self._is_group = group
+
+        #: Is this command overridable?
+        self._overridable = overridable
 
         #: The subcommands for this command.
         self.subcommands = []  # type: typing.List[Command]

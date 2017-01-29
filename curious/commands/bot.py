@@ -172,7 +172,10 @@ class CommandsBot(Client):
         :param command: The command object to add.
         """
         if command_name in self.commands:
-            raise ValueError("Command {} already exists".format(command_name))
+            if not self.commands[command_name]._overridable:
+                raise ValueError("Command {} already exists".format(command_name))
+            else:
+                self.commands.pop(command_name)
 
         self.commands[command_name] = command
 
