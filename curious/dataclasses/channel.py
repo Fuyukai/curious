@@ -241,6 +241,13 @@ class Channel(Dataclass):
 
         return overwrite
 
+    @property
+    def me_permissions(self) -> 'dt_permissions.Overwrite':
+        """
+        :return: The overwrite permissions for the current member.
+        """
+        return self.permissions(self.guild.me)
+
     def _copy(self):
         obb = object.__new__(self.__class__)
         obb.name = self.name
