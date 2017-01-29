@@ -11,6 +11,7 @@ from curious.commands.context import Context
 
 class _Core(plugin.Plugin):
     name = "Core"
+    _include_in_scan = False
 
     # region embeds
     async def _help_all_with_embeds(self, ctx: Context):

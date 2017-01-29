@@ -222,6 +222,16 @@ class CommandsBot(Client):
                 # Only inspect instances of plugin.
                 continue
 
+            if not hasattr(member, "__dict__"):
+                # don't be difficult
+                continue
+
+            # evil cpython type implementation detail abuse
+            if member.__dict__.get("_include_in_scan", True) is False:
+                # this won't show up for subclasses.
+                # so they always have to be explicitly set
+                continue
+
             # Assume it has a setup method on it.
             result = member.setup(self, *args, **kwargs)
             if inspect.isawaitable(result):

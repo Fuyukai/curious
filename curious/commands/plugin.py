@@ -10,6 +10,9 @@ from curious.commands.context import Context
 
 
 class Plugin(object):
+    # mark as true to prevent being scanned
+    _include_in_scan = False
+
     def __init__(self, bot: 'c_bot.CommandsBot'):
         self.bot = bot
 
