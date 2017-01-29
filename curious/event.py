@@ -19,3 +19,7 @@ class EventContext(object):
     def change_status(self, *args, **kwargs):
         kwargs["shard_id"] = self.shard_id
         return self.client.change_status(*args, **kwargs)
+
+    @property
+    def gateway(self):
+        return self.client._gateways[self.shard_id]

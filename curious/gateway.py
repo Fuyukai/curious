@@ -10,6 +10,8 @@ import logging
 import warnings
 import zlib
 
+import time
+
 try:
     # Prefer ETF data.
     import earl
@@ -79,6 +81,22 @@ class GatewayOp(enum.IntEnum):
     GUILD_SYNC = 12
 
 
+class HeartbeatStats:
+    def __init__(self):
+        self.heartbeats = 0
+        self.heartbeat_acks = 0
+
+        self.last_heartbeat = None
+        self.last_ack = None
+
+    @property
+    def gw_time(self) -> float:
+        """
+        :return: The time the most recent heartbeat and heartbeat_ack.
+        """
+        return self.last_ack - self.last_heartbeat
+
+
 @async_thread
 def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     """
@@ -92,6 +110,7 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     hb = gw._get_heartbeat()
     gw.logger.debug("Sending initial heartbeat.")
     AWAIT(gw.send(hb))
+    gw.hb_stats.last_heartbeat = time.monotonic()
     while True:
         # this is similar to the normal threaded event waiter
         # it will time out after heartbeat_interval seconds.
@@ -104,6 +123,7 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
         hb = gw._get_heartbeat()
         gw.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
         AWAIT(gw.send(hb))
+        gw.hb_stats.last_heartbeat = time.monotonic()
 
 
 class Gateway(object):
@@ -147,13 +167,7 @@ class Gateway(object):
         #: The session ID of this connection.
         self.session_id = None
 
-        # Heartbeats and ACKs are tracked by this class to make sure if we send a heartbeat, but the previous one has
-        #  not been ACK'd yet, we need to reconnect, as we've lost connection.
-        #: The number of heartbeats this connection has sent.
-        self.heartbeats = 0
-
-        #: The number of heartbeat ACKs this connection has sent.
-        self.heartbeat_acks = 0
+        self.hb_stats = HeartbeatStats()
 
         #: The current game for this gateway.
         #: Only set when sending a change status packet.
@@ -218,7 +232,7 @@ class Gateway(object):
         This will actually send the data down the websocket, unlike `send` which only pretends to.
         """
         # Check if heartbeats have drifted.
-        if self.heartbeat_acks + 2 < self.heartbeats:
+        if self.hb_stats.heartbeat_acks + 2 < self.hb_stats.heartbeats:
             self.logger.error("Heartbeats have drifted, closing connection!")
             await self.websocket.close_now(reason="Heartbeats timed out!")
             await self._close()
@@ -400,8 +414,8 @@ class Gateway(object):
         self.logger.info("Reconnecting to the gateway")
 
         # reset our heartbeat count
-        self.heartbeats = 0
-        self.heartbeat_acks = 0
+        self.hb_stats.heartbeats = 0
+        self.hb_stats.heartbeat_acks = 0
 
         if not self.websocket.closed:
             await self.websocket.close_now(code=1001, reason="Forcing a reconnect")
@@ -479,13 +493,15 @@ class Gateway(object):
             self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
 
         elif op == GatewayOp.HEARTBEAT_ACK:
-            self.heartbeat_acks += 1
+            self.hb_stats.heartbeat_acks += 1
+            self.hb_stats.last_ack = time.monotonic()
 
         elif op == GatewayOp.HEARTBEAT:
             # Send a heartbeat back.
             hb = self._get_heartbeat()
             await self._send_dict(hb)
-            self.heartbeats += 1
+            self.hb_stats.heartbeats += 1
+            self.hb_stats.last_heartbeat = time.monotonic()
 
         elif op == GatewayOp.INVALIDATE_SESSION:
             # Clean up our session.
