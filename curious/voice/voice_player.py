@@ -55,6 +55,8 @@ class VoicePlayer(threading.Thread):
                 _, stderr = proc.communicate()
                 if proc.returncode:
                     raise RuntimeError(stderr.decode())
+                else:
+                    break
 
             loops += 1
 
@@ -69,3 +71,5 @@ class VoicePlayer(threading.Thread):
             # make sure to account for drift!
             delay = max(0, self.delay + ((start_time + self.delay * loops) + - time.time()))
             time.sleep(delay)
+
+        self.callable(self)
