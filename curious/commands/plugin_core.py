@@ -139,7 +139,7 @@ class _Core(plugin.Plugin):
 
         await ctx.message.channel.send(msg)
 
-    @command(name="help")
+    @command(name="help", overridable=True)
     async def _help_command(self, ctx: Context, *, command_for_help: str=None):
         """
         Displays help for a command.
