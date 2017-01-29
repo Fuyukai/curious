@@ -1,5 +1,4 @@
 from curious.dataclasses import user as dt_user
-from curious.dataclasses import member as dt_member
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses import channel as dt_channel
 
