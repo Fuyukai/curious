@@ -155,7 +155,7 @@ class VoiceClient(object):
             raise
         self.send_opus_data(data)
 
-    def play_file(self, path: str):
+    def play_path(self, path: str):
         """
         Plays a file using ffmpeg.
         """
