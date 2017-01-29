@@ -1,5 +1,6 @@
 import collections
 import typing
+import weakref
 
 import curio
 import logging
@@ -27,9 +28,6 @@ class State(object):
     """
 
     def __init__(self, client, max_messages: int = 500):
-        #: The guilds the bot can see.
-        self._guilds = {}  # type: typing.Dict[Guild]
-
         #: The current user of this bot.
         #: This is automatically set after login.
         self._user = None  # type: User
@@ -39,6 +37,14 @@ class State(object):
 
         #: The private channel cache.
         self._private_channels = {}
+
+        #: The guilds the bot can see.
+        self._guilds = {}  # type: typing.Dict[Guild]
+
+        #: The current user cache.
+        # NB: This is a WeakValueDictionary because we don't want to keep users alive that we don't need to.
+        # Using a regular dictionary can cause infinite growth.
+        self._users = weakref.WeakValueDictionary()
 
         #: The state logger.
         self.logger = logging.getLogger("curious.state")
@@ -192,7 +198,7 @@ class State(object):
 
         return webhook
 
-    def new_private_channel(self, channel_data: dict) -> Channel:
+    def make_private_channel(self, channel_data: dict) -> Channel:
         """
         Creates a new private channel and caches it.
 
@@ -202,6 +208,17 @@ class State(object):
         self._private_channels[channel.id] = channel
 
         return channel
+
+    def make_user(self, user_data: dict) -> User:
+        """
+        Creates a new user and caches it.
+
+        :param user_data: The user data to create.
+        """
+        user = User(self.client, **user_data)
+        self._users[user.id] = user
+
+        return user
 
     async def wait_for_voice_data(self, guild_id: int):
         """
@@ -228,6 +245,8 @@ class State(object):
 
         # Create our bot user.
         self._user = BotUser(self.client, **event_data.get("user"))
+        # cache ourselves
+        self._users[self._user.id] = self._user
 
         # Create all of the guilds.
         for guild in event_data.get("guilds"):
@@ -237,7 +256,7 @@ class State(object):
 
         # Create all of the private channels.
         for channel in event_data.get("private_channels"):
-            self.new_private_channel(channel)
+            self.make_private_channel(channel)
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect", gateway=gw)

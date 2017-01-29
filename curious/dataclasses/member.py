@@ -22,7 +22,7 @@ class Member(Dataclass):
         super().__init__(kwargs["user"]["id"], client)
 
         #: The :class:`User` object associated with this member.
-        self.user = dt_user.User(client, **kwargs.get("user"))
+        self.user = client.state.make_user(kwargs.get("user"))
 
         #: A dictionary of :class:`Role` this user has.
         self._roles = {}

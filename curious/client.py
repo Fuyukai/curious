@@ -450,7 +450,10 @@ class Client(object):
         :param user_id: The ID of the user to get.
         :return: A new User object.
         """
-        return User(self, **(await self.http.get_user(user_id)))
+        try:
+            return self.state._users[user_id]
+        except KeyError:
+            return self.state.make_user(await self.http.get_user(user_id))
 
     async def get_webhook(self, webhook_id: int) -> Webhook:
         """

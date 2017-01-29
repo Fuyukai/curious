@@ -53,7 +53,7 @@ class Dataclass(IDObject):
     These contain a reference to the current bot as `_bot`.
     """
 
-    __slots__ = "_bot",
+    __slots__ = "_bot", "__weakref__"
 
     def __init__(self, id: int, client: 'client.Client'):
         super().__init__(id)
