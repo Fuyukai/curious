@@ -378,7 +378,7 @@ class Gateway(object):
         await self._send_dict(payload)
 
     @classmethod
-    async def from_token(cls, token: str, state: 'md_state.State', gateway_url: str,
+    async def from_token(cls, token: str, state, gateway_url: str,
                          *, shard_id: int = 0, shard_count: int = 1) -> 'Gateway':
         """
         Creates a new gateway connection from a token.

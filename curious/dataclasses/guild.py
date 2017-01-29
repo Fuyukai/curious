@@ -28,6 +28,12 @@ else:
 
 
 class Guild(Dataclass):
+    """
+    Represents a guild object on Discord.
+
+    :ivar id: The ID of this guild.
+    """
+
     __slots__ = ("id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
                  "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles", "_members",
                  "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left", "voice_client",

@@ -174,6 +174,16 @@ Dataclasses
 These classes, with the exception of :class:`Game`, :class:`PermissionsOverwrite` or :class:`Embed` should not created
 by your code. Instead, you should use the built-in methods to access the correct instances of these classes.
 
+IDObject & Dataclass
+~~~~~~~~~~~~~~~~~~~~
+
+All dataclasses described below have an ``id`` property that they inherit from these classes.
+
+.. autoclass:: curious.dataclasses.bases.IDObject
+    :members:
+
+.. autoclass:: curious.dataclasses.bases.Dataclass
+
 AppInfo
 ~~~~~~~
 
@@ -185,6 +195,7 @@ User
 
 .. autoclass:: curious.dataclasses.user.User
     :members:
+    :inherited-members:
 
 Member
 ~~~~~~
@@ -194,81 +205,112 @@ where Member is a direct subclass of User.
 
 .. autoclass:: curious.dataclasses.member.Member
     :members:
+    :inherited-members:
+    :private-members:
 
 Webhook
 ~~~~~~~
 
 .. autoclass:: curious.dataclasses.webhook.Webhook
     :members:
+    :inherited-members:
+    :private-members:
 
 Guild
 ~~~~~
 
 .. autoclass:: curious.dataclasses.guild.Guild
     :members:
+    :inherited-members:
+    :private-members:
 
 Channel
 ~~~~~~~
 
 .. autoclass:: curious.dataclasses.channel.Channel
     :members:
+    :inherited-members:
+    :private-members:
 
 Role
 ~~~~
 
 .. autoclass:: curious.dataclasses.role.Role
     :members:
+    :inherited-members:
 
 Message
 ~~~~~~~
 
 .. autoclass:: curious.dataclasses.message.Message
     :members:
+    :inherited-members:
+    :private-members:
 
 Game
 ~~~~
 
 .. autoclass:: curious.dataclasses.status.Game
     :members:
+    :inherited-members:
+    :private-members:
 
 Reaction
 ~~~~~~~~
 
 .. autoclass:: curious.dataclasses.reaction.Reaction
     :members:
+    :inherited-members:
+    :private-members:
 
 Emoji
 ~~~~~
 
 .. autoclass:: curious.dataclasses.emoji.Emoji
     :members:
+    :inherited-members:
+    :private-members:
 
 Embed
 ~~~~~
 
 .. autoclass:: curious.dataclasses.embed.Embed
     :members:
+    :inherited-members:
+    :private-members:
 
 Invite
 ~~~~~~
 
 .. autoclass:: curious.dataclasses.invite.InviteGuild
     :members:
+    :inherited-members:
+    :private-members:
 
 .. autoclass:: curious.dataclasses.invite.InviteChannel
     :members:
+    :inherited-members:
+    :private-members:
 
 .. autoclass:: curious.dataclasses.invite.Invite
     :members:
+    :inherited-members:
+    :private-members:
 
 .. autoclass:: curious.dataclasses.invite.InviteMetadata
     :members:
+    :inherited-members:
+    :private-members:
 
 Permissions
 ~~~~~~~~~~~
 
 .. autoclass:: curious.dataclasses.permissions.Permissions
     :members:
+    :inherited-members:
+    :private-members:
 
 .. autoclass:: curious.dataclasses.permissions.Overwrite
     :members:
+    :inherited-members:
+    :private-members:

@@ -14,7 +14,6 @@ from curious.dataclasses.user import User
 from curious.dataclasses.webhook import Webhook
 from curious.event import EventContext
 from curious.http.httpclient import HTTPClient
-from curious import state as md_state
 from curious.util import _traverse_stack_for, base64ify
 
 AUTOSHARD = object()
@@ -81,7 +80,8 @@ class Client(object):
 
         #: The current connection state for the bot.
         if state_klass is None:
-            state_klass = md_state.State
+            from curious.state import State
+            state_klass = State
         self.state = state_klass(self)
 
         #: The current event storage.

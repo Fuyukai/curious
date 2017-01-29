@@ -10,6 +10,8 @@ class User(Dataclass):
     """
     This represents a bare user - i.e, somebody without a guild attached.
     This is used in DMs and similar. All member objects have a reference to their user on ``.user``.
+
+    :ivar id: The ID of this user.
     """
 
     __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot", "_bot")

@@ -14,6 +14,8 @@ from curious.util import to_datetime
 class Member(Dataclass):
     """
     A member represents somebody who is inside a guild.
+
+    :ivar id: The ID of this member.
     """
 
     __slots__ = ("user", "_roles", "joined_at", "nickname", "guild", "game", "_status", "voice",)

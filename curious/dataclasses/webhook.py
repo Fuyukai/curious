@@ -11,6 +11,8 @@ from curious.util import base64ify
 class Webhook(Dataclass):
     """
     Represents a webhook member on the server.
+
+    :ivar id: The ID of the webhook.
     """
 
     __slots__ = "user", "guild", "channel", "token", "owner", "_default_name", "_default_avatar"

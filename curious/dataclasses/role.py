@@ -10,6 +10,8 @@ from curious.dataclasses import permissions as dt_permissions
 class Role(Dataclass):
     """
     Represents a role on a server.
+
+    :ivar id: The ID of this role.
     """
     __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", "guild"
 

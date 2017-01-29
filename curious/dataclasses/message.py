@@ -22,13 +22,7 @@ class Message(Dataclass):
     """
     Represents a Message.
 
-    :ivar content: The content of this message.
-    :ivar guild: The :class:`curious.dataclasses.guild.Guild` object that this message was sent in.
-    :ivar channel: The :class:`curious.dataclasses.channel.Channel` object that this message was sent in.
-    :ivar author: The :class:`curious.dataclasses.member.Member` object that this message belongs to.
-        This could also be a :class:`curious.dataclasses.user.User` if the channel is private.
-    :ivar created_at: A :class:`datetime.datetime` representing when this message was created.
-    :ivar edited_at: A :class:`datetime.datetime` representing when this message was edited.
+    :ivar id: The ID of this message.
     """
 
     __slots__ = ("content", "guild", "author", "channel", "created_at", "edited_at", "embeds", "attachments",

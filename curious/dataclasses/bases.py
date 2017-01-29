@@ -25,6 +25,7 @@ class IDObject(object):
         if isinstance(id, str):
             id = int(id)
 
+        #: The ID of this object.
         self.id = id
 
     def __repr__(self):
