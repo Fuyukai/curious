@@ -72,4 +72,5 @@ class VoicePlayer(threading.Thread):
             delay = max(0, self.delay + ((start_time + self.delay * loops) + - time.time()))
             time.sleep(delay)
 
-        self.callable(self)
+        if self.callable:
+            self.callable(self)
