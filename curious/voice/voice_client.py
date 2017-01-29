@@ -148,11 +148,7 @@ class VoiceClient(object):
 
         :param voice_data: The raw PCM voice data to send.
         """
-        try:
-            data = self.encoder.encode(voice_data, 960)
-        except OpusError as e:
-            print(e.code)
-            raise
+        data = self.encoder.encode(voice_data, 960)
         self.send_opus_data(data)
 
     def play_path(self, path: str):
