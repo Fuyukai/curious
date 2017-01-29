@@ -3,7 +3,8 @@ from setuptools import setup
 setup(
     name='discord-curious',
     version='0.1.1',
-    packages=['curious', 'curious.http', 'curious.commands', 'curious.dataclasses', 'curious.ext'],
+    packages=['curious', 'curious.http', 'curious.commands', 'curious.dataclasses'],
+    namespace_packages=['curious.ext'],
     url='https://github.com/SunDwarf/curious',
     license='MIT',
     author='Laura Dickinson',
