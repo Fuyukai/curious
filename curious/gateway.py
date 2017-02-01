@@ -18,7 +18,7 @@ try:
 
 
     def _loader(data: dict):
-        return earl.unpack(data)
+        return earl.unpack(data, encoding="utf-8", encode_binary_ext=True)
 
 
     def _dumper(data: dict):
@@ -42,7 +42,7 @@ except ImportError:
 
 
     _fmt = "json"
-    warnings.warn("Using JSON parser for gateway - install `Earl` to use ETF!")
+    warnings.warn("Using JSON parser for gateway - install `Earl-ETF` to use ETF!")
 
 import curio
 from curio.thread import AWAIT, async_thread
