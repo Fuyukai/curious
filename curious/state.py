@@ -183,6 +183,7 @@ class State(object):
 
         channel = self._get_channel(int(event_data.get("channel_id")))
         user = User(self.client, **user)
+        user.bot = True
         webhook = Webhook(client=self.client, webhook_id=webhook_id, **event_data)
         webhook.channel = channel
         webhook.user = user
