@@ -216,6 +216,10 @@ class State(object):
 
         :param user_data: The user data to create.
         """
+        id = int(user_data.get("id", 0))
+        if id in self._users:
+            return self._users[id]
+
         user = User(self.client, **user_data)
         self._users[user.id] = user
 
