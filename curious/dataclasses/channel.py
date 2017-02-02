@@ -158,7 +158,7 @@ class Channel(Dataclass):
         self.recipients = []
         if self.is_private:
             for recipient in kwargs.pop("recipients"):
-                self.recipients.append(dt_user.User(self._bot, **recipient))
+                self.recipients.append(self._bot.state.make_user(recipient))
 
         #: The position of this channel.
         self.position = kwargs.pop("position", 0)
