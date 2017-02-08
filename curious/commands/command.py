@@ -145,7 +145,7 @@ class Command(object):
         return "<Command name='{}' plugin='{}' subcommands={}>".format(self.name, self.instance, self.subcommands)
 
     @classmethod
-    def add_converter(cls, type_: type, func: typing.Callable[[Context, typing.Any], str]):
+    def add_converter(cls, type_: typing.Type, func: typing.Callable[[Context, typing.Any], str]):
         """
         Adds a converter to the local dict of converters.
 
