@@ -122,7 +122,7 @@ class Member(Dataclass):
         """
         :return: This member's top-most :class:`Role`.
         """
-        return sorted(self.roles, reverse=True)[0]
+        return next(sorted(self.roles, reverse=True), self.guild.default_role)
 
     @property
     def guild_permissions(self):
