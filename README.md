@@ -20,12 +20,3 @@ Or for the latest development version:
 ```bash
 $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
 ```
-
-## Requirements
-
-Curious requires a curio version newer than the one on PyPI currently,
-so you must install curio from Git first.
-
-```bash
-$ pip install -U git+https://github.com/dabeaz/curio.git#egg=curio
-```
