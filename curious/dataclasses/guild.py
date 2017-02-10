@@ -1,6 +1,7 @@
 import traceback
 import typing
 from math import ceil
+from types import MappingProxyType
 
 import curio
 
@@ -133,29 +134,32 @@ class Guild(Dataclass):
         return obb
 
     @property
-    def channels(self) -> 'typing.Iterable[channel.Channel]':
+    def channels(self) -> 'typing.Mapping[channel.Channel]':
         """
         :return: A list of :class:`curious.dataclasses.channel.Channel` that represent the channels on this guild.
         """
-        return self._channels.values()
+        return MappingProxyType(self._channels)
 
     @property
-    def members(self) -> 'typing.Iterable[dt_member.Member]':
+    def members(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
-        :return: A list of :class:`curious.dataclasses.member.Member` objects that represent the members on this guild.
+        :return: A mapping of :class:`Member` that represent members on this guild.
         """
-        return self._members.values()
+        return MappingProxyType(self._members)
 
     @property
-    def roles(self) -> 'typing.Iterable[role.Role]':
+    def roles(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
-        :return: A list of :class:`curious.dataclasses.role.Role` objects that represent the roles on this guild.
+        :return: A mapping of :class:`Role` on this guild.
         """
-        return self._roles.values()
+        return MappingProxyType(self._roles)
 
     @property
-    def emojis(self) -> 'typing.Iterable[dt_emoji.Emoji]':
-        return self._emojis.values()
+    def emojis(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
+        """
+        :return: A mapping of :class:`Emoji` on this guild.
+        """
+        return MappingProxyType(self._emojis)
 
     @property
     def owner(self) -> 'dt_member.Member':
@@ -196,16 +200,6 @@ class Guild(Dataclass):
             # the afk channel CAN be None
             return None
 
-    def get_member(self, member_id: int) -> 'dt_member.Member':
-        """
-        Gets a member from the guild by ID.
-
-        :param member_id: The member ID to lookup.
-        :return: The :class:`curious.dataclasses.member.Member` object that represents the member, or None if they \
-        couldn't be found.
-        """
-        return self._members.get(member_id)
-
     def find_member(self, search_str: str) -> 'dt_member.Member':
         """
         Attempts to find a member in this guild by name#discrim.
@@ -225,41 +219,11 @@ class Guild(Dataclass):
             # Don't check nicknames for this.
             predicate = lambda member: member.user.name == sp[0] and member.user.discriminator == sp[1]
 
-        filtered = filter(predicate, self.members)
+        filtered = filter(predicate, self.members.values())
         try:
             return next(filtered)
         except StopIteration:
             return None
-
-    def get_role(self, role_id: int) -> 'role.Role':
-        """
-        Gets a role from the guild by ID.
-
-        :param role_id: The role ID to look up.
-        :return: The :class:`curious.dataclasses.role.Role` object that represents the Role, or None if it couldn't \
-        be found.
-        """
-        return self._roles.get(role_id)
-
-    def get_channel(self, channel_id: int) -> 'channel.Channel':
-        """
-        Gets a channel from the guild by ID.
-
-        :param channel_id: The channel ID to look up.
-        :return: The :class:`curious.dataclasses.channel.Channel` object that represents the Channel, or None if it \
-        couldn't be found.
-        """
-        return self._channels.get(channel_id)
-
-    def get_emoji(self, emoji_id: int) -> 'dt_emoji.Emoji':
-        """
-        Gets an emoji from the guild by ID.
-
-        :param emoji_id: The emoji ID to look up.
-        :return: The :class:`curious.dataclasses.emoji.Emoji` object that represents the emoji, or None if it couldn't \
-        be found.
-        """
-        return self._emojis.get(emoji_id)
 
     def start_chunking(self):
         self._finished_chunking.clear()
@@ -303,7 +267,7 @@ class Guild(Dataclass):
             emoji_obj = dt_emoji.Emoji(**emoji)
             emoji_obj.guild = self
             for role_id in emoji_obj._role_ids:
-                emoji_obj.roles.append(self.get_role(int(role_id)))
+                emoji_obj.roles.append(self._roles.get(int(role_id)))
 
             self._emojis[emoji_obj.id] = emoji_obj
 
@@ -366,14 +330,14 @@ class Guild(Dataclass):
         # Create all of the voice states.
         for vs_data in data.get("voice_states", []):
             user_id = int(vs_data.get("user_id", 0))
-            member = self.get_member(user_id)
+            member = self.members[user_id]
             if not member:
                 # o well
                 continue
 
             voice_state = dt_vs.VoiceState(member.user, **vs_data)
 
-            vs_channel = self.get_channel(int(vs_data.get("channel_id", 0)))
+            vs_channel = self._channels.get(int(vs_data.get("channel_id", 0)))
             voice_state.channel = vs_channel
             voice_state.guild = self
             member.voice = voice_state
@@ -492,7 +456,7 @@ class Guild(Dataclass):
 
         .. code:: python
 
-            member = guild.get_member(66237334693085184)
+            member = guild.members[66237334693085184]
             await guild.ban(member)
 
         Example for banning a user:

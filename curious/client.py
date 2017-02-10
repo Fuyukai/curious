@@ -119,7 +119,7 @@ class Client(object):
         return self.state._user
 
     @property
-    def guilds(self) -> typing.Iterable[Guild]:
+    def guilds(self) -> typing.Mapping[int, Guild]:
         """
         :return: A list of :class:`Guild` that this client can see.
         """
@@ -144,22 +144,6 @@ class Client(object):
         self._gw_url = gw
 
         return shards
-
-    def get_guild(self, guild_id: int) -> typing.Union[None, Guild]:
-        """
-        Gets a guild by ID.
-
-        :param guild_id: The guild ID to get.
-        """
-        return self.state._guilds.get(guild_id, None)
-
-    def get_channel(self, channel_id: int):
-        """
-        Gets a channel by ID.
-
-        :param channel_id: The channel ID to get.
-        """
-        return self.state._get_channel(channel_id)
 
     def guilds_for(self, shard_id: int) -> typing.Iterable[Guild]:
         """

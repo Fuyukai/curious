@@ -22,7 +22,7 @@ def convert_member(ctx: Context, arg: str):
         except ValueError:
             raise ConversionFailedError(ctx, arg, Member)
 
-        member = ctx.guild.get_member(id)
+        member = ctx.guild.members.get(id)
         if not member:
             # todo: better error
             raise ConversionFailedError(ctx, arg, Member)
@@ -43,7 +43,7 @@ def convert_channel(ctx: Context, arg: str):
         except ValueError:
             raise ConversionFailedError(ctx, arg, Channel)
 
-        channel = ctx.guild.get_channel(id)
+        channel = ctx.guild.channels.get(id)
         if not channel:
             raise ConversionFailedError(ctx, arg, Channel)
     else:

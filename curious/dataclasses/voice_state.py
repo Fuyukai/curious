@@ -49,7 +49,7 @@ class VoiceState(object):
         """
         :return: The member this is associated with.
         """
-        return self.guild.get_member(int(self._user_id))
+        return self.guild.members[int(self._user_id)]
 
     def __repr__(self):
         return "<VoiceState user={} deaf={} mute={} channel={}>".format(self.user, self.deafened, self.muted,

@@ -99,13 +99,13 @@ class Message(Dataclass):
         for mention in mentions:
             if type_ == "member":
                 id = int(mention["id"])
-                obb = self.guild.get_member(id)
+                obb = self.guild.members.get(id)
                 if obb is None:
                     obb = dt_user.User(**mention)
             elif type_ == "role":
-                obb = self.guild.get_role(int(mention))
+                obb = self.guild.roles.get(int(mention))
             elif type_ == "channel":
-                obb = self.guild.get_channel(int(mention))
+                obb = self.guild.channels.get(int(mention))
             if obb is not None:
                 final_mentions.append(obb)
 
@@ -217,7 +217,7 @@ class Message(Dataclass):
             if self.guild is None:
                 result.append(dt_user.User(self._bot, **user))
             else:
-                member = self.guild.get_member(member_id)
+                member = self.guild.members.get(member_id)
                 if not member:
                     result.append(dt_user.User(self._bot, **user))
                 else:

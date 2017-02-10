@@ -1,6 +1,7 @@
 import collections
 import typing
 import weakref
+from types import MappingProxyType
 
 import curio
 import logging
@@ -85,8 +86,8 @@ class State(object):
         gw._enqueued_guilds.append(guild)
 
     @property
-    def guilds(self):
-        return self._guilds.values()
+    def guilds(self) -> typing.Mapping[int, Guild]:
+        return MappingProxyType(self._guilds)
 
     def have_all_chunks(self, shard_id: int):
         """
@@ -95,14 +96,14 @@ class State(object):
         :param shard_id: The shard ID to check.
         """
         return all(guild._finished_chunking.is_set()
-                   for guild in self.guilds
+                   for guild in self.guilds.values()
                    if guild.shard_id == shard_id)
 
     def guilds_for_shard(self, shard_id: int):
         """
         Gets all the guilds for a particular shard.
         """
-        return [guild for guild in self.guilds if guild.shard_id == shard_id]
+        return [guild for guild in self.guilds.values() if guild.shard_id == shard_id]
 
     async def _check_ready(self, gw: 'gateway.Gateway', guild: Guild):
         """
@@ -125,20 +126,23 @@ class State(object):
     # get_all_* methods
     def get_all_channels(self):
         for guild in self._guilds.values():
-            for channel in guild.channels:
+            for channel in guild.channels.values():
                 yield channel
 
     def get_all_members(self):
-        for guild in self.guilds:
-            for member in guild.members:
+        for guild in self.guilds.values():
+            for member in guild.members.values():
                 yield member
 
     def get_all_roles(self):
-        for guild in self.guilds:
-            for role in guild.roles:
+        for guild in self.guilds.values():
+            for role in guild.roles.values():
                 yield role
 
     def _get_channel(self, channel_id: int) -> Channel:
+        """
+        Internal method to get a channel from any guild.
+        """
         # default channel_id == guild id
         if channel_id in self._guilds:
             try:
@@ -300,7 +304,7 @@ class State(object):
             return
 
         member_id = int(event_data["user"]["id"])
-        member = guild.get_member(member_id)
+        member = guild.members.get(member_id)
 
         if member is None:
             # thanks discord
@@ -317,7 +321,7 @@ class State(object):
         roles = event_data.get("roles", [])
         for role_id in roles:
             role_id = int(role_id)
-            role = guild.get_role(role_id)
+            role = guild.roles.get(role_id)
 
             if not role:
                 continue
@@ -480,14 +484,14 @@ class State(object):
             if event_data.get("webhook_id") is not None:
                 message.author = self.make_webhook(event_data)
             else:
-                message.author = message.guild.get_member(author_id)
+                message.author = message.guild.members.get(author_id)
 
         for reaction_data in event_data.get("reactions", []):
             emoji = reaction_data.pop("emoji")
             reaction = Reaction(**reaction_data)
 
             if "id" in emoji and emoji["id"] is not None:
-                emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+                emoji_obb = message.guild.emojis.get(int(emoji["id"]))
                 if emoji_obb is None:
                     emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
             else:
@@ -568,8 +572,8 @@ class State(object):
             return emoji_data["name"]
 
         # try and get it from the guilds
-        for guild in self.guilds:
-            em = guild.get_emoji(int(emoji_data["id"]))
+        for guild in self.guilds.values():
+            em = guild.emojis.get(int(emoji_data["id"]))
             if em:
                 return em
 
@@ -607,7 +611,7 @@ class State(object):
             reaction = Reaction()
 
             if "id" in emoji and emoji["id"] is not None:
-                emoji_obb = message.guild.get_emoji(int(emoji["id"]))
+                emoji_obb = message.guild.emojis.get(int(emoji["id"]))
                 if emoji_obb is None:
                     emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
             else:
@@ -625,7 +629,7 @@ class State(object):
         member_id = int(event_data.get("user_id", 0))
         channel = self._get_channel(int(event_data.get("channel_id", 0)))
         if channel.guild:
-            author = channel.guild.get_member(member_id)
+            author = channel.guild.members.get(member_id)
         else:
             author = channel.user
 
@@ -726,7 +730,7 @@ class State(object):
             return
 
         member_id = int(event_data["user"]["id"])
-        member = guild.get_member(member_id)
+        member = guild.members.get(member_id)
 
         if not member:
             return
@@ -740,7 +744,7 @@ class State(object):
 
         for role_id in event_data.get("roles", []):
             role_id = int(role_id)
-            role = guild.get_role(role_id)
+            role = guild.roles.get(role_id)
 
             if not role:
                 # thanks discord
@@ -764,7 +768,7 @@ class State(object):
             return
 
         member_id = int(event_data["user"]["id"])
-        member = guild.get_member(member_id)
+        member = guild.members.get(member_id)
 
         if not member:
             # Dispatch to `user_ban` instead of `member_ban`.
@@ -869,7 +873,7 @@ class State(object):
         if not guild:
             return
 
-        role = guild.get_role(int(event_data["role"]["id"]))
+        role = guild.roles.get(int(event_data["role"]["id"]))
 
         if not role:
             return
@@ -921,7 +925,7 @@ class State(object):
             return
 
         if not channel.is_private:
-            member = channel.guild.get_member(member_id)
+            member = channel.guild.members.get(member_id)
             if not member:
                 return
         else:
@@ -975,7 +979,7 @@ class State(object):
         if not guild:
             return
 
-        member = guild.get_member(user_id)
+        member = guild.members.get(user_id)
         if not member:
             return
 
@@ -986,7 +990,7 @@ class State(object):
         else:
             new_voice_state = VoiceState(member.user, **event_data)
             new_voice_state.guild = guild
-            new_voice_state.channel = guild.get_channel(new_voice_state._channel_id)
+            new_voice_state.channel = guild.channels.get(new_voice_state._channel_id)
 
         old_voice_state = member.voice
 

@@ -185,9 +185,9 @@ class Channel(Dataclass):
             type_ = overwrite["type"]
 
             if type_ == "member":
-                obb = self.guild.get_member(id)
+                obb = self.guild._members.get(id)
             else:
-                obb = self.guild.get_role(id)
+                obb = self.guild._members.get(id)
 
             self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                             deny=overwrite["deny"],
