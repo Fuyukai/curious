@@ -63,11 +63,13 @@ class Plugin(object):
                 commands.append(cmd)
 
             elif hasattr(value, "event"):
-                @functools.wraps(value)
-                def _event_wrapper(*args, **kwargs):
-                    return value(*args, **kwargs)
+                def _wtf(v):
+                    @functools.wraps(v)
+                    def _event_wrapper(*args, **kwargs):
+                        return v(*args, **kwargs)
+                    return _event_wrapper
 
-                events.append(_event_wrapper)
+                events.append(_wtf(value))
 
         return events, commands
 
