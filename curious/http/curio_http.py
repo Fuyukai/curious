@@ -418,6 +418,12 @@ def _prepare_request(method: str, url: yarl.URL, *,
     if "User-Agent" not in headers:
         headers["User-Agent"] = "curio_http/{} curio/{}".format(__version__, curio.__version__)
 
+    if not all(isinstance(header, (str, bytes)) for header in headers.keys()):
+        raise ValueError("Header keys must be str or bytes")
+
+    if not all(isinstance(header, (str, bytes)) for header in headers.values()):
+        raise ValueError("Header values must be str or bytes")
+
     h11_request = h11.Request(
         method=method,
         target=target,
