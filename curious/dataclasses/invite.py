@@ -105,9 +105,9 @@ class Invite(object):
 
         guild_id = int(kwargs["guild"]["id"])
         # check to see if it's in our state first, failing that construct an InviteGuild object.
-        if guild_id in client.state._guilds:
-            self._real_guild = client.state._guilds[guild_id]
-            self._real_channel = self._real_guild._channels[int(kwargs["channel"]["id"])]
+        if guild_id in client.state.guilds:
+            self._real_guild = client.state.guilds[guild_id]
+            self._real_channel = self._real_guild.channels[int(kwargs["channel"]["id"])]
         else:
             self._real_guild = None
             self._real_channel = None
