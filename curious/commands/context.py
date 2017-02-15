@@ -1,6 +1,6 @@
 import typing
 
-from curious.client import Client
+from curious import client as cl
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
@@ -20,7 +20,7 @@ class Context(object):
     :ivar command: The command that is currently being invoked.
     :ivar raw_args: The raw split arguments of the message.
     """
-    def __init__(self, client: Client, message: Message,
+    def __init__(self, client: 'cl.Client', message: Message,
                  command, event_ctx):
         """
         :param client: The client associated with this message.

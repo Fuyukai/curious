@@ -4,7 +4,7 @@ Commands helpers.
 import functools
 import typing
 
-from curious.commands.command import Command
+from curious.commands.cmd import Command
 
 
 def command(*args, klass: type = Command, **kwargs):
@@ -68,20 +68,3 @@ def group(*args, klass: type = Command, **kwargs):
         return func
 
     return __inner
-
-
-def event(func):
-    """
-    Marks a function as an event.
-
-    :param func: Either the function, or the name to give to the event.
-    """
-    if isinstance(func, str):
-        def __innr(f):
-            f.event = func
-            return f
-
-        return __innr
-    else:
-        func.event = func.__name__[3:]
-        return func

@@ -4,8 +4,7 @@ The base class for a plugin.
 import functools
 import typing
 
-from curious.commands import bot as c_bot
-from curious.commands.command import Command
+from curious import client as cl
 from curious.commands.context import Context
 
 
@@ -13,7 +12,7 @@ class Plugin(object):
     # mark as true to prevent being scanned
     _include_in_scan = False
 
-    def __init__(self, bot: 'c_bot.CommandsBot'):
+    def __init__(self, bot: 'cl.Client'):
         self.bot = bot
 
     def __repr__(self):
@@ -74,7 +73,7 @@ class Plugin(object):
         return events, commands
 
     @classmethod
-    async def setup(cls, bot: 'c_bot.CommandsBot', *args, **kwargs):
+    async def setup(cls, bot: 'cl.Client', *args, **kwargs):
         """
         Default setup function for a plugin.
 

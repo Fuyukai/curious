@@ -7,6 +7,8 @@ import datetime
 import collections
 import imghdr
 import inspect
+
+import functools
 import typing
 
 
@@ -139,8 +141,15 @@ def _traverse_stack_for(t: type):
             del fr
 
 
+def _ad_getattr(self, key: str):
+    try:
+        return self[key]
+    except KeyError as e:
+        raise AttributeError(key) from e
+
+
 attrdict = type("attrdict", (dict,), {
-    "__getattr__": dict.__getitem__,
+    "__getattr__": _ad_getattr,
     "__setattr__": dict.__setitem__,
     "__doc__": "A dict that allows attribute access as well as item access for "
                "keys."

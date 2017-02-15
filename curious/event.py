@@ -3,6 +3,22 @@ Special helpers for events.
 """
 
 
+def event(name, scan: bool=True):
+    """
+    Marks a function as an event.
+
+    :param name: The name of the event.
+    :param scan: Should this event be handled in scans too?
+    """
+
+    def __innr(f):
+        f.event = name
+        f.scan = scan
+        return f
+
+    return __innr
+
+
 class EventContext(object):
     """
     Represents a special context that are passed to events.

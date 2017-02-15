@@ -1,4 +1,10 @@
+import importlib
 import inspect
+
+import re
+import traceback
+
+import sys
 import typing
 import logging
 
@@ -7,22 +13,71 @@ import multidict
 from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
+from curious.commands import context
+from curious.commands import plugin
+from curious.commands import cmd
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.invite import Invite
+from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.dataclasses.webhook import Webhook
-from curious.event import EventContext
+from curious.event import EventContext, event as ev_dec
 from curious.http.httpclient import HTTPClient
-from curious.util import _traverse_stack_for, base64ify
+from curious.util import base64ify, attrdict
 
 AUTOSHARD = object()
 
 
+def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
+    """
+    Splits a message into individual parts by `delim`, returning a list of strings.
+    This method preserves quotes.
+
+    :param content: The message content to split.
+    :param delim: The delimiter to split on.
+    :return: A list of items split
+    """
+
+    def replacer(m):
+        return m.group(0).replace(delim, "\x00")
+
+    parts = re.sub(r'".+?"', replacer, content).split()
+    parts = [p.replace("\x00", " ") for p in parts]
+    return parts
+
+
+def _default_msg_func_factory(prefix: str):
+    def __inner(bot: Client, message):
+        matched = None
+        if isinstance(prefix, str):
+            match = message.content.startswith(prefix)
+            if match:
+                matched = prefix
+
+        elif isinstance(prefix, list):
+            for i in prefix:
+                if message.content.startswith(i):
+                    matched = i
+                    break
+
+        if not matched:
+            return None
+
+        tokens = split_message_content(message.content[len(matched):])
+        command_word = tokens[0]
+
+        return command_word, tokens[1:], matched
+
+    __inner.prefix = prefix
+    return __inner
+
+
 class AppInfo(object):
     """
-    Represents the application info for a
+    Represents the application info for an OAuth2 application.
     """
+
     def __init__(self, client: 'Client', **kwargs):
         #: The client ID of this application.
         self.client_id = int(kwargs.pop("id", 0))
@@ -62,11 +117,29 @@ class Client(object):
         bot = Client("'a'")  # pass explicitly
         bot.run("'b'")  # or pass to the run call.
     """
+
     def __init__(self, token: str = None, *,
+                 enable_commands: bool = True,
+                 command_prefix: typing.Union[str, list] = None,
+                 message_check=None,
+                 description: str = "The default curious description",
                  state_klass: type = None):
         """
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
+            
+        :param enable_commands: Should commands integration be enabled?
+            If this is False, commands can still be registered etc, they just won't fire (the event won't appear).
+        
+        :param command_prefix: The command prefix for this bot.
+        :param message_check: The message check function for this bot. 
+            This should take two arguments, the client and message, and should return either None or a 3-item tuple:
+              - The command word matched
+              - The tokens after the command word
+              - The prefix that was matched.
+              
+        :param description: The description of this bot for usage in the default help command.
+            
         :param state_klass: The class to construct the connection state from.
         """
         #: The mapping of `shard_id -> gateway` objects.
@@ -105,11 +178,33 @@ class Client(object):
         #: The logger for this bot.
         self._logger = logging.getLogger("curious.client")
 
-        # Scan the dict of this object, to check for all events registered under it.
-        # This is useful, for example, for subclasses.
-        for name, obb in self.__class__.__dict__.items():
-            if name.startswith("on_") and inspect.iscoroutinefunction(obb):
-                self.add_event(name[3:], getattr(self, name))
+        if enable_commands:
+            if not command_prefix and not message_check:
+                raise TypeError("Must provide one of `command_prefix` or `message_check`")
+
+            self._message_check = message_check or _default_msg_func_factory(command_prefix)
+        else:
+            self._message_check = lambda x: None
+
+        #: The description of this bot.
+        self.description = description
+
+        #: The dictionary of command objects to use.
+        self.commands = attrdict()
+
+        #: The dictionary of plugins to use.
+        self.plugins = {}
+
+        self._plugin_modules = {}
+
+        if enable_commands:
+            # Add the handle_commands as a message_create event.
+            self.add_event(self.handle_commands)
+
+            from curious.commands.plugin_core import _Core
+            self.add_plugin(_Core(self))
+
+        self.scan_events()
 
     @property
     def user(self) -> User:
@@ -155,7 +250,7 @@ class Client(object):
         return self.state.guilds_for_shard(shard_id)
 
     # Events
-    def add_event(self, name: str, func):
+    def add_event(self, func, name: str = None):
         """
         Add an event to the internal registry of events.
 
@@ -164,6 +259,9 @@ class Client(object):
         """
         if not inspect.iscoroutinefunction(func):
             raise TypeError("Event must be a coroutine function")
+
+        if name is None:
+            name = func.event
 
         self.events.add(name, func)
 
@@ -194,38 +292,46 @@ class Client(object):
         for item in a:
             self.events.add(name, item)
 
-    def event(self, func):
+    def event(self, name: str):
         """
-        Marks a function as an event.
+        A convenience decorator to mark a function as an event.
 
         This will copy it to the events dictionary, where it will be used as an event later on.
 
-        :param func: The function to mark as an event.
-            This can also be a string, which will allow you to customize the event added.
-        :return: The unmodified function.
+        :param name: The name of the event.
         """
-        if isinstance(func, str):
-            event = func
 
-            def _inner(func):
-                self.add_event(event, func)
-                return func
+        def _inner(func):
+            f = ev_dec(name)(func)
+            self.add_event(func=f)
 
-            return _inner
+        return _inner
 
-        if not func.__name__.startswith("on_"):
-            raise ValueError("Events must start with on_")
-
-        event = func.__name__[3:]
-        self.add_event(event, func)
-
-        return func
+    def scan_events(self):
+        """
+        Scans this class for functions marked with an event decorator.
+        """
+        for _, item in inspect.getmembers(self, predicate=lambda x: hasattr(x, "event") and getattr(x, "scan", False)):
+            self._logger.info("Registering event function {} for event {}".format(_, item.event))
+            self.add_event(item)
 
     async def _error_wrapper(self, func, *args, **kwargs):
         try:
             await func(*args, **kwargs)
         except Exception as e:
             self._logger.exception("Unhandled exception in {}!".format(func.__name__))
+
+    async def _wrap_context(self, ctx: 'context.Context'):
+        """
+        Wraps a context in a safety wrapper.
+
+        This will dispatch `command_exception` when an error happens.
+        """
+        try:
+            await ctx.invoke()
+        except Exception as e:
+            gw = self._gateways[ctx.event_context.shard_id]
+            await self.fire_event("command_error", e, ctx=ctx, gateway=gw)
 
     async def _temporary_wrapper(self, event, listener, *args, **kwargs):
         try:
@@ -305,6 +411,208 @@ class Client(object):
                                            daemon=True))
 
         return tasks
+
+    # commands
+    @ev_dec("command_error", scan=False)
+    async def default_command_error(self, ctx, e):
+        """
+        Default error handler.
+
+        This is meant to be overriden - normally it will just print the traceback.
+        """
+        if len(self.events.getall("command_error")) >= 2:
+            # remove ourselves
+            self.remove_event("command_error", self.default_command_error)
+            return
+
+        traceback.print_exception(None, e, e.__traceback__)
+
+    @ev_dec("message_create", scan=False)
+    async def handle_commands(self, event_ctx: EventContext, message: Message):
+        """
+        Handles invokation of commands.
+
+        This is added as an event during initialization.
+        """
+        if not message.content:
+            # Minor optimization - don't fire on empty messages.
+            return
+
+        # use the message check function
+        _ = self._message_check(self, message)
+        if inspect.isawaitable(_):
+            _ = await _
+
+        if not _:
+            # not a command, do not bother
+            return
+
+        # func should return command_word and args for the command
+        command_word, args, prefix = _
+        command = self.get_command(command_word)
+        if command is None:
+            return
+
+        # Create the context object that will be passed in.
+        ctx = context.Context(self, command=command, message=message,
+                              event_ctx=event_ctx)
+        ctx.prefix = prefix
+        ctx.name = command_word
+        ctx.raw_args = args
+
+        await curio.spawn(self._wrap_context(ctx))
+
+    def add_command(self, command_name: str, command: 'command.Command'):
+        """
+        Adds a command to the internal registry of commands.
+
+        :param command_name: The name of the command to add.
+        :param command: The command object to add.
+        """
+        if command_name in self.commands:
+            if not self.commands[command_name]._overridable:
+                raise ValueError("Command {} already exists".format(command_name))
+            else:
+                self.commands.pop(command_name)
+
+        self.commands[command_name] = command
+
+    def add_plugin(self, plugin_class):
+        """
+        Adds a plugin to the bot.
+
+        :param plugin_class: The plugin class to add.
+        """
+        events, commands = plugin_class._scan_body()
+
+        for event in events:
+            event.plugin = plugin_class
+            self.events.add(event.event, event)
+
+        for command in commands:
+            # Bind the command to the plugin.
+            command.instance = plugin_class
+            # dont add any aliases
+            self.add_command(command.name, command)
+
+        self.plugins[plugin_class.name] = plugin_class
+
+    async def load_plugins_from(self, import_name: str, *args, **kwargs):
+        """
+        Loads a plugin and adds it to the internal registry.
+
+        :param import_name: The import name of the plugin to add (e.g `bot.plugins.moderation`).
+        """
+        module = importlib.import_module(import_name)
+        mod = [module, []]
+
+        # Locate all of the Plugin types.
+        for name, member in inspect.getmembers(module):
+            if not isinstance(member, type):
+                # We only want to inspect instances of type (i.e classes).
+                continue
+
+            inherits = inspect.getmro(member)
+            # remove `member` from the mro
+            # this prevents us registering Plugin as a plugin
+            inherits = [i for i in inherits if i != member]
+            if plugin.Plugin not in inherits:
+                # Only inspect instances of plugin.
+                continue
+
+            if not hasattr(member, "__dict__"):
+                # don't be difficult
+                continue
+
+            # evil cpython type implementation detail abuse
+            if member.__dict__.get("_include_in_scan", True) is False:
+                # this won't show up for subclasses.
+                # so they always have to be explicitly set
+                continue
+
+            # Assume it has a setup method on it.
+            result = member.setup(self, *args, **kwargs)
+            if inspect.isawaitable(result):
+                result = await result
+
+            # Add it to the list of plugins we need to destroy when unloading.
+            # We add the type, not the instance, as the instances are destroyed separately.
+            mod[1].append(member)
+
+        if len(mod[1]) == 0:
+            raise ValueError("Plugin contained no plugin classes (classes that inherit from Plugin)")
+
+        self._plugin_modules[import_name] = mod
+
+    async def unload_plugins_from(self, import_name: str):
+        """
+        Unloads plugins from the specified import name.
+
+        This is the opposite to :meth:`load_plugins_from`.
+        """
+        mod, plugins = self._plugin_modules[import_name]
+        # we can't do anything with the module currently because it's still in our locals scope
+        # so we have to wait to delete it
+        # i'm not sure this is how python imports work but better to be safe
+        # (especially w/ custom importers)
+
+        for plugin in plugins:
+            # find all the Command instances with this plugin as the body
+            for name, command in self.commands.copy().items():
+                # isinstance() checks ensures that the type of the instance is this plugin
+                if isinstance(command.instance, plugin):
+                    # make sure the instance isn't lingering around
+                    command.instance = None
+                    # rip
+                    self.commands.pop(name)
+
+            # remove all events registered
+            for name, event in self.events.copy().items():
+                # not a plugin event
+                if not hasattr(event, "plugin"):
+                    continue
+                if isinstance(event.plugin, plugin):
+                    event.plugins = None
+                    self.remove_event(name, event)
+
+            # now that all commands are dead, call `unload()` on all of the instances
+            for name, instance in self.plugins.copy().items():
+                if isinstance(instance, plugin):
+                    r = instance.unload()
+                    if inspect.isawaitable(r):
+                        await r
+
+                    self.plugins.pop(name)
+
+        # remove from sys.modules and our own registry to remove all references
+        del sys.modules[import_name]
+        del self._plugin_modules[import_name]
+        del mod
+
+    def get_commands_for(self, plugin: 'plugin.Plugin') -> typing.Generator['cmd.Command', None, None]:
+        """
+        Gets the commands for the specified plugin.
+
+        :param plugin: The plugin instance to get commands of.
+        :return: A list of :class:`Command`.
+        """
+        for command in self.commands.copy().values():
+            if command.instance == plugin:
+                yield command
+
+    def get_command(self, command_name: str) -> typing.Union['cmd.Command', None]:
+        """
+        Gets a command object for the specified command name.
+
+        :param command_name: The name of the command.
+        :return: The command object if found, otherwise None.
+        """
+
+        def _f(cmd: cmd.Command):
+            return cmd.can_be_invoked_by(command_name)
+
+        f = filter(_f, self.commands.values())
+        return next(f, None)
 
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
