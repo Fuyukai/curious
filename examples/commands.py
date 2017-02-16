@@ -3,11 +3,12 @@ An example bot that uses Curious' commands.
 """
 
 # Required imports!
-# You have to import the CommandsBot (to create the bot) and the Plugin class (to create a plugin).
+# You have to import the Client (to create the bot) and the Plugin class (to create a plugin).
+from curious.client import Client
 from curious.commands import command
-from curious.commands.bot import CommandsBot
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
+from curious.event import EventContext
 
 
 # Plugins are defined as types that inherit from ``Plugin``.
@@ -61,10 +62,15 @@ class Core(Plugin):
 
 # To tie this all together, a new CommandsBot instance needs to be created.
 # The command_prefix argument tells us what prefix should be used to invoke commands.
-bot = CommandsBot(command_prefix="!")
+bot = Client(command_prefix="!")
 
-# Add the Core class as a plugin to the bot.
-Core.setup(bot)
+
+# Add the Core class as a plugin to the bot, inside the ready event.
+@bot.event("ready")
+async def ready(ctx: EventContext):
+    print("Logged in as", bot.user.name)
+    await Core.setup(bot)
+
 
 # Run the bot with your token.
-bot.run('token')
+bot.run('MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo')
