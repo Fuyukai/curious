@@ -841,3 +841,30 @@ class Guild(Dataclass):
             raise PermissionsError("manage_roles")
 
         await self._bot.http.delete_role(self.id, role.id)
+
+    async def get_widget_info(self) -> 'typing.Tuple[bool, typing.Union[None, channel.Channel]]':
+        """
+        Gets the widget info for the current guild.
+        
+        :return: A two-item tuple: If this widget is enabled, and the channel the widget has an invite for. 
+        """
+        info = await self._bot.http.get_widget_status(self.id)
+        return info.get("enabled", False), self.channels.get(int(info.get("channel_id", 0)))
+
+    async def edit_widget(self, *,
+                          status: bool=None, channel: 'channel.Channel'=-1):
+        """
+        Edits the widget for this guild.
+        
+        :param status: The status of this widget: True or False.
+        :param channel: The channel object to set the instant invite to.
+        """
+        if channel is None:
+            channel_id = None
+        elif channel == -1:
+            channel_id = 0
+        else:
+            channel_id = channel.id
+
+        await self._bot.http.edit_widget(self.id, enabled=status, channel_id=channel_id)
+
