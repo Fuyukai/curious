@@ -564,7 +564,7 @@ class Channel(Dataclass):
             embed = embed.to_dict()
 
         data = await self._bot.http.send_message(self.id, content, tts=tts, embed=embed)
-        obb = self._bot.state.parse_message(data, cache=False)
+        obb = self._bot.state.parse_message(data, cache=True)
 
         return obb
 

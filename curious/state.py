@@ -500,7 +500,7 @@ class State(object):
             reaction.emoji = emoji_obb
             message.reactions.append(reaction)
 
-        if cache:
+        if cache and message not in self._messages:
             self._messages.append(message)
 
         return message
