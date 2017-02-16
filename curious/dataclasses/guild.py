@@ -200,6 +200,29 @@ class Guild(Dataclass):
             # the afk channel CAN be None
             return None
 
+    @property
+    def embed_url(self) -> str:
+        """
+        Gets the default embed url for this guild.
+        The widget must be enabled.
+        
+        :return: The embed URL for this guild. 
+        """
+        return (self._bot.http.GUILD_BASE + "/embed.png").format(guild_id=self.id)
+
+    def get_embed_url(self, *, style: str = "banner1") -> str:
+        """
+        Gets an embed URL for this guild in a specified style.
+        
+        :param style: The style to get. 
+        :return: The embed URL for this guild.
+        """
+        valid_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
+        if style not in valid_styles:
+            raise ValueError("Style must be in {}".format(valid_styles))
+
+        return self.embed_url + "?style={}".format(style)
+
     def find_member(self, search_str: str) -> 'dt_member.Member':
         """
         Attempts to find a member in this guild by name#discrim.
@@ -852,7 +875,7 @@ class Guild(Dataclass):
         return info.get("enabled", False), self.channels.get(int(info.get("channel_id", 0)))
 
     async def edit_widget(self, *,
-                          status: bool=None, channel: 'channel.Channel'=-1):
+                          status: bool = None, channel: 'channel.Channel' = -1):
         """
         Edits the widget for this guild.
         
@@ -867,4 +890,3 @@ class Guild(Dataclass):
             channel_id = channel.id
 
         await self._bot.http.edit_widget(self.id, enabled=status, channel_id=channel_id)
-
