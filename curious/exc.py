@@ -77,7 +77,12 @@ class HTTPException(CuriousError):
         self.error_code = ErrorCode(error.get("code", 0))
         self.error_message = error.get("message")
 
+        self.error = error
+
     def __str__(self):
+        if self.error_code == ErrorCode.UNKNOWN:
+            return repr(self.error)
+
         return "{}: {}".format(self.error_code, self.error_code.name, self.error_message)
 
     __repr__ = __str__

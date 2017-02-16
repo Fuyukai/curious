@@ -1056,7 +1056,7 @@ class HTTPClient(object):
         
         :param guild_id: The guild ID of the widget to fetch.
         """
-        url = (self.GUILD_BASE + "widget.json").format(guild_id=guild_id)
+        url = (self.GUILD_BASE + "/widget.json").format(guild_id=guild_id)
 
         data = await self.get(url, bucket="widget:{}".format(guild_id))
         return data
