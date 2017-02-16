@@ -20,7 +20,7 @@ class WidgetChannel(Dataclass):
         self.name = kwargs.pop("name")
 
         #: The position of this channel.
-        self.position = kwargs.pop("channel")
+        self.position = kwargs.pop("position", -1)
 
         #: The guild ID for this channel.
         self.guild_id = guild.id
@@ -34,7 +34,7 @@ class WidgetMember(Dataclass):
     Represents a limited subsection of a member.
     """
 
-    def __init__(self, bot: 'client.Client', guild: 'WidgetGuild', **kwargs):
+    def __init__(self, bot: 'client.Client', guild: 'WidgetGuild', kwargs):
         super().__init__(id=int(kwargs.get("id", 0)), client=bot)
 
         # construct a superficial user dict
@@ -46,10 +46,13 @@ class WidgetMember(Dataclass):
             "bot": kwargs.get("bot", False)
         }
         #: The user object associated with this member.
-        self.user = bot.state.make_user(**user_dict)
+        self.user = bot.state.make_user(user_dict)
 
         #: The game associated with this member.
-        self.game = Game(**kwargs.get("game"))
+        game = kwargs.get("game")
+        if game is None:
+            game = {}
+        self.game = Game(**game) if game else None
 
         #: The status associated with this member.
         self.status = Status(kwargs.get("status"))
@@ -75,7 +78,7 @@ class WidgetGuild(Dataclass):
         #: The members in this widget guild.
         self._members = {}
         for member in kwargs.get("members", []):
-            m = WidgetMember(bot=self._bot, guild=self, **member)
+            m = WidgetMember(bot=self._bot, guild=self, kwargs=member)
             self._members[m.id] = m
 
     @property
@@ -86,6 +89,10 @@ class WidgetGuild(Dataclass):
     def members(self):
         return MappingProxyType(self._members)
 
+    def __repr__(self):
+        return "<WidgetGuild id={} members={} name='{}'>".format(self.id, len(self.members), self.name)
+
+    __str__ = __repr__
 
 class Widget(object):
     """
@@ -96,7 +103,7 @@ class Widget(object):
         self._bot = client
 
         # we have a limited subsection of a full Guild object here
-        id_ = kwargs.get("id", 0)
+        id_ = int(kwargs.get("id", 0))
 
         # chekc to see if we have the real guild
         try:
@@ -119,3 +126,6 @@ class Widget(object):
     @property
     def channels(self) -> 'typing.Iterable[typing.Union[dt_channel.Channel, WidgetChannel]]':
         return self.guild.channels
+
+    def __repr__(self):
+        return "<Widget guild={}>".format(self.guild)
