@@ -2,10 +2,11 @@
 A lower-level State that doesn't do any special object handling.
 """
 import inspect
+
 import typing
 
-from curious.gateway import Gateway
-from curious.state import State
+from curious.core.gateway import Gateway
+from curious.core.state import State
 
 
 class PureDispatchState(State):

@@ -1,21 +1,17 @@
 import importlib
 import inspect
-
-import re
-import traceback
-
-import sys
-import typing
 import logging
+import re
+import sys
+import traceback
 
 import curio
 import multidict
+import typing
 from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
-from curious.commands import context
-from curious.commands import plugin
-from curious.commands import cmd
+from curious.commands import cmd, context, plugin
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
@@ -25,7 +21,7 @@ from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.event import EventContext, event as ev_dec
 from curious.http.httpclient import HTTPClient
-from curious.util import base64ify, attrdict
+from curious.util import attrdict, base64ify
 
 AUTOSHARD = object()
 
@@ -154,7 +150,7 @@ class Client(object):
 
         #: The current connection state for the bot.
         if state_klass is None:
-            from curious.state import State
+            from curious.core.state import State
             state_klass = State
         self.state = state_klass(self)
 
@@ -783,7 +779,7 @@ class Client(object):
 
         This will NOT poll for events - only open a websocket connection!
         """
-        from curious.gateway import Gateway
+        from curious.core.gateway import Gateway
 
         if token:
             self._token = token
@@ -807,7 +803,7 @@ class Client(object):
 
         :param shard_id: The shard ID of the gateway to shard.
         """
-        from curious.gateway import ReconnectWebsocket
+        from curious.core.gateway import ReconnectWebsocket
         gw = self._gateways[shard_id]
         while True:
             try:

@@ -4,10 +4,10 @@ An example bot that uses Curious' commands.
 
 # Required imports!
 # You have to import the Client (to create the bot) and the Plugin class (to create a plugin).
-from curious.client import Client
 from curious.commands import command
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
+from curious.core.client import Client
 from curious.event import EventContext
 
 

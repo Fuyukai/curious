@@ -1,11 +1,9 @@
 import typing
 from types import MappingProxyType
 
-from curious import client
-from curious.dataclasses.bases import IDObject, Dataclass
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses.status import Status, Game
+from curious.dataclasses import channel as dt_channel, guild as dt_guild
+from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.status import Game, Status
 
 
 class WidgetChannel(Dataclass):

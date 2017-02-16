@@ -1,23 +1,14 @@
-import traceback
-import typing
 from math import ceil
-from types import MappingProxyType
 
 import curio
+import typing
+from types import MappingProxyType
 
-from curious import client
-from curious.dataclasses import channel
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import user as dt_user
+from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, member as dt_member, \
+    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import role
 from curious.dataclasses.status import Game
-from curious.dataclasses import emoji as dt_emoji
-from curious.dataclasses import permissions as dt_permissions
-from curious.dataclasses import webhook as dt_webhook
-from curious.dataclasses import invite as dt_invite
-from curious.dataclasses import voice_state as dt_vs
-from curious.exc import PermissionsError, HierachyError, CuriousError
+from curious.exc import CuriousError, HierachyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify
 
 try:

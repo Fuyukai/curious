@@ -1,20 +1,20 @@
 """
 A special gateway client for Voice.
 """
-import json
-import queue
 import enum
+import json
 import logging
+import queue
 import socket
 import threading
-import typing
 import zlib
 
 import curio
+import typing
 from cuiows.client import WSClient
 from cuiows.exc import WebsocketClosedError
 
-from curious.gateway import Gateway
+from curious.core.gateway import Gateway
 
 
 class VGatewayOp(enum.IntEnum):

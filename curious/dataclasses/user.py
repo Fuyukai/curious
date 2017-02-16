@@ -1,8 +1,5 @@
-from curious import client
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses import message as dt_message
-from curious.dataclasses import guild as dt_guild
 from curious.exc import CuriousError
 
 

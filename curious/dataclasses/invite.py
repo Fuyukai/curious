@@ -1,8 +1,7 @@
 import typing
 
 from curious import util
-from curious import client
-from curious.dataclasses import guild as dt_guild, channel as dt_channel
+from curious.dataclasses import channel as dt_channel, guild as dt_guild
 from curious.dataclasses.bases import IDObject
 from curious.exc import PermissionsError
 

@@ -1,10 +1,7 @@
 """
 Base classes.
 """
-import abc
 import datetime
-
-from curious import client
 
 DISCORD_EPOCH = 1420070400000
 

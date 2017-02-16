@@ -8,13 +8,12 @@ An example bot that uses events.
 # Let's create a simple plugin that logs all messages, and another event that announces bans.
 
 # First, the required imports
-from curious.client import Client
 from curious.commands.plugin import Plugin
-from curious.event import event
+from curious.core.client import Client
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
-from curious.event import EventContext
+from curious.event import EventContext, event
 
 
 class BasicPlugin(Plugin):

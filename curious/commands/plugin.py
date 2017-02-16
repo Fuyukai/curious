@@ -2,10 +2,11 @@
 The base class for a plugin.
 """
 import functools
+
 import typing
 
-from curious import client as cl
-from curious.commands.context import Context
+from curious.commands import context
+from curious.core import client as cl
 
 
 class Plugin(object):
@@ -37,7 +38,7 @@ class Plugin(object):
         Called just before the plugin is to be unloaded, after all commands have been removed.
         """
 
-    async def plugin_check(self, ctx: Context):
+    async def plugin_check(self, ctx: 'context.Context'):
         """
         Added as a check for every command in this plugin.
         """

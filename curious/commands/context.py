@@ -1,6 +1,6 @@
 import typing
 
-from curious import client as cl
+from curious.core import client as cl
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member

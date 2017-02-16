@@ -13,21 +13,17 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
+import logging
 import socket
-
-import curio
 import struct
 
-import logging
-
+import curio
 from nacl.secret import SecretBox
 from opuslib import Encoder
-from opuslib.exceptions import OpusError
 
-from curious import client
 from curious.dataclasses import channel as dt_channel
-from curious.voice.voice_gateway import VoiceGateway
 from curious.voice import voice_player as vp
+from curious.voice.voice_gateway import VoiceGateway
 
 logger = logging.getLogger("curious.voice")
 

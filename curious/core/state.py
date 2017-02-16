@@ -1,11 +1,12 @@
 import collections
-import typing
+import logging
 import weakref
-from types import MappingProxyType
 
 import curio
-import logging
+import typing
+from types import MappingProxyType
 
+from curious.core import gateway
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import Guild
@@ -15,8 +16,7 @@ from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game
-from curious.dataclasses.user import User, BotUser
-from curious import gateway
+from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
