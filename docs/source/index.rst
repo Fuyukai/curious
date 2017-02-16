@@ -46,6 +46,7 @@ Examples for how to use the library are available at https://github.com/SunDwarf
    :caption: Contents:
 
    speedups
+   changelog
    hiapi
    loapi
 
