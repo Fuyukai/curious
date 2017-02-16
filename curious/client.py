@@ -22,6 +22,7 @@ from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses.user import User
 from curious.dataclasses.webhook import Webhook
+from curious.dataclasses.widget import Widget
 from curious.event import EventContext, event as ev_dec
 from curious.http.httpclient import HTTPClient
 from curious.util import base64ify, attrdict
@@ -764,6 +765,16 @@ class Client(object):
         :return: A new Invite object.
         """
         return Invite(self, **(await self.http.get_invite(invite_code)))
+
+    async def get_widget(self, guild_id: int) -> Widget:
+        """
+        Gets a widget from a guild.
+        
+        :param guild_id: The ID of the guild to get the widget of. 
+        :return: A :class:`Widget` object.
+        """
+        data = await self.http.get_widget_data(guild_id)
+        return Widget(self, **data)
 
     # Utility functions
     async def connect(self, token: str = None, shard_id: int = 1):
