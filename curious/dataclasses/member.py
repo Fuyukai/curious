@@ -47,6 +47,15 @@ class Member(Dataclass):
         #: The current :class:`VoiceState` of this member.
         self.voice = None  # type: dt_vs.VoiceState
 
+    def __hash__(self):
+        return hash(self.guild.id) + hash(self.user.id)
+
+    def __eq__(self, other):
+        if not isinstance(other, Member):
+            return NotImplemented
+
+        return other.guild == self.guild and other.user == self.user
+
     def _copy(self):
         """
         Copies a member object.
