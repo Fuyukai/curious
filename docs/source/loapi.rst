@@ -28,6 +28,20 @@ To create your own HTTPClient, simply construct it with your token:
 
 .. autoclass:: curious.http.httpclient.HTTPClient
     :members:
+    :private-members:
+
+HTTP Exceptions
+~~~~~~~~~~~~~~~
+
+.. autoclass:: curious.exc.HTTPException
+    :members:
+
+.. autoclass:: curious.exc.Unauthorized
+
+.. autoclass:: curious.exc.NotFound
+
+.. autoclass:: curious.exc.Forbidden
+
 
 Gateway handling
 ----------------

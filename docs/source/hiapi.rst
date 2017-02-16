@@ -314,3 +314,23 @@ Permissions
     :members:
     :inherited-members:
     :private-members:
+
+
+Widget
+~~~~~~
+
+.. autoclass:: curious.dataclasses.widget.Widget
+    :members:
+    :inherited-members:
+
+.. autoclass:: curious.dataclasses.widget.WidgetGuild
+    :members:
+    :inherited-members:
+
+.. autoclass:: curious.dataclasses.widget.WidgetChannel
+    :members:
+    :inherited-members:
+
+.. autoclass:: curious.dataclasses.widget.WidgetMember
+    :members:
+    :inherited-members:
