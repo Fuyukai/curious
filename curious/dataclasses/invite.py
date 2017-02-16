@@ -4,6 +4,7 @@ from curious import util
 from curious import client
 from curious.dataclasses import guild as dt_guild, channel as dt_channel
 from curious.dataclasses.bases import IDObject
+from curious.exc import PermissionsError
 
 
 class InviteGuild(IDObject):
@@ -150,4 +151,8 @@ class Invite(object):
 
         You must have MANAGE_CHANNELS permission in the guild to delete the invite.
         """
+        if self._real_guild is not None:
+            if not self._real_guild.guild_permissions.manage_channels:
+                raise PermissionsError("manage_channels")
+
         await self._bot.http.delete_invite(self.code)
