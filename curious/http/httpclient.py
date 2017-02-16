@@ -361,7 +361,7 @@ class HTTPClient(object):
         return data
 
     async def get_guild_members(self, guild_id: int, *,
-                                limit: int=None, after: int=None):
+                                limit: int = None, after: int = None):
         """
         Gets guild members for the specified guild.
 
@@ -1037,6 +1037,49 @@ class HTTPClient(object):
         url = (self.CHANNEL_BASE + "/permissions/{target_id}".format(channel_id=channel_id, target_id=target_id))
 
         data = await self.delete(url, bucket="channels:permissions:{}".format(channel_id))
+        return data
+
+    async def get_widget_status(self, guild_id: int):
+        """
+        Gets the current widget status information for a guild.
+        
+        :param guild_id: The guild ID to fetch. 
+        """
+        url = (self.GUILD_BASE + "/embed").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="widget:{}".format(guild_id))
+        return data
+
+    async def get_widget_data(self, guild_id: int):
+        """
+        Gets the current widget data for a guild.
+        
+        :param guild_id: The guild ID of the widget to fetch.
+        """
+        url = (self.GUILD_BASE + "widget.json").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="widget:{}".format(guild_id))
+        return data
+
+    async def edit_widget(self, guild_id: int,
+                          enabled: bool = None, channel_id: int = 0):
+        """
+        Edits the widget status for this guild.
+        
+        :param guild_id: The guild edit to edit the widget of. 
+        :param enabled: Is the widget enabled in this guild? 
+        :param channel_id: What channel ID is the instant invite for? This can be None to disable the channel.
+        """
+        url = (self.GUILD_BASE + "/embed").format(guild_id=guild_id)
+        payload = {}
+
+        if enabled is not None:
+            payload["enabled"] = enabled
+
+        if channel_id != 0:
+            payload["channel_id"] = channel_id
+
+        data = await self.patch(url, bucket="widget:{}".format(guild_id), json=payload)
         return data
 
     # Webhooks
