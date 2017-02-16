@@ -65,7 +65,7 @@ class Plugin(object):
                 def _wtf(v):
                     @functools.wraps(v)
                     def _event_wrapper(*args, **kwargs):
-                        return v(*args, **kwargs)
+                        return v(self, *args, **kwargs)
                     return _event_wrapper
 
                 events.append(_wtf(value))

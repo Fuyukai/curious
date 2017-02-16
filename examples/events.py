@@ -8,9 +8,9 @@ An example bot that uses events.
 # Let's create a simple plugin that logs all messages, and another event that announces bans.
 
 # First, the required imports
-from curious.commands.bot import CommandsBot
+from curious.client import Client
 from curious.commands.plugin import Plugin
-from curious.commands import event
+from curious.event import event
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
@@ -33,9 +33,13 @@ class BasicPlugin(Plugin):
 
 
 # Create the commands bot instance.
-bot = CommandsBot(command_prefix="!")
+bot = Client(command_prefix="!")
+
+
 # Add our plugin.
-BasicPlugin.setup(bot)
+@bot.event("ready")
+async def ready(ctx: EventContext):
+    await BasicPlugin.setup(bot)
 
 
 # Now, we add the ban announcement event.
@@ -44,5 +48,6 @@ async def announce_ban(ctx: EventContext, guild: Guild, member: Member):
     # Send the ban message to the default channel.
     await guild.default_channel.send("{} got bent".format(member.user.name))
 
+
 # Now, all that is left is to run the bot.
-bot.run('token')
+bot.run('MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo')
