@@ -760,6 +760,18 @@ class Client(object):
             self.state._check_decache_user(u.id)
             return u
 
+    async def get_application(self, application_id: int) -> AppInfo:
+        """
+        Gets an application by ID.
+
+        :param application_id: The client ID of the application to fetch.
+        :return: A new :class:`AppInfo` object corresponding to the application.
+        """
+        data = await self.http.get_app_info(application_id=application_id)
+        appinfo = AppInfo(self, **data)
+
+        return appinfo
+
     async def get_webhook(self, webhook_id: int) -> Webhook:
         """
         Gets a webhook by ID.

@@ -51,6 +51,11 @@ This document displays the differences between each release of curious.
 
  - Add ``bot`` attribute to `AppInfo` which returns the bot user associated with this app.
 
+ - Add :meth:`AppInfo.add_to_guild` which authorizes a bot into a guild.
+   Only user accounts can call this.
+
+ - Add :meth:`Client.get_application` to get an :class:`AppInfo` object referring to an application.
+
 0.1.4
 -----
 

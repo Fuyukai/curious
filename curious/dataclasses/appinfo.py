@@ -23,10 +23,10 @@ class AppInfo(object):
             self.owner = None
 
         #: The name of this application.
-        self.name = kwargs.pop("name", None)  # type: str
+        self.name = self._application.pop("name", None)  # type: str
 
         #: The description of this application.
-        self.description = self._application.pop("description")  # type: str
+        self.description = self._application.pop("description", None)  # type: str
 
         #: Is this bot public?
         self.public = self._application.pop("bot_public", None)  # type: bool
@@ -64,6 +64,9 @@ class AppInfo(object):
         """
         if self._bot.is_bot:
             raise CuriousError("Bots cannot add other bots")
+
+        if self.bot is None:
+            raise CuriousError("This application has no bot associated")
 
         if self.owner is None and not self.public:
             raise CuriousError("This bot is not public")
