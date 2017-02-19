@@ -64,6 +64,8 @@ This document displays the differences between each release of curious.
  - Add :meth:`User.send_friend_request`, :meth:`User.block`, :meth:`RelationshipUser.remove_friend` and
    :meth:`RelationshipUser.unblock` to manage relationships between users.
 
+ - :class:`BotUser` cannot send friend requests to itself or block itself.
+
 0.1.4
 -----
 

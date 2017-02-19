@@ -172,6 +172,16 @@ class BotUser(User):
     async def send(self, *args, **kwargs):
         raise NotImplementedError("Cannot send messages to your own user")
 
+    async def block(self, *args, **kwargs):
+        raise NotImplementedError("Cannot block or unblock yourself")
+
+    unblock = block
+
+    async def send_friend_request(self):
+        raise NotImplementedError("Cannot be friends with yourself")
+
+    remove_friend = send_friend_request
+
     def edit(self, *args, **kwargs):
         """
         Edits the bot's current profile.
