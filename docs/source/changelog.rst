@@ -66,6 +66,8 @@ This document displays the differences between each release of curious.
 
  - :class:`BotUser` cannot send friend requests to itself or block itself.
 
+ - Add :meth:`User.get_profile` to get a user's profile.
+
 0.1.4
 -----
 

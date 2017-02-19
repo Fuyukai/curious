@@ -1317,7 +1317,7 @@ class HTTPClient(object):
 
         :param user_id: The user ID of the profile to fetch.
         """
-        url = (self.API_BASE + "/users/{user_id}/profile").format(user_id)
+        url = (self.API_BASE + "/users/{user_id}/profile").format(user_id=user_id)
 
         data = await self.get(url, bucket="user:get")
         return data

@@ -1,5 +1,6 @@
 import enum
 import typing
+from collections import namedtuple
 from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
@@ -15,6 +16,29 @@ class FriendType(enum.IntEnum):
 
     INCOMING = 3
     OUTGOING = 4
+
+connection = namedtuple("Connection", "type id name")
+
+
+class UserProfile(object):
+    """
+    Represents a profile for a user.
+    """
+    def __init__(self, user: 'User', kwargs):
+        #: The user object associated with this profile.
+        self.user = user
+
+        #: A list of connections associated with this profile.
+        self.connections = [connection(**c) for c in kwargs.get("connected_accounts", [])]
+
+        #: Is this user premium?
+        self.premium = kwargs.get("premium", False)
+
+        #: When was this user premium since?
+        self.premium_since = kwargs.get("premium_since", None)
+
+    def __repr__(self):
+        return "<UserProfile user='{}' premium={}>".format(self.user, self.premium)
 
 
 class User(Dataclass):
@@ -140,6 +164,16 @@ class User(Dataclass):
             raise CuriousError("Bots cannot have friends")
 
         await self._bot.http.send_friend_request(self.id)
+
+    async def get_profile(self) -> UserProfile:
+        """
+        :return: A :class:`UserProfile` representing this user's profile.
+        """
+        if self._bot.user.bot:
+            raise CuriousError("Bots cannot get profiles")
+
+        profile = await self._bot.http.get_user_profile(self.id)
+        return UserProfile(user=self, kwargs=profile)
 
     async def send(self, content: str = None, *args, **kwargs) -> 'dt_message.Message':
         """
