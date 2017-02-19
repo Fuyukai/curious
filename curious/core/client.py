@@ -13,6 +13,7 @@ from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
 from curious.commands import cmd, context, plugin
+from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
@@ -70,64 +71,6 @@ def _default_msg_func_factory(prefix: str):
 
     __inner.prefix = prefix
     return __inner
-
-
-class AppInfo(object):
-    """
-    Represents the application info for an OAuth2 application.
-    """
-
-    def __init__(self, client: 'Client', **kwargs):
-        self._bot = client
-
-        #: The client ID of this application.
-        self.client_id = int(kwargs.pop("id", 0))
-
-        #: The owner of this application.
-        #: This can be None if the application fetched isn't the bot's.
-        if "owner" in kwargs:
-            self.owner = User(client, **kwargs.pop("owner"))
-        else:
-            self.owner = None
-
-        #: The description of this application.
-        self.description = kwargs.pop("description")
-
-        #: Is this bot public?
-        self.public = kwargs.pop("bot_public", None)
-
-        #: Does this bot require OAuth2 Code Grant?
-        self.requires_code_grant = kwargs.pop("bot_require_code_grant", None)
-
-        #: The icon hash for this bot.
-        self._icon_hash = kwargs.pop("icon", None)
-
-    @property
-    def icon_url(self):
-        """
-        :return: The icon url for this bot.
-        """
-        if self._icon_hash is None:
-            return None
-
-        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id, self._icon_hash)
-
-    async def add_to_guild(self, guild: 'Guild'):
-        """
-        Authorizes this bot to join a guild.
-        
-        This requires a userbot client to be used. 
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot add other bots")
-
-        if self.owner is None and not self.public:
-            raise CuriousError("This bot is not public")
-
-        if self.requires_code_grant:
-            raise CuriousError("This bot requires code grant")
-
-        await self._bot.http.authorize_bot(self.client_id, guild.id)
 
 
 class Client(object):
@@ -861,7 +804,7 @@ class Client(object):
             self.http = HTTPClient(self._token, bot=self.is_bot)
 
         if not self.application_info and self.is_bot:
-            self.application_info = AppInfo(self, **(await self.http.get_application_info()))
+            self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
 
         gateway_url = await self.get_gateway_url()
         self._gateways[shard_id] = await Gateway.from_token(self._token, self.state, gateway_url,

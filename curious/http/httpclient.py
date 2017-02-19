@@ -325,13 +325,13 @@ class HTTPClient(object):
         data = await self.get(url, "gateway")
         return data["url"], data["shards"]
 
-    async def get_application_info(self):
+    async def get_user_me(self):
         """
-        :return: The application info for this bot.
+        Gets the current user.
         """
-        url = self.API_BASE + "/oauth2/applications/@me"
+        url = self.USER_ME
 
-        data = await self.get(url, "oauth2:me")
+        data = await self.get(url, bucket="user:get")
         return data
 
     async def get_user(self, user_id: int):
@@ -1320,6 +1320,71 @@ class HTTPClient(object):
         url = (self.API_BASE + "/users/{user_id}/profile").format(user_id)
 
         data = await self.get(url, bucket="user:get")
+        return data
+
+    # Application info
+    async def get_app_info(self, application_id: int):
+        """
+        Gets some basic info about an application.
+
+        :param application_id: The ID of the application to get info about.
+            If this is None, it will fetch the current application info.
+        """
+        if application_id is None:
+            return await self._get_app_info_me()
+
+        application_id = str(application_id)
+
+        url = (self.API_BASE + "/oauth2/authorize")
+
+        try:
+            data = await self.get(url, bucket="oauth2", params={"client_id": application_id, "scope": "bot"})
+        except HTTPException as e:
+            if e.error_code != 50010:
+                raise
+
+            data = await self.get(url, bucket="oauth2", params={"client_id": application_id})
+        return data
+
+    async def _get_app_info_me(self):
+        """
+        :return: The application info for this bot.
+        """
+        url = self.API_BASE + "/oauth2/applications/@me"
+
+        data = await self.get(url, "oauth2")
+        # httpclient is meant to be a "pure" wrapper, but add this anyway.
+        me = await self.get_user_me()
+
+        final = {
+            "application": data,
+            "bot": me,
+        }
+
+        return final
+
+    async def authorize_bot(self, application_id: int, guild_id: int,
+                            *, permissions: int=0):
+        """
+        Authorize a bot to be added to a guild.
+
+        :param application_id: The client ID of the bot to be added.
+        :param guild_id: The guild ID to add the bot to.
+        :param permissions: The permissions to add the bot with.
+        """
+        url = self.API_BASE + "/oauth2/authorize"
+        params = {
+            "client_id": application_id,
+            "scope": "bot"
+        }
+
+        payload = {
+            "guild_id": guild_id,
+            "authorize": True,
+            "permissions": permissions
+        }
+
+        data = await self.post(url, "oauth2", params=params, json=payload)
         return data
 
     # Misc

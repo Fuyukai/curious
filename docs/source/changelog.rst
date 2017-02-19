@@ -39,6 +39,18 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`HTTPClient.get_user_profile` to get a user's profile.
 
+ - Add :meth:`HTTPClient.get_app_info` to get the application information for a specific app.
+   This method will attempt to download the bot information alongside the app - failing this, it will only request
+   the basic app info scope.
+
+ - Remove :meth:`HTTPClient.get_application_info`; call ``get_app_info`` with ``None`` to get the current app's info.
+
+ - Add :meth:`HTTPClient.authorize_bot` to authorize a bot into a guild.
+
+ - Move :class:`AppInfo` into its own module.
+
+ - Add ``bot`` attribute to `AppInfo` which returns the bot user associated with this app.
+
 0.1.4
 -----
 
