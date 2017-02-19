@@ -195,7 +195,7 @@ class State(object):
 
         if owner:
             # only create Owner if the data was returned
-            webhook.owner = User(client=self.client, **owner)
+            webhook.owner = self.make_user(owner)
 
         # default fields, these are lazily loaded by properties
         webhook._default_name = event_data.get("name", None)
@@ -737,7 +737,9 @@ class State(object):
 
         # Make a copy of the member for the old previous reference.
         old_member = member._copy()
+        # Don't call `make_user` for this to prevent caching the user
         member.user = User(self.client, **event_data["user"])
+        self._users[member.user.id] = member.user
 
         # Overwrite roles, we want to get rid of any roles that are stale.
         member._roles = {}
@@ -772,7 +774,7 @@ class State(object):
 
         if not member:
             # Dispatch to `user_ban` instead of `member_ban`.
-            user = User(self.client, **event_data["user"])
+            user = self.make_user(event_data["user"])
             await self.client.fire_event("user_ban", guild, user, gateway=gw)
             return
 
@@ -788,7 +790,7 @@ class State(object):
         if guild is None:
             return
 
-        user = User(self.client, **event_data["user"])
+        user = self.make_user(**event_data["user"])
         await self.client.fire_event("user_unban", guild, user, gateway=gw)
 
     async def handle_channel_create(self, gw: 'gateway.Gateway', event_data: dict):
