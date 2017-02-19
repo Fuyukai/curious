@@ -121,6 +121,24 @@ class User(Dataclass):
         channel = self._bot.state.make_private_channel(channel_data)
         return channel
 
+    async def block(self):
+        """
+        Blocks this user.
+        """
+        if self._bot.is_bot:
+            raise CuriousError("Bots cannot have blocks")
+
+        await self._bot.http.block_user(self.id)
+
+    async def send_friend_request(self):
+        """
+        Sends a friend request to this user.
+        """
+        if self._bot.is_bot:
+            raise CuriousError("Bots cannot have friends")
+
+        await self._bot.http.send_friend_request(self.id)
+
     async def send(self, content: str = None, *args, **kwargs) -> 'dt_message.Message':
         """
         Sends a message to the user over a private channel.
@@ -185,3 +203,27 @@ class RelationshipUser(User):
 
         #: The type of friend this user is.
         self.type_ = None  # type: FriendType
+
+    async def remove_friend(self):
+        """
+        Removes this user as a friend.
+        """
+        if self._bot.is_bot:
+            raise CuriousError("Bots cannot have friends")
+
+        if self.type_ != FriendType.FRIEND:
+            raise CuriousError("This user is not your friend")
+
+        await self._bot.http.remove_relationship(self.id)
+
+    async def unblock(self):
+        """
+        Unblocks this user.
+        """
+        if self._bot.is_bot:
+            raise CuriousError("Bots cannot have blocks")
+
+        if self.type_ != FriendType.BLOCKED:
+            raise CuriousError("This user is not blocked")
+
+        await self._bot.http.remove_relationship(self.id)

@@ -10,6 +10,8 @@ This document displays the differences between each release of curious.
 
  - Add ``_friends`` and ``_blocked`` to :class:`State` to represent the friends and blocked users a client has.
 
+ - Add ``friends`` and ``blocked`` properties to :class:`Client` which can be used to access the State's attributes.
+
  - Add a new type called :class:`RelationshipUser` which represents either a friend or a blocked user.
 
  - Rearrange channel and guild handling in ``READY`` parsing.
@@ -58,6 +60,9 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`HTTPClient.send_friend_request`, :meth:`HTTPClient.remove_relationship`, :meth:`HTTPClient.block_user`
    for editing relationships with users.
+
+ - Add :meth:`User.send_friend_request`, :meth:`User.block`, :meth:`RelationshipUser.remove_friend` and
+   :meth:`RelationshipUser.unblock` to manage relationships between users.
 
 0.1.4
 -----
