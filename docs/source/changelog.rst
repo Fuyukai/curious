@@ -56,6 +56,9 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`Client.get_application` to get an :class:`AppInfo` object referring to an application.
 
+ - Add :meth:`HTTPClient.send_friend_request`, :meth:`HTTPClient.remove_relationship`, :meth:`HTTPClient.block_user`
+   for editing relationships with users.
+
 0.1.4
 -----
 

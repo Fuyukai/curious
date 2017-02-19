@@ -1322,6 +1322,39 @@ class HTTPClient(object):
         data = await self.get(url, bucket="user:get")
         return data
 
+    async def send_friend_request(self, user_id: int):
+        """
+        Sends a friend request to a user.
+
+        :param user_id: The user ID to send the request to.
+        """
+        url = (self.USER_ME + "/relationships/{user_id}").format(user_id=user_id)
+
+        data = await self.put(url, bucket="user:relationships", json={})
+        return data
+
+    async def remove_relationship(self, user_id: int):
+        """
+        Removes a friend, cancels a friend request or unblocks a user.
+
+        :param user_id: The user ID who is being modified.
+        """
+        url = (self.USER_ME + "/relationships/{user_id}").format(user_id=user_id)
+
+        data = await self.delete(url, bucket="user:relationships")
+        return data
+
+    async def block_user(self, user_id: int):
+        """
+        Blocks a user.
+
+        :param user_id: The user ID to block.
+        """
+        url = (self.USER_ME + "/relationships/{user_id}").format(user_id=user_id)
+
+        data = await self.put(url, bucket="user:relationships", json={"type": 2})  # type 2 means block
+        return data
+
     # Application info
     async def get_app_info(self, application_id: int):
         """
