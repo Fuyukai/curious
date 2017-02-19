@@ -3,7 +3,7 @@ import typing
 
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.role import Role
+from curious.dataclasses import role as dt_role
 from curious.dataclasses.status import Game, Status
 from curious.dataclasses import voice_state as dt_vs
 from curious.dataclasses import user as dt_user
@@ -18,13 +18,13 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("user", "_roles", "joined_at", "nickname", "guild", "game", "_status", "voice",)
+    __slots__ = ("_roles", "joined_at", "nickname", "guild", "game", "_status", "voice",)
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
 
-        #: The :class:`User` object associated with this member.
-        self.user = client.state.make_user(kwargs.get("user"))
+        # make the user to use and cache
+        self._bot.state.make_user(kwargs["user"])
 
         #: A dictionary of :class:`Role` this user has.
         self._roles = {}
@@ -71,9 +71,14 @@ class Member(Dataclass):
         new_object._status = self._status
         new_object.nickname = self.nickname
 
-        new_object.user = self.user._copy()
-
         return new_object
+
+    @property
+    def user(self) -> 'dt_user.User':
+        """
+        :return: The underlying user for this member.
+        """
+        return self._bot.state._users[self.id]
 
     @property
     def name(self) -> str:
@@ -107,7 +112,7 @@ class Member(Dataclass):
         self._status = value
 
     @property
-    def roles(self) -> typing.Iterable[Role]:
+    def roles(self) -> 'typing.Iterable[dt_role.Role]':
         """
         :return: A list of roles this user has.
         """
@@ -127,7 +132,7 @@ class Member(Dataclass):
             return 0
 
     @property
-    def top_role(self) -> Role:
+    def top_role(self) -> 'dt_role.Role':
         """
         :return: This member's top-most :class:`Role`.
         """
@@ -170,7 +175,7 @@ class Member(Dataclass):
         """
         return self.guild.kick(self)
 
-    def add_roles(self, *roles: typing.Iterable[Role]):
+    def add_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
         """
         Adds roles to this member.
 
@@ -180,7 +185,7 @@ class Member(Dataclass):
         """
         return self.guild.add_roles(self, *roles)
 
-    def remove_roles(self, *roles: typing.Iterable[Role]):
+    def remove_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
         """
         Removes roles from this member.
 

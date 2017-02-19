@@ -2,6 +2,7 @@
 Base classes.
 """
 import datetime
+from curious.core import client
 
 DISCORD_EPOCH = 1420070400000
 

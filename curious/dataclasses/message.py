@@ -11,7 +11,7 @@ from curious.dataclasses import role as dt_role
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import webhook as dt_webhook
 from curious.dataclasses.embed import Embed, Attachment
-from curious.dataclasses.emoji import Emoji
+from curious.dataclasses import emoji as dt_emoji
 from curious.exc import CuriousError, PermissionsError
 from curious.util import to_datetime
 
@@ -206,7 +206,7 @@ class Message(Dataclass):
         :param emoji: The emoji to check.
         :return: A list of either :class:`Member` or :class:`User` that reacted to this message.
         """
-        if isinstance(emoji, Emoji):
+        if isinstance(emoji, dt_emoji.Emoji):
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
         reactions = await self._bot.http.get_reaction_users(self.channel.id, self.id, emoji)
@@ -241,7 +241,7 @@ class Message(Dataclass):
                 if not self.reacted(emoji):
                     raise PermissionsError("add_reactions")
 
-        if isinstance(emoji, Emoji):
+        if isinstance(emoji, dt_emoji.Emoji):
             # undocumented!
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
@@ -262,7 +262,7 @@ class Message(Dataclass):
             if not self.channel.permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
-        if isinstance(reaction, Emoji):
+        if isinstance(reaction, dt_emoji.Emoji):
             emoji = "{}:{}".format(reaction.name, reaction.id)
         else:
             emoji = reaction

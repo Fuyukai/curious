@@ -4,6 +4,7 @@ import logging
 import re
 import sys
 import traceback
+from types import MappingProxyType
 
 import curio
 import multidict
@@ -16,10 +17,11 @@ from curious.dataclasses.guild import Guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
-from curious.dataclasses.user import User
+from curious.dataclasses.user import User, RelationshipUser
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.event import EventContext, event as ev_dec
+from curious.exc import CuriousError
 from curious.http.httpclient import HTTPClient
 from curious.util import attrdict, base64ify
 
@@ -76,17 +78,26 @@ class AppInfo(object):
     """
 
     def __init__(self, client: 'Client', **kwargs):
+        self._bot = client
+
         #: The client ID of this application.
         self.client_id = int(kwargs.pop("id", 0))
 
         #: The owner of this application.
-        self.owner = User(client, **kwargs.pop("owner"))
+        #: This can be None if the application fetched isn't the bot's.
+        if "owner" in kwargs:
+            self.owner = User(client, **kwargs.pop("owner"))
+        else:
+            self.owner = None
 
         #: The description of this application.
         self.description = kwargs.pop("description")
 
         #: Is this bot public?
-        self.public = kwargs.pop("public", None)
+        self.public = kwargs.pop("bot_public", None)
+
+        #: Does this bot require OAuth2 Code Grant?
+        self.requires_code_grant = kwargs.pop("bot_require_code_grant", None)
 
         #: The icon hash for this bot.
         self._icon_hash = kwargs.pop("icon", None)
@@ -100,6 +111,23 @@ class AppInfo(object):
             return None
 
         return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id, self._icon_hash)
+
+    async def add_to_guild(self, guild: 'Guild'):
+        """
+        Authorizes this bot to join a guild.
+        
+        This requires a userbot client to be used. 
+        """
+        if self._bot.is_bot:
+            raise CuriousError("Bots cannot add other bots")
+
+        if self.owner is None and not self.public:
+            raise CuriousError("This bot is not public")
+
+        if self.requires_code_grant:
+            raise CuriousError("This bot requires code grant")
+
+        await self._bot.http.authorize_bot(self.client_id, guild.id)
 
 
 class Client(object):
@@ -120,7 +148,8 @@ class Client(object):
                  command_prefix: typing.Union[str, list] = None,
                  message_check=None,
                  description: str = "The default curious description",
-                 state_klass: type = None):
+                 state_klass: type = None,
+                 bot: bool=True, self_bot: bool=False):
         """
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
@@ -138,6 +167,9 @@ class Client(object):
         :param description: The description of this bot for usage in the default help command.
             
         :param state_klass: The class to construct the connection state from.
+        
+        :param bot: If this client represents a bot user.
+        :param self_bot: If this bot is a self bot (i.e only responds to the user).
         """
         #: The mapping of `shard_id -> gateway` objects.
         self._gateways = {}  # type: typing.Dict[int, Gateway]
@@ -153,6 +185,15 @@ class Client(object):
             from curious.core.state import State
             state_klass = State
         self.state = state_klass(self)
+
+        #: If this client is a bot.
+        self.is_bot = bot
+
+        if self.is_bot and self_bot is True:
+            raise CuriousError("Cannot be a bot account and a self bot at the same time")
+
+        #: If this is a self bot.
+        self.self_bot = self_bot
 
         #: The current event storage.
         self.events = multidict.MultiDict()
@@ -213,7 +254,7 @@ class Client(object):
     @property
     def guilds(self) -> typing.Mapping[int, Guild]:
         """
-        :return: A list of :class:`Guild` that this client can see.
+        :return: A mapping of :class:`Guild` that this client can see.
         """
         return self.state.guilds
 
@@ -223,6 +264,26 @@ class Client(object):
         :return: The invite URL for this bot.
         """
         return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(self.application_info.client_id)
+
+    @property
+    def friends(self) -> typing.Mapping[int, RelationshipUser]:
+        """
+        :return: A mapping of :class:`FriendUser` that represents the friends for this user.
+        """
+        if self.user.bot:
+            raise CuriousError("Bots cannot have friends")
+
+        return MappingProxyType(self.state._friends)
+
+    @property
+    def blocked(self):
+        """
+        :return: A mapping of :class:`FriendUser` that represents the blocked users for this user.
+        """
+        if self.user.bot:
+            raise CuriousError("Bots cannot have friends")
+
+        return MappingProxyType(self.state._blocked)
 
     async def get_gateway_url(self):
         if self._gw_url:
@@ -431,6 +492,15 @@ class Client(object):
 
         This is added as an event during initialization.
         """
+        # oddities
+        if message.author is None:
+            return
+
+        user = message.author.user if hasattr(message.author, "user") else message.author
+
+        if self.self_bot and user != self.user:
+            return
+
         if not message.content:
             # Minor optimization - don't fire on empty messages.
             return
@@ -597,7 +667,7 @@ class Client(object):
             if command.instance == plugin:
                 yield command
 
-    def get_command(self, command_name: str) -> typing.Union['cmd.Command', None]:
+    def get_command(self, command_name: str) -> 'typing.Union[cmd.Command, None]':
         """
         Gets a command object for the specified command name.
 
@@ -742,7 +812,10 @@ class Client(object):
         try:
             return self.state._users[user_id]
         except KeyError:
-            return self.state.make_user(await self.http.get_user(user_id))
+            u = self.state.make_user(await self.http.get_user(user_id))
+            # decache it if we need to
+            self.state._check_decache_user(u.id)
+            return u
 
     async def get_webhook(self, webhook_id: int) -> Webhook:
         """
@@ -785,9 +858,9 @@ class Client(object):
             self._token = token
 
         if not self.http:
-            self.http = HTTPClient(self._token)
+            self.http = HTTPClient(self._token, bot=self.is_bot)
 
-        if not self.application_info:
+        if not self.application_info and self.is_bot:
             self.application_info = AppInfo(self, **(await self.http.get_application_info()))
 
         gateway_url = await self.get_gateway_url()
@@ -872,7 +945,8 @@ class Client(object):
             self._token = token
 
         if not self.http:
-            self.http = HTTPClient(self._token)
+            # autosharded always means start autosharded
+            self.http = HTTPClient(self._token, bot=True)
 
         shards = await self.get_shard_count()
         self.shard_count = shards
@@ -886,6 +960,9 @@ class Client(object):
         :param shards: The number of shards to run.
             If this is None, the bot will autoshard.
         """
+        if not self.is_bot and shards != 1:
+            raise CuriousError("Cannot start user bots in sharded mode")
+
         try:
             kernel = curio.Kernel(with_monitor=True, warn_if_task_blocks_for=5)
         except TypeError:

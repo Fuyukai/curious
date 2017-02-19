@@ -360,6 +360,19 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
+    async def send_guild_sync(self, guilds: typing.List[int]):
+        """
+        Sends a guild sync packet.
+
+        :param guilds: A list of guild IDs to request syncing for.
+        """
+        payload = {
+            "op": GatewayOp.GUILD_SYNC,
+            "d": [str(g) for g in guilds]
+        }
+
+        await self._send_dict(payload)
+
     async def request_chunks(self, guilds):
         """
         Requests member chunks from a guild.
@@ -537,7 +550,7 @@ class Gateway(object):
                     # We need to download all member chunks from this guild.
                     await self._get_chunks()
                 except Exception:
-                    self.logger.exception("Error decoding {}".format(data))
+                    self.logger.exception("Error decoding event {} with data {}".format(event, data))
                     await self._close()
                     await self.websocket.close_now()
                     raise

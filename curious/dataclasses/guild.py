@@ -344,7 +344,7 @@ class Guild(Dataclass):
         # Create all of the voice states.
         for vs_data in data.get("voice_states", []):
             user_id = int(vs_data.get("user_id", 0))
-            member = self.members[user_id]
+            member = self.members.get(user_id)
             if not member:
                 # o well
                 continue

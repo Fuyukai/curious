@@ -23,6 +23,7 @@ class ChannelType(enum.Enum):
     TEXT = 0
     PRIVATE = 1
     VOICE = 2
+    GROUP = 3
 
 
 class _TypingCtxManager:
@@ -158,6 +159,10 @@ class Channel(Dataclass):
         if self.is_private:
             for recipient in kwargs.pop("recipients"):
                 self.recipients.append(self._bot.state.make_user(recipient))
+
+            if self.type == ChannelType.GROUP:
+                # append the current user
+                self.recipients.append(self._bot.user)
 
         #: The position of this channel.
         self.position = kwargs.pop("position", 0)

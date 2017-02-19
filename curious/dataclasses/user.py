@@ -1,6 +1,18 @@
+import enum
+
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.status import Game
+from curious.dataclasses.status import Status
 from curious.exc import CuriousError
+
+
+class FriendType(enum.IntEnum):
+    FRIEND = 1
+    BLOCKED = 2
+
+    INCOMING = 3
+    OUTGOING = 4
 
 
 class User(Dataclass):
@@ -85,7 +97,7 @@ class User(Dataclass):
         return self.timestamp
 
     def __repr__(self):
-        return "<User id={} name={} discrim={}>".format(self.id, self.name, self.discriminator)
+        return "<{} id={} name={} discrim={}>".format(type(self).__name__, self.id, self.name, self.discriminator)
 
     def __str__(self):
         return "{}#{}".format(self.username, self.discriminator)
@@ -154,3 +166,22 @@ class BotUser(User):
         """
         return self._bot.edit_avatar(path)
 
+
+class RelationshipUser(User):
+    """
+    A user that is either friends or blocked with the current user.
+    
+    Only useful for user bots.
+    """
+
+    def __init__(self, client, **kwargs):
+        super().__init__(client, **kwargs)
+
+        #: The status for this friend.
+        self.status = None  # type: Status
+
+        #: The game for this friend.
+        self.game = None  # type: Game
+
+        #: The type of friend this user is.
+        self.type_ = None  # type: FriendType

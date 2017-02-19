@@ -1,13 +1,12 @@
 import collections
 import logging
-import weakref
 
 import curio
 import typing
 from types import MappingProxyType
 
 from curious.core import gateway
-from curious.dataclasses.channel import Channel
+from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
@@ -15,10 +14,13 @@ from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
-from curious.dataclasses.status import Game
-from curious.dataclasses.user import BotUser, User
+from curious.dataclasses.status import Game, Status
+from curious.dataclasses.user import BotUser, User, FriendType
+from curious.dataclasses.user import RelationshipUser
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
+
+UserType = typing.TypeVar("U", bound=User)
 
 
 class State(object):
@@ -40,12 +42,16 @@ class State(object):
         self._private_channels = {}
 
         #: The guilds the bot can see.
-        self._guilds = {}  # type: typing.Dict[Guild]
+        self._guilds = {}  # type: typing.Dict[int, Guild]
+
+        #: This user's friends.
+        self._friends = {}  # type: typing.Dict[int, RelationshipUser]
+
+        #: This user's blocked users.
+        self._blocked = {}  # type: typing.Dict[int, RelationshipUser]
 
         #: The current user cache.
-        # NB: This is a WeakValueDictionary because we don't want to keep users alive that we don't need to.
-        # Using a regular dictionary can cause infinite growth.
-        self._users = weakref.WeakValueDictionary()
+        self._users = {}
 
         #: The state logger.
         self.logger = logging.getLogger("curious.state")
@@ -113,6 +119,10 @@ class State(object):
             # Already ready, don't bother.
             return
 
+        if not self.client.is_bot:
+            # User chunk handling is setup differently.
+            return
+
         if self.have_all_chunks(gw.shard_id):
             # Have all chunks anyway, dispatch now.
             self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
@@ -161,6 +171,22 @@ class State(object):
         for message in reversed(self._messages):
             if message.id == message_id:
                 return message
+
+    def _check_decache_user(self, id: int):
+        """
+        Checks if we should decache a user.
+
+        This will check if there is any guild with a reference to the user.
+        """
+        if id in self._friends or id in self._blocked:
+            return
+
+        for guild in self._guilds.values():
+            if id in guild.members:
+                return
+
+        # didn't return, so no references
+        self._users.pop(id, None)
 
     def make_webhook(self, event_data: dict) -> Webhook:
         """
@@ -214,17 +240,21 @@ class State(object):
 
         return channel
 
-    def make_user(self, user_data: dict) -> User:
+    def make_user(self, user_data: dict, *,
+                  user_klass: typing.Type[UserType] = User,
+                  override_cache: bool=False) -> UserType:
         """
         Creates a new user and caches it.
 
         :param user_data: The user data to create.
+        :param user_klass: The type of user to create.
+        :param override_cache: Should the cache be overridden?
         """
         id = int(user_data.get("id", 0))
-        if id in self._users:
+        if id in self._users and not override_cache:
             return self._users[id]
 
-        user = User(self.client, **user_data)
+        user = user_klass(self.client, **user_data)
         self._users[user.id] = user
 
         return user
@@ -249,7 +279,6 @@ class State(object):
         """
         Called when READY is dispatched.
         """
-        self.logger.info("Ready received for shard {}. Delaying until all guilds are chunked.".format(gw.shard_id))
         gw.session_id = event_data.get("session_id")
 
         # Create our bot user.
@@ -257,23 +286,71 @@ class State(object):
         # cache ourselves
         self._users[self._user.id] = self._user
 
+        self.logger.info("Parsing ready for `{}#{}` ({})".format(self._user.username, self._user.discriminator,
+                                                                 self._user.id))
+
+        self.logger.info("Logged in as a userbot: {}".format(not self._user.bot))
+
+        # User-bots only.
+        # Parse relationships first before processing anything else.
+        # This ensures all friends are calculated and assigned.
+        if not self._user.bot:
+            # Parse friends and blocked users.
+            for item in event_data.get("relationships", []):
+                # make user to cache it
+                user = self.make_user(item.get("user", {}), user_klass=RelationshipUser)
+                user.type_ = FriendType(item["type"])
+                if user.type_ == FriendType.FRIEND:
+                    self._friends[int(item["id"])] = user
+                else:
+                    self._blocked[int(item["id"])] = user
+
+            for presence in event_data.get("presences", []):
+                u = int(presence["user"]["id"])
+                fr = self._friends.get(u)
+
+                # eventual consistency
+                if not fr:
+                    continue
+
+                fr.status = Status(presence["status"])
+                gm = presence["game"]
+                if gm is not None:
+                    fr.game = Game(**gm)
+
+            self.logger.info("Processed {} friends "
+                             "and {} blocked users.".format(len(self._friends), len(self._blocked)))
+
+        # Create all of the private channels.
+        for channel in event_data.get("private_channels"):
+            self.make_private_channel(channel)
+
+        self.logger.info("Processed {} private channels.".format(len(self._private_channels)))
+
         # Create all of the guilds.
         for guild in event_data.get("guilds"):
             new_guild = Guild(self.client, **guild)
             new_guild.shard_id = gw.shard_id
             self._guilds[new_guild.id] = new_guild
 
-        # Create all of the private channels.
-        for channel in event_data.get("private_channels"):
-            self.make_private_channel(channel)
+            if not self._user.bot and len(event_data.get("guilds")) <= 100:
+                # this might as well be a GUILD_CREATE, so treat it as one
+                await self.handle_guild_create(gw, guild)
+
+        if not self._user.bot and len(event_data.get("guilds")) <= 100:
+            await gw.send_guild_sync([g.id for g in self.guilds.values()])
+            self.logger.info("Syncing {} guilds.".format(len(self.guilds)))
+
+        self.logger.info("Ready processed for shard {}. Delaying until all guilds are chunked.".format(gw.shard_id))
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect", gateway=gw)
 
         # However, if the client has no guilds, we DO want to fire ready.
-        if len(event_data.get("guilds", {})) == 0:
+        if len(event_data.get("guilds", {})) == 0 or not self._user.bot:
             await self._is_ready(gw.shard_id).set()
-            self.logger.info("No guilds to get for shard {}, dispatching early READY.".format(gw.shard_id))
+            self.logger.info("No more guilds to get for shard {}, or client is user. "
+                             "Dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
 
     async def handle_resumed(self, gw: 'gateway.Gateway', event_data: dict):
@@ -297,10 +374,30 @@ class State(object):
         """
         Called when a member changes game.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         if not guild:
+            # user presence update
+            user_id = int(event_data["user"]["id"])
+            fr = self._friends.get(user_id)
+
+            if not fr:
+                # wtf
+                return
+
+            # re-create the user object
+            self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
+                                                    override_cache=True)
+
+            fr.status = Status(event_data.get("status"))
+            game = event_data.get("game")
+            if game is None:
+                fr.game = None
+            else:
+                fr.game = Game(**game)
+
+            await self.client.fire_event("friend_update", fr, gateway=gw)
             return
 
         member_id = int(event_data["user"]["id"])
@@ -330,6 +427,10 @@ class State(object):
 
         member.status = event_data.get("status")
 
+        if not isinstance(member.user, RelationshipUser):
+            # recreate the user object
+            self.make_user(event_data["user"], override_cache=True)
+
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 
     async def handle_guild_members_chunk(self, gw: 'gateway.Gateway', event_data: dict):
@@ -358,11 +459,46 @@ class State(object):
         # Check if we have all chunks.
         await self._check_ready(gw, guild)
 
+    async def handle_guild_sync(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a guild is synced.
+        """
+        id = int(event_data.get("id", 0))
+        guild = self._guilds.get(id)
+
+        if not guild:
+            # why
+            self.logger.warning("Got sync for guild we're not in...")
+            return
+
+        members = event_data.get("members", [])
+        # same logic as a guild chunk
+        guild._handle_member_chunk(members)
+
+        presences = event_data.get("presences", [])
+
+        for presence in presences:
+            u_id = presence["user"]["id"]
+            member = guild.members.get(int(u_id))
+
+            if not member:
+                continue
+
+            game = presence.get("game", None)
+            if game is None:
+                game = {}
+
+            member.game = Game(**game)
+            member.status = presence.get("status")
+
+        self.logger.info("Processed a guild sync for guild {} with "
+                         "{} members and {} presences.".format(guild.name, len(members), len(presences)))
+
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when GUILD_CREATE is dispatched.
         """
-        id = int(event_data.get("id"))
+        id = int(event_data.get("id", 0))
         guild = self._guilds.get(id)
 
         had_guild = True
@@ -402,7 +538,7 @@ class State(object):
         """
         Called when GUILD_UPDATE is dispatched.
         """
-        id = int(event_data.get("id"))
+        id = int(event_data.get("id", 0))
         guild = self._guilds.get(id)
 
         if not guild:
@@ -477,8 +613,10 @@ class State(object):
 
         message.channel = channel
         message.guild = channel.guild
-        if message.channel.is_private:
-            message.author = message.channel.user
+        if message.channel.type == ChannelType.PRIVATE:
+            message.author = self._user
+        elif message.channel.type == ChannelType.GROUP:
+            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients), None)
         else:
             # Webhooks also exist.
             if event_data.get("webhook_id") is not None:
@@ -717,6 +855,9 @@ class State(object):
             # We can't see the member, so don't fire an event for it.
             return
 
+        # check if we should decache the user
+        self._check_decache_user(member.id)
+
         await self.client.fire_event("member_leave", member, gateway=gw)
 
     async def handle_guild_member_update(self, gw: 'gateway.Gateway', event_data: dict):
@@ -737,9 +878,9 @@ class State(object):
 
         # Make a copy of the member for the old previous reference.
         old_member = member._copy()
-        # Don't call `make_user` for this to prevent caching the user
-        member.user = User(self.client, **event_data["user"])
-        self._users[member.user.id] = member.user
+        # Re-create the user object.
+        #self.make_user(event_data["user"], override_cache=True)
+        #self._users[member.user.id] = member.user
 
         # Overwrite roles, we want to get rid of any roles that are stale.
         member._roles = {}
@@ -950,8 +1091,8 @@ class State(object):
         events, state = self.__voice_state_crap[int(guild_id)]
 
         state.update({
-                "token": event_data.get("token"),
-                "endpoint": event_data.get("endpoint"),
+            "token": event_data.get("token"),
+            "endpoint": event_data.get("endpoint"),
         })
 
         # Set the VOICE_SERVER_UPDATE event.
@@ -1006,3 +1147,106 @@ class State(object):
 
         This event is effectively useless.
         """
+
+    # Userbot only events.
+    async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a message is acknowledged.
+        """
+        channel = self._get_channel(int(event_data.get("channel_id", 0)))
+        message = self._find_message(int(event_data.get("message_id", 0)))
+
+        if channel is None:
+            return
+
+        if message is None:
+            return
+
+        await self.client.fire_event("message_ack", channel, message, gateway=gw)
+
+    async def handle_relationship_add(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a relationship is added.
+        """
+        type_ = event_data.get("type", 0)
+
+        if type_ == 1:
+            # FR accepted
+            u = RelationshipUser(client=self.client, **event_data.get("user"))
+            u.type_ = FriendType.FRIEND
+            self._friends[u.id] = u
+        elif type_ == 2:
+            u = RelationshipUser(client=self.client, **event_data.get("user"))
+            u.type_ = FriendType.BLOCKED
+            self._blocked[u.id] = u
+        else:
+            return
+
+        self._users[u.id] = u
+
+        await self.client.fire_event("relationship_add", u, gateway=gw)
+
+    async def handle_relationship_remove(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a relationship is removed.
+        """
+        type_ = event_data.get("type", 0)
+        u_id = int(event_data.get("id", 0))
+
+        if type_ == 1:
+            u = self._friends.pop(u_id, None)
+        elif type_ == 2:
+            u = self._blocked.pop(u_id, None)
+        else:
+            return
+
+        # replace the type in `_users` with a generic user
+        # this wont cause race conditions due to the GIL etc
+        del self._users[u_id]
+        new_user = self.make_user(
+            {
+                "id": u_id,
+                "username": u.username,
+                "discriminator": u.discriminator,
+                "avatar": u._avatar_hash,
+                "bot": u.bot
+            }
+        )
+
+        # maybe decache it anyway
+        self._check_decache_user(u_id)
+
+        await self.client.fire_event("relationship_remove", u, gateway=gw)
+
+    async def handle_channel_recipient_add(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a recipient is added to a channel.
+        """
+        user = event_data.get("user", {})
+        id = int(event_data.get("channel_id", 0))
+
+        user = self._users.get(int(user.get("id", 0)))
+
+        channel = self._get_channel(channel_id=id)
+        if channel is None:
+            return
+
+        channel.recipients.append(user)
+
+        await self.client.fire_event("group_user_add", channel, user, gateway=gw)
+
+    async def handle_channel_recipient_remove(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when a recipient is removed a channel.
+        """
+        user = event_data.get("user", {})
+        id = int(event_data.get("channel_id", 0))
+
+        user = self._users.get(int(user.get("id", 0)))
+        channel = self._get_channel(channel_id=id)
+        if channel is None:
+            return
+
+        if user in channel.recipients:
+            channel.recipients.remove(user)
+            await self.client.fire_event("group_user_remove", channel, user, gateway=gw)

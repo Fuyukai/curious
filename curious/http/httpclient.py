@@ -69,17 +69,22 @@ class HTTPClient(object):
 
     USER_ME = API_BASE + "/users/@me"
 
-    def __init__(self, token: str):
+    def __init__(self, token: str, *,
+                 bot: bool=True):
         #: The token used for all requests.
         self.token = token
 
         # Calculated headers
         headers = {
-            "Authorization": "Bot {}".format(self.token),
             "User-Agent": "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}"
                           " curio/{2}".format(curious.__version__, sys.version_info,
                                               curio.__version__)
         }
+
+        if bot:
+            headers["Authorization"] = "Bot {}".format(self.token)
+        else:
+            headers["Authorization"] = self.token
 
         self.session = ClientSession()
         self.session.headers = headers
@@ -92,6 +97,8 @@ class HTTPClient(object):
 
         # Global ratelimit lock
         self.global_lock = curio.Lock()
+
+        self._is_bot = bot
 
         self.logger = logging.getLogger("curious.http")
 
@@ -310,6 +317,9 @@ class HTTPClient(object):
         """
         :return: The recommended number of shards for this bot.
         """
+        if not self._is_bot:
+            raise Forbidden(None, {"code": 20002, "message": "Only bots can use this endpoint"})
+
         url = self.API_BASE + "/gateway/bot"
 
         data = await self.get(url, "gateway")
@@ -1298,6 +1308,18 @@ class HTTPClient(object):
         url = (self.API_BASE + "/invites/{invite_code}").format(invite_code)
 
         data = await self.delete(url, bucket="invites")
+        return data
+
+    # User only
+    async def get_user_profile(self, user_id: int):
+        """
+        Gets a user's profile.
+
+        :param user_id: The user ID of the profile to fetch.
+        """
+        url = (self.API_BASE + "/users/{user_id}/profile").format(user_id)
+
+        data = await self.get(url, bucket="user:get")
         return data
 
     # Misc
