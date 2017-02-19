@@ -1,4 +1,6 @@
 import enum
+import typing
+from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.bases import Dataclass
@@ -193,6 +195,26 @@ class BotUser(User):
         Edits the bot's current avatar.
         """
         return self._bot.edit_avatar(path)
+
+    @property
+    def friends(self) -> typing.Mapping[int, 'RelationshipUser']:
+        """
+        :return: A mapping of :class:`FriendUser` that represents the friends for this user.
+        """
+        if self.bot:
+            raise CuriousError("Bots cannot have friends")
+
+        return MappingProxyType(self._bot.state._friends)
+
+    @property
+    def blocks(self) -> typing.Mapping[int, 'RelationshipUser']:
+        """
+        :return: A mapping of :class:`FriendUser` that represents the blocked users for this user.
+        """
+        if self.bot:
+            raise CuriousError("Bots cannot have friends")
+
+        return MappingProxyType(self._bot.state._blocked)
 
 
 class RelationshipUser(User):

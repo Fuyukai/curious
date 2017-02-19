@@ -10,7 +10,7 @@ This document displays the differences between each release of curious.
 
  - Add ``_friends`` and ``_blocked`` to :class:`State` to represent the friends and blocked users a client has.
 
- - Add ``friends`` and ``blocked`` properties to :class:`Client` which can be used to access the State's attributes.
+ - Add ``friends`` and ``blocked`` properties to :class:`BotUser` which can be used to access the State's attributes.
 
  - Add a new type called :class:`RelationshipUser` which represents either a friend or a blocked user.
 

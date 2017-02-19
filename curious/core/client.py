@@ -208,26 +208,6 @@ class Client(object):
         """
         return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(self.application_info.client_id)
 
-    @property
-    def friends(self) -> typing.Mapping[int, RelationshipUser]:
-        """
-        :return: A mapping of :class:`FriendUser` that represents the friends for this user.
-        """
-        if self.user.bot:
-            raise CuriousError("Bots cannot have friends")
-
-        return MappingProxyType(self.state._friends)
-
-    @property
-    def blocked(self):
-        """
-        :return: A mapping of :class:`FriendUser` that represents the blocked users for this user.
-        """
-        if self.user.bot:
-            raise CuriousError("Bots cannot have friends")
-
-        return MappingProxyType(self.state._blocked)
-
     async def get_gateway_url(self):
         if self._gw_url:
             return self._gw_url
