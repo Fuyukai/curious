@@ -51,6 +51,8 @@ This document displays the differences between each release of curious.
 
  - Move :class:`AppInfo` into its own module.
 
+ - Make :class:`AppInfo` more useful than just the current application's info.
+
  - Add ``bot`` attribute to `AppInfo` which returns the bot user associated with this app.
 
  - Add :meth:`AppInfo.add_to_guild` which authorizes a bot into a guild.
