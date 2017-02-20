@@ -56,7 +56,8 @@ class AppInfo(object):
 
         return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id, self._icon_hash)
 
-    async def add_to_guild(self, guild: 'dt_guild.Guild'):
+    async def add_to_guild(self, guild: 'dt_guild.Guild', *,
+                           permissions: int=0):
         """
         Authorizes this bot to join a guild.
 
@@ -74,4 +75,4 @@ class AppInfo(object):
         if self.requires_code_grant:
             raise CuriousError("This bot requires code grant")
 
-        await self._bot.http.authorize_bot(self.client_id, guild.id)
+        await self._bot.http.authorize_bot(self.client_id, guild.id, permissions)
