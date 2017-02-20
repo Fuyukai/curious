@@ -5,8 +5,8 @@ from curious.commands.context import Context
 from curious.commands.exc import CheckFailureError, MissingArgumentError, CommandInvokeError, ConversionFailedError
 
 # Default converters.
-from curious.dataclasses.channel import Channel
-from curious.dataclasses.member import Member
+from curious.dataclasses import channel as dt_channel
+from curious.dataclasses import member as dt_member
 from curious.util import replace_quotes
 
 
@@ -20,16 +20,16 @@ def convert_member(ctx: Context, arg: str):
         try:
             id = int(id)
         except ValueError:
-            raise ConversionFailedError(ctx, arg, Member)
+            raise ConversionFailedError(ctx, arg, dt_member.Member)
 
         member = ctx.guild.members.get(id)
         if not member:
             # todo: better error
-            raise ConversionFailedError(ctx, arg, Member)
+            raise ConversionFailedError(ctx, arg, dt_member.Member)
     else:
         member = ctx.guild.find_member(arg)
         if not member:
-            raise ConversionFailedError(ctx, arg, Member)
+            raise ConversionFailedError(ctx, arg, dt_member.Member)
 
     return member
 
@@ -41,18 +41,18 @@ def convert_channel(ctx: Context, arg: str):
         try:
             id = int(id)
         except ValueError:
-            raise ConversionFailedError(ctx, arg, Channel)
+            raise ConversionFailedError(ctx, arg, dt_channel.Channel)
 
         channel = ctx.guild.channels.get(id)
         if not channel:
-            raise ConversionFailedError(ctx, arg, Channel)
+            raise ConversionFailedError(ctx, arg, dt_channel.Channel)
     else:
         try:
             channel = next(filter(lambda c: c.name == arg, ctx.guild.channels), None)
             if channel is None:
                 channel = next(filter(lambda c: c.id == int(arg), ctx.guild.channels))
         except (StopIteration, ValueError):
-            raise ConversionFailedError(ctx, arg, Channel)
+            raise ConversionFailedError(ctx, arg, dt_channel.Channel)
 
     return channel
 
@@ -70,8 +70,6 @@ class Command(object):
     """
     converters = {
         int: convert_int,
-        Member: convert_member,
-        Channel: convert_channel
     }
 
     def __init__(self, cbl, *,
@@ -123,6 +121,12 @@ class Command(object):
             for f in factories:
                 subcommand = f()  # type: Command
                 self.subcommands.append(subcommand)
+
+        if dt_channel.Channel not in self.converters:
+            self.converters[dt_channel.Channel] = convert_channel
+
+        if dt_member.Member not in self.converters:
+            self.converters[dt_member.Member] = convert_member
 
     @property
     def instance(self):

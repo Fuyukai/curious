@@ -14,7 +14,7 @@ from curio.task import Task
 
 from curious.commands import cmd, context, plugin
 from curious.dataclasses.appinfo import AppInfo
-from curious.dataclasses.guild import Guild
+from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
@@ -195,7 +195,7 @@ class Client(object):
         return self.state._user
 
     @property
-    def guilds(self) -> typing.Mapping[int, Guild]:
+    def guilds(self) -> 'typing.Mapping[int, dt_guild.Guild]':
         """
         :return: A mapping of :class:`Guild` that this client can see.
         """
@@ -221,7 +221,7 @@ class Client(object):
 
         return shards
 
-    def guilds_for(self, shard_id: int) -> typing.Iterable[Guild]:
+    def guilds_for(self, shard_id: int) -> 'typing.Iterable[dt_guild.Guild]':
         """
         Gets the guilds for this shard.
 
@@ -452,7 +452,7 @@ class Client(object):
 
         await curio.spawn(self._wrap_context(ctx))
 
-    def add_command(self, command_name: str, command: 'command.Command'):
+    def add_command(self, command_name: str, command: 'cmd.Command'):
         """
         Adds a command to the internal registry of commands.
 

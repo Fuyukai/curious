@@ -1,5 +1,5 @@
 Changelog
----------
+=========
 
 This document displays the differences between each release of curious.
 

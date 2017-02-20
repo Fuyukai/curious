@@ -31,7 +31,7 @@ class Guild(Dataclass):
                  "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left", "voice_client",
                  )
 
-    def __init__(self, bot: 'client.Client', **kwargs):
+    def __init__(self, bot, **kwargs):
         """
         Creates a new Guild object.
         """

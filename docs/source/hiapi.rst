@@ -157,7 +157,7 @@ Event names mostly correspond with the event names that are returned from a disp
 Client
 ------
 
-.. autoclass:: curious.client.Client
+.. autoclass:: curious.core.client.Client
     :members:
 
 
@@ -187,7 +187,7 @@ All dataclasses described below have an ``id`` property that they inherit from t
 AppInfo
 ~~~~~~~
 
-.. autoclass:: curious.client.AppInfo
+.. autoclass:: curious.dataclasses.appinfo.AppInfo
     :members:
 
 User

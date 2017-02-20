@@ -65,7 +65,7 @@ Additionally, the gateway needs a constant polling loop to pull new events from 
             await my_gateway.next_event()
 
 
-.. autoclass:: curious.gateway.Gateway
+.. autoclass:: curious.core.gateway.Gateway
     :members:
 
 State handling
@@ -73,7 +73,7 @@ State handling
 
 The :class:`State` stores state for the current websocket connection.
 
-.. autoclass:: curious.state.State
+.. autoclass:: curious.core.state.State
     :members:
 
 There are also alternative implementations of state that can be used for more low-level purposes.

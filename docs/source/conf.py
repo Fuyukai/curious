@@ -37,7 +37,7 @@ import sphinx_rtd_theme
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.viewcode',
-              'sphinx_autodoc_typehints',  # https://github.com/agronholm/sphinx-autodoc-typehints
+              #'sphinx_autodoc_typehints',  # https://github.com/agronholm/sphinx-autodoc-typehints
               'sphinxcontrib.asyncio']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'curious'
-copyright = '2016, Laura Dickinson'
+copyright = '2017, Laura Dickinson'
 author = 'Laura Dickinson'
 
 # The version info for the project you're documenting, acts as replacement for

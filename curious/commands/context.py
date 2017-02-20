@@ -1,10 +1,11 @@
 import typing
 
 from curious.core import client as cl
-from curious.dataclasses.channel import Channel
-from curious.dataclasses.guild import Guild
-from curious.dataclasses.member import Member
-from curious.dataclasses.message import Message
+from curious.dataclasses import channel as dt_channel
+from curious.dataclasses import guild as dt_guild
+from curious.dataclasses import member as dt_member
+from curious.dataclasses import message as dt_message
+from curious.dataclasses import user as dt_user
 from curious.event import EventContext
 
 
@@ -20,7 +21,7 @@ class Context(object):
     :ivar command: The command that is currently being invoked.
     :ivar raw_args: The raw split arguments of the message.
     """
-    def __init__(self, client: 'cl.Client', message: Message,
+    def __init__(self, client: 'cl.Client', message: 'dt_message.Message',
                  command, event_ctx):
         """
         :param client: The client associated with this message.
@@ -45,21 +46,21 @@ class Context(object):
         await self.command.invoke(self, *self.raw_args)
 
     @property
-    def channel(self) -> Channel:
+    def channel(self) -> 'dt_channel.Channel':
         """
         :return: The :class:`Channel` this context was invoked in. 
         """
         return self.message.channel
     
     @property
-    def guild(self) -> Guild:
+    def guild(self) -> 'dt_guild.Guild':
         """
         :return: The :class:`Guild` this context was invoked in. 
         """
         return self.message.guild
     
     @property
-    def author(self) -> Member:
+    def author(self) -> 'typing.Union[dt_member.Member, dt_user.User]':
         """
         :return: The :class:`Member` that invoked this command.
         """
