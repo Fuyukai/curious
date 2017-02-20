@@ -3,6 +3,13 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.2.1
+-----
+
+ - Sync/chunk guilds when a ``GUILD_CREATE`` is received during the main bot lifecycle.
+
+ - Decache users automatically when a ``GUILD_DELETE`` is received.
+
 0.2.0
 -----
 

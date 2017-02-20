@@ -242,7 +242,7 @@ class State(object):
 
     def make_user(self, user_data: dict, *,
                   user_klass: typing.Type[UserType] = User,
-                  override_cache: bool=False) -> UserType:
+                  override_cache: bool = False) -> UserType:
         """
         Creates a new user and caches it.
 
@@ -520,7 +520,18 @@ class State(object):
             else:
                 # We didn't have it before, so we just joined it.
                 # Hence, we fire a `guild_join` event.
+                # Parse the guild.
+                guild.from_guild_create(**event_data)
                 await self.client.fire_event("guild_join", guild, gateway=gw)
+
+                self.logger.debug("Joined guild {} ({}), requesting members if applicable".format(guild.name, guild.id))
+                # chunk for bots, sync for user bots
+                if self._user.bot and guild.large:
+                    self._mark_for_chunking(gw, guild)
+                    raise gateway.ChunkGuilds
+                else:
+                    await gw.send_guild_sync([guild.id])
+
         else:
             self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
             await self.client.fire_event("guild_streamed", guild, gateway=gw)
@@ -582,6 +593,9 @@ class State(object):
             guild = self._guilds.pop(guild_id, None)
             if guild:
                 await self.client.fire_event("guild_leave", guild, gateway=gw)
+                for member in guild._members.values():
+                    # use member.id to avoid user lookup
+                    self._check_decache_user(member.id)
 
     async def handle_guild_emojis_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -879,8 +893,8 @@ class State(object):
         # Make a copy of the member for the old previous reference.
         old_member = member._copy()
         # Re-create the user object.
-        #self.make_user(event_data["user"], override_cache=True)
-        #self._users[member.user.id] = member.user
+        # self.make_user(event_data["user"], override_cache=True)
+        # self._users[member.user.id] = member.user
 
         # Overwrite roles, we want to get rid of any roles that are stale.
         member._roles = {}
