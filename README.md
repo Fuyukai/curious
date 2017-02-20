@@ -3,10 +3,6 @@
 Curious is a Python wrapper for the Discord API, using 
 [curio](https://github.com/dabeaz/curio).
 
-Curious **only supports bot accounts**. There will be zero effort made
-to support any client-only features, or other features that only user
-accounts can use.
-
 ## Installation
 
 Curious is available on PyPI under `discord-curious`:
