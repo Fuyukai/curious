@@ -68,6 +68,8 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`User.get_profile` to get a user's profile.
 
+ - :meth:`Embed.set_image` now validates that the link is a HTTP[S] link.
+
 0.1.4
 -----
 

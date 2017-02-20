@@ -133,6 +133,10 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         :return: The Embed object.
         """
         self.image = attrdict()
+
+        if not image_url.startswith("http"):
+            raise ValueError("Image URLs must start with http[s]")
+
         if image_url:
             self.image.image_url = image_url
 
