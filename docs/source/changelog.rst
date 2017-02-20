@@ -10,6 +10,8 @@ This document displays the differences between each release of curious.
 
  - Decache users automatically when a ``GUILD_DELETE`` is received.
 
+ - Fix the default role not being accounted for in permissions.
+
 0.2.0
 -----
 

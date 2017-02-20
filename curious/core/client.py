@@ -181,6 +181,7 @@ class Client(object):
         if enable_commands:
             # Add the handle_commands as a message_create event.
             self.add_event(self.handle_commands)
+            self.add_event(self.default_command_error)
 
             from curious.commands.plugin_core import _Core
             self.add_plugin(_Core(self))
@@ -417,6 +418,7 @@ class Client(object):
         """
         # oddities
         if message.author is None:
+            self._logger.warning("Got None author...")
             return
 
         user = message.author.user if hasattr(message.author, "user") else message.author

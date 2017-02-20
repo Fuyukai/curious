@@ -148,6 +148,8 @@ class Member(Dataclass):
             return Permissions.all()
 
         bitfield = 0
+        # add the default roles
+        bitfield |= self.guild.default_role.permissions.bitfield
         for role in self.roles:
             bitfield |= role.permissions.bitfield
 
