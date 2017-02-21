@@ -308,19 +308,22 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def send_status(self, game: Game, status: Status):
+    async def send_status(self, game: Game, status: Status, *,
+                          afk: bool=False):
         """
         Sends a PRESENCE_UPDATE packet.
 
         :param game: The game object to send.
         :param status: The status object to send.
+        :param afk: Is this gateway AFK?
+            This should be True for self bots.
         """
         payload = {
             "op": GatewayOp.PRESENCE,
             "d": {
                 "game": game.to_dict() if game else None,
                 "status": status.value,
-                "afk": False,
+                "afk": afk,
                 "since": None
             }
         }

@@ -3,6 +3,7 @@ import inspect
 import logging
 import re
 import sys
+import threading
 import traceback
 from types import MappingProxyType
 
@@ -18,7 +19,7 @@ from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
-from curious.dataclasses.user import User, RelationshipUser
+from curious.dataclasses.user import User, RelationshipUser, BotUser
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.event import EventContext, event as ev_dec
@@ -189,7 +190,7 @@ class Client(object):
         self.scan_events()
 
     @property
-    def user(self) -> User:
+    def user(self) -> BotUser:
         """
         :return: The :class:`User` that this client is logged in as.
         """
@@ -607,13 +608,14 @@ class Client(object):
         return next(f, None)
 
     # Gateway functions
-    async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
+    async def change_status(self, game: Game = None, status: Status = Status.ONLINE, afk: bool=False,
                             shard_id: int = 0):
         """
         Changes the bot's current status.
 
         :param game: The game object to use. None for no game.
         :param status: The new status. Must be a :class:`Status` object.
+        :param afk: Is the bot AFK? Only useful for userbots.
         :param shard_id: The shard to change your status on.
         """
         gateway = self._gateways[shard_id]
@@ -914,8 +916,13 @@ class Client(object):
             return kernel.run(coro=coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
             if kernel._crashed:
-                self._logger.error("Not cleaning up crashed bot.")
-                return
+                for gateway in self._gateways.values():
+                    # kill the async threads
+                    gateway._stop_heartbeating.set()
+
+                # lol
+                kernel._crashed = False
+
             self._logger.info("C-c/C-d received, killing bot. Waiting 5 seconds for all connections to close.")
             # Cleanup.
             coros = []

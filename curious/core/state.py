@@ -33,7 +33,7 @@ class State(object):
     def __init__(self, client, max_messages: int = 500):
         #: The current user of this bot.
         #: This is automatically set after login.
-        self._user = None  # type: User
+        self._user = None  # type: BotUser
 
         #: The client associated with this connection.
         self.client = client
