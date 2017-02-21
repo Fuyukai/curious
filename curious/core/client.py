@@ -619,7 +619,7 @@ class Client(object):
         :param shard_id: The shard to change your status on.
         """
         gateway = self._gateways[shard_id]
-        return await gateway.send_status(game, status)
+        return await gateway.send_status(game, status, afk=afk)
 
     async def wait_for(self, event_name: str, predicate: typing.Callable = None):
         """

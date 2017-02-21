@@ -14,6 +14,10 @@ This document displays the differences between each release of curious.
 
  - Fix ``GUILD_ROLE_DELETE`` handling.
 
+ - Fix async threads hanging the bot on shutdown.
+
+ - Add the ability to set ``afk`` in a presence change, to allow self-bots to not eat notifications.
+
 0.2.0
 -----
 
