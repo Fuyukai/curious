@@ -1162,6 +1162,9 @@ class State(object):
         This event is effectively useless.
         """
 
+    async def handle_channel_pins_update(self, gw: 'gateway.Gateway', event_data: dict):
+        pass
+
     # Userbot only events.
     async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
         """
