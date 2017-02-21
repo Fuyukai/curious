@@ -12,6 +12,8 @@ This document displays the differences between each release of curious.
 
  - Fix the default role not being accounted for in permissions.
 
+ - Fix ``GUILD_ROLE_DELETE`` handling.
+
 0.2.0
 -----
 
