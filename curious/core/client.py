@@ -913,7 +913,10 @@ class Client(object):
         try:
             return kernel.run(coro=coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
-            self._logger.info("C-c/C-d received, killing bot.")
+            if kernel._crashed:
+                self._logger.error("Not cleaning up crashed bot.")
+                return
+            self._logger.info("C-c/C-d received, killing bot. Waiting 5 seconds for all connections to close.")
             # Cleanup.
             coros = []
             for gateway in self._gateways.values():
@@ -932,7 +935,7 @@ class Client(object):
                 self._logger.info("Clean-up complete.")
                 raise SystemExit()
 
-            return kernel.run(coro=__cleanup())
+            return kernel.run(coro=__cleanup(), timeout=5)
 
     @classmethod
     def from_token(cls, token: str = None):
