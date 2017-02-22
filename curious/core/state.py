@@ -119,19 +119,23 @@ class State(object):
             # Already ready, don't bother.
             return
 
-        if not self.client.is_bot:
-            # User chunk handling is setup differently.
-            return
-
         if self.have_all_chunks(gw.shard_id):
             # Have all chunks anyway, dispatch now.
             self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
             await self._is_ready(gw.shard_id).set()
 
-        # Check if we need to forcibly fire ChunkGuilds.
-        if all(g.unavailable is False for g in self.guilds_for_shard(gw.shard_id)):
-            raise gateway.ChunkGuilds
+            # check for userbots
+            if not self._user.bot:
+                # request a guild sync
+                await gw.send_guild_sync(self.guilds.values())
+
+            return
+
+        if self._user.bot:
+            # Check if we need to forcibly fire ChunkGuilds.
+            if all(g.unavailable is False for g in self.guilds_for_shard(gw.shard_id)):
+                raise gateway.ChunkGuilds
 
     # get_all_* methods
     def get_all_channels(self):
@@ -335,11 +339,13 @@ class State(object):
 
             if not self._user.bot and len(event_data.get("guilds")) <= 100:
                 # this might as well be a GUILD_CREATE, so treat it as one
+                new_guild.start_chunking()
                 await self.handle_guild_create(gw, guild)
 
         if not self._user.bot and len(event_data.get("guilds")) <= 100:
-            await gw.send_guild_sync([g.id for g in self.guilds.values()])
-            self.logger.info("Syncing {} guilds.".format(len(self.guilds)))
+            # Chunk now, sync later.
+            await gw.request_chunks([g for g in self.guilds.values()])
+            self.logger.info("Chunking {} guilds immediately.".format(len(self.guilds)))
 
         self.logger.info("Ready processed for shard {}. Delaying until all guilds are chunked.".format(gw.shard_id))
 
@@ -347,7 +353,7 @@ class State(object):
         await self.client.fire_event("connect", gateway=gw)
 
         # However, if the client has no guilds, we DO want to fire ready.
-        if len(event_data.get("guilds", {})) == 0 or not self._user.bot:
+        if len(event_data.get("guilds", {})) == 0:
             await self._is_ready(gw.shard_id).set()
             self.logger.info("No more guilds to get for shard {}, or client is user. "
                              "Dispatching READY.".format(gw.shard_id))
@@ -536,12 +542,13 @@ class State(object):
             self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
             await self.client.fire_event("guild_streamed", guild, gateway=gw)
 
-        if not guild.unavailable and guild.large:
-            # mark this guild as a chunking guild
-            self._mark_for_chunking(gw, guild)
-        else:
-            # set finished_chunking now
-            await guild._finished_chunking.set()
+        if self._user.bot:
+            if not guild.unavailable and guild.large:
+                # mark this guild as a chunking guild
+                self._mark_for_chunking(gw, guild)
+            else:
+                # set finished_chunking now
+                await guild._finished_chunking.set()
 
         await self._check_ready(gw, guild)
 

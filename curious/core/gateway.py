@@ -363,7 +363,7 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def send_guild_sync(self, guilds: typing.List[int]):
+    async def send_guild_sync(self, guilds):
         """
         Sends a guild sync packet.
 
@@ -371,7 +371,7 @@ class Gateway(object):
         """
         payload = {
             "op": GatewayOp.GUILD_SYNC,
-            "d": [str(g) for g in guilds]
+            "d": [str(g.id) for g in guilds]
         }
 
         await self._send_dict(payload)
