@@ -128,6 +128,7 @@ class State(object):
             # check for userbots
             if not self._user.bot:
                 # request a guild sync
+                self.logger.info("Requesting GUILD_SYNC to update our presences.")
                 await gw.send_guild_sync(self.guilds.values())
 
             return

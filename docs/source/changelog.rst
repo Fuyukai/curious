@@ -18,6 +18,8 @@ This document displays the differences between each release of curious.
 
  - Add the ability to set ``afk`` in a presence change, to allow self-bots to not eat notifications.
 
+ - Userbots will now ask for member chunks and then sync guilds once all chunks are received.
+
 0.2.0
 -----
 
