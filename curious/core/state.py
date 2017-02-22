@@ -394,8 +394,10 @@ class State(object):
                 return
 
             # re-create the user object
-            self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
-                                                    override_cache=True)
+            if "username" in event_data["user"]:
+                # full user object
+                self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
+                                                        override_cache=True)
 
             fr.status = Status(event_data.get("status"))
             game = event_data.get("game")
@@ -436,7 +438,8 @@ class State(object):
 
         if not isinstance(member.user, RelationshipUser):
             # recreate the user object
-            self.make_user(event_data["user"], override_cache=True)
+            if "username" in event_data["user"]:
+                self.make_user(event_data["user"], override_cache=True)
 
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 
