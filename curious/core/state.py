@@ -945,7 +945,7 @@ class State(object):
         if guild is None:
             return
 
-        user = self.make_user(**event_data["user"])
+        user = self.make_user(event_data["user"])
         await self.client.fire_event("user_unban", guild, user, gateway=gw)
 
     async def handle_channel_create(self, gw: 'gateway.Gateway', event_data: dict):

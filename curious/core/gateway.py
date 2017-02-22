@@ -97,7 +97,7 @@ class HeartbeatStats:
         return self.last_ack - self.last_heartbeat
 
 
-@async_thread
+@async_thread(daemon=True)
 def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     """
     Heartbeat looper that loops and sends heartbeats to the gateway.

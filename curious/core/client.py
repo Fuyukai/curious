@@ -916,13 +916,8 @@ class Client(object):
             return kernel.run(coro=coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
             if kernel._crashed:
-                for gateway in self._gateways.values():
-                    # kill the async threads
-                    gateway._stop_heartbeating.set()
-
-                # lol
-                kernel._crashed = False
-
+                self._logger.info("Kernel crashed, not cleaning up.")
+                return
             self._logger.info("C-c/C-d received, killing bot. Waiting 5 seconds for all connections to close.")
             # Cleanup.
             coros = []
