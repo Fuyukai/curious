@@ -75,4 +75,4 @@ class AppInfo(object):
         if self.requires_code_grant:
             raise CuriousError("This bot requires code grant")
 
-        await self._bot.http.authorize_bot(self.client_id, guild.id, permissions)
+        await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
