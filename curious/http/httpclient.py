@@ -1407,7 +1407,7 @@ class HTTPClient(object):
         """
         url = self.API_BASE + "/oauth2/authorize"
         params = {
-            "client_id": application_id,
+            "client_id": str(application_id),
             "scope": "bot"
         }
 
