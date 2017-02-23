@@ -8,7 +8,7 @@ from curious.commands import command
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
 from curious.core.client import Client
-from curious.event import EventContext
+from curious.core.event import EventContext
 
 
 # Plugins are defined as types that inherit from ``Plugin``.

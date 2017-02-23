@@ -1,12 +1,9 @@
 import typing
 
 from curious.core import client as cl
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import message as dt_message
-from curious.dataclasses import user as dt_user
-from curious.event import EventContext
+from curious.core.event import EventContext
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, message as dt_message, \
+    user as dt_user
 
 
 class Context(object):

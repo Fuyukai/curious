@@ -3,9 +3,7 @@ import inspect
 import logging
 import re
 import sys
-import threading
 import traceback
-from types import MappingProxyType
 
 import curio
 import multidict
@@ -14,15 +12,15 @@ from cuiows.exc import WebsocketClosedError
 from curio.task import Task
 
 from curious.commands import cmd, context, plugin
-from curious.dataclasses.appinfo import AppInfo
+from curious.core.event import EventContext, event as ev_dec
 from curious.dataclasses import guild as dt_guild
+from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
 from curious.dataclasses.status import Game, Status
-from curious.dataclasses.user import User, RelationshipUser, BotUser
+from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
-from curious.event import EventContext, event as ev_dec
 from curious.exc import CuriousError
 from curious.http.httpclient import HTTPClient
 from curious.util import attrdict, base64ify

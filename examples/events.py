@@ -10,10 +10,10 @@ An example bot that uses events.
 # First, the required imports
 from curious.commands.plugin import Plugin
 from curious.core.client import Client
+from curious.core.event import EventContext, event
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
-from curious.event import EventContext, event
 
 
 class BasicPlugin(Plugin):
