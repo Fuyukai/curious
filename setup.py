@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='discord-curious',
-    version='0.2.0.post1',
+    version='0.2.1',
     packages=['curious', 'curious.core', 'curious.http', 'curious.commands', 'curious.dataclasses', 'curious.voice',
               'curious.ext.loapi', 'curious.ext.paginator'],
     url='https://github.com/SunDwarf/curious',

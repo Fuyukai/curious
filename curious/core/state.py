@@ -540,7 +540,7 @@ class State(object):
                     self._mark_for_chunking(gw, guild)
                     raise gateway.ChunkGuilds
                 else:
-                    await gw.send_guild_sync([guild.id])
+                    await gw.send_guild_sync([guild])
 
         else:
             self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
