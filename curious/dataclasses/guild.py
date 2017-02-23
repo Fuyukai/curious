@@ -28,7 +28,7 @@ class Guild(Dataclass):
 
     __slots__ = ("id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
                  "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles", "_members",
-                 "_channels", "_emojis", "_finished_chunking", "member_count", "large", "_chunks_left", "voice_client",
+                 "_channels", "_emojis", "_finished_chunking", "member_count", "_large", "_chunks_left", "voice_client",
                  )
 
     def __init__(self, bot, **kwargs):
@@ -91,7 +91,7 @@ class Guild(Dataclass):
         self.member_count = 0  # type: int
 
         #: Is this guild a large guild?
-        self.large = False  # type: bool
+        self._large = None  # type: bool
 
         #: Has this guild finished chunking?
         self._finished_chunking = curio.Event()
@@ -116,7 +116,7 @@ class Guild(Dataclass):
         obb._members = self._members.copy()
         obb._channels = self._members.copy()
         obb.member_count = self.member_count
-        obb.large = self.large
+        obb._large = self._large
         obb._afk_channel_id = self._afk_channel_id
         obb.afk_timeout = self.afk_timeout
         obb.mfa_level = self.mfa_level
@@ -301,7 +301,7 @@ class Guild(Dataclass):
         self._icon_hash = data.get("icon")  # type: str
         self._splash_hash = data.get("splash")  # type: str
         self._owner_id = int(data.get("owner_id"))  # type: int
-        self.large = data.get("large", False)
+        self._large = data.get("large", None)
         self.region = data.get("region")
         afk_channel_id = data.get("afk_channel_id")
         if afk_channel_id:
@@ -358,6 +358,16 @@ class Guild(Dataclass):
 
         # Create all of the emoji objects for the server.
         self._handle_emojis(data.get("emojis", []))
+
+    @property
+    def large(self) -> bool:
+        """
+        :return: If this guild is large or not (>= 250 members).
+        """
+        if self._large is not None:
+            return self._large
+
+        return self.member_count >= 250
 
     @property
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
