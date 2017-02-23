@@ -20,6 +20,9 @@ This document displays the differences between each release of curious.
 
  - Userbots will now ask for member chunks and then sync guilds once all chunks are received.
 
+ - Make :class:`Guild.large` a property rather than an attribute.
+   Discord doesn't always send this properly, so fallback to ``member_count >= 250``.
+
 0.2.0
 -----
 
