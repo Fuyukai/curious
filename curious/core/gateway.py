@@ -97,7 +97,6 @@ class HeartbeatStats:
         return self.last_ack - self.last_heartbeat
 
 
-@async_thread(daemon=True)
 def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     """
     Heartbeat looper that loops and sends heartbeats to the gateway.
@@ -126,6 +125,12 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
         AWAIT(gw.send(hb))
         gw.hb_stats.heartbeats += 1
         gw.hb_stats.last_heartbeat = time.monotonic()
+
+# try and use a daemon thread if possible for newer curio
+try:
+    _heartbeat_loop = async_thread(_heartbeat_loop, daemon=True)
+except:
+    _heartbeat_loop = async_thread(_heartbeat_loop)
 
 
 class Gateway(object):
