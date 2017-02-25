@@ -1,3 +1,9 @@
+"""
+Wrappers for Member objects (Users with guilds).
+
+.. currentmodule:: curious.dataclasses.member
+"""
+
 import copy
 import typing
 
@@ -35,16 +41,16 @@ class Member(Dataclass):
         #: The member's current nickname.
         self.nickname = kwargs.pop("nick", None)
 
-        #: The member's current :class:`Guild`.
+        #: The member's current :class:`~.Guild`.
         self.guild = None  # type: guild.Guild
 
-        #: The current :class:`Game` this Member is playing.
+        #: The current :class:`~.Game` this Member is playing.
         self.game = None  # type: Game
 
-        #: The current :class:`Status` of this member.
+        #: The current :class:`~.Status` of this member.
         self._status = None  # type: Status
 
-        #: The current :class:`VoiceState` of this member.
+        #: The current :class:`~.VoiceState` of this member.
         self.voice = None  # type: dt_vs.VoiceState
 
     def __hash__(self):
@@ -98,7 +104,7 @@ class Member(Dataclass):
     def status(self) -> Status:
         """
         :return: The current status of this member.
-        :rtype: Status
+        :rtype: :class:`~.Status`
         """
         return self._status
 
@@ -114,7 +120,7 @@ class Member(Dataclass):
     @property
     def roles(self) -> 'typing.Iterable[dt_role.Role]':
         """
-        :return: A list of roles this user has.
+        :return: A list of :class:`~.Role` this user has.
         """
         return self._roles.values()
 
@@ -134,7 +140,7 @@ class Member(Dataclass):
     @property
     def top_role(self) -> 'dt_role.Role':
         """
-        :return: This member's top-most :class:`Role`.
+        :return: This member's top-most :class:`~.Role`.
         """
         return next(iter(sorted(self.roles, reverse=True)), self.guild.default_role)
 
@@ -142,7 +148,7 @@ class Member(Dataclass):
     def guild_permissions(self):
         """
         :return: The calculated guild permissions for a member.
-        :rtype: Permissions
+        :rtype: :class:`.Permissions`
         """
         if self == self.guild.owner:
             return Permissions.all()
@@ -181,7 +187,7 @@ class Member(Dataclass):
         """
         Adds roles to this member.
 
-        For more documentation, see :meth:`Guild.add_roles`.
+        For more documentation, see :meth:`~.Guild.add_roles`.
 
         :param roles: The list of roles to add.
         """
@@ -191,7 +197,7 @@ class Member(Dataclass):
         """
         Removes roles from this member.
 
-        For more documentation, see :meth:`Guild.remove_roles`.
+        For more documentation, see :meth:`~.Guild.remove_roles`.
 
         :param roles: The list of roles to remove.
         """

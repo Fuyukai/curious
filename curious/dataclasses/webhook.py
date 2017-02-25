@@ -1,3 +1,9 @@
+"""
+Wrappers for Webhook objects.
+
+.. currentmodule:: curious.dataclasses.webhook
+"""
+
 import typing
 
 from curious.dataclasses.bases import IDObject, Dataclass
@@ -10,7 +16,15 @@ from curious.util import base64ify
 
 class Webhook(Dataclass):
     """
-    Represents a webhook member on the server.
+    Represents a webhook on the guild.
+    Messages in a guild can be sent by either a Member or a Webhook object - curious makes a key distinction between 
+    them. These classes are *mostly* compatible and don't require much effort to use them generically.
+    
+    .. code-block:: python
+    
+        @event("message_create")
+        async def handle_messages(ctx, message: Message):
+            author = message.author  # can be Webhook or Member
 
     :ivar id: The ID of the webhook.
     """
@@ -87,10 +101,10 @@ class Webhook(Dataclass):
         """
         Creates a new webhook.
 
-        :param channel: The channel to create the webhook in.
+        :param channel: The :class:`~.Channel` to create the webhook in.
         :param name: The name of the webhook to create.
         :param avatar: The bytes data for the webhook's default avatar.
-        :return: A new :class:`Webhook`.
+        :return: A new :class:`~.Webhook`.
         """
         return channel.create_webhook(name=name, avatar=avatar)
 

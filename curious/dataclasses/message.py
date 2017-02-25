@@ -1,3 +1,9 @@
+"""
+Wrappers for Message objects.
+
+.. currentmodule:: curious.dataclasses.message
+"""
+
 import typing
 import re
 
@@ -38,10 +44,10 @@ class Message(Dataclass):
         #: This can be None if the message was sent in a DM.
         self.guild = None  # type: dt_guild.Guild
 
-        #: The channel this message was sent in.
+        #: The :class:`~.Channel` this message was sent in.
         self.channel = None  # type: dt_channel.Channel
 
-        #: The author of this message.
+        #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`, :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
 
         #: The true timestamp of this message.
@@ -83,18 +89,43 @@ class Message(Dataclass):
 
     @property
     def mentions(self) -> 'typing.List[dt_member.Member]':
+        """
+        Returns a list of :class:`~.Member` that were mentioned in this message. 
+        
+        .. warning::
+            
+            The mentions in this will **not** be in order. Discord does not return them in any paticular order.
+        """
         return self._resolve_mentions(self._mentions, "member")
 
     @property
     def role_mentions(self) -> 'typing.List[dt_role.Role]':
+        """
+        Returns a list of :class:`~.Role` that were mentioned in this message.
+        
+        .. warning::
+            
+            The mentions in this will **not** be in order. Discord does not return them in any paticular order.
+        """
+
         return self._resolve_mentions(self._role_mentions, "role")
 
     @property
     def channel_mentions(self):
+        """
+        Returns a list of :class:`~.Channel` that were mentioned in this message.
+        
+        .. note::
+        
+            These mentions **are** in order. They are parsed from the message content.
+        """
         mentions = CHANNEL_REGEX.findall(self.content)
         return self._resolve_mentions(mentions, "channel")
 
-    def _resolve_mentions(self, mentions, type_: str) -> typing.List[Dataclass]:
+    def _resolve_mentions(self, mentions, type_: str):
+        """
+        Resolves the mentions for this message.
+        """
         final_mentions = []
         for mention in mentions:
             if type_ == "member":
@@ -205,7 +236,7 @@ class Message(Dataclass):
         Fetches who reacted to this message.
 
         :param emoji: The emoji to check.
-        :return: A list of either :class:`Member` or :class:`User` that reacted to this message.
+        :return: A list of either :class:`~.Member` or :class:`~.User` that reacted to this message.
         """
         if isinstance(emoji, dt_emoji.Emoji):
             emoji = "{}:{}".format(emoji.name, emoji.id)

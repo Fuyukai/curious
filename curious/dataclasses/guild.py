@@ -1,3 +1,9 @@
+"""
+Wrappers for Guild objects.
+
+.. currentmodule:: curious.dataclasses.guild
+"""
+
 from math import ceil
 
 import curio
@@ -14,9 +20,7 @@ from curious.util import AsyncIteratorWrapper, base64ify
 try:
     from curious.voice import voice_client
 except ImportError:
-    VoiceClient = None
-else:
-    VoiceClient = voice_client.VoiceClient
+    voice_client = None
 
 
 class Guild(Dataclass):
@@ -127,63 +131,63 @@ class Guild(Dataclass):
     @property
     def channels(self) -> 'typing.Mapping[channel.Channel]':
         """
-        :return: A list of :class:`curious.dataclasses.channel.Channel` that represent the channels on this guild.
+        :return: A list of :class:`~.Channel` that represent the channels on this guild.
         """
         return MappingProxyType(self._channels)
 
     @property
     def members(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
-        :return: A mapping of :class:`Member` that represent members on this guild.
+        :return: A mapping of :class:`~.Member` that represent members on this guild.
         """
         return MappingProxyType(self._members)
 
     @property
     def roles(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
-        :return: A mapping of :class:`Role` on this guild.
+        :return: A mapping of :class:`~.Role` on this guild.
         """
         return MappingProxyType(self._roles)
 
     @property
     def emojis(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
         """
-        :return: A mapping of :class:`Emoji` on this guild.
+        :return: A mapping of :class:`~.Emoji` on this guild.
         """
         return MappingProxyType(self._emojis)
 
     @property
     def owner(self) -> 'dt_member.Member':
         """
-        :return: A :class:`curious.dataclasses.member.Member` object that represents the owner of this guild.
+        :return: A :class:`~.Member` object that represents the owner of this guild.
         """
         return self._members[self._owner_id]
 
     @property
     def me(self) -> 'dt_member.Member':
         """
-        :return: A :class:`curious.dataclasses.member.Member` object that represents the current user in this guild.
+        :return: A :class:`~.Member` object that represents the current user in this guild.
         """
         return self._members[self._bot.user.id]
 
     @property
     def default_channel(self) -> 'channel.Channel':
         """
-        :return: A :class:`curious.dataclasses.channel.Channel` that represents the default channel of this guild.
+        :return: A :class:`~.Channel` that represents the default channel of this guild.
         """
         return self._channels[self.id]
 
     @property
     def default_role(self) -> 'role.Role':
         """
-        :return: A :class:`curious.dataclasses.role.Role` that represents the default role of this guild.
+        :return: A :class:`~.Role` that represents the default role of this guild.
         """
         return self._roles[self.id]
 
     @property
     def afk_channel(self) -> 'channel.Channel':
         """
-        :return: A :class:`Channel` representing the AFK channel for this guild.
+        :return: A :class:`~.Channel` representing the AFK channel for this guild.
         """
         try:
             return self._channels[self._afk_channel_id]
@@ -219,10 +223,10 @@ class Guild(Dataclass):
         Attempts to find a member in this guild by name#discrim.
         This will also search nicknames.
 
-        The discrim is optional, but if provided allows better matching.
+        The discriminator is optional, but if provided allows better matching.
 
         :param search_str: The name#discrim pair to search for.
-        :return: A :class:`Member` object that represents the member, or None if no member could be found.
+        :return: A :class:`~.Member` object that represents the member, or None if no member could be found.
         """
         sp = search_str.rsplit("#", 1)
         if len(sp) == 1:
@@ -240,6 +244,11 @@ class Guild(Dataclass):
             return None
 
     def start_chunking(self):
+        """
+        Marks a guild to start guild chunking.
+        
+        This will clear the chunking event, and calculate the number of member chunks required.
+        """
         self._finished_chunking.clear()
         self._chunks_left = ceil(self.member_count / 1000)
 
@@ -254,6 +263,8 @@ class Guild(Dataclass):
     def _handle_member_chunk(self, members: list):
         """
         Handles a chunk of members.
+        
+        :param members: A list of member data dictionaries as returned from Discord.
         """
         if self._chunks_left >= 1:
             # We have a new chunk, so decrement the number left.
@@ -276,6 +287,8 @@ class Guild(Dataclass):
     def _handle_emojis(self, emojis: list):
         """
         Handles the emojis for this guild.
+        
+        :param emojis: A list of emoji objects from Discord.
         """
         for emoji in emojis:
             emoji_obj = dt_emoji.Emoji(**emoji)
@@ -371,10 +384,16 @@ class Guild(Dataclass):
 
     @property
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
+        """
+        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are banned.
+        """
         return AsyncIteratorWrapper(self._bot, self.get_bans())
 
     @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
+        """
+        :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this guild. 
+        """
         return AsyncIteratorWrapper(self._bot, self.get_invites())
 
     @property
@@ -400,15 +419,17 @@ class Guild(Dataclass):
         """
         await self._bot.http.leave_guild(self.id)
 
-    async def connect_to_voice(self, channel: 'channel.Channel') -> VoiceClient:
+    async def connect_to_voice(self, channel: 'channel.Channel') -> 'voice_client.VoiceClient':
         """
         Connects to a voice channel in this guild.
 
-        :param channel: The channel to connect to.
+        :param channel: The :class:`~.Channel` to connect to.
         :return: The :class:`VoiceClient` that was connected to this guild.
         """
-        if VoiceClient is None:
+        if voice_client is None:
             raise RuntimeError("Cannot to voice - voice support is not installed")
+
+        VoiceClient = voice_client.VoiceClient
 
         if channel.guild != self:
             raise CuriousError("Cannot use channel from a different guild")
@@ -424,7 +445,7 @@ class Guild(Dataclass):
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """
         Gets the invites for this guild.
-        :return: A list of invite objects.
+        :return: A list :class:`~.Invite` objects.
         """
         invites = await self._bot.http.get_invites_for(self.id)
         invites = [dt_invite.Invite(self._bot, **i) for i in invites]
@@ -453,7 +474,7 @@ class Guild(Dataclass):
         """
         Kicks somebody from the guild.
 
-        :param victim: The member to kick.
+        :param victim: The :class:`~.Member` to kick.
         """
         if not self.me.guild_permissions.kick_members:
             raise PermissionsError("kick_members")
@@ -490,7 +511,7 @@ class Guild(Dataclass):
             user = await client.get_user(66237334693085184)
             await guild.ban(user)
 
-        :param victim: The person to ban.
+        :param victim: The :class:`~.Member` or :class:`~.User` object to ban.
         :param delete_message_days: The number of days to delete messages.
         """
         if not self.me.guild_permissions.ban_members:
@@ -527,14 +548,14 @@ class Guild(Dataclass):
             user = next(await guild.get_bans())
             await guild.unban(user)
 
-        To unban an arbitrary user, use :meth:`Client.get_user`.
+        To unban an arbitrary user, use :meth:`~.Client.get_user`.
 
         .. code:: python
 
             user = await client.get_user(66237334693085184)
             await guild.unban(user)
 
-        :param user: The user to forgive and unban.
+        :param user: The :class:`~.User` to forgive and unban.
         """
         if not self.me.guild_permissions.ban_members:
             raise PermissionsError("ban_members")
@@ -547,7 +568,7 @@ class Guild(Dataclass):
         """
         Gets the webhooks for this guild.
 
-        :return: A list of :class:`Webhook` objects for the guild.
+        :return: A list of :class:`~.Webhook` objects for the guild.
         """
         webhooks = await self._bot.http.get_webhooks_for_guild(self.id)
         obbs = []
@@ -561,14 +582,14 @@ class Guild(Dataclass):
         """
         Deletes a webhook in this guild.
 
-        :param webhook: The webhook to delete.
+        :param webhook: The :class:`~.Webhook` to delete.
         """
         if not self.me.guild_permissions.manage_webhooks:
             raise PermissionsError("manage_webhooks")
 
         await self._bot.http.delete_webhook(webhook.id)
 
-    async def add_roles(self, member: 'dt_member.Member', *roles: typing.List['role.Role']):
+    async def add_roles(self, member: 'dt_member.Member', *roles: 'typing.List[role.Role]'):
         """
         Adds roles to a member.
 
@@ -580,8 +601,8 @@ class Guild(Dataclass):
             roles = filter(lambda r: "Mod" in r.name, guild.roles)
             await guild.add_roles(member, *roles)
 
-        :param member: The member to add roles to.
-        :param roles: The roles to add.
+        :param member: The :class:`~.Member` to add roles to.
+        :param roles: An iterable of :class:`~.Role` objects to add.
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
@@ -622,8 +643,8 @@ class Guild(Dataclass):
 
         This will wait until the gateway fires a GUILD_MEMBER_UPDATE.
 
-        :param member: The member to remove roles from.
-        :param roles: The roles to add.
+        :param member: The :class:`~.Member` to remove roles from.
+        :param roles: An iterable of :class:`Role` to remove.
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
@@ -662,7 +683,7 @@ class Guild(Dataclass):
         """
         Changes the nickname of a member.
 
-        :param member: The member to change the nickname of.
+        :param member: The :class:`~.Member` to change the nickname of.
         :param new_nickname: The new nickname.
         """
         me = False
@@ -717,7 +738,7 @@ class Guild(Dataclass):
         """
         Changes the voice state of a member.
 
-        :param member: The member to change the voice state of.
+        :param member: The :class:`~.Member` to change the voice state of.
         :param deaf: Should this member be deafened?
         :param mute: Should this member be muted?
         """
@@ -725,6 +746,7 @@ class Guild(Dataclass):
             raise CuriousError("Cannot change voice state of member not in voice")
 
         await self._bot.http.edit_member_voice_state(self.id, member.id, deaf=deaf, mute=mute)
+        return member.voice
 
     async def modify_guild(self, **kwargs):
         """
@@ -786,7 +808,7 @@ class Guild(Dataclass):
         """
         Edits a channel in this guild.
 
-        :param channel_object: The channel to edit.
+        :param channel_object: The :class:`~.Channel` to edit.
         """
         if not channel_object.permissions(self.me).manage_channels:
             raise PermissionsError("manage_channels")
@@ -804,7 +826,7 @@ class Guild(Dataclass):
         """
         Deletes a channel in this guild.
 
-        :param channel: The channel to delete.
+        :param channel: The :class:`~.Channel` to delete.
         """
         if not channel.permissions(self.me).manage_channels:
             raise PermissionsError("manaqe_channels")
@@ -817,7 +839,7 @@ class Guild(Dataclass):
         Creates a new role in this guild.
 
         This does *not* edit the role in-place.
-        :return: A new :class:`Role`.
+        :return: A new :class:`~.Role`.
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
@@ -834,7 +856,7 @@ class Guild(Dataclass):
         """
         Edits a role.
 
-        :param role: The role to edit.
+        :param role: The :class:`~.Role` to edit.
         :param name: The name of the role.
         :param permissions: The permissions that the role has.
         :param colour: The colour of the role.
@@ -859,7 +881,7 @@ class Guild(Dataclass):
         """
         Deletes a role.
 
-        :param role: The role to delete.
+        :param role: The :class:`~.Role` to delete.
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")

@@ -1,6 +1,11 @@
+"""
+Wrappers for Embed objects.
+
+.. currentmodule:: curious.dataclasses.embed
+"""
+
 import datetime
 
-from curious.dataclasses.bases import IDObject
 from curious.util import attrdict
 
 

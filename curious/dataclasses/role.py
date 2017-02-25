@@ -1,3 +1,9 @@
+"""
+Wrappers for Role objects.
+
+.. currentmodule:: curious.dataclasses.role
+"""
+
 import functools
 
 from curious.dataclasses.bases import Dataclass
@@ -39,7 +45,7 @@ class Role(Dataclass):
         #: The position of this role.
         self.position = kwargs.pop("position", 0)
 
-        #: The guild this role is associated with.
+        #: The :class:`~.Guild` this role is associated with.
         self.guild = None  # type: dt_guild.Guild
 
     def __lt__(self, other: 'Role'):
@@ -79,7 +85,7 @@ class Role(Dataclass):
         """
         Assigns this role to a member.
 
-        :param member: The member to assign to.
+        :param member: The :class:`~.Member` to assign to.
         """
         return self.guild.add_roles(member, self)
 

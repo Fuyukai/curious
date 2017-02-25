@@ -1,3 +1,18 @@
+"""
+Wrappers for Invite objects.
+
+Invite objects are linked to a real channel and real guild, but Discord does not return the full data for these objects.
+Therefore, a few "mini" objects are provided that represent the objects:
+
+ - :class:`~.InviteGuild`, which contains the ``name``, ``splash_url`` and ``icon_url`` of the Guild.
+ - :class:`~.InviteChannel`, which contains the ``name`` and ``type`` of the Channel.
+ 
+These objects will be returned on :attr`~.Invite.guild` and :attr:`~.Invite.channel` respectively if the data for each 
+is not cached by curious. Otherwise, full :class:`~.Guild` and :class:`~.Channel` objects will be returned.
+
+.. currentmodule:: curious.dataclasses.invite
+"""
+
 import typing
 
 from curious import util
@@ -56,7 +71,7 @@ class InviteChannel(IDObject):
         #: The name of this channel.
         self.name = kwargs.pop("name")
 
-        #: The type of this channel.
+        #: The :class:`~.ChannelType` of this channel.
         self.type = dt_channel.ChannelType(kwargs.pop("type"))
 
     def __repr__(self):
@@ -97,7 +112,7 @@ class Invite(object):
 
     __slots__ = "_bot", "code", "_real_guild", "_real_channel", "_invite_guild", "_invite_channel", "_invite_metadata"
 
-    def __init__(self, client: 'client.Client', **kwargs):
+    def __init__(self, client, **kwargs):
         self._bot = client
 
         #: The invite code.

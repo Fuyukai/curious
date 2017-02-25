@@ -1,3 +1,9 @@
+"""
+The main client class.
+
+This contains a definition for :class:`.Client` which is used to interface primarily with Discord.
+"""
+
 import importlib
 import inspect
 import logging
@@ -5,6 +11,7 @@ import re
 import sys
 import traceback
 
+import collections
 import curio
 import multidict
 import typing
@@ -32,6 +39,11 @@ def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     """
     Splits a message into individual parts by `delim`, returning a list of strings.
     This method preserves quotes.
+    
+    .. code::
+    
+        content = '!send "Fuyukai desu" "Hello, world!"'
+        split = split_message_content(content, delim=" ")
 
     :param content: The message content to split.
     :param delim: The delimiter to split on.
@@ -46,7 +58,32 @@ def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     return parts
 
 
-def _default_msg_func_factory(prefix: str):
+def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
+    """
+    The default message function factory.
+    
+    This provides a callable that will fire a command if the message begins with the specified prefix or list of 
+    prefixes.
+    
+    If ``command_prefix`` is provided to the :class:`.Client`, then it will automatically call this function to get a 
+    message check function to use.
+    
+    .. code-block:: python
+        
+        # verbose form
+        message_check = prefix_check_factory(["!", "?"])
+        cl = Client(message_check=message_check)
+        
+        # implicit form
+        cl = Client(command_prefix=["!", "?"])
+        
+    The :attr:`prefix` is set on the returned function that can be used to retrieve the prefixes defined to create 
+    the function at any time.
+    
+    :param prefix: A :class:`str` or :class:`typing.Iterable[str]` that represents the prefix(es) to use. 
+    :return: A callable that can 
+    """
+
     def __inner(bot: Client, message):
         matched = None
         if isinstance(prefix, str):
@@ -54,7 +91,7 @@ def _default_msg_func_factory(prefix: str):
             if match:
                 matched = prefix
 
-        elif isinstance(prefix, list):
+        elif isinstance(prefix, collections.Iterable):
             for i in prefix:
                 if message.content.startswith(i):
                     matched = i
@@ -83,6 +120,7 @@ class Client(object):
 
         bot = Client("'a'")  # pass explicitly
         bot.run("'b'")  # or pass to the run call.
+
     """
 
     def __init__(self, token: str = None, *,
@@ -101,6 +139,7 @@ class Client(object):
         
         :param command_prefix: The command prefix for this bot.
         :param message_check: The message check function for this bot. 
+                    
             This should take two arguments, the client and message, and should return either None or a 3-item tuple:
               - The command word matched
               - The tokens after the command word
@@ -162,7 +201,7 @@ class Client(object):
             if not command_prefix and not message_check:
                 raise TypeError("Must provide one of `command_prefix` or `message_check`")
 
-            self._message_check = message_check or _default_msg_func_factory(command_prefix)
+            self._message_check = message_check or prefix_check_factory(command_prefix)
         else:
             self._message_check = lambda x: None
 

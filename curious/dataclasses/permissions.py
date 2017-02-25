@@ -1,3 +1,11 @@
+"""
+Wrappers for Permission objects.
+
+This class uses some automatic generation to create the objects.
+
+.. currentmodule:: curious.dataclasses.permissions
+"""
+
 import typing
 
 from curious.dataclasses import member as dt_member, role as dt_role
@@ -8,6 +16,7 @@ from curious.dataclasses import member as dt_member, role as dt_role
 def build_permissions_class(name: str = "Permissions") -> type:
     """
     Builds the permissions class automagically.
+    This should ***not*** be used by normal user code - it is designed for internal usage by curious.
 
     :param name: The name of the class.
     :return: A new type representing the permissions class.

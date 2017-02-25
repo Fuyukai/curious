@@ -1,3 +1,8 @@
+"""
+Wrappers for Widget objects.
+
+.. currentmodule:: curious.dataclasses.widget
+"""
 import typing
 from types import MappingProxyType
 
@@ -11,7 +16,7 @@ class WidgetChannel(Dataclass):
     Represents a limited subsection of a channel.
     """
 
-    def __init__(self, bot: 'client.Client', guild: 'WidgetGuild', **kwargs):
+    def __init__(self, bot, guild: 'WidgetGuild', **kwargs):
         super().__init__(id=int(kwargs.get("id", 0)), client=bot)
 
         #: The name of this channel.
@@ -32,7 +37,7 @@ class WidgetMember(Dataclass):
     Represents a limited subsection of a member.
     """
 
-    def __init__(self, bot: 'client.Client', guild: 'WidgetGuild', kwargs):
+    def __init__(self, bot, guild: 'WidgetGuild', kwargs):
         super().__init__(id=int(kwargs.get("id", 0)), client=bot)
 
         # construct a superficial user dict
@@ -45,6 +50,9 @@ class WidgetMember(Dataclass):
         }
         #: The user object associated with this member.
         self.user = bot.state.make_user(user_dict)
+
+        #: The guild object associated with this member.
+        self.guild = guild
 
         #: The game associated with this member.
         game = kwargs.get("game")
@@ -61,7 +69,7 @@ class WidgetGuild(Dataclass):
     Represents a limited subsection of a guild.
     """
 
-    def __init__(self, bot: 'client.Client', **kwargs):
+    def __init__(self, bot, **kwargs):
         super().__init__(id=int(kwargs.get("id", 0)), client=bot)
 
         #: The name of this guild.
@@ -92,12 +100,13 @@ class WidgetGuild(Dataclass):
 
     __str__ = __repr__
 
+
 class Widget(object):
     """
     Represents the embed widget for a guild.
     """
 
-    def __init__(self, client: 'client.Client', **kwargs):
+    def __init__(self, client, **kwargs):
         self._bot = client
 
         # we have a limited subsection of a full Guild object here
@@ -118,11 +127,16 @@ class Widget(object):
     def guild(self) -> 'typing.Union[dt_guild.Guild, WidgetGuild]':
         """
         :return: The guild object associated with this widget. 
+        :rtype: One of :class:`curious.dataclasses.guild.Guild`, :class:`.WidgetGuild`.
         """
         return self._real_guild or self._widget_guild
 
     @property
     def channels(self) -> 'typing.Iterable[typing.Union[dt_channel.Channel, WidgetChannel]]':
+        """
+        :return: The channels associated with this widget. 
+        :rtype: One of :class:`curious.dataclasses.channel.Channel`, :class:`.WidgetChannel`.
+        """
         return self.guild.channels
 
     def __repr__(self):

@@ -1,13 +1,29 @@
+"""
+Wrappers for Status objects.
+
+.. currentmodule:: curious.dataclasses.status
+"""
+
 import enum
 
 
 class Status(enum.Enum):
+    """
+    Represents a Member's status.
+    """
+    #: Corresponds to online (green dot).
     ONLINE = 'online'
+
+    #: Corresponds to offline (gray dot).
     OFFLINE = 'offline'
+
+    #: Corresponds to idle (yellow dot).
     IDLE = 'idle'
+
+    #: Corresponds to Do Not Disturb (red dot).
     DND = 'dnd'
 
-    #: This will never be returned as a status.
+    #: Corresponds to invisible (gray dot).
     INVISIBLE = 'invisible'
 
 

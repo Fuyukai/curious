@@ -1,3 +1,9 @@
+"""
+Wrappers for Reaction objects.
+
+.. currentmodule:: curious.dataclasses.reaction
+"""
+
 import typing
 
 from curious.dataclasses import emoji as dt_emoji

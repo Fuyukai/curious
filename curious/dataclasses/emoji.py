@@ -1,3 +1,9 @@
+"""
+Wrappers for custom emojis in guilds.
+
+.. currentmodule:: curious.dataclasses.emoji
+"""
+
 import typing
 
 from curious.dataclasses.bases import IDObject
@@ -20,7 +26,7 @@ class Emoji(IDObject):
         self.name = kwargs.pop("name", None)
 
         # this is empty until it's filled up by our guild object
-        #: The roles this emoji can be used by.
+        #: The list of :class:`~.Role` this emoji can be used by.
         self.roles = []  # type: typing.List[dt_role.Role]
         self._role_ids = kwargs.pop("roles", [])
 
@@ -30,7 +36,7 @@ class Emoji(IDObject):
         #: If this emoji is managed or not.
         self.managed = False
 
-        #: The guild this emoji is associated with.
+        #: The :class:`~.Guild` this emoji is associated with.
         self.guild = None  # type: dt_guild.Guild
 
     def __eq__(self, other):

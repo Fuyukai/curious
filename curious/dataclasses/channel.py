@@ -1,3 +1,9 @@
+"""
+Wrappers for Channel objects.
+
+.. currentmodule:: curious.dataclasses.channel
+"""
+
 import collections
 import enum
 import pathlib
@@ -20,15 +26,36 @@ PY36 = sys.version_info[0:2] >= (3, 6)
 
 
 class ChannelType(enum.Enum):
+    """
+    Returns a mapping from Discord channel type.
+    """
+
+    #: Represents a text channel.
     TEXT = 0
+
+    #: Represents a private channel.
     PRIVATE = 1
+
+    #: Represents a voice channel.
     VOICE = 2
+
+    #: Represents a group channel.
     GROUP = 3
 
 
 class _TypingCtxManager:
     """
     A context manager that when entered, starts typing, and cancels when exited.
+    
+    .. code-block::
+    
+        async with ctx_man:
+            await long_operation()
+            ...
+        
+        print("done")
+        
+    This class should **not** be instantiated directly - instead, use :meth:`~.Channel.typing`.
     """
 
     def __init__(self, channel: 'Channel'):
@@ -51,7 +78,23 @@ class _TypingCtxManager:
 
 class HistoryIterator(collections.AsyncIterator):
     """
-    Returned from the `history` to iterate over history.
+    An iterator that allows you to automatically fetch messages and async iterate over them.
+    
+    .. code-block:: python
+    
+        it = HistoryIterator(some_channel, bot, max_messages=100)
+        
+        # usage 1
+        async for message in it:
+            ...
+            
+        # usage 2
+        await it.fill_messages()
+        for message in it.messages:
+            ...
+            
+    Note that usage 2 will only fill chunks of 100 messages at a time.
+
     """
 
     def __init__(self, channel: 'Channel', client: 'dt_client.Client',
@@ -87,9 +130,11 @@ class HistoryIterator(collections.AsyncIterator):
         else:
             self.last_message_id = self.after
 
-    async def _fill_messages(self):
+    async def fill_messages(self):
         """
         Called to fill the next <n> messages.
+        
+        This is called automatically by :meth:`.__anext__`, but can be used to fill the messages anyway.
         """
         if self.max_messages < 0:
             to_get = 100
@@ -130,9 +175,7 @@ class HistoryIterator(collections.AsyncIterator):
 
 class Channel(Dataclass):
     """
-    Represents a channel.
-
-    :ivar id: The ID of the channel.
+    Represents a channel object.
     """
 
     __slots__ = ("id", "name", "topic", "guild", "type", "recipients", "position", "_last_message_id", "_overwrites",
@@ -147,14 +190,14 @@ class Channel(Dataclass):
         #: The topic of this channel.
         self.topic = kwargs.pop("topic", None)
 
-        #: The guild this channel is associated with.
+        #: The :class:`~.Guild` this channel is associated with.
         #: This can sometimes be None, if this channel is a private channel.
         self.guild = guild  # type: dt_guild.Guild
 
-        #: The type of channel this channel is.
+        #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.pop("type", 0))
 
-        #: If it is private, the recipients of the channel.
+        #: If private, the list of :class:`~.User` that are in this channel.
         self.recipients = []
         if self.is_private:
             for recipient in kwargs.pop("recipients"):
@@ -205,6 +248,7 @@ class Channel(Dataclass):
     def user(self):
         """
         :return: If this channel is a private channel, return the user of the channel.
+        :rtype: :class:`~.User`
         """
         if self.type != ChannelType.PRIVATE:
             return None
@@ -213,6 +257,9 @@ class Channel(Dataclass):
 
     @property
     def history(self) -> HistoryIterator:
+        """
+        Returns an iterator that can be used to iterate over the last infinity messages using ``async for``.
+        """
         return self.get_history(before=self._last_message_id, limit=-1)
 
     @property
@@ -265,6 +312,11 @@ class Channel(Dataclass):
         This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async iterated over to get
         message history.
 
+        .. code-block:: python
+        
+            async for message in channel.get_history(limit=1000):
+                print(message.content, "by", message.author.user.name)
+
         :param limit: The maximum number of messages to get.
         :param before: The snowflake ID to get messages before.
         :param after: The snowflake ID to get messages after.
@@ -279,7 +331,7 @@ class Channel(Dataclass):
         """
         Gets the pins for a channel.
 
-        :return: A list of :class:`Message` objects.
+        :return: A list of :class:`~.Message` objects.
         """
         msg_data = await self._bot.http.get_pins(self.id)
 
@@ -293,7 +345,7 @@ class Channel(Dataclass):
         """
         Gets the webhooks for this channel.
 
-        :return: A list of :class:`Webhook` objects for the channel.
+        :return: A list of :class:`~.Webhook` objects for the channel.
         """
         webhooks = await self._bot.http.get_webhooks_for_channel(self.id)
         obbs = []
@@ -308,7 +360,7 @@ class Channel(Dataclass):
         Gets a single message from this channel.
 
         :param message_id: The message ID to retrieve.
-        :return: A new :class:`Message` object.
+        :return: A new :class:`~.Message` object.
         """
         if self.guild:
             if not self.permissions(self.guild.me).read_message_history:
@@ -325,7 +377,7 @@ class Channel(Dataclass):
 
         :param name: The name of the new webhook.
         :param avatar: The bytes content of the new webhook.
-        :return: A :class:`Webhook` that represents the webhook created.
+        :return: A :class:`~.Webhook` that represents the webhook created.
         """
         if not self.permissions(self.guild.me).manage_webhooks:
             raise PermissionsError("manage_webhooks")
@@ -343,7 +395,7 @@ class Channel(Dataclass):
         """
         Edits a webhook.
 
-        :param webhook: The webhook to edit.
+        :param webhook: The :class:`~.Webhook` to edit.
         :param name: The new name for the webhook.
         :param avatar: The new bytes for the avatar.
         :return: The modified webhook object.
@@ -375,7 +427,7 @@ class Channel(Dataclass):
 
         You must have MANAGE_WEBHOOKS to delete this webhook.
 
-        :param webhook: The webhook to delete.
+        :param webhook: The :class:`~.Webhook` to delete.
         """
         if webhook.token is not None:
             # Delete it unconditionally.
@@ -391,6 +443,8 @@ class Channel(Dataclass):
     async def create_invite(self, **kwargs):
         """
         Creates an invite in this channel.
+        
+        See :meth`~.HTTPClient.create_invite` for arguments that can be provided to this function.
         """
         if not self.guild:
             raise PermissionsError("create_instant_invite")
@@ -407,7 +461,7 @@ class Channel(Dataclass):
         """
         Deletes messages from a channel.
 
-        This is the low-level delete function - for the high-level function, see :meth:`Channel.purge()`.
+        This is the low-level delete function - for the high-level function, see :meth:`.Channel.purge()`.
 
         Example for deleting all the last 100 messages:
 
@@ -421,7 +475,7 @@ class Channel(Dataclass):
 
             await channel.delete_messages(messages)
 
-        :param messages: A list of :class:`Message` objects to delete.
+        :param messages: A list of :class:`~.Message` objects to delete.
         """
         if not self.guild:
             raise PermissionsError("manage_messages")
@@ -555,7 +609,7 @@ class Channel(Dataclass):
         :param content: The content of the message to send.
         :param tts: Should this message be text to speech?
         :param embed: An embed object to send with this message.
-        :return: A new :class:`Message` object.
+        :return: A new :class:`~.Message` object.
         """
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
@@ -593,7 +647,7 @@ class Channel(Dataclass):
             This **cannot** be a file-like object.
         :param filename: The filename of the file.
         :param message_content: Optional: Any extra content to be sent with the message.
-        :return: The new :class:`Message` created.
+        :return: The new :class:`~.Message` created.
         """
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
@@ -609,7 +663,7 @@ class Channel(Dataclass):
 
     async def upload_file(self, filename: str, *, message_content: str = None) -> 'dt_message.Message':
         """
-        A higher level interface to `send_file`.
+        A higher level interface to ``send_file``.
 
         This allows you to specify one of the following to upload:
             - A filename (str)
@@ -620,7 +674,7 @@ class Channel(Dataclass):
 
         :param filename: The file to send, in the formats specified above.
         :param message_content: Any extra content to be sent with the message.
-        :return: The new :class:`Message` created.
+        :return: The new :class:`~.Message` created.
         """
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
@@ -653,10 +707,10 @@ class Channel(Dataclass):
         """
         Changes an overwrite for this channel.
 
-        This overwrite must be an instance of :class:`Overwrite`.
+        This overwrite must be an instance of :class:`~.Overwrite`.
 
         :param target: The target to add an overwrite for.
-            This can either be a Member or a Role.
+            This can either be a :class:`~.Member` or a :class:`~.Role`.
         :param overwrite: The specific overwrite to use.
             If this is None, the overwrite will be deleted.
         """

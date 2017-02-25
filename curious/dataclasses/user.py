@@ -1,3 +1,9 @@
+"""
+Wrappers for User objects.
+
+.. currentmodule:: curious.dataclasses.user
+"""
+
 import enum
 import typing
 from collections import namedtuple
@@ -11,10 +17,20 @@ from curious.exc import CuriousError
 
 
 class FriendType(enum.IntEnum):
+    """
+    Represents the type of a friend.
+    """
+
+    #: Corresponds to a friend.
     FRIEND = 1
+
+    #: Corresponds to a blocked user.
     BLOCKED = 2
 
+    #: Corresponds to an incoming friend request.
     INCOMING = 3
+
+    #: Corresponds to an outgoing friend request.
     OUTGOING = 4
 
 connection = namedtuple("Connection", "type id name")
@@ -133,6 +149,7 @@ class User(Dataclass):
         Opens a private channel with a user.
 
         :return: The newly created private channel.
+        :rtype: :class:`~.Channel`
         """
         if self.discriminator == "0000":
             raise CuriousError("Cannot open a private channel with a webhook")
@@ -167,7 +184,7 @@ class User(Dataclass):
 
     async def get_profile(self) -> UserProfile:
         """
-        :return: A :class:`UserProfile` representing this user's profile.
+        :return: A :class:`~.UserProfile` representing this user's profile.
         """
         if self._bot.user.bot:
             raise CuriousError("Bots cannot get profiles")
@@ -180,7 +197,7 @@ class User(Dataclass):
         Sends a message to the user over a private channel.
 
         :param content: The contet of the message to send.
-        :return: A new :class:`Message` representing the sent message.
+        :return: A new :class:`~.Message` representing the sent message.
         """
         channel = await self.open_private_channel()
         message = await channel.send(content, *args, **kwargs)
@@ -191,7 +208,7 @@ class User(Dataclass):
         """
         Unbans this user from a guild.
 
-        :param guild: The guild to unban in.
+        :param guild: The :class:`~.Guild` to unban in.
         """
         return guild.unban(self)
 

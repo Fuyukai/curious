@@ -1,3 +1,9 @@
+"""
+Wrappers for Application Info objects.
+
+.. currentmodule:: curious.dataclasses.appinfo
+"""
+
 from curious.exc import CuriousError
 from curious.dataclasses import guild as dt_guild
 
@@ -37,8 +43,8 @@ class AppInfo(object):
         #: The icon hash for this application.
         self._icon_hash = self._application.pop("icon", None)  # type: str
 
-        #: The bot user associated with this application.
         if "bot" in kwargs:
+            #: The bot :class:`~.User` associated with this application.
             self.bot = self._bot.state.make_user(kwargs.pop("bot", {}))  # type: User
         else:
             self.bot = None

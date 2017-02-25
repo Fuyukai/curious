@@ -1,5 +1,7 @@
 """
-Base classes.
+Base classes that all dataclasses inherit from.
+
+.. currentmodule:: curious.dataclasses.bases
 """
 import datetime
 from curious.core import client
@@ -52,6 +54,7 @@ class Dataclass(IDObject):
     These contain a reference to the current bot as `_bot`.
     """
 
+    # __weakref__ is used to allow weakreffing
     __slots__ = "_bot", "__weakref__"
 
     def __init__(self, id: int, client: 'client.Client'):

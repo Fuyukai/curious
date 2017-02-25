@@ -6,7 +6,7 @@
 Welcome to curious's documentation!
 ===================================
 
-``curious`` is a Python 3.5+ library to interact with the `Discord <https://discordapp.com>`_ API. It is based on top
+``curious`` is a Python 3.6+ library to interact with the `Discord <https://discordapp.com>`_ API. It is based on top
 of `curio <https://github.com/dabeaz/curio>`_.
 
 Curious **only supports bot accounts**. There will be zero effort made to support any client-only features, or other
@@ -42,13 +42,10 @@ Examples for how to use the library are available at https://github.com/SunDwarf
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
    :caption: Contents:
 
-   speedups
-   changelog
-   hiapi
-   loapi
+   curious
 
 
 Indices and tables
