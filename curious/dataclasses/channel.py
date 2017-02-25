@@ -107,7 +107,7 @@ class HistoryIterator(collections.AsyncIterator):
             messages = reversed(messages)
 
         for message in messages:
-            self.messages.append(self.client.state.parse_message(message))
+            self.messages.append(self.client.state.make_message(message))
 
     async def __anext__(self):
         self.current_count += 1
@@ -285,7 +285,7 @@ class Channel(Dataclass):
 
         messages = []
         for message in msg_data:
-            messages.append(self._bot.state.parse_message(message))
+            messages.append(self._bot.state.make_message(message))
 
         return messages
 
@@ -315,7 +315,7 @@ class Channel(Dataclass):
                 raise PermissionsError("read_message_history")
 
         data = await self._bot.http.get_message(self.id, message_id)
-        msg = self._bot.state.parse_message(data)
+        msg = self._bot.state.make_message(data)
 
         return msg
 
@@ -572,7 +572,7 @@ class Channel(Dataclass):
             embed = embed.to_dict()
 
         data = await self._bot.http.send_message(self.id, content, tts=tts, embed=embed)
-        obb = self._bot.state.parse_message(data, cache=True)
+        obb = self._bot.state.make_message(data, cache=True)
 
         return obb
 
@@ -604,7 +604,7 @@ class Channel(Dataclass):
 
         data = await self._bot.http.upload_file(self.id, file_content,
                                                 filename=filename, content=message_content)
-        obb = self._bot.state.parse_message(data, cache=False)
+        obb = self._bot.state.make_message(data, cache=False)
         return obb
 
     async def upload_file(self, filename: str, *, message_content: str = None) -> 'dt_message.Message':

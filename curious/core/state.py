@@ -264,6 +264,50 @@ class State(object):
 
         return user
 
+    def make_message(self, event_data: dict, cache: bool = True) -> Message:
+        message = Message(self.client, **event_data)
+        # discord won't give us the Guild id
+        # so we have to search it from the channels
+        channel_id = int(event_data.get("channel_id"))
+        channel = self._get_channel(channel_id)
+        if not channel:
+            # fuck off discord
+            return None
+
+        author_id = int(event_data.get("author", {}).get("id", 0))
+
+        message.channel = channel
+        message.guild = channel.guild
+        if message.channel.type == ChannelType.PRIVATE:
+            message.author = self._user
+        elif message.channel.type == ChannelType.GROUP:
+            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients), None)
+        else:
+            # Webhooks also exist.
+            if event_data.get("webhook_id") is not None:
+                message.author = self.make_webhook(event_data)
+            else:
+                message.author = message.guild.members.get(author_id)
+
+        for reaction_data in event_data.get("reactions", []):
+            emoji = reaction_data.pop("emoji")
+            reaction = Reaction(**reaction_data)
+
+            if "id" in emoji and emoji["id"] is not None:
+                emoji_obb = message.guild.emojis.get(int(emoji["id"]))
+                if emoji_obb is None:
+                    emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
+            else:
+                emoji_obb = emoji.get("name", None)
+
+            reaction.emoji = emoji_obb
+            message.reactions.append(reaction)
+
+        if cache and message not in self._messages:
+            self._messages.append(message)
+
+        return message
+
     async def wait_for_voice_data(self, guild_id: int):
         """
         Waits for the two voice data packets to be received for the specified guild.
@@ -624,55 +668,11 @@ class State(object):
 
         await self.client.fire_event("guild_emojis_update", old_guild, guild, gateway=gw)
 
-    def parse_message(self, event_data: dict, cache: bool = True) -> Message:
-        message = Message(self.client, **event_data)
-        # discord won't give us the Guild id
-        # so we have to search it from the channels
-        channel_id = int(event_data.get("channel_id"))
-        channel = self._get_channel(channel_id)
-        if not channel:
-            # fuck off discord
-            return None
-
-        author_id = int(event_data.get("author", {}).get("id", 0))
-
-        message.channel = channel
-        message.guild = channel.guild
-        if message.channel.type == ChannelType.PRIVATE:
-            message.author = self._user
-        elif message.channel.type == ChannelType.GROUP:
-            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients), None)
-        else:
-            # Webhooks also exist.
-            if event_data.get("webhook_id") is not None:
-                message.author = self.make_webhook(event_data)
-            else:
-                message.author = message.guild.members.get(author_id)
-
-        for reaction_data in event_data.get("reactions", []):
-            emoji = reaction_data.pop("emoji")
-            reaction = Reaction(**reaction_data)
-
-            if "id" in emoji and emoji["id"] is not None:
-                emoji_obb = message.guild.emojis.get(int(emoji["id"]))
-                if emoji_obb is None:
-                    emoji_obb = Emoji(id=emoji["id"], name=emoji["name"])
-            else:
-                emoji_obb = emoji.get("name", None)
-
-            reaction.emoji = emoji_obb
-            message.reactions.append(reaction)
-
-        if cache and message not in self._messages:
-            self._messages.append(message)
-
-        return message
-
     async def handle_message_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when MESSAGE_CREATE is dispatched.
         """
-        message = self.parse_message(event_data)
+        message = self.make_message(event_data)
         if not message:
             return
 
@@ -685,7 +685,7 @@ class State(object):
         """
         Called when MESSAGE_UPDATE is dispatched.
         """
-        new_message = self.parse_message(event_data, cache=False)
+        new_message = self.make_message(event_data, cache=False)
         if not new_message:
             return
 

@@ -167,4 +167,4 @@ class Webhook(Dataclass):
                                                     wait=wait)
 
         if wait:
-            return self._bot.state.parse_message(data, cache=False)
+            return self._bot.state.make_message(data, cache=False)
