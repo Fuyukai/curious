@@ -883,14 +883,17 @@ class Client(object):
         """
         Starts the gateway polling loop.
 
-        This is a convenience method that polls on all the shards at once. It will **not** restart them automatically.
+        This is a convenience method that polls on all the shards at once.
+        This will **only reboot safely returned shards.** Erroring shards won't be rebooted.
         """
         self._logger.info("Starting bot with {} shards.".format(shards))
         self.shard_count = shards
         tasks = []
         for shard_id in range(0, shards):
             await self.connect(token, shard_id=shard_id)
-            tasks.append(await curio.spawn(self.poll(shard_id)))
+            t = await curio.spawn(self.poll(shard_id))
+            # only place to store it
+            t.id = "shard-{}".format(shard_id)
             self._logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
@@ -908,6 +911,15 @@ class Client(object):
                 result = await task.join()
             except Exception as e:
                 result = e
+                self._logger.exception("Shard {} crashed, not rebooting it.".format(task.id))
+            else:
+                # reboot it
+                self._logger.warning("Rebooting shard {}.".format(task.id))
+                id = int(task.id.split("-")[1])
+                await self.connect(token, shard_id=id)
+                t = await curio.spawn(self.poll(id))
+                t.id = "shard-{}".format(shard_id)
+                wait.add_task(t)
             finally:
                 results.append(result)
 

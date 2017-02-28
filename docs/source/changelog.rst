@@ -3,6 +3,11 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.3.0
+-----
+
+ - :meth:`.Client.start` will now automatically reboot shards that return.
+
 0.2.1
 -----
 
