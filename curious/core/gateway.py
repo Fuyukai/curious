@@ -1,5 +1,7 @@
 """
 Websocket gateway code.
+
+.. current-module:: curious.core.gateway
 """
 import enum
 import threading

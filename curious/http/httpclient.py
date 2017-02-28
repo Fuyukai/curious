@@ -1,7 +1,5 @@
 """
-Curious' HTTP client is a thin wrapper over the `requests` library, running in threads.
-
-This is because there is (currently) no native curio HTTP library.
+The main Discord HTTP interface.
 """
 import datetime
 import logging

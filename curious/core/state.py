@@ -1,3 +1,9 @@
+"""
+Defines :class:`~.State`.
+
+.. currentmodule:: curious.core.state
+"""
+
 import collections
 import logging
 
