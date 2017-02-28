@@ -250,7 +250,7 @@ class BotUser(User):
     @property
     def friends(self) -> typing.Mapping[int, 'RelationshipUser']:
         """
-        :return: A mapping of :class:`FriendUser` that represents the friends for this user.
+        :return: A mapping of :class:`~.RelationshipUser` that represents the friends for this user.
         """
         if self.bot:
             raise CuriousError("Bots cannot have friends")
@@ -260,7 +260,7 @@ class BotUser(User):
     @property
     def blocks(self) -> typing.Mapping[int, 'RelationshipUser']:
         """
-        :return: A mapping of :class:`FriendUser` that represents the blocked users for this user.
+        :return: A mapping of :class:`~.RelationshipUser` that represents the blocked users for this user.
         """
         if self.bot:
             raise CuriousError("Bots cannot have friends")
@@ -284,7 +284,7 @@ class RelationshipUser(User):
         #: The game for this friend.
         self.game = None  # type: Game
 
-        #: The type of friend this user is.
+        #: The :class:`.FriendType` of friend this user is.
         self.type_ = None  # type: FriendType
 
     async def remove_friend(self):
