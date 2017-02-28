@@ -52,11 +52,11 @@ class HTTPClient(object):
 
     If a particular method is not listed here, you can use one of the five following methods to make a manual request:
 
-        - :meth:`get`
-        - :meth:`post`
-        - :meth:`put`
-        - :meth:`delete`
-        - :meth:`patch`
+        - :meth:`HTTPClient.get`
+        - :meth:`HTTPClient.post`
+        - :meth:`HTTPClient.put`
+        - :meth:`HTTPClient.delete`
+        - :meth:`HTTPClient.patch`
 
     All of these functions require a **ratelimit bucket** which will be used to prevent the client from hitting 429
     ratelimits.

@@ -41,9 +41,22 @@ Examples
 Examples for how to use the library are available at https://github.com/SunDwarf/curious/tree/master/examples.
 
 
+Documentation
+~~~~~~~~~~~~~
+
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 2
    :caption: Contents:
+
+   changelog
+
+API Documentation
+~~~~~~~~~~~~~~~~~
+
+The documentation below is automatically generated from the docstrings.
+
+.. toctree::
+   :maxdepth: 3
 
    curious
 

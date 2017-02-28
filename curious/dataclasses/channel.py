@@ -47,7 +47,7 @@ class _TypingCtxManager:
     """
     A context manager that when entered, starts typing, and cancels when exited.
     
-    .. code-block::
+    .. code-block:: python
     
         async with ctx_man:
             await long_operation()
@@ -264,7 +264,7 @@ class Channel(Dataclass):
 
     @property
     def pins(self) -> 'typing.AsyncIterator[dt_message.Message]':
-        return AsyncIteratorWrapper(self._bot, self.get_pins())
+        return AsyncIteratorWrapper(self.get_pins())
 
     @property
     def voice_members(self) -> 'typing.List[dt_member.Member]':

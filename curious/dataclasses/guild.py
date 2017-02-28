@@ -387,14 +387,14 @@ class Guild(Dataclass):
         """
         :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are banned.
         """
-        return AsyncIteratorWrapper(self._bot, self.get_bans())
+        return AsyncIteratorWrapper(self.get_bans())
 
     @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
         """
         :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this guild. 
         """
-        return AsyncIteratorWrapper(self._bot, self.get_invites())
+        return AsyncIteratorWrapper(self.get_invites())
 
     @property
     def icon_url(self) -> str:

@@ -14,11 +14,22 @@ import typing
 
 class AsyncIteratorWrapper(collections.AsyncIterator):
     """
-    Wraps a function so that it can be iterated over asynchronously.
+    Wraps a coroutine that returns a sequence of items into something that can iterated over asynchronously.
+    
+    .. code-block:: python
+    
+        async def a():
+            # ... some long op
+            return [..., ..., ...]
+         
+        it = AsyncIteratorWrapper(a())
+        
+        async for item in it:
+            print(item)
+    
     """
 
-    def __init__(self, client, coro: typing.Awaitable[typing.List]):
-        self.client = client
+    def __init__(self, coro: typing.Awaitable[typing.List]):
         self.coro = coro
 
         self.items = collections.deque()
