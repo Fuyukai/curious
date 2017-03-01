@@ -1188,7 +1188,11 @@ class State(object):
         Called when a message is acknowledged.
         """
         channel = self._get_channel(int(event_data.get("channel_id", 0)))
-        message = self._find_message(int(event_data.get("message_id", 0)))
+        try:
+            message = self._find_message(int(event_data.get("message_id", 0)))
+        except ValueError:
+            # message_id is None, wtf?
+            return
 
         if channel is None:
             return
