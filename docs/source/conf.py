@@ -38,6 +38,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',
+              #  'sphinx_autodoc_typehints', # Disabled pending fixes for Python 3.6
               'sphinxcontrib.asyncio']
 
 # Add any paths that contain templates here, relative to this directory.

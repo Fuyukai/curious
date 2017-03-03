@@ -21,7 +21,6 @@ import curio
 from nacl.secret import SecretBox
 from opuslib import Encoder
 
-from curious.dataclasses import channel as dt_channel
 from curious.voice import voice_player as vp
 from curious.voice.voice_gateway import VoiceGateway
 
@@ -41,12 +40,17 @@ class VoiceClient(object):
     """
     The voice client instance controls connecting to Discord's voice servers.
 
-    This should ***not*** be created directly - instead use :class:`Channel.connect()` to connect to a voice channel,
+    This should ***not*** be created directly - instead use :class:`~.Channel.connect()` to connect to a voice channel,
     and use the instance returned from.
     """
 
-    def __init__(self, main_client: 'client.Client',
-                 channel: 'dt_channel.Channel'):
+    def __init__(self, main_client,
+                 channel):
+        """
+        :param main_client: The :class:`~.curious.core.client.Client` object associated with this VoiceClient. 
+        :param channel: The :class:`~.Channel` associated with this VoiceClient.
+        """
+
         #: The main client this voice client is associated with.
         self.client = main_client
 
@@ -225,13 +229,13 @@ class VoiceClient(object):
         # We are DONW!
 
     @classmethod
-    async def create(cls, main_client: 'client.Client',
-                     gateway, channel: 'dt_channel.Channel') -> 'VoiceClient':
+    async def create(cls, main_client,
+                     gateway, channel) -> 'VoiceClient':
         """
         Creates a new VoiceClient from a channel and a gateway instance.
 
         :param gateway: The gateway instance to use.
-        :param channel: The channel to connect to.
+        :param channel: The :class:`~.Channel` to connect to.
         """
         vs_ws = await VoiceGateway.from_gateway(gw=gateway, channel_id=channel.id, guild_id=channel.guild.id)
         obb = cls(main_client, channel=channel)

@@ -57,7 +57,7 @@ class Dataclass(IDObject):
     # __weakref__ is used to allow weakreffing
     __slots__ = "_bot", "__weakref__"
 
-    def __init__(self, id: int, client: 'client.Client'):
+    def __init__(self, id: int, cl: 'client.Client'):
         super().__init__(id)
 
-        self._bot = client
+        self._bot = cl
