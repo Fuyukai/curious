@@ -12,6 +12,5 @@ delegating it to client code.
     client
     event
     gateway
-    parser
     state
 """
