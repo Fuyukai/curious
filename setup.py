@@ -19,7 +19,8 @@ setup(
         "yarl==0.8.1",
     ],
     extras_require={
-      "voice": ["opuslib==1.1.0",
-                "PyNaCL==1.0.1",]
+        "voice": ["opuslib==1.1.0",
+                "PyNaCL==1.0.1"],
+        "docs": ["sphinx-bootstrap-theme", "sphinx"]
     }
 )

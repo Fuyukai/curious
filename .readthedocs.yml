@@ -5,3 +5,6 @@ python:
   version: 3.5
   # Use `pip` to install into the environment.
   pip_install: true
+  # Install `docs` extra requirements.
+  extra_requirements:
+    - docs
