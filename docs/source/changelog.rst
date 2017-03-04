@@ -14,6 +14,9 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.BotUser.get_authorized_apps` as the high-level equivalent.
 
+ - Add :attr:`~.Message.channel_id` and :attr:`~.Message.author_id` to access the raw IDs from Discord, even if the
+   message author or channel is not cached.
+
 0.2.1
 -----
 

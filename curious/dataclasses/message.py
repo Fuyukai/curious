@@ -32,7 +32,7 @@ class Message(Dataclass):
     """
 
     __slots__ = ("content", "guild", "author", "channel", "created_at", "edited_at", "embeds", "attachments",
-                 "_mentions", "_role_mentions", "reactions")
+                 "_mentions", "_role_mentions", "reactions", "channel_id", "author_id")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.pop("id"), client)
@@ -44,8 +44,14 @@ class Message(Dataclass):
         #: This can be None if the message was sent in a DM.
         self.guild = None  # type: dt_guild.Guild
 
+        #: The ID of the channel the message was sent in.
+        self.channel_id = int(kwargs.get("channel_id", 0))  # type: int
+
         #: The :class:`~.Channel` this message was sent in.
         self.channel = None  # type: dt_channel.Channel
+
+        #: The ID of the author.
+        self.author_id = int(kwargs.get("author_id", 0))  # type: int
 
         #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`, :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
