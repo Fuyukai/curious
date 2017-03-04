@@ -8,6 +8,8 @@ This document displays the differences between each release of curious.
 
  - :meth:`.Client.start` will now automatically reboot shards that return.
 
+ - Add :meth:`.HTTPClient.get_authorized_apps` to get the authorized apps for this account.
+
 0.2.1
 -----
 

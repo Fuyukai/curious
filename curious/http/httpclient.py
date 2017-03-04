@@ -1418,6 +1418,15 @@ class HTTPClient(object):
         data = await self.post(url, "oauth2", params=params, json=payload)
         return data
 
+    async def get_authorized_apps(self):
+        """
+        Gets authorized apps for this account.
+        """
+        url = self.API_BASE + "/oauth2/tokens"
+
+        data = await self.get(url, bucket="oauth2")
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """
