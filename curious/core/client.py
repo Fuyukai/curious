@@ -247,6 +247,12 @@ class Client(object):
         """
         return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(self.application_info.client_id)
 
+    def find_channel(self, channel_id: int):
+        """
+        Finds a channel by channel ID.
+        """
+        return self.state.find_channel(channel_id)
+
     async def get_gateway_url(self):
         if self._gw_url:
             return self._gw_url

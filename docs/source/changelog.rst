@@ -17,6 +17,8 @@ This document displays the differences between each release of curious.
  - Add :attr:`~.Message.channel_id` and :attr:`~.Message.author_id` to access the raw IDs from Discord, even if the
    message author or channel is not cached.
 
+ - Unprivatize :meth:`~.State.find_channel` and add :meth:`~.Client.find_channel` to use this method.
+
 0.2.1
 -----
 
