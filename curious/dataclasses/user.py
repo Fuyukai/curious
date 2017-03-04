@@ -10,6 +10,7 @@ from collections import namedtuple
 from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
+from curious.dataclasses.appinfo import AuthorizedApp, AppInfo
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.status import Game
 from curious.dataclasses.status import Status
@@ -246,6 +247,21 @@ class BotUser(User):
         Edits the bot's current avatar.
         """
         return self._bot.edit_avatar(path)
+
+    async def get_authorized_apps(self) -> typing.Sequence[AuthorizedApp]:
+        """
+        Gets a list of authorized applications for this user.
+        :return: A sequence of :class:`~.AuthorizedApp`.
+        """
+        data = await self._bot.http.get_authorized_apps()
+        final = []
+
+        for item in data:
+            id = int(item.pop("id", 0))
+            final.append(AuthorizedApp(id=id, scopes=item.get("scopes", []),
+                                       application=AppInfo(self._bot, **item)))
+
+        return final
 
     @property
     def friends(self) -> typing.Mapping[int, 'RelationshipUser']:

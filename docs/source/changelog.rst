@@ -12,6 +12,8 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.HTTPClient.revoke_authorized_app` to revoke an application's authorization.
 
+ - Add :meth:`.BotUser.get_authorized_apps` as the high-level equivalent.
+
 0.2.1
 -----
 

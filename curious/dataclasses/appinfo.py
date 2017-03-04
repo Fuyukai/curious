@@ -3,9 +3,12 @@ Wrappers for Application Info objects.
 
 .. currentmodule:: curious.dataclasses.appinfo
 """
+from collections import namedtuple
 
 from curious.exc import CuriousError
 from curious.dataclasses import guild as dt_guild
+
+AuthorizedApp = namedtuple("AuthorizedApp", "scopes id application")
 
 
 class AppInfo(object):
