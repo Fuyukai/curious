@@ -1427,6 +1427,17 @@ class HTTPClient(object):
         data = await self.get(url, bucket="oauth2")
         return data
 
+    async def revoke_authorized_app(self, app_id: int):
+        """
+        Revokes an application authorization.
+        
+        :param app_id: The ID of the application to revoke the authorization of. 
+        """
+        url = (self.API_BASE + "/oauth2/tokens/{app_id}").format(app_id=app_id)
+
+        data = await self.delete(url, bucket="oauth")
+        return data
+
     # Misc
     async def open_private_channel(self, user_id: int):
         """

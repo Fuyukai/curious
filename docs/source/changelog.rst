@@ -10,6 +10,8 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.HTTPClient.get_authorized_apps` to get the authorized apps for this account.
 
+ - Add :meth:`.HTTPClient.revoke_authorized_app` to revoke an application's authorization.
+
 0.2.1
 -----
 
