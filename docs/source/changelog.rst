@@ -14,17 +14,17 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.BotUser.get_authorized_apps` as the high-level equivalent.
 
- - Add :attr:`~.Message.channel_id` and :attr:`~.Message.author_id` to access the raw IDs from Discord, even if the
+ - Add :attr:`.Message.channel_id` and :attr:`.Message.author_id` to access the raw IDs from Discord, even if the
    message author or channel is not cached.
 
- - Unprivatize :meth:`~.State.find_channel` and add :meth:`~.Client.find_channel` to use this method.
+ - Unprivatize :meth:`.State.find_channel` and add :meth:`.Client.find_channel` to use this method.
 
  - Change sharding slightly:
 
-    - :meth:`~.Client.boot_shard` will boot one shard and add its gateway to the internal list.
+    - :meth:`.Client.boot_shard` will boot one shard and add its gateway to the internal list.
       This will allow finer control over shard booting.
 
-    - :meth:`~.Client.start` will now use ``boot_shard`` to load a shard, so overriding it in a subclass can
+    - :meth:`.Client.start` will now use ``boot_shard`` to load a shard, so overriding it in a subclass can
       customize shard creation.
 
 0.2.1
