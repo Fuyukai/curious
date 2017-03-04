@@ -174,9 +174,9 @@ class State(object):
         if channel_id in self._private_channels:
             return self._private_channels[channel_id]
 
-        for channel in self.get_all_channels():
-            if channel.id == channel_id:
-                return channel
+        for guild in self._guilds.values():
+            if channel_id in guild._channels:
+                return guild._channels[channel_id]
 
     def _find_message(self, message_id: int) -> Message:
         for message in reversed(self._messages):
