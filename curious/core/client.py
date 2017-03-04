@@ -885,7 +885,25 @@ class Client(object):
                 # We've been told to reconnect, try and RESUME.
                 await gw.reconnect(resume=True)
 
-    async def start(self, token: str = None, shards: int = 1):
+    async def boot_shard(self, shard_id: int, shard_count: int = None) -> curio.Task:
+        """
+        Boots a single gateway shard.
+        
+        This can be used to run multiple clients instead of having a single client shard.
+        
+        :param shard_id: The shard ID to boot. 
+        :param shard_count: The number of shards being created.
+        :return: The :class:`curio.Task` that represents the polling loop.
+        """
+        if shard_count:
+            self.shard_count = shard_count
+
+        await self.connect(self._token, shard_id=shard_id)
+        t = await curio.spawn(self.poll(shard_id))
+        t.id = "shard-{}".format(shard_id)
+        return t
+
+    async def start(self, shards: int = 1):
         """
         Starts the gateway polling loop.
 
@@ -896,10 +914,7 @@ class Client(object):
         self.shard_count = shards
         tasks = []
         for shard_id in range(0, shards):
-            await self.connect(token, shard_id=shard_id)
-            t = await curio.spawn(self.poll(shard_id))
-            # only place to store it
-            t.id = "shard-{}".format(shard_id)
+            await self.boot_shard(shard_id)
             self._logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
@@ -922,9 +937,7 @@ class Client(object):
                 # reboot it
                 self._logger.warning("Rebooting shard {}.".format(task.id))
                 id = int(task.id.split("-")[1])
-                await self.connect(token, shard_id=id)
-                t = await curio.spawn(self.poll(id))
-                t.id = "shard-{}".format(shard_id)
+                t = await self.boot_shard(shard_id=id)
                 wait.add_task(t)
             finally:
                 results.append(result)
@@ -944,7 +957,7 @@ class Client(object):
 
         shards = await self.get_shard_count()
         self.shard_count = shards
-        await self.start(token, shards=shards)
+        await self.start(shards=shards)
 
     def run(self, token: str = None, shards: typing.Union[int, object] = 1):
         """
@@ -954,6 +967,9 @@ class Client(object):
         :param shards: The number of shards to run.
             If this is None, the bot will autoshard.
         """
+        if token is not None:
+            self._token = token
+
         if not self.is_bot and shards != 1:
             raise CuriousError("Cannot start user bots in sharded mode")
 
@@ -965,7 +981,7 @@ class Client(object):
         if shards == AUTOSHARD:
             coro = self.start_autosharded(token)
         else:
-            coro = self.start(token, shards=shards)
+            coro = self.start(shards=shards)
 
         try:
             return kernel.run(coro=coro, shutdown=True)
