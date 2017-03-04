@@ -156,7 +156,7 @@ class User(Dataclass):
             raise CuriousError("Cannot open a private channel with a webhook")
 
         # First, try and access the channel from the channel cache.
-        original_channel = self._bot.state._get_channel(self.id)
+        original_channel = self._bot.state.find_channel(self.id)
         if original_channel:
             return original_channel
 

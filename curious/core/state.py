@@ -160,9 +160,13 @@ class State(object):
             for role in guild.roles.values():
                 yield role
 
-    def _get_channel(self, channel_id: int) -> Channel:
+    def find_channel(self, channel_id: int) -> typing.Union[Channel, None]:
         """
-        Internal method to get a channel from any guild.
+        Finds a channel by ID.  
+        This will search all guild channels, as well as private channels.
+        
+        :param channel_id: The ID of the channel to find.
+        :return: A :class:`~.Channel` that represents the channel, or None if no channel was found.
         """
         # default channel_id == guild id
         if channel_id in self._guilds:
@@ -204,7 +208,7 @@ class State(object):
         Creates a new webhook object from the event data.
 
         :param event_data: The event data.
-        :return: A :class:`Webhook`.
+        :return: A :class:`~.Webhook`.
         """
         if "content" in event_data:
             # message object, so we have to do a minor bit of remapping
@@ -222,7 +226,7 @@ class State(object):
             }
             owner = event_data.get("user", {})
 
-        channel = self._get_channel(int(event_data.get("channel_id")))
+        channel = self.find_channel(int(event_data.get("channel_id")))
         user = User(self.client, **user)
         user.bot = True
         webhook = Webhook(client=self.client, webhook_id=webhook_id, **event_data)
@@ -245,6 +249,7 @@ class State(object):
         Creates a new private channel and caches it.
 
         :param channel_data: The channel data to cache.
+        :return: A new :class:`~.Channel`.
         """
         channel = Channel(self.client, guild=None, **channel_data)
         self._private_channels[channel.id] = channel
@@ -257,9 +262,10 @@ class State(object):
         """
         Creates a new user and caches it.
 
-        :param user_data: The user data to create.
+        :param user_data: The user data to use to create.
         :param user_klass: The type of user to create.
         :param override_cache: Should the cache be overridden?
+        :return: A new :class`~.User` (hopefully).
         """
         id = int(user_data.get("id", 0))
         if id in self._users and not override_cache:
@@ -271,14 +277,18 @@ class State(object):
         return user
 
     def make_message(self, event_data: dict, cache: bool = True) -> Message:
+        """
+        Constructs a new message object.
+        
+        :param event_data: The message data to use to create.
+        :param cache: Should this message be cached?
+        :return: A new :class:`~.Message` object for the message.
+        """
         message = Message(self.client, **event_data)
         # discord won't give us the Guild id
         # so we have to search it from the channels
         channel_id = int(event_data.get("channel_id"))
-        channel = self._get_channel(channel_id)
-        if not channel:
-            # fuck off discord
-            return None
+        channel = self.find_channel(channel_id)
 
         author_id = int(event_data.get("author", {}).get("id", 0))
 
@@ -796,7 +806,7 @@ class State(object):
                 reaction.me = True
 
         member_id = int(event_data.get("user_id", 0))
-        channel = self._get_channel(int(event_data.get("channel_id", 0)))
+        channel = self.find_channel(int(event_data.get("channel_id", 0)))
         if channel.guild:
             author = channel.guild.members.get(member_id)
         else:
@@ -988,7 +998,7 @@ class State(object):
         Called when a channel is updated.
         """
         channel_id = int(event_data.get("id"))
-        channel = self._get_channel(channel_id)
+        channel = self.find_channel(channel_id)
 
         if not channel:
             return
@@ -1007,7 +1017,7 @@ class State(object):
         Called when a channel is deleted.
         """
         channel_id = int(event_data.get("channel_id", 0))
-        channel = self._get_channel(channel_id)
+        channel = self.find_channel(channel_id)
 
         if not channel:
             return
@@ -1094,7 +1104,7 @@ class State(object):
         member_id = int(event_data.get("user_id"))
         channel_id = int(event_data.get("channel_id"))
 
-        channel = self._get_channel(channel_id)
+        channel = self.find_channel(channel_id)
         if not channel:
             return
 
@@ -1187,7 +1197,7 @@ class State(object):
         """
         Called when a message is acknowledged.
         """
-        channel = self._get_channel(int(event_data.get("channel_id", 0)))
+        channel = self.find_channel(int(event_data.get("channel_id", 0)))
         try:
             message = self._find_message(int(event_data.get("message_id", 0)))
         except ValueError:
@@ -1265,7 +1275,7 @@ class State(object):
 
         user = self._users.get(int(user.get("id", 0)))
 
-        channel = self._get_channel(channel_id=id)
+        channel = self.find_channel(channel_id=id)
         if channel is None:
             return
 
@@ -1281,7 +1291,7 @@ class State(object):
         id = int(event_data.get("channel_id", 0))
 
         user = self._users.get(int(user.get("id", 0)))
-        channel = self._get_channel(channel_id=id)
+        channel = self.find_channel(channel_id=id)
         if channel is None:
             return
 
