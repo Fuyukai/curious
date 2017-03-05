@@ -561,10 +561,9 @@ class State(object):
                 continue
 
             game = presence.get("game", None)
-            if game is None:
-                game = {}
+            if game is not None:
+                member.game = Game(**game)
 
-            member.game = Game(**game)
             member.status = presence.get("status")
 
         self.logger.info("Processed a guild sync for guild {} with "
