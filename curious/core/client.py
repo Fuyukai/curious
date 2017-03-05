@@ -4,6 +4,7 @@ The main client class.
 This contains a definition for :class:`.Client` which is used to interface primarily with Discord.
 """
 
+import enum
 import importlib
 import inspect
 import logging
@@ -32,7 +33,35 @@ from curious.exc import CuriousError
 from curious.http.httpclient import HTTPClient
 from curious.util import attrdict, base64ify
 
+#: A sentinel value to indicate that the client should automatically shard.
 AUTOSHARD = object()
+
+
+class BotType(enum.IntEnum):
+    """
+    An enum that signifies what type of bot this bot is.
+    
+    This will tell the commands handling how to respond, as well as how to log in.
+    """
+    #: Regular bot. This signifies that the client should log in as a bot account.
+    BOT = 1
+
+    #: User bot. This signifies that the client should log in as a user account.
+    USERBOT = 2
+
+    # 4 is reserved
+
+    #: No bot responses. This signifies that the client should respond to ONLY USER messages.
+    ONLY_USER = 8
+
+    #: No DMs. This signifies the bot only works in guilds.
+    NO_DMS = 16
+
+    #: No guilds. This signifies the bot only works in DMs.
+    NO_GUILDS = 32
+
+    #: Self bot. This signifies the bot only responds to itself.
+    SELF_BOT = 64
 
 
 def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
@@ -40,7 +69,7 @@ def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     Splits a message into individual parts by `delim`, returning a list of strings.
     This method preserves quotes.
     
-    .. code::
+    .. code-block:: python
     
         content = '!send "Fuyukai desu" "Hello, world!"'
         split = split_message_content(content, delim=" ")
@@ -81,7 +110,7 @@ def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
     the function at any time.
     
     :param prefix: A :class:`str` or :class:`typing.Iterable[str]` that represents the prefix(es) to use. 
-    :return: A callable that can 
+    :return: A callable that can be used for the ``message_check`` function on the client.
     """
 
     def __inner(bot: Client, message):
@@ -129,7 +158,7 @@ class Client(object):
                  message_check=None,
                  description: str = "The default curious description",
                  state_klass: type = None,
-                 bot: bool=True, self_bot: bool=False):
+                 bot_type: int = (BotType.BOT | BotType.ONLY_USER)):
         """
         :param token: The current token for this bot.
             This can be passed as None and can be initialized later.
@@ -161,20 +190,18 @@ class Client(object):
         #: The token for the bot.
         self._token = token
 
-        #: The current connection state for the bot.
         if state_klass is None:
             from curious.core.state import State
             state_klass = State
+
+        #: The current connection state for the bot.
         self.state = state_klass(self)
 
-        #: If this client is a bot.
-        self.is_bot = bot
+        #: The bot type for this bot.
+        self.bot_type = bot_type
 
-        if self.is_bot and self_bot is True:
-            raise CuriousError("Cannot be a bot account and a self bot at the same time")
-
-        #: If this is a self bot.
-        self.self_bot = self_bot
+        if self.bot_type & BotType.BOT and self.bot_type & BotType.USERBOT:
+            raise ValueError("Bot cannot be a bot and a userbot at the same time")
 
         #: The current event storage.
         self.events = multidict.MultiDict()
@@ -411,7 +438,7 @@ class Client(object):
         """
         gateway = kwargs.pop("gateway")
 
-        if not self.state.is_ready(gateway.shard_id).is_set():
+        if not self.state.is_ready(gateway.shard_id).is_set() and event_name != "connect":
             return
 
         if "ctx" not in kwargs:
@@ -470,7 +497,18 @@ class Client(object):
 
         user = message.author.user if hasattr(message.author, "user") else message.author
 
-        if self.self_bot and user != self.user:
+        # check for bot type
+        if self.bot_type & BotType.SELF_BOT and user != self.user:
+            print("selfbot")
+            return
+
+        if self.bot_type & BotType.NO_DMS and message.channel.is_private:
+            return
+
+        if self.bot_type & BotType.NO_GUILDS and message.channel.guild_id is not None:
+            return
+
+        if self.bot_type & BotType.ONLY_USER and user.bot:
             return
 
         if not message.content:
@@ -654,7 +692,7 @@ class Client(object):
         return next(f, None)
 
     # Gateway functions
-    async def change_status(self, game: Game = None, status: Status = Status.ONLINE, afk: bool=False,
+    async def change_status(self, game: Game = None, status: Status = Status.ONLINE, afk: bool = False,
                             shard_id: int = 0):
         """
         Changes the bot's current status.
@@ -746,7 +784,8 @@ class Client(object):
     # HTTP Functions
     async def edit_profile(self, *,
                            username: str = None,
-                           avatar: bytes = None):
+                           avatar: bytes = None,
+                           password: str = None):
         """
         Edits the profile of this bot.
 
@@ -755,6 +794,7 @@ class Client(object):
 
         :param username: The new username of the bot.
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
+        :param password: The password to use. Only for user accounts.
         """
         if username:
             if not 2 <= len(username) <= 32:
@@ -843,9 +883,9 @@ class Client(object):
             self._token = token
 
         if not self.http:
-            self.http = HTTPClient(self._token, bot=self.is_bot)
+            self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
 
-        if not self.application_info and self.is_bot:
+        if not self.application_info and self.bot_type & BotType.BOT:
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
 
         gateway_url = await self.get_gateway_url()
@@ -973,7 +1013,7 @@ class Client(object):
         if token is not None:
             self._token = token
 
-        if not self.is_bot and shards != 1:
+        if not self.bot_type & BotType.BOT and shards != 1:
             raise CuriousError("Cannot start user bots in sharded mode")
 
         try:

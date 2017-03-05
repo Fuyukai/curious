@@ -134,8 +134,8 @@ class State(object):
         if self.have_all_chunks(gw.shard_id):
             # Have all chunks anyway, dispatch now.
             self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
-            await self.client.fire_event("ready", gateway=gw)
             await self.is_ready(gw.shard_id).set()
+            await self.client.fire_event("ready", gateway=gw)
 
             # check for userbots
             if not self._user.bot:
