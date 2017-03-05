@@ -448,7 +448,7 @@ class Client(object):
             return
 
         if "ctx" not in kwargs:
-            ctx = EventContext(self, gateway.shard_id)
+            ctx = EventContext(self, gateway.shard_id, event_name)
         else:
             ctx = kwargs.pop("ctx")
 

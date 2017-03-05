@@ -1,6 +1,8 @@
 """
 Special helpers for events.
 """
+import typing
+
 from curious.dataclasses.user import User
 
 
@@ -46,6 +48,13 @@ class EventContext(object):
         """
         return self.bot.user
 
+    @property
+    def handlers(self) -> typing.List[typing.Callable[['EventContext'], None]]:
+        """
+        :return: A list of handlers registered for this event. 
+        """
+        return self.bot.events.getall(self.event_name, [])
+
     def change_status(self, *args, **kwargs):
         """
         Changes the current status for this shard.
@@ -57,4 +66,7 @@ class EventContext(object):
 
     @property
     def gateway(self):
+        """
+        :return: The :class:`~.Gateway` that produced this event. 
+        """
         return self.bot._gateways[self.shard_id]
