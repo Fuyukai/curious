@@ -447,11 +447,6 @@ class Client(object):
         if not self.state.is_ready(gateway.shard_id).is_set() and event_name != "connect":
             return
 
-        if "ctx" not in kwargs:
-            ctx = EventContext(self, gateway.shard_id, event_name)
-        else:
-            ctx = kwargs.pop("ctx")
-
         coros = self.events.getall(event_name, [])
 
         temporary_listeners = self._temporary_listeners.getall(event_name, [])
@@ -463,6 +458,11 @@ class Client(object):
             "Dispatching event {} to {} listeners"
             " on shard {}".format(event_name, len(coros) + len(temporary_listeners), gateway.shard_id)
         )
+
+        if "ctx" not in kwargs:
+            ctx = EventContext(self, gateway.shard_id, event_name)
+        else:
+            ctx = kwargs.pop("ctx")
 
         tasks = []
         for event in coros.copy():
