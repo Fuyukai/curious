@@ -178,8 +178,7 @@ class Client(object):
             
         :param state_klass: The class to construct the connection state from.
         
-        :param bot: If this client represents a bot user.
-        :param self_bot: If this bot is a self bot (i.e only responds to the user).
+        :param bot_type: A union of :class:`~.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.
         self._gateways = {}  # type: typing.Dict[int, Gateway]
@@ -256,14 +255,14 @@ class Client(object):
     @property
     def user(self) -> BotUser:
         """
-        :return: The :class:`User` that this client is logged in as.
+        :return: The :class:`~.User` that this client is logged in as.
         """
         return self.state._user
 
     @property
     def guilds(self) -> 'typing.Mapping[int, dt_guild.Guild]':
         """
-        :return: A mapping of :class:`Guild` that this client can see.
+        :return: A mapping of int -> :class:`~.Guild` that this client can see.
         """
         return self.state.guilds
 
@@ -350,6 +349,13 @@ class Client(object):
         A convenience decorator to mark a function as an event.
 
         This will copy it to the events dictionary, where it will be used as an event later on.
+
+        .. code-block:: python
+        
+            @bot.event("message_create")
+            async def something(ctx, message: Message):
+                pass
+                
 
         :param name: The name of the event.
         """

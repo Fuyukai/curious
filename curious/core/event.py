@@ -1,6 +1,7 @@
 """
 Special helpers for events.
 """
+from curious.dataclasses.user import User
 
 
 def event(name, scan: bool=True):
@@ -22,20 +23,38 @@ def event(name, scan: bool=True):
 class EventContext(object):
     """
     Represents a special context that are passed to events.
-
-    :ivar client: The client instance that the event is currently connected to.
-    :ivar shard_id: The shard ID that this event was sent on.
     """
 
-    def __init__(self, cl, shard_id: int):
-        self.client = cl
+    def __init__(self, cl, shard_id: int,
+                 event_name: str):
+        #: The :class:`~.Client` instance that this event was fired under.
+        self.bot = cl
+
+        # shard info
+        #: The shard this event was received on.
         self.shard_id = shard_id
+        #: The shard for this bot.
         self.shard_count = cl.shard_count
 
+        #: The event name for this event.
+        self.event_name = event_name
+
+    @property
+    def user(self) -> User:
+        """
+        :return: The :class:`~.User` associated with this event. 
+        """
+        return self.bot.user
+
     def change_status(self, *args, **kwargs):
+        """
+        Changes the current status for this shard.
+        
+        This takes the same arguments as :class:`~.Client.change_status`, but ignoring the shard ID.
+        """
         kwargs["shard_id"] = self.shard_id
-        return self.client.change_status(*args, **kwargs)
+        return self.bot.change_status(*args, **kwargs)
 
     @property
     def gateway(self):
-        return self.client._gateways[self.shard_id]
+        return self.bot._gateways[self.shard_id]
