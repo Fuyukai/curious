@@ -411,6 +411,9 @@ class Client(object):
         """
         gateway = kwargs.pop("gateway")
 
+        if not self.state.is_ready(gateway.shard_id).is_set():
+            return
+
         if "ctx" not in kwargs:
             ctx = EventContext(self, gateway.shard_id)
         else:
