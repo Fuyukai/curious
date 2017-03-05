@@ -499,7 +499,6 @@ class Client(object):
 
         # check for bot type
         if self.bot_type & BotType.SELF_BOT and user != self.user:
-            print("selfbot")
             return
 
         if self.bot_type & BotType.NO_DMS and message.channel.is_private:
