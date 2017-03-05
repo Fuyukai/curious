@@ -31,7 +31,9 @@ This document displays the differences between each release of curious.
 
  - The client will now wait for the gateway to be ready before firing any events.
 
- - Add :class:`~.BotType` to more finely control how bots are defined.
+ - Add :class:`.BotType` to more finely control how bots are defined.
+
+ - Add :attr:`.EventContext.event_name`, :attr:`.EventContext.handlers`.
 
 0.2.1
 -----
