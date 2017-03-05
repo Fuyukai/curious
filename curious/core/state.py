@@ -69,7 +69,13 @@ class State(object):
         self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: curio.Event())
         self.__voice_state_crap = collections.defaultdict(lambda *args, **kwargs: ((curio.Event(), curio.Event()), {}))
 
-    def _is_ready(self, shard_id: int):
+    def is_ready(self, shard_id: int) -> curio.Event:
+        """
+        Checks if a shard is ready.
+        
+        :param shard_id: The shard ID to check.
+        :return: A :class:`curio.Event` signifying if this shard is ready or not.
+        """
         return self.__shards_is_ready[shard_id]
 
     def _reset(self, shard_id: int):
@@ -121,7 +127,7 @@ class State(object):
         """
         Checks if we should dispatch ready for this shard.
         """
-        if self._is_ready(gw.shard_id).is_set():
+        if self.is_ready(gw.shard_id).is_set():
             # Already ready, don't bother.
             return
 
@@ -129,7 +135,7 @@ class State(object):
             # Have all chunks anyway, dispatch now.
             self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
-            await self._is_ready(gw.shard_id).set()
+            await self.is_ready(gw.shard_id).set()
 
             # check for userbots
             if not self._user.bot:
@@ -415,7 +421,7 @@ class State(object):
 
         # However, if the client has no guilds, we DO want to fire ready.
         if len(event_data.get("guilds", {})) == 0:
-            await self._is_ready(gw.shard_id).set()
+            await self.is_ready(gw.shard_id).set()
             self.logger.info("No more guilds to get for shard {}, or client is user. "
                              "Dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
@@ -584,7 +590,7 @@ class State(object):
         guild.me.status = gw.status
 
         # Dispatch the event if we're ready (i.e not streaming)
-        if self._is_ready(gw.shard_id).is_set():
+        if self.is_ready(gw.shard_id).is_set():
             if had_guild:
                 await self.client.fire_event("guild_available", guild, gateway=gw)
             else:

@@ -19,6 +19,8 @@ This document displays the differences between each release of curious.
 
  - Unprivatize :meth:`.State.find_channel` and add :meth:`.Client.find_channel` to use this method.
 
+ - Unprivatize :meth:`.State.is_ready`.
+
  - Change sharding slightly:
 
     - :meth:`.Client.boot_shard` will boot one shard and add its gateway to the internal list.
