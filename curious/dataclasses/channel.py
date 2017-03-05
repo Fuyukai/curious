@@ -274,7 +274,7 @@ class Channel(Dataclass):
         if self.type != ChannelType.VOICE:
             raise NotImplementedError("No members for channels that aren't voice channels")
 
-        return list(filter(lambda member: member.voice.channel == self, self.guild.members))
+        return list(filter(lambda member: member.voice.channel == self, self.guild.members.values()))
 
     def permissions(self, object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """

@@ -17,7 +17,7 @@ class WidgetChannel(Dataclass):
     """
 
     def __init__(self, bot, guild: 'WidgetGuild', **kwargs):
-        super().__init__(id=int(kwargs.get("id", 0)), client=bot)
+        super().__init__(id=int(kwargs.get("id", 0)), cl=bot)
 
         #: The name of this channel.
         self.name = kwargs.pop("name")
@@ -38,7 +38,7 @@ class WidgetMember(Dataclass):
     """
 
     def __init__(self, bot, guild: 'WidgetGuild', kwargs):
-        super().__init__(id=int(kwargs.get("id", 0)), client=bot)
+        super().__init__(id=int(kwargs.get("id", 0)), cl=bot)
 
         # construct a superficial user dict
         user_dict = {
@@ -70,7 +70,7 @@ class WidgetGuild(Dataclass):
     """
 
     def __init__(self, bot, **kwargs):
-        super().__init__(id=int(kwargs.get("id", 0)), client=bot)
+        super().__init__(id=int(kwargs.get("id", 0)), cl=bot)
 
         #: The name of this guild.
         self.name = kwargs.pop("name", "")
