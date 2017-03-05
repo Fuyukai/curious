@@ -31,6 +31,8 @@ This document displays the differences between each release of curious.
 
  - The client will now wait for the gateway to be ready before firing any events.
 
+ - Add :class:`~.BotType` to more finely control how bots are defined.
+
 0.2.1
 -----
 
