@@ -20,10 +20,10 @@ class WidgetChannel(Dataclass):
         super().__init__(id=int(kwargs.get("id", 0)), cl=bot)
 
         #: The name of this channel.
-        self.name = kwargs.pop("name")
+        self.name = kwargs.get("name")
 
         #: The position of this channel.
-        self.position = kwargs.pop("position", -1)
+        self.position = kwargs.get("position", -1)
 
         #: The guild ID for this channel.
         self.guild_id = guild.id
@@ -73,7 +73,7 @@ class WidgetGuild(Dataclass):
         super().__init__(id=int(kwargs.get("id", 0)), cl=bot)
 
         #: The name of this guild.
-        self.name = kwargs.pop("name", "")
+        self.name = kwargs.get("name", "")
 
         #: The channels in this widget guild.
         self._channels = {}  # type: typing.List[WidgetChannel]

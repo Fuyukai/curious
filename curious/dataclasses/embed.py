@@ -14,7 +14,7 @@ def _(s, n, v): raise KeyError(n)
 
 class Attachment(attrdict):
     def __init__(self, **kwargs):
-        self.id = int(kwargs.pop("id", 0))
+        self.id = int(kwargs.get("id", 0))
         attrdict.__init__(self, **kwargs)
 
     def __eq__(self, other):

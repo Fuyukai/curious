@@ -20,18 +20,18 @@ class Emoji(IDObject):
     __slots__ = ("id", "name", "roles", "_role_ids", "require_colons", "managed", "guild")
 
     def __init__(self, **kwargs):
-        super().__init__(int(kwargs.pop("id")))
+        super().__init__(int(kwargs.get("id")))
 
         #: The name of this emoji.
-        self.name = kwargs.pop("name", None)
+        self.name = kwargs.get("name", None)
 
         # this is empty until it's filled up by our guild object
         #: The list of :class:`~.Role` this emoji can be used by.
         self.roles = []  # type: typing.List[dt_role.Role]
-        self._role_ids = kwargs.pop("roles", [])
+        self._role_ids = kwargs.get("roles", [])
 
         #: If this emoji requires colons to use.
-        self.require_colons = kwargs.pop("require_colons", False)
+        self.require_colons = kwargs.get("require_colons", False)
 
         #: If this emoji is managed or not.
         self.managed = False

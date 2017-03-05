@@ -27,10 +27,10 @@ class InviteGuild(IDObject):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(kwargs.pop("id"))
+        super().__init__(kwargs.get("id"))
 
         #: The name of this guild.
-        self.name = kwargs.pop("name", None)  # type: str
+        self.name = kwargs.get("name", None)  # type: str
 
         #: The splash hash of this guild.
         self._splash_hash = kwargs.get("splash")  # type: str
@@ -66,13 +66,13 @@ class InviteChannel(IDObject):
     """
 
     def __init__(self, **kwargs):
-        super().__init__(kwargs.pop("id"))
+        super().__init__(kwargs.get("id"))
 
         #: The name of this channel.
-        self.name = kwargs.pop("name")
+        self.name = kwargs.get("name")
 
         #: The :class:`~.ChannelType` of this channel.
-        self.type = dt_channel.ChannelType(kwargs.pop("type"))
+        self.type = dt_channel.ChannelType(kwargs.get("type"))
 
     def __repr__(self):
         return "<InviteChannel name={}>".format(self.name)
@@ -87,22 +87,22 @@ class InviteMetadata(object):
 
     def __init__(self, **kwargs):
         #: The number of times this invite was used.
-        self.uses = kwargs.pop("uses", 0)  # type: int
+        self.uses = kwargs.get("uses", 0)  # type: int
 
         #: The maximum number of uses this invite can use.
-        self.max_uses = kwargs.pop("max_uses", 0)  # type: int
+        self.max_uses = kwargs.get("max_uses", 0)  # type: int
 
         #: The maximum age of this invite.
-        self.max_age = kwargs.pop("max_age", 0)  # type: int
+        self.max_age = kwargs.get("max_age", 0)  # type: int
 
         #: Is this invite temporary?
-        self.temporary = kwargs.pop("temporary", False)  # type: bool
+        self.temporary = kwargs.get("temporary", False)  # type: bool
 
         #: When was this invite created at?
-        self.created_at = util.to_datetime(kwargs.pop("created_at", None))
+        self.created_at = util.to_datetime(kwargs.get("created_at", None))
 
         #: Is this invite revoked?
-        self.revoked = kwargs.pop("revoked", False)  # type: bool
+        self.revoked = kwargs.get("revoked", False)  # type: bool
 
 
 class Invite(object):
@@ -129,11 +129,11 @@ class Invite(object):
 
         # The invite guild this is attached to.
         # The actual guild object can be more easily fetched with `.guild`.
-        self._invite_guild = InviteGuild(**kwargs.pop("guild"))
+        self._invite_guild = InviteGuild(**kwargs.get("guild"))
 
         # The invite channel this is attached to.
         # The actual channel object can be more easily fetched with `.channel`.
-        self._invite_channel = InviteChannel(**kwargs.pop("channel"))
+        self._invite_channel = InviteChannel(**kwargs.get("channel"))
 
         #: The invite metadata object associated with this invite.
         #: This can be None if the invite has no metadata.

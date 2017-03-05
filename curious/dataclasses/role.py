@@ -22,28 +22,28 @@ class Role(Dataclass):
     __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", "guild"
 
     def __init__(self, client, **kwargs):
-        super().__init__(kwargs.pop("id"), client)
+        super().__init__(kwargs.get("id"), client)
 
         #: The name of this role.
-        self.name = kwargs.pop("name", None)
+        self.name = kwargs.get("name", None)
 
         #: The colour of this role.
-        self.colour = kwargs.pop("color", 0)
+        self.colour = kwargs.get("color", 0)
 
         #: Is this role hoisted?
-        self.hoisted = kwargs.pop("hoist", False)
+        self.hoisted = kwargs.get("hoist", False)
 
         #: Is this role mentionable?
-        self.mentionable = kwargs.pop("mentionable", False)
+        self.mentionable = kwargs.get("mentionable", False)
 
         #: The permissions of this role.
-        self.permissions = dt_permissions.Permissions(kwargs.pop("permissions", 0))
+        self.permissions = dt_permissions.Permissions(kwargs.get("permissions", 0))
 
         #: Is this role managed?
-        self.managed = kwargs.pop("managed", False)
+        self.managed = kwargs.get("managed", False)
 
         #: The position of this role.
-        self.position = kwargs.pop("position", 0)
+        self.position = kwargs.get("position", 0)
 
         #: The :class:`~.Guild` this role is associated with.
         self.guild = None  # type: dt_guild.Guild

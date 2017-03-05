@@ -33,9 +33,9 @@ class Game(object):
     """
 
     def __init__(self, **kwargs):
-        self.type = kwargs.pop("type", None)
-        self.url = kwargs.pop("url", None)
-        self.name = kwargs.pop("name", None)
+        self.type = kwargs.get("type", None)
+        self.url = kwargs.get("url", None)
+        self.name = kwargs.get("name", None)
 
     def to_dict(self):
         d = {

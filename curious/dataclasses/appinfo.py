@@ -19,36 +19,36 @@ class AppInfo(object):
     def __init__(self, client, **kwargs):
         self._bot = client
 
-        self._application = kwargs.pop("application", {})
+        self._application = kwargs.get("application", {})
 
         #: The client ID of this application.
-        self.client_id = int(self._application.pop("id", 0))
+        self.client_id = int(self._application.get("id", 0))
 
         #: The owner of this application.
         #: This can be None if the application fetched isn't the bot's.
         if "owner" in self._application:
-            self.owner = self._bot.state.make_user(self._application.pop("owner"))
+            self.owner = self._bot.state.make_user(self._application.get("owner"))
         else:
             self.owner = None
 
         #: The name of this application.
-        self.name = self._application.pop("name", None)  # type: str
+        self.name = self._application.get("name", None)  # type: str
 
         #: The description of this application.
-        self.description = self._application.pop("description", None)  # type: str
+        self.description = self._application.get("description", None)  # type: str
 
         #: Is this bot public?
-        self.public = self._application.pop("bot_public", None)  # type: bool
+        self.public = self._application.get("bot_public", None)  # type: bool
 
         #: Does this bot require OAuth2 Code Grant?
-        self.requires_code_grant = self._application.pop("bot_require_code_grant", None)  # type: bool
+        self.requires_code_grant = self._application.get("bot_require_code_grant", None)  # type: bool
 
         #: The icon hash for this application.
-        self._icon_hash = self._application.pop("icon", None)  # type: str
+        self._icon_hash = self._application.get("icon", None)  # type: str
 
         if "bot" in kwargs:
             #: The bot :class:`~.User` associated with this application.
-            self.bot = self._bot.state.make_user(kwargs.pop("bot", {}))  # type: User
+            self.bot = self._bot.state.make_user(kwargs.get("bot", {}))  # type: User
         else:
             self.bot = None
 

@@ -36,10 +36,10 @@ class Member(Dataclass):
         self._roles = {}
 
         #: The date the user joined the guild.
-        self.joined_at = to_datetime(kwargs.pop("joined_at", None))
+        self.joined_at = to_datetime(kwargs.get("joined_at", None))
 
         #: The member's current nickname.
-        self.nickname = kwargs.pop("nick", None)
+        self.nickname = kwargs.get("nick", None)
 
         #: The member's current :class:`~.Guild`.
         self.guild = None  # type: guild.Guild

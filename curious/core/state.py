@@ -219,11 +219,11 @@ class State(object):
         if "content" in event_data:
             # message object, so we have to do a minor bit of remapping
             user = event_data.get("author", {})
-            webhook_id = int(event_data.pop("webhook_id", 0))
+            webhook_id = int(event_data.get("webhook_id", 0))
             owner = {}
         else:
             # make a "fake" user
-            webhook_id = int(event_data.pop("id", 0))
+            webhook_id = int(event_data.get("id", 0))
             user = {
                 "id": webhook_id,
                 "discriminator": "0000",
@@ -312,7 +312,7 @@ class State(object):
                 message.author = message.guild.members.get(author_id)
 
         for reaction_data in event_data.get("reactions", []):
-            emoji = reaction_data.pop("emoji")
+            emoji = reaction_data.get("emoji")
             reaction = Reaction(**reaction_data)
 
             if "id" in emoji and emoji["id"] is not None:
@@ -791,7 +791,7 @@ class State(object):
         reaction = next(filter(_f, message.reactions), None)
 
         if not reaction:
-            emoji = event_data.pop("emoji", {})
+            emoji = event_data.get("emoji", {})
             # no useful args are added
             reaction = Reaction()
 
@@ -1039,7 +1039,7 @@ class State(object):
         """
         Called when a role is created.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         if not guild:
@@ -1057,7 +1057,7 @@ class State(object):
         """
         Called when a role is updated.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         if not guild:
@@ -1086,7 +1086,7 @@ class State(object):
         """
         Called when a role is deleted.
         """
-        guild_id = int(event_data.get("guild_id"))
+        guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
         if not guild:

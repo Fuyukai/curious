@@ -29,6 +29,8 @@ This document displays the differences between each release of curious.
     - :meth:`.Client.start` will now use ``boot_shard`` to load a shard, so overriding it in a subclass can
       customize shard creation.
 
+ - The client will now wait for the gateway to be ready before firing any events.
+
 0.2.1
 -----
 

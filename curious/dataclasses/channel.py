@@ -178,29 +178,32 @@ class Channel(Dataclass):
     Represents a channel object.
     """
 
-    __slots__ = ("id", "name", "topic", "guild", "type", "recipients", "position", "_last_message_id", "_overwrites",
-                 "typing", "_bot")
+    __slots__ = ("id", "name", "topic", "guild_id", "guild", "type", "recipients", "position", "_last_message_id",
+                 "_overwrites", "typing", "_bot")
 
     def __init__(self, client, guild: 'dt_guild.Guild', **kwargs):
-        super().__init__(kwargs.pop("id"), client)
+        super().__init__(kwargs.get("id"), client)
 
         #: The name of this channel.
-        self.name = kwargs.pop("name", None)
+        self.name = kwargs.get("name", None)
 
         #: The topic of this channel.
-        self.topic = kwargs.pop("topic", None)
+        self.topic = kwargs.get("topic", None)
+
+        #: The ID of the guild this is associated with.
+        self.guild_id = int(kwargs.get("guild_id", 0)) or None
 
         #: The :class:`~.Guild` this channel is associated with.
         #: This can sometimes be None, if this channel is a private channel.
         self.guild = guild  # type: dt_guild.Guild
 
         #: The :class:`~.ChannelType` of channel this channel is.
-        self.type = ChannelType(kwargs.pop("type", 0))
+        self.type = ChannelType(kwargs.get("type", 0))
 
         #: If private, the list of :class:`~.User` that are in this channel.
         self.recipients = []
         if self.is_private:
-            for recipient in kwargs.pop("recipients"):
+            for recipient in kwargs.get("recipients"):
                 self.recipients.append(self._bot.state.make_user(recipient))
 
             if self.type == ChannelType.GROUP:
@@ -208,11 +211,11 @@ class Channel(Dataclass):
                 self.recipients.append(self._bot.user)
 
         #: The position of this channel.
-        self.position = kwargs.pop("position", 0)
+        self.position = kwargs.get("position", 0)
 
         #: The last message ID of this channel.
         #: Used for history.
-        _last_message_id = kwargs.pop("last_message_id", 0)
+        _last_message_id = kwargs.get("last_message_id", 0)
         if _last_message_id:
             self._last_message_id = int(_last_message_id)
         else:
@@ -220,7 +223,7 @@ class Channel(Dataclass):
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
-        self._update_overwrites(kwargs.pop("permission_overwrites", []))
+        self._update_overwrites(kwargs.get("permission_overwrites", []))
 
         self.typing = self._typing
 

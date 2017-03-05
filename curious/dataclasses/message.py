@@ -35,10 +35,10 @@ class Message(Dataclass):
                  "_mentions", "_role_mentions", "reactions", "channel_id", "author_id")
 
     def __init__(self, client, **kwargs):
-        super().__init__(kwargs.pop("id"), client)
+        super().__init__(kwargs.get("id"), client)
 
         #: The content of the message.
-        self.content = kwargs.pop("content", None)  # type: str
+        self.content = kwargs.get("content", None)  # type: str
 
         #: The guild this message was sent in.
         #: This can be None if the message was sent in a DM.
@@ -58,11 +58,11 @@ class Message(Dataclass):
 
         #: The true timestamp of this message.
         #: This is not the snowflake timestamp.
-        self.created_at = to_datetime(kwargs.pop("timestamp", None))
+        self.created_at = to_datetime(kwargs.get("timestamp", None))
 
         #: The edited timestamp of this message.
         #: This can sometimes be None.
-        edited_timestamp = kwargs.pop("edited_timestamp", None)
+        edited_timestamp = kwargs.get("edited_timestamp", None)
         if edited_timestamp is not None:
             self.edited_at = to_datetime(edited_timestamp)
         else:
@@ -81,11 +81,11 @@ class Message(Dataclass):
 
         #: The mentions for this message.
         #: This is UNORDERED.
-        self._mentions = kwargs.pop("mentions", [])
+        self._mentions = kwargs.get("mentions", [])
 
         #: The role mentions for this message.
         #: This is UNORDERED.
-        self._role_mentions = kwargs.pop("mention_roles", [])
+        self._role_mentions = kwargs.get("mention_roles", [])
 
         #: The reactions for this message.
         self.reactions = []

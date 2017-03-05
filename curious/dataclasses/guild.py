@@ -39,7 +39,7 @@ class Guild(Dataclass):
         """
         Creates a new Guild object.
         """
-        super().__init__(kwargs.pop("id"), bot)
+        super().__init__(kwargs.get("id"), bot)
 
         #: If the guild is unavailable or not.
         #: If this is True, many fields return `None`.
@@ -304,7 +304,7 @@ class Guild(Dataclass):
 
         :param data: The GUILD_CREATE data to use.
         """
-        self.unavailable = data.pop("unavailable", False)
+        self.unavailable = data.get("unavailable", False)
 
         if self.unavailable:
             # We can't use any of the extra data here, so don't bother.
@@ -352,6 +352,8 @@ class Guild(Dataclass):
         for channel_data in data.get("channels", []):
             channel_obj = channel.Channel(self._bot, guild=self, **channel_data)
             channel_obj.guild = self
+            # sometimes this doesn't show up in the data
+            channel_obj.guild_id = self.id
             self._channels[channel_obj.id] = channel_obj
 
         # Create all of the voice states.

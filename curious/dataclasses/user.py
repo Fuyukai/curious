@@ -69,26 +69,26 @@ class User(Dataclass):
     __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot", "_bot")
 
     def __init__(self, client, **kwargs):
-        super().__init__(kwargs.pop("id"), client)
+        super().__init__(kwargs.get("id"), client)
 
         #: The username of this user.
-        self.username = kwargs.pop("username", None)
+        self.username = kwargs.get("username", None)
 
         #: The discriminator of this user.
         #: Note: This is a string, not an integer.
-        self.discriminator = kwargs.pop("discriminator", None)
+        self.discriminator = kwargs.get("discriminator", None)
 
         #: The avatar hash of this user.
-        self._avatar_hash = kwargs.pop("avatar", None)
+        self._avatar_hash = kwargs.get("avatar", None)
 
         #: If this user is verified or not.
-        self.verified = kwargs.pop("verified", None)
+        self.verified = kwargs.get("verified", None)
 
         #: If this user has MFA enabled or not.
-        self.mfa_enabled = kwargs.pop("mfa_enabled", None)
+        self.mfa_enabled = kwargs.get("mfa_enabled", None)
 
         #: If this user is a bot.
-        self.bot = kwargs.pop("bot", False)
+        self.bot = kwargs.get("bot", False)
 
     def _copy(self):
         new_object = object.__new__(self.__class__)
@@ -257,7 +257,7 @@ class BotUser(User):
         final = []
 
         for item in data:
-            id = int(item.pop("id", 0))
+            id = int(item.get("id", 0))
             final.append(AuthorizedApp(id=id, scopes=item.get("scopes", []),
                                        application=AppInfo(self._bot, **item)))
 

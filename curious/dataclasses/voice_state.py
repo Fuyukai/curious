@@ -17,24 +17,24 @@ class VoiceState(object):
                  "_self_deaf", "_server_deaf")
 
     def __init__(self, user: 'dt_user.User', **kwargs):
-        self._user_id = int(kwargs.pop("user_id", 0)) or None
+        self._user_id = int(kwargs.get("user_id", 0)) or None
         #: The user object this voice state is for.
         self.user = user
 
-        self._guild_id = int(kwargs.pop("guild_id", 0)) or None
+        self._guild_id = int(kwargs.get("guild_id", 0)) or None
 
         #: The guild this voice state is associated with.
         self.guild = None  # type: dt_guild.Guild
 
-        self._channel_id = int(kwargs.pop("channel_id", 0)) or None
+        self._channel_id = int(kwargs.get("channel_id", 0)) or None
         #: The voice channel this member is in.
         self.channel = None  # type: dt_channel.Channel
 
         # Internal state values.
-        self._self_mute = kwargs.pop("self_mute", False)
-        self._server_mute = kwargs.pop("mute", False)
-        self._self_deaf = kwargs.pop("self_deaf", False)
-        self._server_deaf = kwargs.pop("deaf", False)
+        self._self_mute = kwargs.get("self_mute", False)
+        self._server_mute = kwargs.get("mute", False)
+        self._self_deaf = kwargs.get("self_deaf", False)
+        self._server_deaf = kwargs.get("deaf", False)
 
     @property
     def muted(self) -> bool:
