@@ -500,6 +500,7 @@ class Gateway(object):
 
         event_data = _loader(event)
         # self.logger.debug("Got event {}".format(event_data))
+        await self.state.client.fire_event("gateway_event_received", event_data, gateway=self)
 
         op = event_data.get('op')
         data = event_data.get('d')
@@ -552,6 +553,7 @@ class Gateway(object):
 
             if handler:
                 self.logger.debug("Parsing event {}.".format(event))
+                await self.state.client.fire_event("dispatch_received", data, gateway=self)
                 # Invoke the handler, which will parse the data and update the cache internally.
                 # Yes, handlers are async.
                 # This is because curio requires `spawn()` to be async.
