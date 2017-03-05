@@ -1032,7 +1032,7 @@ class Client(object):
             coro = self.start(shards=shards)
 
         try:
-            return kernel.run(coro=coro, shutdown=True)
+            return kernel.run(coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
             if kernel._crashed:
                 self._logger.info("Kernel crashed, not cleaning up.")
