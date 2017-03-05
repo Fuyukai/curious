@@ -21,6 +21,6 @@ setup(
     extras_require={
         "voice": ["opuslib==1.1.0",
                 "PyNaCL==1.0.1"],
-        "docs": ["sphinx-bootstrap-theme", "sphinx", "sphinxcontrib-asyncio"]
+        "docs": ["guzzle_sphinx_theme", "sphinx", "sphinxcontrib-asyncio"]
     }
 )
