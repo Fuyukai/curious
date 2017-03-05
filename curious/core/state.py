@@ -219,7 +219,7 @@ class State(object):
         if "content" in event_data:
             # message object, so we have to do a minor bit of remapping
             user = event_data.get("author", {})
-            webhook_id = int(event_data.get("webhook_id", 0))
+            webhook_id = int(event_data.pop("webhook_id", 0))
             owner = {}
         else:
             # make a "fake" user

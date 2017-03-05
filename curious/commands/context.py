@@ -3,7 +3,7 @@ import typing
 from curious.core import client as cl
 from curious.core.event import EventContext
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, message as dt_message, \
-    user as dt_user
+    user as dt_user, webhook as dt_webhook
 
 
 class Context(object):
@@ -18,6 +18,7 @@ class Context(object):
     :ivar command: The command that is currently being invoked.
     :ivar raw_args: The raw split arguments of the message.
     """
+
     def __init__(self, client: 'cl.Client', message: 'dt_message.Message',
                  command, event_ctx):
         """
@@ -48,16 +49,16 @@ class Context(object):
         :return: The :class:`Channel` this context was invoked in. 
         """
         return self.message.channel
-    
+
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
         :return: The :class:`Guild` this context was invoked in. 
         """
         return self.message.guild
-    
+
     @property
-    def author(self) -> 'typing.Union[dt_member.Member, dt_user.User]':
+    def author(self) -> 'typing.Union[dt_member.Member, dt_user.User, dt_webhook.Webhook]':
         """
         :return: The :class:`Member` that invoked this command.
         """
