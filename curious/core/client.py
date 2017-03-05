@@ -1056,7 +1056,7 @@ class Client(object):
                 self._logger.info("Clean-up complete.")
                 raise SystemExit()
 
-            return kernel.run(coro=__cleanup(), timeout=5)
+            return kernel.run(__cleanup(), timeout=5)
 
     @classmethod
     def from_token(cls, token: str = None):
