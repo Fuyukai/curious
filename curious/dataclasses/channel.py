@@ -622,7 +622,8 @@ class Channel(Dataclass):
             content = str(content)
 
         # check for empty messages
-        if not content and (embed is None or self.permissions(self.guild.me).embed_links is False):
+        if not content and \
+                (embed is None or (self.guild is not None and self.permissions(self.guild.me).embed_links is False)):
             raise CuriousError("Content is empty and embed is either empty or you have no permission to embed")
 
         if embed is not None:
