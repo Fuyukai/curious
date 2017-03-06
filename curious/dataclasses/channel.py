@@ -742,7 +742,7 @@ class Channel(Dataclass):
             listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
         else:
             coro = self._bot.http.modify_overwrite(self.id, target.id, type_,
-                                                   allow=overwrite.allow, deny=overwrite.deny)
+                                                   allow=overwrite.allow.bitfield, deny=overwrite.deny.bitfield)
 
             async def _listener(ctx, before, after):
                 return after.id == self.id
