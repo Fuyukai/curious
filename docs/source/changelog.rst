@@ -35,6 +35,9 @@ This document displays the differences between each release of curious.
 
  - Add :attr:`.EventContext.event_name`, :attr:`.EventContext.handlers`.
 
+ - Add :attr:`.Client.events_handled` and :attr:`.Gateway._dispatches_handled` to show how many events have been
+   handled during the lifetime of the bot.
+
 0.2.1
 -----
 

@@ -273,6 +273,31 @@ class Client(object):
         """
         return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(self.application_info.client_id)
 
+    @property
+    def events_handled(self) -> collections.Counter:
+        """
+        A :class:`collections.Counter` of all events that have been handled since the bot's bootup.
+        This can be used to track statistics for events.
+         
+        .. code-block:: python
+        
+            @command()
+            async def events(self, ctx: Context):
+                '''
+                Shows the most common events.
+                '''
+                
+                ev = ctx.bot.events_handled.most_common(3)
+                await ctx.channel.send(", ".join("{}: {}".format(*x) for x in ev)
+        
+        """
+
+        c = collections.Counter()
+        for gw in self._gateways.values():
+            c.update(gw._dispatches_handled)
+
+        return c
+
     def find_channel(self, channel_id: int):
         """
         Finds a channel by channel ID.

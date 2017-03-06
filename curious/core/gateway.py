@@ -5,6 +5,8 @@ Websocket gateway code.
 """
 import enum
 import threading
+
+import collections
 import typing
 import queue
 import sys
@@ -184,6 +186,8 @@ class Gateway(object):
 
         #: The current status for this gateway.
         self.status = None
+
+        self._dispatches_handled = collections.Counter()
 
         self._enqueued_guilds = []
         self._stop_heartbeating = curio.Event()
@@ -553,6 +557,7 @@ class Gateway(object):
 
             if handler:
                 self.logger.debug("Parsing event {}.".format(event))
+                self._dispatches_handled[event] += 1
                 await self.state.client.fire_event("dispatch_received", data, gateway=self)
                 # Invoke the handler, which will parse the data and update the cache internally.
                 # Yes, handlers are async.

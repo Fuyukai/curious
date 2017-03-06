@@ -408,6 +408,7 @@ class State(object):
                 # this might as well be a GUILD_CREATE, so treat it as one
                 new_guild.start_chunking()
                 await self.handle_guild_create(gw, guild)
+                gw._dispatches_handled["GUILD_CREATE"] += 1
 
         if not self._user.bot and len(event_data.get("guilds")) <= 100:
             # Chunk now, sync later.
