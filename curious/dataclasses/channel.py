@@ -369,7 +369,15 @@ class Channel(Dataclass):
             if not self.permissions(self.guild.me).read_message_history:
                 raise PermissionsError("read_message_history")
 
-        data = await self._bot.http.get_message(self.id, message_id)
+        if self._bot.user.bot:
+            data = await self._bot.http.get_message(self.id, message_id)
+        else:
+            data = await self._bot.http.get_messages(self.id, around=message_id, limit=1)
+            if not data:
+                raise CuriousError("No messages found for this ID")
+            else:
+                data = data[0]
+
         msg = self._bot.state.make_message(data)
 
         return msg
@@ -480,11 +488,9 @@ class Channel(Dataclass):
 
         :param messages: A list of :class:`~.Message` objects to delete.
         """
-        if not self.guild:
-            raise PermissionsError("manage_messages")
-
-        if not self.permissions(self.guild.me).manage_messages:
-            raise PermissionsError("manage_messages")
+        if self.guild:
+            if not self.permissions(self.guild.me).manage_messages:
+                raise PermissionsError("manage_messages")
 
         minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
         ids = []
@@ -529,11 +535,9 @@ class Channel(Dataclass):
         :param fallback_from_bulk: If this is True, messages will be regular deleted if they cannot be bulk deleted.
         :return: The number of messages deleted.
         """
-        if not self.guild and not fallback_from_bulk:
-            raise PermissionsError("manage_messages")
-
-        if not self.permissions(self.guild.me).manage_messages and not fallback_from_bulk:
-            raise PermissionsError("manage_messages")
+        if self.guild:
+            if not self.permissions(self.guild.me).manage_messages and not fallback_from_bulk:
+                raise PermissionsError("manage_messages")
 
         checks = []
         if author:
