@@ -93,6 +93,9 @@ class Message(Dataclass):
     def __repr__(self):
         return "<{0.__class__.__name__} id={0.id} content='{0.content}'>".format(self)
 
+    def __str__(self):
+        return self.content
+
     @property
     def mentions(self) -> 'typing.List[dt_member.Member]':
         """
