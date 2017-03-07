@@ -218,7 +218,18 @@ class BotUser(User):
     """
     A special type of user that represents ourselves.
     """
-    __slots__ = ()
+
+    def __init__(self, client, **kwargs):
+        super().__init__(client, **kwargs)
+
+        #: The email for this user.
+        self.email = kwargs.get("email", None)
+
+        #: Does this user use mobile?
+        self.mobile = kwargs.get("mobile", False)
+
+        #: Is this user premium?
+        self.premium = kwargs.get("premium", False)
 
     async def open_private_channel(self):
         raise NotImplementedError("Cannot open a private channel with yourself")
