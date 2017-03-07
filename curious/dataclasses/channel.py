@@ -160,7 +160,7 @@ class HistoryIterator(collections.AsyncIterator):
             raise StopAsyncIteration
 
         if len(self.messages) <= 0:
-            await self._fill_messages()
+            await self.fill_messages()
 
         try:
             message = self.messages.popleft()
@@ -171,6 +171,12 @@ class HistoryIterator(collections.AsyncIterator):
         self.last_message_id = message.id
 
         return message
+
+    def __iter__(self):
+        raise RuntimeError("Use `async for`")
+
+    def __await__(self):
+        raise RuntimeError("This is not a coroutine")
 
 
 class Channel(Dataclass):
