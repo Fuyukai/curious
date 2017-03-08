@@ -16,7 +16,7 @@ is not cached by curious. Otherwise, full :class:`~.Guild` and :class:`~.Channel
 import typing
 
 from curious import util
-from curious.dataclasses import channel as dt_channel, guild as dt_guild
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, user as dt_user
 from curious.dataclasses.bases import IDObject
 from curious.exc import PermissionsError
 
@@ -110,7 +110,8 @@ class Invite(object):
     Represents an invite object.
     """
 
-    __slots__ = "_bot", "code", "_real_guild", "_real_channel", "_invite_guild", "_invite_channel", "_invite_metadata"
+    __slots__ = ("_bot", "code", "_real_guild", "_real_channel", "_invite_guild", "_invite_channel", "_invite_metadata",
+                 "inviter")
 
     def __init__(self, client, **kwargs):
         self._bot = client
@@ -127,13 +128,20 @@ class Invite(object):
             self._real_guild = None
             self._real_channel = None
 
-        # The invite guild this is attached to.
-        # The actual guild object can be more easily fetched with `.guild`.
+        #: The invite guild this is attached to.
+        #: The actual guild object can be more easily fetched with `.guild`.
         self._invite_guild = InviteGuild(**kwargs.get("guild"))
 
-        # The invite channel this is attached to.
-        # The actual channel object can be more easily fetched with `.channel`.
+        #: The invite channel this is attached to.
+        #: The actual channel object can be more easily fetched with `.channel`.
         self._invite_channel = InviteChannel(**kwargs.get("channel"))
+
+        #: The user that created this invite.
+        #: This can be None for partnered invites.
+        self.inviter = None  # type: dt_user.User
+
+        if "inviter" in kwargs:
+            self.inviter = self._bot.state.make_user(kwargs.get("inviter"))
 
         #: The invite metadata object associated with this invite.
         #: This can be None if the invite has no metadata.
@@ -144,6 +152,10 @@ class Invite(object):
 
     def __repr__(self):
         return "<Invite code={} guild={} channel={}>".format(self.code, self.guild, self.channel)
+
+    def __del__(self):
+        if self.inviter:
+            self._bot.state._check_decache_user(self.inviter.id)
 
     @property
     def guild(self) -> 'typing.Union[dt_guild.Guild, InviteGuild]':
