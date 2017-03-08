@@ -340,7 +340,7 @@ class Channel(Dataclass):
         obb.name = self.name
         obb.type = self.type
         obb.guild = self.guild
-        obb.recipients = self.recipients
+        obb._recipients = self._recipients
         obb.position = self.position
         obb._bot = self._bot
         return obb
