@@ -826,6 +826,9 @@ class Client(object):
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
         :param password: The password to use. Only for user accounts.
         """
+        if not self.user.bot and password is None:
+            raise ValueError("Password must be passed for user bots")
+
         if username:
             if not 2 <= len(username) <= 32:
                 raise ValueError("Username must be 2-32 characters")
@@ -833,7 +836,7 @@ class Client(object):
         if avatar:
             avatar = base64ify(avatar)
 
-        await self.http.edit_profile(username, avatar)
+        await self.http.edit_profile(username, avatar, password)
 
     async def edit_avatar(self, path: str):
         """

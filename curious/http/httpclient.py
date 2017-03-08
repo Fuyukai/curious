@@ -670,7 +670,8 @@ class HTTPClient(object):
         return data
 
     # Profile endpoints
-    async def edit_profile(self, username: str = None, avatar: str = None):
+    async def edit_profile(self, username: str = None, avatar: str = None,
+                           password: str=None):
         """
         Edits the profile of the bot.
 
@@ -684,6 +685,9 @@ class HTTPClient(object):
 
         if avatar:
             payload["avatar"] = avatar
+
+        if password:
+            payload["password"] = password
 
         data = await self.patch(url, bucket="users:edit", json=payload)
         return data

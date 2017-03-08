@@ -155,6 +155,9 @@ class State(object):
 
     @property
     def guilds(self) -> typing.Mapping[int, Guild]:
+        """
+        :return: A mapping of int -> :class:`~.Guild`. 
+        """
         return MappingProxyType(self._guilds)
 
     def have_all_chunks(self, shard_id: int):
@@ -201,17 +204,26 @@ class State(object):
                 raise gateway.ChunkGuilds
 
     # get_all_* methods
-    def get_all_channels(self):
+    def get_all_channels(self) -> typing.Generator[Channel, None, None]:
+        """
+        :return: A generator that yields all :class:`~.Channel`s the bot can see.
+        """
         for guild in self._guilds.values():
             for channel in guild.channels.values():
                 yield channel
 
-    def get_all_members(self):
+    def get_all_members(self) -> typing.Generator[Member, None, None]:
+        """
+        :return: A generator that yields all :class:`~.Member`s the bot can see.
+        """
         for guild in self.guilds.values():
             for member in guild.members.values():
                 yield member
 
-    def get_all_roles(self):
+    def get_all_roles(self) -> typing.Generator[Role, None, None]:
+        """
+        :return: A generator that yields all :class:`~.Role`s the bot can see. 
+        """
         for guild in self.guilds.values():
             for role in guild.roles.values():
                 yield role
