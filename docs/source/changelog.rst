@@ -41,6 +41,16 @@ This document displays the differences between each release of curious.
  - Add :class:`.GuildStore` which tracks the order of guilds for user bots, and can be used to return the guilds in
    that order.
 
+ - Change :class:`.Channel` for group DMs slightly:
+
+    - New attributes have been added: :attr:`.Channel.owner`, :attr:`.Channel.owner_id`, :attr:`.Channel._icon_hash`,
+      :attr:`.Channel.icon_url`.
+
+    - :attr:`.Channel._recipients` has been added to replace ``recipients`` as the backing store, and is now a dict.
+
+    - Correspondingly, :attr:`.Channel.recipients` is a mapping proxy for ``Channel._recipients``, and can be used to
+      access the recipients of the channel.
+
 0.2.1
 -----
 
