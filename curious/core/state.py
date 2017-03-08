@@ -353,7 +353,7 @@ class State(object):
         if message.channel.type == ChannelType.PRIVATE:
             message.author = self._user
         elif message.channel.type == ChannelType.GROUP:
-            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients), None)
+            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients.values()), None)
         else:
             # Webhooks also exist.
             if event_data.get("webhook_id") is not None:
@@ -1341,7 +1341,7 @@ class State(object):
         if channel is None:
             return
 
-        channel.recipients.append(user)
+        channel._recipients[user.id] = user
 
         await self.client.fire_event("group_user_add", channel, user, gateway=gw)
 
@@ -1358,5 +1358,5 @@ class State(object):
             return
 
         if user in channel.recipients:
-            channel.recipients.remove(user)
+            channel._recipients.pop(user.id, None)
             await self.client.fire_event("group_user_remove", channel, user, gateway=gw)

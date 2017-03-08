@@ -13,10 +13,11 @@ from math import floor
 
 import curio
 import typing
+from types import MappingProxyType
 
 from curious.core import client as dt_client
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, message as dt_message, \
-    permissions as dt_permissions, role as dt_role, webhook as dt_webhook
+    permissions as dt_permissions, role as dt_role, webhook as dt_webhook, user as dt_user
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, Forbidden, PermissionsError
@@ -184,9 +185,6 @@ class Channel(Dataclass):
     Represents a channel object.
     """
 
-    __slots__ = ("id", "name", "topic", "guild_id", "guild", "type", "recipients", "position", "_last_message_id",
-                 "_overwrites", "typing", "_bot")
-
     def __init__(self, client, guild: 'dt_guild.Guild', **kwargs):
         super().__init__(kwargs.get("id"), client)
 
@@ -207,14 +205,15 @@ class Channel(Dataclass):
         self.type = ChannelType(kwargs.get("type", 0))
 
         #: If private, the list of :class:`~.User` that are in this channel.
-        self.recipients = []
+        self._recipients = {}
         if self.is_private:
             for recipient in kwargs.get("recipients"):
-                self.recipients.append(self._bot.state.make_user(recipient))
+                u = self._bot.state.make_user(recipient)
+                self._recipients[u.id] = u
 
             if self.type == ChannelType.GROUP:
                 # append the current user
-                self.recipients.append(self._bot.user)
+                self._recipients[self._bot.user.id] = self._bot.user
 
         #: The position of this channel.
         self.position = kwargs.get("position", 0)
@@ -226,6 +225,14 @@ class Channel(Dataclass):
             self._last_message_id = int(_last_message_id)
         else:
             self._last_message_id = None
+
+        # group channel stuff
+        #: The owner ID of the channel.
+        #: This is None for non-group channels.
+        self.owner_id = int(kwargs.get("owner_id", 0)) or None
+
+        #: The icon hash of the channel.
+        self._icon_hash = kwargs.get("icon", None)
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
@@ -250,30 +257,56 @@ class Channel(Dataclass):
                                                             obb=obb, channel=self)
 
     @property
-    def is_private(self):
+    def is_private(self) -> bool:
+        """
+        :return: If this channel is a private channel (i.e has no guild.)
+        """
         return self.type not in [ChannelType.TEXT, ChannelType.VOICE]
 
     @property
-    def user(self):
+    def recipients(self) -> 'typing.Mapping[int, dt_user.User]':
         """
-        :return: If this channel is a private channel, return the user of the channel.
-        :rtype: :class:`~.User`
+        :return: A mapping of int -> :class:`~.User` objects for the recipients of this private chat.
+        """
+        return MappingProxyType(self._recipients)
+
+    @property
+    def user(self) -> 'dt_user.User':
+        """
+        :return: If this channel is a private channel, the :class:`~.User` of the other user.
         """
         if self.type != ChannelType.PRIVATE:
             return None
 
-        return self.recipients[0]
+        return list(self.recipients.values())[0]
+
+    @property
+    def owner(self) -> 'dt_user.User':
+        """
+        :return: If this channel is a group channel, the owner of the channel.
+        """
+        return self._bot.state._users.get(self.owner_id)
 
     @property
     def history(self) -> HistoryIterator:
         """
-        Returns an iterator that can be used to iterate over the last infinity messages using ``async for``.
+        :return: A :class:`~.AsyncIteratorWrapper: that can be used to iterate over the last infinity messages.
         """
         return self.get_history(before=self._last_message_id, limit=-1)
 
     @property
     def pins(self) -> 'typing.AsyncIterator[dt_message.Message]':
+        """
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to iterate over the pins. 
+        """
         return AsyncIteratorWrapper(self.get_pins())
+
+    @property
+    def icon_url(self) -> typing.Union[str, None]:
+        """
+        :return: The icon URL for this channel if it is a group DM. 
+        """
+        return "https://cdn.discordapp.com/channel-icons/{}/{}.webp".format(self.id, self._icon_hash)
 
     @property
     def voice_members(self) -> 'typing.List[dt_member.Member]':
