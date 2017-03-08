@@ -362,7 +362,7 @@ class State(object):
                 message.author = message.guild.members.get(author_id)
 
         for reaction_data in event_data.get("reactions", []):
-            emoji = reaction_data.get("emoji")
+            emoji = reaction_data.get("emoji", {})
             reaction = Reaction(**reaction_data)
 
             if "id" in emoji and emoji["id"] is not None:
