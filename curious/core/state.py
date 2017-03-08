@@ -1262,14 +1262,13 @@ class State(object):
         """
         Called when the current user's settings update.
         """
-        settings = UserSettings(self.client, **event_data)
-        old_settings = self._user.settings
+        old_settings = self._user.settings.copy()
 
-        self._user.settings = settings
+        self._user.settings.update(**event_data)
         # make sure to update the guild order
-        self._guilds.order = list(map(int, settings.get("guild_position")))
+        self._guilds.order = list(map(int, self._user.settings.get("guild_position")))
 
-        await self.client.fire_event("user_settings_update", old_settings, settings, gateway=gw)
+        await self.client.fire_event("user_settings_update", old_settings, self._user.settings, gateway=gw)
 
     async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
         """
