@@ -22,7 +22,7 @@ from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.status import Game, Status
-from curious.dataclasses.user import BotUser, User, FriendType
+from curious.dataclasses.user import BotUser, User, FriendType, UserSettings
 from curious.dataclasses.user import RelationshipUser
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
@@ -416,6 +416,10 @@ class State(object):
         # Parse relationships first before processing anything else.
         # This ensures all friends are calculated and assigned.
         if not self._user.bot:
+            # Parse settings.
+            settings = event_data.get("user_settings", {})
+            self._user.settings = UserSettings(self.client, **settings)
+
             # Parse friends and blocked users.
             for item in event_data.get("relationships", []):
                 # make user to cache it
@@ -439,8 +443,7 @@ class State(object):
                 if gm is not None:
                     fr.game = Game(**gm)
 
-            # TODO: parse user settings properly
-            self._guilds.order = list(map(int, event_data["user_settings"]["guild_positions"]))
+            self._guilds.order = list(map(int, self._user.settings.guild_positions))
 
             self.logger.info("Processed {} friends "
                              "and {} blocked users.".format(len(self._friends), len(self._blocked)))
@@ -1255,6 +1258,19 @@ class State(object):
         pass
 
     # Userbot only events.
+    async def handle_user_settings_update(self, gw: 'gateway.Gateway', event_data: dict):
+        """
+        Called when the current user's settings update.
+        """
+        settings = UserSettings(self.client, **event_data)
+        old_settings = self._user.settings
+
+        self._user.settings = settings
+        # make sure to update the guild order
+        self._guilds.order = list(map(int, settings.get("guild_position")))
+
+        await self.client.fire_event("user_settings_update", old_settings, settings, gateway=gw)
+
     async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when a message is acknowledged.

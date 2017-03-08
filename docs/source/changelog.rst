@@ -51,6 +51,12 @@ This document displays the differences between each release of curious.
     - Correspondingly, :attr:`.Channel.recipients` is a mapping proxy for ``Channel._recipients``, and can be used to
       access the recipients of the channel.
 
+ - Add :meth:`.HTTPClient.update_user_settings` to update the settings of a user.
+
+ - Add :class:`.UserSettings` to represent the settings of a user.
+
+ - Add event handler for ``USER_SETTINGS_UPDATE``.
+
 0.2.1
 -----
 

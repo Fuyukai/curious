@@ -7,6 +7,8 @@ Wrappers for User objects.
 import enum
 import typing
 from collections import namedtuple
+
+from curious.util import attrdict
 from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
@@ -34,6 +36,7 @@ class FriendType(enum.IntEnum):
     #: Corresponds to an outgoing friend request.
     OUTGOING = 4
 
+
 connection = namedtuple("Connection", "type id name")
 
 
@@ -41,6 +44,7 @@ class UserProfile(object):
     """
     Represents a profile for a user.
     """
+
     def __init__(self, user: 'User', kwargs):
         #: The user object associated with this profile.
         self.user = user
@@ -214,6 +218,77 @@ class User(Dataclass):
         return guild.unban(self)
 
 
+class UserSettings(attrdict):
+    """
+    Represents the settings for a user.
+    """
+    def __init__(self, client, **kwargs):
+        self._bot = client
+
+        #: Are emoticons converted automatically?
+        #: For example, :) will turn into the emoji literal.
+        self.convert_emoticons = kwargs.get("convert_emoticons", True)
+
+        #: Are platform accounts detected?
+        self.detect_platform_accounts = kwargs.get("detect_platform_accounts", True)
+
+        #: Is developer mode enabled?
+        self.developer_mode = kwargs.get("developer_mode", False)
+
+        #: Is the TTS command enabled?
+        self.enable_tts_command = kwargs.get("enable_tts_command", True)
+
+        #: The guild positions for this user.
+        self.guild_positions = kwargs.get("guild_positions", [])
+
+        #: The friend source flags for this user.
+        self.friend_source_flags = kwargs.get("friend_source_flags", {})
+
+        #: Are inline attachments enabled?
+        self.inline_attachment_media = kwargs.get("inline_attachment_media", True)
+
+        #: Are inline embeds enabled?
+        self.inline_embed_media = kwargs.get("inline_embed_media", True)
+
+        #: The locale for this user.
+        self.locale = kwargs.get("locale", 'en-US')
+
+        #: Is compact mode enabled?
+        self.message_display_compact = kwargs.get("message_display_compact", False)
+
+        #: Render embeds?
+        self.render_embeds = kwargs.get("render_embeds", True)
+
+        #: Render reactions?
+        self.render_reactions = kwargs.get("render_reactions", True)
+
+        #: Restricted guilds (guilds you have DMs disabled for).
+        self.restricted_guilds = kwargs.get("restricted_guilds", [])
+
+        #: Show the current game?
+        self.show_current_game = kwargs.get("show_current_game", True)
+
+        #: The current theme for this user.
+        self.theme = kwargs.get("theme", 'light')
+
+    async def update(self, **kwargs):
+        """
+        Updates the current user's settings with the keyword args provided.
+        
+        This will PATCH to Discord, as well.
+        """
+        # copy a new set of settings and pass it straight to `http.update_user_settings`
+        settings = self.copy()
+        settings.update(**kwargs)
+        # remove this so discord dont get confused
+        settings.pop("_bot")
+
+        new_settings = await self._bot.http.update_user_settings(**settings)
+        # don't copy the new values into self, we die in like a second anyway
+        # so just return a new copy of ourselves from the http response
+        return type(self)(self._bot, **new_settings)
+
+
 class BotUser(User):
     """
     A special type of user that represents ourselves.
@@ -230,6 +305,9 @@ class BotUser(User):
 
         #: Is this user premium?
         self.premium = kwargs.get("premium", False)
+
+        #: The current :class:`~.UserSettings` for this user.
+        self.settings = None  # type: UserSettings
 
     async def open_private_channel(self):
         raise NotImplementedError("Cannot open a private channel with yourself")

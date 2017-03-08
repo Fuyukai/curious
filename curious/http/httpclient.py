@@ -68,7 +68,7 @@ class HTTPClient(object):
     USER_ME = API_BASE + "/users/@me"
 
     def __init__(self, token: str, *,
-                 bot: bool=True):
+                 bot: bool = True):
         #: The token used for all requests.
         self.token = token
 
@@ -1353,6 +1353,17 @@ class HTTPClient(object):
         data = await self.put(url, bucket="user:relationships", json={"type": 2})  # type 2 means block
         return data
 
+    async def update_user_settings(self, **settings):
+        """
+        Updates the current user's settings.
+        
+        :param settings: The dict of settings to update. 
+        """
+        url = self.USER_ME + "/settings"
+
+        data = await self.patch(url, bucket="user", json=settings)
+        return data
+
     # Application info
     async def get_app_info(self, application_id: int):
         """
@@ -1395,7 +1406,7 @@ class HTTPClient(object):
         return final
 
     async def authorize_bot(self, application_id: int, guild_id: int,
-                            *, permissions: int=0):
+                            *, permissions: int = 0):
         """
         Authorize a bot to be added to a guild.
 
