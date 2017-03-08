@@ -38,6 +38,9 @@ This document displays the differences between each release of curious.
  - Add :attr:`.Client.events_handled` and :attr:`.Gateway._dispatches_handled` to show how many events have been
    handled during the lifetime of the bot.
 
+ - Add :class:`.GuildStore` which tracks the order of guilds for user bots, and can be used to return the guilds in
+   that order.
+
 0.2.1
 -----
 

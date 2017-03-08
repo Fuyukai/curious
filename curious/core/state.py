@@ -8,6 +8,7 @@ import collections
 import logging
 
 import curio
+import pprint
 import typing
 from types import MappingProxyType
 
@@ -29,6 +30,55 @@ from curious.dataclasses.webhook import Webhook
 UserType = typing.TypeVar("U", bound=User)
 
 
+class GuildStore(collections.MutableMapping):
+    """
+    A store for guilds in the state.
+    """
+
+    def __init__(self):
+        #: The internal actual guilds.
+        self.guilds = {}
+
+        #: The order of the guilds, as specified by the READY packet.
+        self.order = []
+
+    def view(self) -> typing.Mapping[int, Guild]:
+        """
+        :return: A :class:`mappingproxy` of the internal guilds. 
+        """
+        return MappingProxyType(self.guilds)
+
+    @property
+    def with_order(self):
+        """
+        :return: A mapping of the guilds with the order specified in the ready packet.
+        """
+        if not self.order:
+            return self.view()
+
+        o = collections.OrderedDict()
+        for guild in map(int, self.order):
+            o[guild] = self.guilds[guild]
+
+        return MappingProxyType(o)
+
+    # abc methods
+    def __setitem__(self, key, value):
+        return self.guilds.__setitem__(key, value)
+
+    def __getitem__(self, key):
+        return self.guilds.__getitem__(key)
+
+    def __delitem__(self, key):
+        return self.guilds.__delitem__(key)
+
+    def __iter__(self):
+        return self.guilds.__iter__()
+
+    def __len__(self):
+        return self.guilds.__len__()
+
+
 class State(object):
     """
     This represents the state of the Client - in other libraries, the cache.
@@ -48,7 +98,7 @@ class State(object):
         self._private_channels = {}
 
         #: The guilds the bot can see.
-        self._guilds = {}  # type: typing.Dict[int, Guild]
+        self._guilds = GuildStore()
 
         #: This user's friends.
         self._friends = {}  # type: typing.Dict[int, RelationshipUser]
@@ -389,6 +439,9 @@ class State(object):
                 if gm is not None:
                     fr.game = Game(**gm)
 
+            # TODO: parse user settings properly
+            self._guilds.order = list(map(int, event_data["user_settings"]["guild_positions"]))
+
             self.logger.info("Processed {} friends "
                              "and {} blocked users.".format(len(self._friends), len(self._blocked)))
 
@@ -419,6 +472,9 @@ class State(object):
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect", gateway=gw)
+
+        # event_data.pop("guilds")
+        # pprint.pprint(event_data)
 
         # However, if the client has no guilds, we DO want to fire ready.
         if len(event_data.get("guilds", {})) == 0:
