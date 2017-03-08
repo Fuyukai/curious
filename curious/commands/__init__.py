@@ -1,5 +1,15 @@
 """
 Commands helpers.
+
+.. currentmodule:: curious.commands
+
+.. autosummary::
+    :toctree: commands
+    
+    cmd
+    context
+    exc
+    plugin
 """
 import functools
 import typing

@@ -1,3 +1,7 @@
+"""
+Defines :class:`.Command`.
+"""
+
 import inspect
 import typing
 

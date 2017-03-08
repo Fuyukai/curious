@@ -1,5 +1,5 @@
 """
-The base class for a plugin.
+Defines :class:`.Plugin`, the base class for plugins.
 """
 import functools
 

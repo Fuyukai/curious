@@ -1,3 +1,7 @@
+"""
+Defines :class:`.Context`.
+"""
+
 import typing
 
 from curious.core import client as cl

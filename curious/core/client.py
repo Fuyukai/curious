@@ -2,6 +2,8 @@
 The main client class.
 
 This contains a definition for :class:`.Client` which is used to interface primarily with Discord.
+
+.. currentmodule:: curious.core.client
 """
 
 import enum
@@ -160,15 +162,15 @@ class Client(object):
                  state_klass: type = None,
                  bot_type: int = (BotType.BOT | BotType.ONLY_USER)):
         """
-        :param token: The current token for this bot.
+        :param token: The current token for this bot.  
             This can be passed as None and can be initialized later.
             
-        :param enable_commands: Should commands integration be enabled?
+        :param enable_commands: Should commands integration be enabled?  
             If this is False, commands can still be registered etc, they just won't fire (the event won't appear).
         
         :param command_prefix: The command prefix for this bot.
-        :param message_check: The message check function for this bot. 
-                    
+        :param message_check: The message check function for this bot.  
+        
             This should take two arguments, the client and message, and should return either None or a 3-item tuple:
               - The command word matched
               - The tokens after the command word
@@ -210,14 +212,15 @@ class Client(object):
         #: They are used in the HTTP method by `wait=`, for example.
         self._temporary_listeners = multidict.MultiDict()
 
-        #: The :class:`HTTPClient` used for this bot.
+        #: The :class:`~.HTTPClient` used for this bot.
         self.http = None  # type: HTTPClient
 
         #: The cached gateway URL.
         self._gw_url = None  # type: str
 
         #: The application info for this bot.
-        #: Instance of :class:`AppInfo`.
+        #: Instance of :class:`~.AppInfo`.
+        #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
 
         #: The logger for this bot.

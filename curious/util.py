@@ -89,9 +89,14 @@ def to_datetime(timestamp: str) -> datetime.datetime:
 def replace_quotes(item: str) -> str:
     """
     Replaces the quotes in a string, but only if they are un-escaped.
+    
+    .. code-block:: python
+    
+        some_weird_string = r'"this is quoted and removed" but \" that was kept and this isn't \\"'
+        replace_quotes(some_weird_string)  # 'this is quoted and removed but " that was kept but this isnt \\'
 
     :param item: The string to scan.
-    :return: The string, with quotes replace.
+    :return: The string, with quotes replaced.
     """
     # A list is used because it can be appended easily.
     final_str_arr = []

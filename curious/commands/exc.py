@@ -1,3 +1,8 @@
+"""
+Defines commands-specific exceptions.
+"""
+
+
 class CommandsError(Exception):
     pass
 

@@ -1,5 +1,14 @@
 """
 Voice connection utilities.
+
+.. currentmodule:: curious.voice
+
+.. autosummary::
+    :toctree: voice
+
+    voice_client
+    voice_gateway
+    voice_player
 """
 try:
     import opuslib
