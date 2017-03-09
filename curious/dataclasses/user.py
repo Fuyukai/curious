@@ -52,11 +52,15 @@ class UserProfile(object):
         #: A list of connections associated with this profile.
         self.connections = [connection(**c) for c in kwargs.get("connected_accounts", [])]
 
-        #: Is this user premium?
-        self.premium = kwargs.get("premium", False)
-
         #: When was this user premium since?
         self.premium_since = kwargs.get("premium_since", None)
+
+    @property
+    def premium(self) -> bool:
+        """
+        :return: ``True`` if this user has Nitro, ``False`` if not. 
+        """
+        return self.premium_since is not None
 
     def __repr__(self):
         return "<UserProfile user='{}' premium={}>".format(self.user, self.premium)
