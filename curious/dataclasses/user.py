@@ -222,6 +222,7 @@ class UserSettings(attrdict):
     """
     Represents the settings for a user.
     """
+
     def __init__(self, client, **kwargs):
         self._bot = client
 
@@ -279,14 +280,15 @@ class UserSettings(attrdict):
         """
         # copy a new set of settings and pass it straight to `http.update_user_settings`
         settings = self.copy()
-        settings.update(**kwargs)
+        dict.update(settings, **kwargs)
         # remove this so discord dont get confused
         settings.pop("_bot")
 
         new_settings = await self._bot.http.update_user_settings(**settings)
-        # don't copy the new values into self, we die in like a second anyway
-        # so just return a new copy of ourselves from the http response
-        return type(self)(self._bot, **new_settings)
+        # update ourselves
+        dict.update(self, **new_settings)
+
+        return self
 
 
 class BotUser(User):
