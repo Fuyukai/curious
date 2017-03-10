@@ -1274,7 +1274,7 @@ class State(object):
         """
         old_settings = self._user.settings.copy()
 
-        self._user.settings.update(**event_data)
+        dict.update(self._user.settings, **event_data)
         # make sure to update the guild order
         self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
 
