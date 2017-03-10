@@ -1276,7 +1276,7 @@ class State(object):
 
         self._user.settings.update(**event_data)
         # make sure to update the guild order
-        self._guilds.order = list(map(int, self._user.settings.get("guild_position")))
+        self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
 
         await self.client.fire_event("user_settings_update", old_settings, self._user.settings, gateway=gw)
 
