@@ -672,11 +672,9 @@ class State(object):
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
                 self.logger.debug("Joined guild {} ({}), requesting members if applicable".format(guild.name, guild.id))
-                # chunk for bots, sync for user bots
-                if self._user.bot and guild.large:
-                    self._mark_for_chunking(gw, guild)
-                    raise gateway.ChunkGuilds
-                else:
+                if guild.large:
+                    await gw.request_chunks([guild])
+                if self._user.bot:
                     await gw.send_guild_sync([guild])
 
         else:
