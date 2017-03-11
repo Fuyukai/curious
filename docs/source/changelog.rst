@@ -10,6 +10,13 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.HTTPClient.get_mentions`.
 
+ - Add :attr:`.BotUser.authorized_apps` which returns an async iterator
+   that can be used to get the authorized apps for this bot.
+
+ - Add :meth:`.BotUser.get_recent_mentions` and
+   :meth`.Guild.get_recent_mentions` to allow easy iteration of recent
+   mentions.
+
 0.3.0
 -----
 

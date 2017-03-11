@@ -916,3 +916,19 @@ class Guild(Dataclass):
             channel_id = channel.id
 
         await self._bot.http.edit_widget(self.id, enabled=status, channel_id=channel_id)
+
+    @property
+    def recent_mentions(self):
+        """
+        :return:A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for this user in this guild.
+        """
+        return AsyncIteratorWrapper(self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True))
+
+    def get_recent_mentions(self, *,
+                     limit: int = 25,
+                     everyone_mentions: bool = True, role_mentions: bool = True):
+        """
+        Gets mentions in this guild.
+        """
+        return self.me.user.get_recent_mentions(guild=self, limit=limit, everyone_mentions=everyone_mentions,
+                                                role_mentions=role_mentions)

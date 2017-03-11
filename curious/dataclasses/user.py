@@ -8,7 +8,7 @@ import enum
 import typing
 from collections import namedtuple
 
-from curious.util import attrdict
+from curious.util import attrdict, AsyncIteratorWrapper
 from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
@@ -342,6 +342,50 @@ class BotUser(User):
         Edits the bot's current avatar.
         """
         return self._bot.edit_avatar(path)
+
+    @property
+    def recent_mentions(self) -> 'typing.AsyncIterator[dt_message.Message]':
+        """
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for this user.
+        """
+        return AsyncIteratorWrapper(self.get_recent_mentions(role_mentions=True, everyone_mentions=True, limit=100))
+
+    async def get_recent_mentions(self, *,
+                                  guild: 'dt_guild.Guild' = None, limit: int=25,
+                                  role_mentions: bool=True,
+                                  everyone_mentions: bool=True) -> 'typing.Sequence[dt_message.Message]':
+        """
+        Gets a list of recent mentions for this user. 
+        
+        :param guild: The guild to limit to. If this is None, it will return ALL recent mentions. 
+        :param limit: The maximum amount of mentions to return.
+        :param role_mentions: Should role mentions be included?
+        :param everyone_mentions: Should everyone mentions be included?
+        :return: A list of :class:`~.Message` that represents the recent mentions.
+        """
+        if self.bot:
+            raise CuriousError("Bot accounts cannot use this function")
+
+        if guild is not None:
+            guild_id = guild.id
+        else:
+            guild_id = None
+
+        mentions = await self._bot.http.get_mentions(guild_id=guild_id, limit=limit,
+                                                     roles=role_mentions, everyone=everyone_mentions)
+
+        messages = []
+        for mention in mentions:
+            messages.append(self._bot.state.make_message(mention))
+
+        return messages
+
+    @property
+    def authorized_apps(self) -> 'typing.AsyncIterator[AuthorizedApp]':
+        """
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized apps for this user. 
+        """
+        return AsyncIteratorWrapper(self.get_authorized_apps())
 
     async def get_authorized_apps(self) -> typing.Sequence[AuthorizedApp]:
         """
