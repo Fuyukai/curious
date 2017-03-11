@@ -1257,7 +1257,7 @@ class State(object):
             # disconnect!
             new_voice_state = None
         else:
-            new_voice_state = VoiceState(member.user, **event_data)
+            new_voice_state = VoiceState(**event_data)
             new_voice_state.guild = guild
             new_voice_state.channel = guild.channels.get(new_voice_state._channel_id)
 

@@ -42,7 +42,7 @@ class VoiceState(object):
         return self.channel._bot.state._users.get(self._user_id)
 
     def __del__(self):
-        if not self.channel:
+        if not hasattr(self, "channel") or not self.channel:
             return
 
         # decache if appropriate
