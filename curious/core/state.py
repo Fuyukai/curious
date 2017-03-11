@@ -372,7 +372,7 @@ class State(object):
             else:
                 message.author = message.channel.user
         elif message.channel.type == ChannelType.GROUP:
-            message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients.values()), None)
+            message.author = message.channel.recipients.get(author_id, None)
         else:
             # Webhooks also exist.
             if event_data.get("webhook_id") is not None:
