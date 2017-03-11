@@ -60,7 +60,7 @@ class UserProfile(object):
         """
         :return: ``True`` if this user has Nitro, ``False`` if not. 
         """
-        return self.premium_since is not None
+        return self.premium_since is not None or self.user._avatar_hash.startswith("a_")
 
     def __repr__(self):
         return "<UserProfile user='{}' premium={}>".format(self.user, self.premium)
