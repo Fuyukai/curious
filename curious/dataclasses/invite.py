@@ -38,6 +38,18 @@ class InviteGuild(IDObject):
         #: The icon hash of this guild.
         self._icon_hash = kwargs.get("icon")  # type: str
 
+        #: The approximate member count for this guild.
+        self.member_count = kwargs.get("approximate_member_count")
+
+        #: The approximate presence count.
+        self.presence_count = kwargs.get("approximate_presence_count")
+
+        #: The number of text channels.
+        self.text_channel_count = kwargs.get("text_channel_count")
+
+        #: The number of voice channels.
+        self.voice_channel_count = kwargs.get("voice_channel_count")
+
     def __repr__(self):
         return "<InviteGuild id={} name='{}'>".format(self.id, self.name)
 
