@@ -13,7 +13,7 @@ from types import MappingProxyType
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, member as dt_member, \
     permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.status import Game
+from curious.dataclasses.status import Game, Status
 from curious.exc import CuriousError, HierachyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify
 
@@ -204,6 +204,51 @@ class Guild(Dataclass):
         :return: The embed URL for this guild. 
         """
         return (self._bot.http.GUILD_BASE + "/embed.png").format(guild_id=self.id)
+
+    # for parity with inviteguild
+    @property
+    def presence_count(self) -> int:
+        """
+        :return: The number of members with a non-Invisible presence. 
+        """
+        return sum(1 for member in self._members.values() if member.status is not Status.OFFLINE)
+
+    # Presence methods
+    def members_with_status(self, status: Status) -> 'typing.Generator[dt_member.Member, None, None]':
+        """
+        A generator that returns the members that match the specified status.
+        """
+        for member in self.members.values():
+            if member.status == status:
+                yield member
+
+    @property
+    def online_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
+        """
+        :return: A generator of online :class:`~.Member`s.
+        """
+        return self.members_with_status(Status.ONLINE)
+
+    @property
+    def idle_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
+        """
+        :return: A generator of idle :class:`~.Member`s. 
+        """
+        return self.members_with_status(Status.IDLE)
+
+    @property
+    def dnd_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
+        """
+        :return: A generator of DnD :class:`~.Member`s. 
+        """
+        return self.members_with_status(Status.DND)
+
+    @property
+    def offline_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
+        """
+        :return: A generator of offline/invisible :class:`~.Member`s. 
+        """
+        return self.members_with_status(Status.OFFLINE)
 
     def get_embed_url(self, *, style: str = "banner1") -> str:
         """

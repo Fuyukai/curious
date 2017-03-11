@@ -1263,7 +1263,7 @@ class HTTPClient(object):
         Gets an invite by code.
 
         :param invite_code: The invite to get.
-        :param show_counts: Should the estimated total and online members be included?
+        :param with_counts: Should the estimated total and online members be included?
         """
         url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
         params = {
