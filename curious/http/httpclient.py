@@ -671,7 +671,7 @@ class HTTPClient(object):
 
     # Profile endpoints
     async def edit_profile(self, username: str = None, avatar: str = None,
-                           password: str=None):
+                           password: str = None):
         """
         Edits the profile of the bot.
 
@@ -1316,6 +1316,11 @@ class HTTPClient(object):
     async def get_user_profile(self, user_id: int):
         """
         Gets a user's profile.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
 
         :param user_id: The user ID of the profile to fetch.
         """
@@ -1327,6 +1332,11 @@ class HTTPClient(object):
     async def send_friend_request(self, user_id: int):
         """
         Sends a friend request to a user.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
 
         :param user_id: The user ID to send the request to.
         """
@@ -1338,6 +1348,11 @@ class HTTPClient(object):
     async def remove_relationship(self, user_id: int):
         """
         Removes a friend, cancels a friend request or unblocks a user.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
 
         :param user_id: The user ID who is being modified.
         """
@@ -1349,6 +1364,11 @@ class HTTPClient(object):
     async def block_user(self, user_id: int):
         """
         Blocks a user.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
 
         :param user_id: The user ID to block.
         """
@@ -1360,6 +1380,11 @@ class HTTPClient(object):
     async def update_user_settings(self, **settings):
         """
         Updates the current user's settings.
+                 
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
         
         :param settings: The dict of settings to update. 
         """
@@ -1413,6 +1438,11 @@ class HTTPClient(object):
                             *, permissions: int = 0):
         """
         Authorize a bot to be added to a guild.
+        
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
 
         :param application_id: The client ID of the bot to be added.
         :param guild_id: The guild ID to add the bot to.
@@ -1436,6 +1466,11 @@ class HTTPClient(object):
     async def get_authorized_apps(self):
         """
         Gets authorized apps for this account.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
         """
         url = self.API_BASE + "/oauth2/tokens"
 
@@ -1445,12 +1480,50 @@ class HTTPClient(object):
     async def revoke_authorized_app(self, app_id: int):
         """
         Revokes an application authorization.
+                
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
         
         :param app_id: The ID of the application to revoke the authorization of. 
         """
         url = (self.API_BASE + "/oauth2/tokens/{app_id}").format(app_id=app_id)
 
         data = await self.delete(url, bucket="oauth")
+        return data
+
+    async def get_mentions(self, *,
+                           guild_id: int = None, limit: int = 25,
+                           roles: bool = True, everyone: bool = True):
+        """
+        Gets your recent mentions.
+        
+        .. warning::
+        
+            This is a **user-acount only** endpoint.
+        
+        :param guild_id: The guild ID to limit mentions for.
+        :param limit: The maximum number of messages to return.
+        :param roles: Should role mentions be included?
+        :param everyone: Should @everyone/@here mentions be included?
+        """
+        url = self.USER_ME + "/mentions"
+        params = {}
+
+        if limit is not None:
+            params["limit"] = str(limit)
+
+        if guild_id is not None:
+            params["guild_id"] = str(guild_id)
+
+        if roles is not None:
+            params["roles"] = str(roles).lower()
+
+        if everyone is not None:
+            params["everyone"] = str(everyone).lower()
+
+        data = await self.get(url, "me:mentions", params=params)
         return data
 
     # Misc
@@ -1465,7 +1538,7 @@ class HTTPClient(object):
             "recipient_id": user_id
         }
 
-        data = await self.post(url, "channels:private:create", json=payload)
+        data = await self.post(url, "channels:create", json=payload)
         return data
 
     async def leave_guild(self, guild_id: str):
