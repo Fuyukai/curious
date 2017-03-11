@@ -44,7 +44,7 @@ class IDObject(object):
         return other.id == self.id
 
     def __hash__(self):
-        return self.id
+        return hash(self.id)
 
 
 class Dataclass(IDObject):
