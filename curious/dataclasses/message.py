@@ -51,7 +51,7 @@ class Message(Dataclass):
         self.channel = None  # type: dt_channel.Channel
 
         #: The ID of the author.
-        self.author_id = int(kwargs.get("author_id", 0))  # type: int
+        self.author_id = int(kwargs.get("author", {}).get("author_id", 0)) or None  # type: int
 
         #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`, :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
