@@ -33,11 +33,17 @@ class Game(object):
     """
 
     def __init__(self, **kwargs):
-        self.type = kwargs.get("type", None)
+        #: The type of game this is.
+        self.type = kwargs.get("type", 0)
+        #: The stream URL this game is for.
         self.url = kwargs.get("url", None)
+        #: The name of the game being played.
         self.name = kwargs.get("name", None)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
+        """
+        :return: The dict representation of this object. 
+        """
         d = {
             "name": self.name
         }
@@ -48,4 +54,4 @@ class Game(object):
         return d
 
     def __repr__(self):
-        return "<Game name={}>".format(self.name)
+        return "<Game name='{}' type={} url={}>".format(self.name, self.type, self.url)
