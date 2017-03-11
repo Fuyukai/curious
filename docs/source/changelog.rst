@@ -3,6 +3,11 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.4.0
+-----
+
+ - :class:`~.VoiceState` now uses a property reference to
+
 0.3.0
 -----
 

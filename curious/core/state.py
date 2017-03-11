@@ -367,7 +367,10 @@ class State(object):
         message.channel = channel
         message.guild = channel.guild
         if message.channel.type == ChannelType.PRIVATE:
-            message.author = self._user
+            if author_id == self._user.id:
+                message.author = self._user
+            else:
+                message.author = message.channel.user
         elif message.channel.type == ChannelType.GROUP:
             message.author = next(filter(lambda m: m.id == author_id, message.channel.recipients.values()), None)
         else:
