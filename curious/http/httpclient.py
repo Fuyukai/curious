@@ -1257,15 +1257,20 @@ class HTTPClient(object):
         return data
 
     # Invites
-    async def get_invite(self, invite_code: str):
+    async def get_invite(self, invite_code: str, *,
+                         with_counts: bool=True):
         """
         Gets an invite by code.
 
         :param invite_code: The invite to get.
+        :param show_counts: Should the estimated total and online members be included?
         """
         url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
+        params = {
+            "with_counts": "true" if with_counts else "false"
+        }
 
-        data = await self.get(url, bucket="invites")
+        data = await self.get(url, bucket="invites", params=params)
         return data
 
     async def get_invites_for(self, guild_id: int):
