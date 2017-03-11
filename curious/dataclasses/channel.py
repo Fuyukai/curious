@@ -185,7 +185,7 @@ class Channel(Dataclass):
     Represents a channel object.
     """
 
-    def __init__(self, client, guild: 'dt_guild.Guild', **kwargs):
+    def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
 
         #: The name of this channel.
@@ -199,7 +199,7 @@ class Channel(Dataclass):
 
         #: The :class:`~.Guild` this channel is associated with.
         #: This can sometimes be None, if this channel is a private channel.
-        self.guild = guild  # type: dt_guild.Guild
+        self.guild = None  # type: dt_guild.Guild
 
         #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))
@@ -236,7 +236,6 @@ class Channel(Dataclass):
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
-        self._update_overwrites(kwargs.get("permission_overwrites", []))
 
         self.typing = self._typing
 

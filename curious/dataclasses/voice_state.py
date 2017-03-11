@@ -13,7 +13,7 @@ class VoiceState(object):
     """
     Represents the voice state of a user.
     """
-    __slots__ = ("_user_id", "user", "_guild_id", "guild", "_channel_id", "channel", "_self_mute", "_server_mute",
+    __slots__ = ("_user_id", "_guild_id", "guild", "_channel_id", "channel", "_self_mute", "_server_mute",
                  "_self_deaf", "_server_deaf")
 
     def __init__(self, **kwargs):

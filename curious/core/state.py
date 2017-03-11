@@ -323,7 +323,7 @@ class State(object):
         :param channel_data: The channel data to cache.
         :return: A new :class:`~.Channel`.
         """
-        channel = Channel(self.client, guild=None, **channel_data)
+        channel = Channel(self.client, **channel_data)
         self._private_channels[channel.id] = channel
 
         return channel
@@ -1064,10 +1064,12 @@ class State(object):
         guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
-        channel = Channel(self.client, guild=guild, **event_data)
+        channel = Channel(self.client, **event_data)
         if channel.is_private:
             self._private_channels[channel.id] = channel
         else:
+            channel.guild = guild
+            channel._update_overwrites((event_data.get("permission_overwrites", [])))
             if channel.id not in guild._channels:
                 guild._channels[channel.id] = channel
             else:
@@ -1123,6 +1125,7 @@ class State(object):
 
         if int(event_data.get("role", {}).get("id", 0)) not in guild._roles:
             role = Role(self.client, **event_data.get("role", {}))
+            role.guild = guild
             guild._roles[role.id] = role
         else:
             role = guild._roles[event_data["role"].get("id", 0)]
