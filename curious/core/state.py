@@ -268,6 +268,10 @@ class State(object):
             if id in guild.members:
                 return
 
+        for channel in self._private_channels.values():
+            if id in [m.id for m in channel.recipients.values()]:
+                return
+
         # didn't return, so no references
         self._users.pop(id, None)
 
