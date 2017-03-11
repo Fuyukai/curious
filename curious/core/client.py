@@ -421,7 +421,7 @@ class Client(object):
         """
         Wraps a context in a safety wrapper.
 
-        This will dispatch `command_exception` when an error happens.
+        This will dispatch ``command_exception`` when an error happens.
         """
         try:
             await ctx.invoke()
@@ -667,7 +667,7 @@ class Client(object):
         """
         Unloads plugins from the specified import name.
 
-        This is the opposite to :meth:`load_plugins_from`.
+        This is the opposite to :meth:`.load_plugins_from`.
         """
         mod, plugins = self._plugin_modules[import_name]
         # we can't do anything with the module currently because it's still in our locals scope
@@ -713,7 +713,7 @@ class Client(object):
         Gets the commands for the specified plugin.
 
         :param plugin: The plugin instance to get commands of.
-        :return: A list of :class:`Command`.
+        :return: A list of :class:`~.Command`.
         """
         for command in self.commands.copy().values():
             if command.instance == plugin:
@@ -740,7 +740,7 @@ class Client(object):
         Changes the bot's current status.
 
         :param game: The game object to use. None for no game.
-        :param status: The new status. Must be a :class:`Status` object.
+        :param status: The new status. Must be a :class:`~.Status` object.
         :param afk: Is the bot AFK? Only useful for userbots.
         :param shard_id: The shard to change your status on.
         """
@@ -865,7 +865,7 @@ class Client(object):
         Gets a user by ID.
 
         :param user_id: The ID of the user to get.
-        :return: A new User object.
+        :return: A new :class:`~.User` object.
         """
         try:
             return self.state._users[user_id]
@@ -880,7 +880,7 @@ class Client(object):
         Gets an application by ID.
 
         :param application_id: The client ID of the application to fetch.
-        :return: A new :class:`AppInfo` object corresponding to the application.
+        :return: A new :class:`~.AppInfo` object corresponding to the application.
         """
         data = await self.http.get_app_info(application_id=application_id)
         appinfo = AppInfo(self, **data)
@@ -892,25 +892,27 @@ class Client(object):
         Gets a webhook by ID.
 
         :param webhook_id: The ID of the webhook to get.
-        :return: A new Webhook object.
+        :return: A new :class:`~.Webhook` object.
         """
         return self.state.make_webhook(await self.http.get_webhook(webhook_id))
 
-    async def get_invite(self, invite_code: str) -> Invite:
+    async def get_invite(self, invite_code: str, *,
+                         with_counts: bool=True) -> Invite:
         """
         Gets an invite by code.
 
         :param invite_code: The invite code to get.
-        :return: A new Invite object.
+        :param with_counts: Return the approximate counts for this invite?
+        :return: A new :class:`~.Invite` object.
         """
-        return Invite(self, **(await self.http.get_invite(invite_code)))
+        return Invite(self, **(await self.http.get_invite(invite_code, with_counts=with_counts)))
 
     async def get_widget(self, guild_id: int) -> Widget:
         """
         Gets a widget from a guild.
         
         :param guild_id: The ID of the guild to get the widget of. 
-        :return: A :class:`Widget` object.
+        :return: A :class:`~.Widget` object.
         """
         data = await self.http.get_widget_data(guild_id)
         return Widget(self, **data)
