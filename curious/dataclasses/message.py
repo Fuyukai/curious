@@ -286,7 +286,7 @@ class Message(Dataclass):
             # undocumented!
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
-        await self._bot.http.react_to_message(self.channel.id, self.id, emoji)
+        await self._bot.http.add_reaction(self.channel.id, self.id, emoji)
 
     async def unreact(self, reaction: 'typing.Union[dt_emoji.Emoji, str]', victim: 'dt_member.Member' = None):
         """

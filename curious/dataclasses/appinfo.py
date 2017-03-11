@@ -24,12 +24,14 @@ class AppInfo(object):
         #: The client ID of this application.
         self.client_id = int(self._application.get("id", 0))
 
+        if "owner" in self._application:
+            owner = self._bot.state.make_user(self._application.get("owner"))
+        else:
+            owner = None
+
         #: The owner of this application.
         #: This can be None if the application fetched isn't the bot's.
-        if "owner" in self._application:
-            self.owner = self._bot.state.make_user(self._application.get("owner"))
-        else:
-            self.owner = None
+        self.owner = owner
 
         #: The name of this application.
         self.name = self._application.get("name", None)  # type: str

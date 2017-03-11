@@ -169,7 +169,7 @@ class User(Dataclass):
             return original_channel
 
         # Failing that, open a new private channel.
-        channel_data = await self._bot.http.open_private_channel(self.id)
+        channel_data = await self._bot.http.create_private_channel(self.id)
         channel = self._bot.state.make_private_channel(channel_data)
         return channel
 
@@ -335,7 +335,7 @@ class BotUser(User):
         """
         Edits the bot's current profile.
         """
-        return self._bot.edit_profile(*args, **kwargs)
+        return self._bot.edit_user(*args, **kwargs)
 
     def upload_avatar(self, path: str):
         """

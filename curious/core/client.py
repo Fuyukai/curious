@@ -848,7 +848,7 @@ class Client(object):
         if avatar:
             avatar = base64ify(avatar)
 
-        await self.http.edit_profile(username, avatar, password)
+        await self.http.edit_user(username, avatar, password)
 
     async def edit_avatar(self, path: str):
         """

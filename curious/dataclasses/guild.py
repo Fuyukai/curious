@@ -630,7 +630,7 @@ class Guild(Dataclass):
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
         try:
-            await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+            await self._bot.http.edit_member_roles(self.id, member.id, role_ids)
         except:
             await listener.cancel()
             raise
@@ -674,7 +674,7 @@ class Guild(Dataclass):
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
 
         try:
-            await self._bot.http.modify_member_roles(self.id, member.id, role_ids)
+            await self._bot.http.edit_member_roles(self.id, member.id, role_ids)
         except:
             await listener.cancel()
             raise
@@ -734,7 +734,7 @@ class Guild(Dataclass):
             roles = roles.items()
 
         to_send = [(str(r.id), new_position) for (r, new_position) in roles]
-        await self._bot.http.change_roles_position(to_send)
+        await self._bot.http.edit_role_positions(to_send)
 
     async def change_voice_state(self, member: 'dt_member.Member', *,
                                  deaf: bool = None, mute: bool = None):
@@ -763,7 +763,7 @@ class Guild(Dataclass):
         if "afk_channel" in kwargs:
             kwargs["afk_channel_id"] = kwargs.pop("afk_channel").id
 
-        await self._bot.http.modify_guild(self.id, **kwargs)
+        await self._bot.http.edit_guild(self.id, **kwargs)
         return self
 
     async def change_icon(self, icon_content: bytes):
@@ -776,8 +776,8 @@ class Guild(Dataclass):
             raise PermissionsError("manage_server")
 
         image = base64ify(icon_content)
-        await self._bot.http.modify_guild(self.id,
-                                          icon_content=image)
+        await self._bot.http.edit_guild(self.id,
+                                        icon_content=image)
 
     def upload_icon(self, path):
         """

@@ -146,10 +146,10 @@ class HistoryIterator(collections.AsyncIterator):
             return
 
         if self.before:
-            messages = await self.client.http.get_messages(self.channel.id, before=self.last_message_id,
-                                                           limit=to_get)
+            messages = await self.client.http.get_message_history(self.channel.id, before=self.last_message_id,
+                                                                  limit=to_get)
         else:
-            messages = await self.client.http.get_messages(self.channel.id, after=self.last_message_id)
+            messages = await self.client.http.get_message_history(self.channel.id, after=self.last_message_id)
             messages = reversed(messages)
 
         for message in messages:
@@ -410,7 +410,7 @@ class Channel(Dataclass):
         if self._bot.user.bot:
             data = await self._bot.http.get_message(self.id, message_id)
         else:
-            data = await self._bot.http.get_messages(self.id, around=message_id, limit=1)
+            data = await self._bot.http.get_message_history(self.id, around=message_id, limit=1)
             if not data:
                 raise CuriousError("No messages found for this ID")
             else:
@@ -537,7 +537,7 @@ class Channel(Dataclass):
                 raise CuriousError("Cannot delete messages older than {}".format(minimum_allowed))
             ids.append(message.id)
 
-        await self._bot.http.bulk_delete_messages(self.id, ids)
+        await self._bot.http.delete_multiple_messages(self.id, ids)
 
         return None
 
@@ -608,7 +608,7 @@ class Channel(Dataclass):
             # First, try and bulk delete all the messages.
             if can_bulk_delete:
                 try:
-                    await self._bot.http.bulk_delete_messages(self.id, message_ids)
+                    await self._bot.http.delete_multiple_messages(self.id, message_ids)
                 except Forbidden:
                     # We might not have MANAGE_MESSAGES.
                     # Check if we should fallback on normal delete.
@@ -705,8 +705,8 @@ class Channel(Dataclass):
             if not self.permissions(self.guild.me).attach_files:
                 raise PermissionsError("attach_files")
 
-        data = await self._bot.http.upload_file(self.id, file_content,
-                                                filename=filename, content=message_content)
+        data = await self._bot.http.send_file(self.id, file_content,
+                                              filename=filename, content=message_content)
         obb = self._bot.state.make_message(data, cache=False)
         return obb
 
@@ -787,8 +787,8 @@ class Channel(Dataclass):
 
             listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
         else:
-            coro = self._bot.http.modify_overwrite(self.id, target.id, type_,
-                                                   allow=overwrite.allow.bitfield, deny=overwrite.deny.bitfield)
+            coro = self._bot.http.edit_overwrite(self.id, target.id, type_,
+                                                 allow=overwrite.allow.bitfield, deny=overwrite.deny.bitfield)
 
             async def _listener(ctx, before, after):
                 return after.id == self.id

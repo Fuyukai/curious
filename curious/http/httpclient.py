@@ -323,7 +323,7 @@ class HTTPClient(object):
         data = await self.get(url, "gateway")
         return data["url"], data["shards"]
 
-    async def get_user_me(self):
+    async def get_this_user(self):
         """
         Gets the current user.
         """
@@ -430,6 +430,7 @@ class HTTPClient(object):
         :param channel_id: The ID of the channel to send to.
         :param content: The content of the message.
         :param tts: Is this message a text to speech message?
+        :param embed: The embed dict to send with this message.
         """
         url = (self.CHANNEL_BASE + "/messages").format(channel_id=channel_id)
         payload = {
@@ -445,8 +446,8 @@ class HTTPClient(object):
         data = await self.post(url, "messages:{}".format(channel_id), json=payload)
         return data
 
-    async def upload_file(self, channel_id: int, file_content: bytes, *,
-                          filename: str = None, content: str = None):
+    async def send_file(self, channel_id: int, file_content: bytes, *,
+                        filename: str = None, content: str = None):
         """
         Uploads a file to the current channel.
 
@@ -509,7 +510,7 @@ class HTTPClient(object):
         data = await self.patch(url, "messages:{}".format(channel_id), json=payload)
         return data
 
-    async def react_to_message(self, channel_id: int, message_id: int, emoji: str):
+    async def add_reaction(self, channel_id: int, message_id: int, emoji: str):
         """
         Reacts to a message.
 
@@ -607,9 +608,9 @@ class HTTPClient(object):
         data = await self.get(url, "messages:{}".format(channel_id))
         return data
 
-    async def get_messages(self, channel_id: int, *,
-                           before: int = None, after: int = None, around: int = None,
-                           limit: int = 100):
+    async def get_message_history(self, channel_id: int, *,
+                                  before: int = None, after: int = None, around: int = None,
+                                  limit: int = 100):
         """
         Gets a list of messages from a channel.
 
@@ -650,7 +651,7 @@ class HTTPClient(object):
         data = await self.get(url, bucket="pins:{}".format(channel_id))
         return data
 
-    async def bulk_delete_messages(self, channel_id: int, message_ids: typing.List[int]):
+    async def delete_multiple_messages(self, channel_id: int, message_ids: typing.List[int]):
         """
         Deletes multiple messages.
 
@@ -670,13 +671,14 @@ class HTTPClient(object):
         return data
 
     # Profile endpoints
-    async def edit_profile(self, username: str = None, avatar: str = None,
-                           password: str = None):
+    async def edit_user(self, username: str = None, avatar: str = None,
+                        password: str = None):
         """
         Edits the profile of the bot.
 
         :param username: The new username of the bot, or None if it is not to be changed.
         :param avatar: The new avatar of the bot, or None if it not to be changed.
+        :param password: The password of the bot. Only needed for user bots.
         """
         url = self.USER_ME
         payload = {}
@@ -693,18 +695,6 @@ class HTTPClient(object):
         return data
 
     # Moderation
-    async def kick_member(self, guild_id: int, member_id: int):
-        """
-        Kicks a member from a guild.
-
-        :param guild_id: The guild ID to kick in.
-        :param member_id: The member ID to kick from the guild.
-        """
-        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
-
-        data = await self.delete(url, bucket="members:{}".format(guild_id))
-        return data
-
     async def get_bans(self, guild_id: int):
         """
         Gets a list of bans from a guild.
@@ -715,6 +705,18 @@ class HTTPClient(object):
         url = (self.GUILD_BASE + "/bans").format(guild_id=guild_id)
 
         data = await self.get(url, bucket="bans:{}".format(guild_id))
+        return data
+
+    async def kick_member(self, guild_id: int, member_id: int):
+        """
+        Kicks a member from a guild.
+
+        :param guild_id: The guild ID to kick in.
+        :param member_id: The member ID to kick from the guild.
+        """
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+
+        data = await self.delete(url, bucket="members:{}".format(guild_id))
         return data
 
     async def ban_user(self, guild_id: int, user_id: int,
@@ -747,12 +749,12 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="bans:{}".format(guild_id))
         return data
 
-    async def modify_guild(self, guild_id: int, *,
-                           name: str = None, icon_content: bytes = None,
-                           region: str = None, verification_level: int = None,
-                           default_message_notifications: int = None,
-                           afk_channel_id: int = None, afk_timeout: int = None,
-                           splash_content: bytes = None):
+    async def edit_guild(self, guild_id: int, *,
+                         name: str = None, icon_content: bytes = None,
+                         region: str = None, verification_level: int = None,
+                         default_message_notifications: int = None,
+                         afk_channel_id: int = None, afk_timeout: int = None,
+                         splash_content: bytes = None):
         """
         Modifies a guild.
 
@@ -809,6 +811,12 @@ class HTTPClient(object):
 
         :param guild_id: The guild ID that contains the role.
         :param role_id: The role ID to edit.
+        :param name: The new name of the role.
+        :param permissions: The new permissions for the role.
+        :param position: The position for the role.
+        :param colour: The colour for the role.
+        :param hoist: Is this role hoisted?
+        :param mentionable: Is this role mentionable?
         """
         url = (self.GUILD_BASE + "/roles/{role_id}").format(guild_id=guild_id, role_id=role_id)
         payload = {}
@@ -924,7 +932,7 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="channels:{}".format(channel_id))
         return data
 
-    async def add_single_role(self, guild_id: int, member_id: int, role_id: int):
+    async def add_member_role(self, guild_id: int, member_id: int, role_id: int):
         """
         Adds a single role to a member.
 
@@ -940,7 +948,7 @@ class HTTPClient(object):
         data = await self.put(url, bucket="member_edit:{}".format(guild_id))
         return data
 
-    async def modify_member_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
+    async def edit_member_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
         """
         Modifies the roles that a member object contains.
 
@@ -956,7 +964,7 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
         return data
 
-    async def change_roles_position(self, guild_id: int, role_mapping: typing.List[typing.Tuple[str, int]]):
+    async def edit_role_positions(self, guild_id: int, role_mapping: typing.List[typing.Tuple[str, int]]):
         """
         Changes the position of a set of roles.
 
@@ -1017,8 +1025,8 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
         return data
 
-    async def modify_overwrite(self, channel_id: int, target_id: int, type_: str,
-                               *, allow: int = 0, deny: int = 0):
+    async def edit_overwrite(self, channel_id: int, target_id: int, type_: str,
+                             *, allow: int = 0, deny: int = 0):
         """
         Modifies or adds an overwrite.
 
@@ -1425,7 +1433,7 @@ class HTTPClient(object):
 
         data = await self.get(url, "oauth2")
         # httpclient is meant to be a "pure" wrapper, but add this anyway.
-        me = await self.get_user_me()
+        me = await self.get_this_user()
 
         final = {
             "application": data,
@@ -1527,7 +1535,7 @@ class HTTPClient(object):
         return data
 
     # Misc
-    async def open_private_channel(self, user_id: int):
+    async def create_private_channel(self, user_id: int):
         """
         Opens a new private channel with a user.
 
