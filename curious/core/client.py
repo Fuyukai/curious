@@ -255,6 +255,15 @@ class Client(object):
 
         self.scan_events()
 
+    def create_http(self):
+        """
+        Creates the :class:`~.HTTPClient` for this bot.
+        
+        This requires that the token is set on ``self.token``.
+        """
+        if not self.http:
+            self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
+
     @property
     def user(self) -> BotUser:
         """
@@ -918,8 +927,7 @@ class Client(object):
         if token:
             self._token = token
 
-        if not self.http:
-            self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
+        self.create_http()
 
         if not self.application_info and self.bot_type & BotType.BOT:
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
@@ -1030,9 +1038,7 @@ class Client(object):
         if token:
             self._token = token
 
-        if not self.http:
-            # autosharded always means start autosharded
-            self.http = HTTPClient(self._token, bot=True)
+        self.create_http()
 
         shards = await self.get_shard_count()
         self.shard_count = shards
