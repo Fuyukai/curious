@@ -629,6 +629,9 @@ class Channel(Dataclass):
         """
         Starts typing in the channel for 5 seconds.
         """
+        if self.type == ChannelType.VOICE:
+            raise CuriousError("Cannot send messages to a voice channel")
+
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_message")
@@ -656,6 +659,9 @@ class Channel(Dataclass):
         :param embed: An embed object to send with this message.
         :return: A new :class:`~.Message` object.
         """
+        if self.type == ChannelType.VOICE:
+            raise CuriousError("Cannot send messages to a voice channel")
+
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_messages")
@@ -698,6 +704,9 @@ class Channel(Dataclass):
         :param message_content: Optional: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
         """
+        if self.type == ChannelType.VOICE:
+            raise CuriousError("Cannot send messages to a voice channel")
+
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_messages")
@@ -725,6 +734,9 @@ class Channel(Dataclass):
         :param message_content: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
         """
+        if self.type == ChannelType.VOICE:
+            raise CuriousError("Cannot send messages to a voice channel")
+
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_messages")
@@ -825,4 +837,7 @@ class Channel(Dataclass):
         """
         Connects to voice in this channel.
         """
+        if self.type != ChannelType.VOICE:
+            raise CuriousError("Cannot connect to a text channel")
+
         return self.guild.connect_to_voice(self)

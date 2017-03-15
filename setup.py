@@ -16,7 +16,7 @@ setup(
         "h11==0.7.0",
         "multidict==2.1.4",
         "pylru==1.0.9",
-        "yarl==0.8.1",
+        "yarl==0.8.1", 'oauthlib',
     ],
     extras_require={
         "voice": ["opuslib==1.1.0",
