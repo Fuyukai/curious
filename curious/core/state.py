@@ -1020,7 +1020,7 @@ class State(object):
 
         guild._members[member.id] = member
 
-        member.nickname = event_data.get("nickname")
+        member.nickname = event_data.get("nickname", member.nickname)
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 
     async def handle_guild_ban_add(self, gw: 'gateway.Gateway', event_data: dict):
