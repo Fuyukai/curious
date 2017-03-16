@@ -26,6 +26,13 @@ class Status(enum.Enum):
     #: Corresponds to invisible (gray dot).
     INVISIBLE = 'invisible'
 
+    @property
+    def strength(self) -> int:
+        return strengths.index(self)
+
+
+strengths = [Status.OFFLINE, Status.INVISIBLE, Status.IDLE, Status.DND, Status.ONLINE]
+
 
 class Game(object):
     """

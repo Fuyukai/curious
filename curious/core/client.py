@@ -735,7 +735,7 @@ class Client(object):
 
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE, afk: bool = False,
-                            shard_id: int = 0):
+                            shard_id: int = 0, *, sync: bool = False):
         """
         Changes the bot's current status.
 
@@ -743,7 +743,12 @@ class Client(object):
         :param status: The new status. Must be a :class:`~.Status` object.
         :param afk: Is the bot AFK? Only useful for userbots.
         :param shard_id: The shard to change your status on.
+        :param sync: Sync status with other clients? Only useful for userbots.
         """
+        if not self.user.bot and sync:
+            # update `status` key of settings
+            await self.user.settings.update(status=status.value)
+
         gateway = self._gateways[shard_id]
         return await gateway.send_status(game, status, afk=afk)
 

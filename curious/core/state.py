@@ -438,6 +438,7 @@ class State(object):
             # Parse settings.
             settings = event_data.get("user_settings", {})
             self._user.settings = UserSettings(self.client, **settings)
+            self._user.settings.status = event_data.get("status", None)
 
             # Parse friends and blocked users.
             for item in event_data.get("relationships", []):
@@ -1287,6 +1288,11 @@ class State(object):
         dict.update(self._user.settings, **event_data)
         # make sure to update the guild order
         self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
+
+        # update status
+        new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
+        for guild in self.guilds.values():
+            guild.me.status = new_status
 
         await self.client.fire_event("user_settings_update", old_settings, self._user.settings, gateway=gw)
 
