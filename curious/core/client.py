@@ -19,7 +19,8 @@ import curio
 import multidict
 import typing
 from cuiows.exc import WebsocketClosedError
-from curio.task import Task
+from curio.monitor import Monitor, MONITOR_HOST, MONITOR_PORT
+from curio.task import Task, TaskGroup
 
 from curious.commands import cmd, context, plugin
 from curious.core.event import EventContext, event as ev_dec
@@ -994,7 +995,7 @@ class Client(object):
 
         await self.connect(self._token, shard_id=shard_id)
         t = await curio.spawn(self.poll(shard_id))
-        t.id = "shard-{}".format(shard_id)
+        t.task_local_storage["shard_id"] = {"id": shard_id}
         return t
 
     async def start(self, shards: int = 1):
@@ -1012,15 +1013,13 @@ class Client(object):
             self._logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
-        wait = curio.wait(tasks)
-
         results = []
 
         # Wait for the next task.
-        while True:
-            task = await wait.next_done()  # type: curio.Task
+        async with TaskGroup(tasks=tasks, name="shard waiter") as g:
+            task = await g.next_done()  # type: curio.Task
             if task is None:
-                break
+                return
 
             try:
                 result = await task.join()
@@ -1030,9 +1029,11 @@ class Client(object):
             else:
                 # reboot it
                 self._logger.warning("Rebooting shard {}.".format(task.id))
-                id = int(task.id.split("-")[1])
-                t = await self.boot_shard(shard_id=id)
-                wait.add_task(t)
+                shard_id = task.task_local_storage["shard_id"]["id"]
+                t = await self.boot_shard(shard_id=shard_id)
+                t.task_local_storage["shard_id"] = {"id": shard_id}
+                # add the shard waiter task
+                g.add_task(t)
             finally:
                 results.append(result)
 
@@ -1051,7 +1052,8 @@ class Client(object):
         self.shard_count = shards
         await self.start(shards=shards)
 
-    def run(self, token: str = None, shards: typing.Union[int, object] = 1):
+    def run(self, token: str = None, shards: typing.Union[int, object] = 1, *,
+            monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT):
         """
         Runs your bot with Curio with the monitor enabled.
 
@@ -1065,11 +1067,8 @@ class Client(object):
         if not self.bot_type & BotType.BOT and shards != 1:
             raise CuriousError("Cannot start user bots in sharded mode")
 
-        try:
-            kernel = curio.Kernel(with_monitor=True, warn_if_task_blocks_for=5)
-        except TypeError:
-            # old vers of curio
-            kernel = curio.Kernel(with_monitor=True)
+        kernel = curio.Kernel()
+        monitor = Monitor(kernel, monitor_host, monitor_port)
         if shards == AUTOSHARD:
             coro = self.start_autosharded(token)
         else:
