@@ -17,6 +17,9 @@ This document displays the differences between each release of curious.
    :meth`.Guild.get_recent_mentions` to allow easy iteration of recent
    mentions.
 
+ - Change statuses to new :class:`~.Presence`, which are stored on Member
+   and RelationshipUser instances.
+
 0.3.0
 -----
 

@@ -1388,6 +1388,6 @@ class State(object):
         if channel is None:
             return
 
-        if user in channel.recipients:
+        if user in channel.recipients.values():
             channel._recipients.pop(user.id, None)
             await self.client.fire_event("group_user_remove", channel, user, gateway=gw)
