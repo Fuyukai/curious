@@ -21,7 +21,7 @@ from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Game, Status, Presence
 from curious.dataclasses.user import BotUser, User, FriendType, UserSettings
 from curious.dataclasses.user import RelationshipUser
 from curious.dataclasses.voice_state import VoiceState
@@ -545,12 +545,9 @@ class State(object):
                 self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
                                                         override_cache=True)
 
-            fr.status = Status(event_data.get("status"))
+            fr.presence.status = event_data.get("status")
             game = event_data.get("game")
-            if game is None:
-                fr.game = None
-            else:
-                fr.game = Game(**game)
+            fr.presence.game = game
 
             await self.client.fire_event("friend_update", fr, gateway=gw)
             return
@@ -565,10 +562,7 @@ class State(object):
         old_member = member._copy()
 
         game = event_data.get("game", {})
-        if game is not None:
-            member.game = Game(**game)
-        else:
-            member.game = None
+        member.presence.game = game
 
         roles = event_data.get("roles", [])
         for role_id in roles:
@@ -580,7 +574,7 @@ class State(object):
 
             member._roles[role.id] = role
 
-        member.status = event_data.get("status")
+        member.presence.status = event_data.get("status")
 
         if not isinstance(member.user, RelationshipUser):
             # recreate the user object
@@ -640,11 +634,7 @@ class State(object):
             if not member:
                 continue
 
-            game = presence.get("game", None)
-            if game is not None:
-                member.game = Game(**game)
-
-            member.status = presence.get("status")
+            member.presence = Presence(**presence)
 
         self.logger.info("Processed a guild sync for guild {} with "
                          "{} members and {} presences.".format(guild.name, len(members), len(presences)))
@@ -665,8 +655,8 @@ class State(object):
             self._guilds[guild.id] = guild
 
         guild.shard_id = gw.shard_id
-        guild.me.game = gw.game
-        guild.me.status = gw.status
+        guild.me.presence.game = gw.game
+        guild.me.presence.status = gw.status
 
         # Dispatch the event if we're ready (i.e not streaming)
         if self.is_ready(gw.shard_id).is_set():
@@ -1290,9 +1280,9 @@ class State(object):
         self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
 
         # update status
-        new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
-        for guild in self.guilds.values():
-            guild.me.status = new_status
+        #new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
+        #for guild in self.guilds.values():
+        #    guild.me.status = new_status
 
         await self.client.fire_event("user_settings_update", old_settings, self._user.settings, gateway=gw)
 

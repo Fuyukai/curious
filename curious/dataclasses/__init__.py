@@ -19,9 +19,9 @@ as in they store state which allows the user to edit them as appropriate.
     member
     message
     permissions
+    presence
     reaction
     role
-    status
     user
     voice_state
     webhook

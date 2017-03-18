@@ -13,7 +13,7 @@ from types import MappingProxyType
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, member as dt_member, \
     permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Game, Status, Presence
 from curious.exc import CuriousError, HierachyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify
 
@@ -387,11 +387,7 @@ class Guild(Dataclass):
             if not member_obj:
                 continue
 
-            game = presence.get("game", {})
-            if game is not None:
-                member_obj.game = Game(**game)
-
-            member_obj.status = presence.get("status")
+            member_obj.presence = Presence(**presence)
 
         # Create all of the channel objects.
         for channel_data in data.get("channels", []):

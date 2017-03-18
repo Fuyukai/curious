@@ -10,7 +10,7 @@ import typing
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses import role as dt_role
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Presence, Game, Status
 from curious.dataclasses import voice_state as dt_vs
 from curious.dataclasses import user as dt_user
 from curious.dataclasses import guild
@@ -24,7 +24,7 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_roles", "joined_at", "nickname", "guild", "game", "_status", "voice",)
+    __slots__ = ("_roles", "joined_at", "nickname", "guild", "presence", "voice",)
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -44,11 +44,8 @@ class Member(Dataclass):
         #: The member's current :class:`~.Guild`.
         self.guild = None  # type: guild.Guild
 
-        #: The current :class:`~.Game` this Member is playing.
-        self.game = None  # type: Game
-
-        #: The current :class:`~.Status` of this member.
-        self._status = None  # type: Status
+        #: The current :class:`~.Presence` of this member.
+        self.presence = Presence(status=kwargs.get("status", Status.OFFLINE), game=kwargs.get("game", None))
 
         #: The current :class:`~.VoiceState` of this member.
         self.voice = None  # type: dt_vs.VoiceState
@@ -73,8 +70,7 @@ class Member(Dataclass):
         new_object._roles = self._roles.copy()
         new_object.joined_at = self.joined_at
         new_object.guild = self.guild
-        new_object.game = copy.deepcopy(self.game)
-        new_object._status = self._status
+        new_object.presence = self.presence
         new_object.nickname = self.nickname
 
         return new_object
@@ -106,19 +102,22 @@ class Member(Dataclass):
     @property
     def status(self) -> Status:
         """
-        :return: The current status of this member.
-        :rtype: :class:`~.Status`
+        :return: The current :class:`~.Status` of this member.
         """
-        return self._status
+        return self.presence.status if self.presence else Status.OFFLINE
 
-    @status.setter
-    def status(self, value):
-        if value is None:
-            return
+    @property
+    def game(self) -> Game:
+        """
+        :return: The current :class:`~.Game` this member is playing.
+        """
+        if not self.presence:
+            return None
 
-        if not isinstance(value, Status):
-            value = Status(value)
-        self._status = value
+        if self.presence.status == Status.OFFLINE:
+            return None
+
+        return self.presence.game
 
     @property
     def roles(self) -> 'typing.Iterable[dt_role.Role]':

@@ -14,8 +14,7 @@ from types import MappingProxyType
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.appinfo import AuthorizedApp, AppInfo
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.status import Game
-from curious.dataclasses.status import Status
+from curious.dataclasses.presence import Game, Status, Presence
 from curious.exc import CuriousError
 
 
@@ -433,11 +432,8 @@ class RelationshipUser(User):
     def __init__(self, client, **kwargs):
         super().__init__(client, **kwargs)
 
-        #: The status for this friend.
-        self.status = None  # type: Status
-
-        #: The game for this friend.
-        self.game = None  # type: Game
+        #: The presence for this friend.
+        self.presence = Presence(status=kwargs.get("status"), game=kwargs.get("game"))
 
         #: The :class:`.FriendType` of friend this user is.
         self.type_ = None  # type: FriendType

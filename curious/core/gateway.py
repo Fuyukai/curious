@@ -53,7 +53,7 @@ from curio.thread import AWAIT, async_thread
 from cuiows.exc import WebsocketClosedError
 from cuiows import WSClient
 
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Game, Status
 
 
 # Signalling exceptions.
@@ -345,8 +345,8 @@ class Gateway(object):
         # Update our game() object on all guilds on this shard.
         for guild in self.state.guilds_for_shard(self.shard_id):
             try:
-                guild.me.game = game
-                guild.me.status = status
+                guild.me.presence.game = game
+                guild.me.presence.status = status
             except KeyError:
                 # sent before our member object exists - i.e just after READY happens
                 # we can ignore this

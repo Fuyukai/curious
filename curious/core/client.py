@@ -28,7 +28,7 @@ from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget

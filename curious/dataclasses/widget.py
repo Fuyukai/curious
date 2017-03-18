@@ -8,7 +8,7 @@ from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.status import Game, Status
+from curious.dataclasses.presence import Game, Status
 
 
 class WidgetChannel(Dataclass):
