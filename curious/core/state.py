@@ -527,9 +527,10 @@ class State(object):
         guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
+        user_id = int(event_data["user"]["id"])
+
         if not guild:
             # user presence update
-            user_id = int(event_data["user"]["id"])
             fr = self._friends.get(user_id)
 
             if not fr:
@@ -550,20 +551,22 @@ class State(object):
             await self.client.fire_event("friend_update", fr, gateway=gw)
             return
 
-        member_id = int(event_data["user"]["id"])
-        member = guild.members.get(member_id)
-
+        # try and create a new member from the presence update
+        member = guild.members.get(user_id)
         if member is None:
-            # thanks discord
-            return
+            # create the member from the presence
+            # we only pass the User here as we're about to update everything
+            member = Member(client=self.client, user=event_data["user"])
+            old_member = None
+        else:
+            old_member = member._copy()
 
-        old_member = member._copy()
+        # Update the member's presence
+        member.presence.status = event_data.get("status")
+        member.presence.game = event_data.get("game", {})
 
-        game = event_data.get("game", {})
-        member.presence.game = game
-
+        # copy the roles if it exists
         roles = event_data.get("roles", [])
-
         if roles:
             # clear roles
             member._roles = {}
@@ -576,10 +579,11 @@ class State(object):
 
                 member._roles[role.id] = role
 
-        member.presence.status = event_data.get("status")
+        # update the nickname
+        member.nickname = event_data.get("nick", member.nickname)
 
         if not isinstance(member.user, RelationshipUser):
-            # recreate the user object
+            # recreate the user object, so the user is properly cached
             if "username" in event_data["user"]:
                 self.make_user(event_data["user"], override_cache=True)
 
