@@ -514,9 +514,9 @@ class State(object):
         id = event_data.get("id")
 
         self._user.id = int(id)
-        self._user.username = event_data.get("username")
-        self._user.discriminator = event_data.get("discriminator")
-        self._user._avatar_hash = event_data.get("avatar")
+        self._user.username = event_data.get("username", self._user.username)
+        self._user.discriminator = event_data.get("discriminator", self._user.discriminator)
+        self._user._avatar_hash = event_data.get("avatar", self._user._avatar_hash)
 
         await self.client.fire_event("user_update", gateway=gw)
 
