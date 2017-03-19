@@ -563,14 +563,18 @@ class State(object):
         member.presence.game = game
 
         roles = event_data.get("roles", [])
-        for role_id in roles:
-            role_id = int(role_id)
-            role = guild.roles.get(role_id)
 
-            if not role:
-                continue
+        if roles:
+            # clear roles
+            member._roles = {}
+            for role_id in roles:
+                role_id = int(role_id)
+                role = guild.roles.get(role_id)
 
-            member._roles[role.id] = role
+                if not role:
+                    continue
+
+                member._roles[role.id] = role
 
         member.presence.status = event_data.get("status")
 
