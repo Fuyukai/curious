@@ -458,10 +458,7 @@ class State(object):
                 if not fr:
                     continue
 
-                fr.status = Status(presence["status"])
-                gm = presence["game"]
-                if gm is not None:
-                    fr.game = Game(**gm)
+                fr.presence = Presence(**presence)
 
             self._guilds.order = list(map(int, self._user.settings.guild_positions))
 
@@ -544,6 +541,7 @@ class State(object):
                 # full user object
                 self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
                                                         override_cache=True)
+                fr = self._friends[user_id]
 
             fr.presence.status = event_data.get("status")
             game = event_data.get("game")
