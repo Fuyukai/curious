@@ -168,7 +168,7 @@ class State(object):
         """
         return all(guild._finished_chunking.is_set()
                    for guild in self.guilds.values()
-                   if guild.shard_id == shard_id)
+                   if guild.shard_id == shard_id and guild.unavailable is False)
 
     def guilds_for_shard(self, shard_id: int):
         """
@@ -661,8 +661,12 @@ class State(object):
             self._guilds[guild.id] = guild
 
         guild.shard_id = gw.shard_id
-        guild.me.presence.game = gw.game
-        guild.me.presence.status = gw.status
+        try:
+            guild.me.presence.game = gw.game
+            guild.me.presence.status = gw.status
+        except KeyError:
+            # unavailable guilds etc
+            pass
 
         # Dispatch the event if we're ready (i.e not streaming)
         if self.is_ready(gw.shard_id).is_set():
