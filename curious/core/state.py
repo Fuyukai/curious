@@ -451,7 +451,12 @@ class State(object):
                     self._blocked[int(item["id"])] = user
 
             for presence in event_data.get("presences", []):
-                u = int(presence["user"]["id"])
+                try:
+                    u = int(presence["user"]["id"])
+                except KeyError:
+                    # what the fuck?!?!?
+                    self.logger.warning("Got None user for presence. What?")
+                    return
                 fr = self._friends.get(u)
 
                 # eventual consistency
