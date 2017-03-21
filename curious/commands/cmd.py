@@ -52,9 +52,9 @@ def convert_channel(ctx: Context, arg: str):
             raise ConversionFailedError(ctx, arg, dt_channel.Channel)
     else:
         try:
-            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels), None)
+            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels.values()), None)
             if channel is None:
-                channel = next(filter(lambda c: c.id == int(arg), ctx.guild.channels))
+                channel = next(filter(lambda c: c.id == int(arg), ctx.guild.channels.values()))
         except (StopIteration, ValueError):
             raise ConversionFailedError(ctx, arg, dt_channel.Channel)
 
