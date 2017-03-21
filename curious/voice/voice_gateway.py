@@ -10,6 +10,7 @@ import threading
 import zlib
 
 import curio
+import time
 import typing
 from cuiows.client import WSClient
 from cuiows.exc import WebsocketClosedError
@@ -24,6 +25,7 @@ class VGatewayOp(enum.IntEnum):
     HEARTBEAT = 3
     SESSION_DESCRIPTION = 4
     SPEAKING = 5
+    HEARTBEAT_ACK = 6
     HELLO = 8
 
 
@@ -64,7 +66,8 @@ class _HeartbeatThread(threading.Thread):
         """
         return {
             "op": int(VGatewayOp.HEARTBEAT),
-            "d": self._gateway.sequence
+            # ms time for v2
+            "d": int(round(time.time() * 1000))
         }
 
     def _send_heartbeat(self):
@@ -264,9 +267,9 @@ class VoiceGateway(object):
                   user_id=user_id, guild_id=guild_id)
         # Open our connection to the voice websocket.
         if port == "80":
-            await obb.connect("ws://{}".format(state["endpoint"]))
+            await obb.connect("ws://{}/?v=2".format(state["endpoint"]))
         elif port == "443":
-            await obb.connect("ws://{}".format(state["endpoint"]))
+            await obb.connect("wss://{}/?v=2".format(state["endpoint"]))
         obb._sender_task = await curio.spawn(obb._send_events())
         # Send our IDENTIFY.
         obb.send_identify()
@@ -329,6 +332,10 @@ class VoiceGateway(object):
 
         elif op == VGatewayOp.HEARTBEAT:
             # silence
+            pass
+
+        elif op == VGatewayOp.HEARTBEAT_ACK:
+            # suppress
             pass
 
         else:

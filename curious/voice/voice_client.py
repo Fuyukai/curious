@@ -18,6 +18,7 @@ import socket
 import struct
 
 import curio
+import functools
 from nacl.secret import SecretBox
 from opuslib import Encoder
 
@@ -180,8 +181,9 @@ class VoiceClient(object):
         # Now, you may be wondering why we use raw UDP sockets instead of using "nice" sockets.
         # This is because we need a voice thread to be able to access it.
         # This prevents blocking actions from killing the entire voice connection.
-        addrinfo = await curio.abide(socket.getaddrinfo, self.vs_ws.endpoint, self.vs_ws.port,
-                                     type=socket.SOCK_DGRAM)
+        addrinfo = await curio.abide(functools.partial(
+            socket.getaddrinfo, self.vs_ws.endpoint[:-5], self.vs_ws.port, type=socket.SOCK_DGRAM)
+        )
 
         for item in addrinfo:
             try:
