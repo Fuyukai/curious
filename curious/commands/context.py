@@ -50,20 +50,27 @@ class Context(object):
     @property
     def channel(self) -> 'dt_channel.Channel':
         """
-        :return: The :class:`Channel` this context was invoked in. 
+        :return: The :class:`~.Channel` this context was invoked in. 
         """
         return self.message.channel
 
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
-        :return: The :class:`Guild` this context was invoked in. 
+        :return: The :class:`~.Guild` this context was invoked in. 
         """
         return self.message.guild
 
     @property
     def author(self) -> 'typing.Union[dt_member.Member, dt_user.User, dt_webhook.Webhook]':
         """
-        :return: The :class:`Member` that invoked this command.
+        :return: The :class:`~.Member` that invoked this command.
         """
         return self.message.author
+
+    @property
+    def user(self) -> 'dt_user.User':
+        """
+        :return: The :class:`~.User` for the bot.
+        """
+        return self.bot.user

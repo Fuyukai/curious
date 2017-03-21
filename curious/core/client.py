@@ -6,6 +6,7 @@ This contains a definition for :class:`.Client` which is used to interface prima
 .. currentmodule:: curious.core.client
 """
 
+import collections
 import enum
 import importlib
 import inspect
@@ -13,11 +14,12 @@ import logging
 import re
 import sys
 import traceback
+import typing
+from types import MappingProxyType
 
-import collections
 import curio
 import multidict
-import typing
+
 from cuiows.exc import WebsocketClosedError
 from curio.monitor import Monitor, MONITOR_HOST, MONITOR_PORT
 from curio.task import Task, TaskGroup
@@ -310,6 +312,13 @@ class Client(object):
             c.update(gw._dispatches_handled)
 
         return c
+
+    @property
+    def gateway(self):
+        """
+        :return: A read-only view of the current gateways for this client. 
+        """
+        return MappingProxyType(self._gateways)
 
     def find_channel(self, channel_id: int):
         """

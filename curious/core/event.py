@@ -69,4 +69,4 @@ class EventContext(object):
         """
         :return: The :class:`~.Gateway` that produced this event. 
         """
-        return self.bot._gateways[self.shard_id]
+        return self.bot.gateways[self.shard_id]

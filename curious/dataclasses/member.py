@@ -93,7 +93,10 @@ class Member(Dataclass):
         return self.nickname if self.nickname else self.user.username
 
     @property
-    def mention(self):
+    def mention(self) -> str:
+        """
+        :return: A string that mentions this member. 
+        """
         if self.nickname:
             return "<@!{}>".format(self.id)
 
