@@ -314,7 +314,7 @@ class Client(object):
         return c
 
     @property
-    def gateway(self):
+    def gateways(self):
         """
         :return: A read-only view of the current gateways for this client. 
         """
