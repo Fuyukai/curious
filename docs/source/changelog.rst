@@ -20,6 +20,8 @@ This document displays the differences between each release of curious.
  - Change statuses to new :class:`~.Presence`, which are stored on Member
    and RelationshipUser instances.
 
+ - :attr:`.Guild._large` is now set by GUILD_SYNC handling for userbots.
+
 0.3.0
 -----
 
