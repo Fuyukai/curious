@@ -632,6 +632,8 @@ class State(object):
             self.logger.warning("Got sync for guild we're not in...")
             return
 
+        guild._large = event_data.get("large", None)
+
         members = event_data.get("members", [])
         # same logic as a guild chunk
         guild._handle_member_chunk(members)
