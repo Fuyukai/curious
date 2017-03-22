@@ -456,7 +456,7 @@ class State(object):
                 except KeyError:
                     # what the fuck?!?!?
                     self.logger.warning("Got None user for presence. What?")
-                    return
+                    continue
                 fr = self._friends.get(u)
 
                 # eventual consistency
