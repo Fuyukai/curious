@@ -38,7 +38,7 @@ Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Curious
 
    tutorial/gettingstarted
    tutorial/firstbot
@@ -51,6 +51,7 @@ API Documentation
 The documentation below is automatically generated from the docstrings.
 
 .. toctree::
+   :caption: Autosummary
    :maxdepth: 3
 
    curious
