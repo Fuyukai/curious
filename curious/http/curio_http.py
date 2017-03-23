@@ -384,8 +384,10 @@ def _prepare_request(method: str, url: yarl.URL, *,
     url = yarl.URL(url)
 
     if params:
-        query_vars = list(url.query.items()) + list(params.items())
-        url = url.with_query(query_vars)
+        items = [(str(k), str(v)) for (k, v) in url.query.items()]
+        items.extend([(str(k), str(v)) for (k, v) in params.items()])
+
+        url = url.with_query(items)
 
     target = str(url.relative())
 

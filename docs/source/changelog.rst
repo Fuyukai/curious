@@ -25,6 +25,9 @@ This document displays the differences between each release of curious.
  - Optimize :meth:`.State.make_message` slightly, by checking the cache
    before editing it.
 
+ - :meth:`._prepare_request` automatically stringifies all items in the
+   query string before sending it.
+
 0.3.0
 -----
 
