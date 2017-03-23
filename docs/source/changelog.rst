@@ -28,6 +28,14 @@ This document displays the differences between each release of curious.
  - :meth:`._prepare_request` automatically stringifies all items in the
    query string before sending it.
 
+ - Add search support:
+
+    - :meth:`.HTTPClient.search_channel` and :meth:`.HTTPClient
+        .search_guild` are the raw HTTP methods for searching.
+
+    - :class:`.SearchQuery`, :class:`.SearchResults` and
+        :class:`.MessageGroup` are the high level wrappers for searching.
+
 0.3.0
 -----
 

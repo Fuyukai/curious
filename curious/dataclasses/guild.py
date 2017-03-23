@@ -11,7 +11,8 @@ import typing
 from types import MappingProxyType
 
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, member as dt_member, \
-    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook
+    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook, \
+    search as dt_search
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Game, Status, Presence
 from curious.exc import CuriousError, HierachyError, PermissionsError
@@ -249,6 +250,13 @@ class Guild(Dataclass):
         :return: A generator of offline/invisible :class:`~.Member`s. 
         """
         return self.members_with_status(Status.OFFLINE)
+
+    @property
+    def search(self) -> 'dt_search.SearchQuery':
+        """
+        :return: A :class:`~.SearchQuery` that can be used to search this guild's messages. 
+        """
+        return dt_search.SearchQuery(guild=self)
 
     def get_embed_url(self, *, style: str = "banner1") -> str:
         """

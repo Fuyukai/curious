@@ -674,7 +674,7 @@ class Channel(Dataclass):
                 (embed is None or (self.guild is not None and self.permissions(self.guild.me).embed_links is False)):
             raise CuriousError("Content is empty and embed is either empty or you have no permission to embed")
         else:
-            if len(content) > 2000:
+            if content and len(content) > 2000:
                 raise CuriousError("Content must be less than 2000 characters")
 
         if embed is not None:

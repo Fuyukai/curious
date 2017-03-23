@@ -1320,9 +1320,33 @@ class HTTPClient(object):
 
         :param invite_code: The code of the invite to delete.
         """
-        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code)
+        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
 
         data = await self.delete(url, bucket="invites")
+        return data
+
+    async def search_channel(self, channel_id: int, params: dict):
+        """
+        Searches a channel.
+        
+        :param channel_id: The channel ID of the channel to search. 
+        :param params: Params to search with.
+        """
+        url = (self.CHANNEL_BASE + "/messages/search").format(channel_id=channel_id)
+
+        data = await self.get(url, bucket="search:{}".format(channel_id), params=params)
+        return data
+
+    async def search_guild(self, guild_id: int, params: dict):
+        """
+        Searches a guild.
+
+        :param guild_id: The guild ID of the guild to search. 
+        :param params: Params to search with.
+        """
+        url = (self.GUILD_BASE + "/messages/search").format(guild_id=guild_id)
+
+        data = await self.get(url, bucket="search:{}".format(guild_id), params=params)
         return data
 
     # User only
@@ -1333,7 +1357,6 @@ class HTTPClient(object):
         .. warning::
         
             This is a **user-acount only** endpoint.
-        
 
         :param user_id: The user ID of the profile to fetch.
         """
