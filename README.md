@@ -16,3 +16,7 @@ Or for the latest development version:
 ```bash
 $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
 ```
+
+## Documentation
+
+See the documentation at https://curious.readthedocs.io/en/latest/.
