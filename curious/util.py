@@ -11,6 +11,8 @@ import inspect
 import functools
 import typing
 
+NO_ITEM = object()
+
 
 class AsyncIteratorWrapper(collections.AsyncIterator):
     """
@@ -48,6 +50,30 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
             return self.items.popleft()
         except IndexError:
             raise StopAsyncIteration
+
+    # helper methods
+    async def next(self, default=NO_ITEM) -> typing.Any:
+        """
+        Gets the next item from this iterable.
+        """
+        try:
+            return self.items.popleft()
+        except IndexError:
+            if default == NO_ITEM:
+                raise StopAsyncIteration from None
+
+            return default
+
+    async def all(self) -> typing.List[typing.Any]:
+        """
+        Gets a flattened list of items from this iterator.
+        """
+        items = []
+
+        async for item in self:
+            items.append(item)
+
+        return items
 
 
 def base64ify(image_data: bytes):
