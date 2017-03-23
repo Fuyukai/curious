@@ -14,13 +14,16 @@ This document displays the differences between each release of curious.
    that can be used to get the authorized apps for this bot.
 
  - Add :meth:`.BotUser.get_recent_mentions` and
-   :meth`.Guild.get_recent_mentions` to allow easy iteration of recent
+   :meth:`.Guild.get_recent_mentions` to allow easy iteration of recent
    mentions.
 
  - Change statuses to new :class:`~.Presence`, which are stored on Member
    and RelationshipUser instances.
 
  - :attr:`.Guild._large` is now set by GUILD_SYNC handling for userbots.
+
+ - Optimize :meth:`.State.make_message` slightly, by checking the cache
+   before editing it.
 
 0.3.0
 -----

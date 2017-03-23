@@ -357,6 +357,12 @@ class State(object):
         :return: A new :class:`~.Message` object for the message.
         """
         message = Message(self.client, **event_data)
+
+        if message in self._messages:
+            # don't bother re-caching
+            i = self._messages.index(message)
+            return self._messages[i]
+
         # discord won't give us the Guild id
         # so we have to search it from the channels
         channel_id = int(event_data.get("channel_id"))
