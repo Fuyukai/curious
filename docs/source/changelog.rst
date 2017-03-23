@@ -37,6 +37,9 @@ This document displays the differences between each release of curious.
     - :class:`.SearchQuery`, :class:`.SearchResults` and
       :class:`.MessageGroup` are the high level wrappers for searching.
 
+ - Add :meth:`.AsyncIteratorWrapper.next` and
+   :meth:`.AsyncIteratorWrapper.all`.
+
 0.3.0
 -----
 
