@@ -22,6 +22,7 @@ as in they store state which allows the user to edit them as appropriate.
     presence
     reaction
     role
+    search
     user
     voice_state
     webhook
