@@ -179,6 +179,22 @@ class HistoryIterator(collections.AsyncIterator):
     def __await__(self):
         raise RuntimeError("This is not a coroutine")
 
+    async def next(self) -> 'dt_message.Message':
+        """
+        Gets the next item in history.
+        """
+        return await self.__anext__()
+
+    async def all(self) -> 'typing.List[dt_message.Message]':
+        """
+        Gets a flattened list of items from the history.
+        """
+        items = []
+
+        async for item in self:
+            items.append(item)
+
+        return items
 
 class Channel(Dataclass):
     """

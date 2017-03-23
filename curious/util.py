@@ -57,10 +57,10 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
         Gets the next item from this iterable.
         """
         try:
-            return self.items.popleft()
-        except IndexError:
+            return await self.__anext__()
+        except StopAsyncIteration:
             if default == NO_ITEM:
-                raise StopAsyncIteration from None
+                raise
 
             return default
 
