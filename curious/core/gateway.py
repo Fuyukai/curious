@@ -208,7 +208,10 @@ class Gateway(object):
         :param url: The URL to connect to.
         """
         self.logger.info("Opening connection to {}".format(url))
-        self.websocket = await WSClient.connect(url)
+        try:
+            self.websocket = await curio.timeout_after(5, WSClient.connect(url))
+        except curio.TaskTimeout as e:
+            raise ReconnectWebsocket from e
         self.logger.info("Connected to gateway!")
         self._open = True
         return self.websocket
