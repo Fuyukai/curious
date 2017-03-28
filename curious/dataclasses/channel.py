@@ -265,17 +265,19 @@ class Channel(Dataclass):
         except KeyError:
             return None
 
-    def _update_overwrites(self, overwrites: list):
+    def _update_overwrites(self, overwrites: list, guild=None):
         self._overwrites = {}
+
+        guild = self.guild or guild
 
         for overwrite in overwrites:
             id = int(overwrite["id"])
             type_ = overwrite["type"]
 
             if type_ == "member":
-                obb = self.guild._members.get(id)
+                obb = guild._members.get(id)
             else:
-                obb = self.guild._members.get(id)
+                obb = guild._members.get(id)
 
             self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                             deny=overwrite["deny"],
