@@ -43,7 +43,8 @@ class AppInfo(object):
         self.public = self._application.get("bot_public", None)  # type: bool
 
         #: Does this bot require OAuth2 Code Grant?
-        self.requires_code_grant = self._application.get("bot_require_code_grant", None)  # type: bool
+        self.requires_code_grant = self._application.get("bot_require_code_grant",
+                                                         None)  # type: bool
 
         #: The icon hash for this application.
         self._icon_hash = self._application.get("icon", None)  # type: str
@@ -65,7 +66,8 @@ class AppInfo(object):
         if self._icon_hash is None:
             return None
 
-        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id, self._icon_hash)
+        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id,
+                                                                       self._icon_hash)
 
     async def add_to_guild(self, guild: 'dt_guild.Guild', *,
                            permissions: int=0):

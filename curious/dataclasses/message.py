@@ -31,18 +31,15 @@ class Message(Dataclass):
     :ivar id: The ID of this message.
     """
 
-    __slots__ = ("content", "guild", "author", "channel", "created_at", "edited_at", "embeds", "attachments",
-                 "_mentions", "_role_mentions", "reactions", "channel_id", "author_id")
+    __slots__ = ("content", "guild_id", "author", "channel", "created_at", "edited_at", "embeds",
+                 "attachments", "_mentions", "_role_mentions", "reactions", "channel_id",
+                 "author_id")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
 
         #: The content of the message.
         self.content = kwargs.get("content", None)  # type: str
-
-        #: The guild this message was sent in.
-        #: This can be None if the message was sent in a DM.
-        self.guild = None  # type: dt_guild.Guild
 
         #: The ID of the channel the message was sent in.
         self.channel_id = int(kwargs.get("channel_id", 0))  # type: int
@@ -53,7 +50,8 @@ class Message(Dataclass):
         #: The ID of the author.
         self.author_id = int(kwargs.get("author", {}).get("author_id", 0)) or None  # type: int
 
-        #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`, :class:`.User`.
+        #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`,
+        #: :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
 
         #: The true timestamp of this message.
@@ -95,6 +93,13 @@ class Message(Dataclass):
 
     def __str__(self):
         return self.content
+
+    @property
+    def guild(self) -> 'dt_guild.Guild':
+        """
+        :return: The :class:`~.Guild` this message is associated with. 
+        """
+        return self.channel.guild
 
     @property
     def mentions(self) -> 'typing.List[dt_member.Member]':

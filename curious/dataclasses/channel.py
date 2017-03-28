@@ -16,7 +16,8 @@ import typing
 from types import MappingProxyType
 
 from curious.core import client as dt_client
-from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, message as dt_message, \
+from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
+    message as dt_message, \
     permissions as dt_permissions, role as dt_role, webhook as dt_webhook, user as dt_user
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
@@ -146,10 +147,12 @@ class HistoryIterator(collections.AsyncIterator):
             return
 
         if self.before:
-            messages = await self.client.http.get_message_history(self.channel.id, before=self.last_message_id,
+            messages = await self.client.http.get_message_history(self.channel.id,
+                                                                  before=self.last_message_id,
                                                                   limit=to_get)
         else:
-            messages = await self.client.http.get_message_history(self.channel.id, after=self.last_message_id)
+            messages = await self.client.http.get_message_history(self.channel.id,
+                                                                  after=self.last_message_id)
             messages = reversed(messages)
 
         for message in messages:
@@ -196,6 +199,7 @@ class HistoryIterator(collections.AsyncIterator):
 
         return items
 
+
 class Channel(Dataclass):
     """
     Represents a channel object.
@@ -212,10 +216,6 @@ class Channel(Dataclass):
 
         #: The ID of the guild this is associated with.
         self.guild_id = int(kwargs.get("guild_id", 0)) or None
-
-        #: The :class:`~.Guild` this channel is associated with.
-        #: This can sometimes be None, if this channel is a private channel.
-        self.guild = None  # type: dt_guild.Guild
 
         #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))
@@ -254,6 +254,16 @@ class Channel(Dataclass):
         self._overwrites = {}
 
         self.typing = self._typing
+
+    @property
+    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
+        """
+        :return: The :class:`~.Guild` associated with this Channel.
+        """
+        try:
+            return self._bot.guilds[self.guild_id]
+        except KeyError:
+            return None
 
     def _update_overwrites(self, overwrites: list):
         self._overwrites = {}
@@ -321,7 +331,8 @@ class Channel(Dataclass):
         """
         :return: The icon URL for this channel if it is a group DM. 
         """
-        return "https://cdn.discordapp.com/channel-icons/{}/{}.webp".format(self.id, self._icon_hash)
+        return "https://cdn.discordapp.com/channel-icons/{}/{}.webp".format(self.id,
+                                                                            self._icon_hash)
 
     @property
     def voice_members(self) -> 'typing.List[dt_member.Member]':
@@ -331,9 +342,11 @@ class Channel(Dataclass):
         if self.type != ChannelType.VOICE:
             raise NotImplementedError("No members for channels that aren't voice channels")
 
-        return list(filter(lambda member: member.voice.channel == self, self.guild.members.values()))
+        return list(
+            filter(lambda member: member.voice.channel == self, self.guild.members.values()))
 
-    def permissions(self, object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
+    def permissions(self,
+                    object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
         """
@@ -436,7 +449,8 @@ class Channel(Dataclass):
 
         return msg
 
-    async def create_webhook(self, *, name: str = None, avatar: bytes = None) -> 'dt_webhook.Webhook':
+    async def create_webhook(self, *, name: str = None,
+                             avatar: bytes = None) -> 'dt_webhook.Webhook':
         """
         Create a webhook in this channel.
 
@@ -559,7 +573,8 @@ class Channel(Dataclass):
 
     async def purge(self, limit: int = 100, *,
                     author: 'dt_member.Member' = None,
-                    content: str = None, predicate: 'typing.Callable[[dt_message.Message], bool]' = None,
+                    content: str = None,
+                    predicate: 'typing.Callable[[dt_message.Message], bool]' = None,
                     fallback_from_bulk: bool = False):
         """
         Purges messages from a channel.
@@ -615,11 +630,13 @@ class Channel(Dataclass):
         # Split into chunks of 100.
         message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
         for chunk in message_chunks:
-            minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+            minimum_allowed = floor(
+                (time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
             message_ids = []
             for message in chunk:
                 if message.id < minimum_allowed:
-                    raise CuriousError("Cannot delete messages older than {}".format(minimum_allowed))
+                    raise CuriousError(
+                        "Cannot delete messages older than {}".format(minimum_allowed))
                 message_ids.append(message.id)
             # First, try and bulk delete all the messages.
             if can_bulk_delete:
@@ -687,8 +704,10 @@ class Channel(Dataclass):
 
         # check for empty messages
         if not content and \
-                (embed is None or (self.guild is not None and self.permissions(self.guild.me).embed_links is False)):
-            raise CuriousError("Content is empty and embed is either empty or you have no permission to embed")
+                (embed is None or (self.guild is not None and self.permissions(
+                    self.guild.me).embed_links is False)):
+            raise CuriousError(
+                "Content is empty and embed is either empty or you have no permission to embed")
         else:
             if content and len(content) > 2000:
                 raise CuriousError("Content must be less than 2000 characters")
@@ -735,7 +754,8 @@ class Channel(Dataclass):
         obb = self._bot.state.make_message(data, cache=False)
         return obb
 
-    async def upload_file(self, filename: str, *, message_content: str = None) -> 'dt_message.Message':
+    async def upload_file(self, filename: str, *,
+                          message_content: str = None) -> 'dt_message.Message':
         """
         A higher level interface to ``send_file``.
 
@@ -816,7 +836,8 @@ class Channel(Dataclass):
             listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
         else:
             coro = self._bot.http.edit_overwrite(self.id, target.id, type_,
-                                                 allow=overwrite.allow.bitfield, deny=overwrite.deny.bitfield)
+                                                 allow=overwrite.allow.bitfield,
+                                                 deny=overwrite.deny.bitfield)
 
             async def _listener(ctx, before, after):
                 return after.id == self.id

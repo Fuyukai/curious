@@ -10,8 +10,10 @@ import curio
 import typing
 from types import MappingProxyType
 
-from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, member as dt_member, \
-    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, webhook as dt_webhook, \
+from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
+    member as dt_member, \
+    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, \
+    webhook as dt_webhook, \
     search as dt_search
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Game, Status, Presence
@@ -31,10 +33,13 @@ class Guild(Dataclass):
     :ivar id: The ID of this guild.
     """
 
-    __slots__ = ("id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
-                 "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles", "_members",
-                 "_channels", "_emojis", "_finished_chunking", "member_count", "_large", "_chunks_left", "voice_client",
-                 )
+    __slots__ = (
+        "id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
+        "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles",
+        "_members",
+        "_channels", "_emojis", "_finished_chunking", "member_count", "_large", "_chunks_left",
+        "voice_client",
+    )
 
     def __init__(self, bot, **kwargs):
         """
@@ -215,7 +220,9 @@ class Guild(Dataclass):
         return sum(1 for member in self._members.values() if member.status is not Status.OFFLINE)
 
     # Presence methods
-    def members_with_status(self, status: Status) -> 'typing.Generator[dt_member.Member, None, None]':
+    def members_with_status(self, status: Status) -> 'typing.Generator[' \
+                                                     'dt_member.Member, None, None' \
+                                                     ']':
         """
         A generator that returns the members that match the specified status.
         """
@@ -279,7 +286,8 @@ class Guild(Dataclass):
         The discriminator is optional, but if provided allows better matching.
 
         :param search_str: The name#discrim pair to search for.
-        :return: A :class:`~.Member` object that represents the member, or None if no member could be found.
+        :return: A :class:`~.Member` object that represents the member, or None if no member could \ 
+            be found.
         """
         sp = search_str.rsplit("#", 1)
         if len(sp) == 1:
@@ -288,7 +296,8 @@ class Guild(Dataclass):
         else:
             # Discriminator too!
             # Don't check nicknames for this.
-            predicate = lambda member: member.user.name == sp[0] and member.user.discriminator == sp[1]
+            predicate = lambda member: member.user.name == sp[0] \
+                                       and member.user.discriminator == sp[1]
 
         filtered = filter(predicate, self.members.values())
         try:
@@ -336,8 +345,8 @@ class Guild(Dataclass):
                     member_obj._roles[role_obj.id] = role_obj
 
             member_obj.nickname = member_data.get("nick", member_obj.nickname)
+            member_obj.guild_id = self.id
 
-            member_obj.guild = self
             self._members[member_obj.id] = member_obj
 
     def _handle_emojis(self, emojis: list):
@@ -373,7 +382,7 @@ class Guild(Dataclass):
         self._large = data.get("large", None)
         self.region = data.get("region")
         afk_channel_id = data.get("afk_channel_id")
-        if afk_channel_id:
+        if afk_channel_id is not None:
             afk_channel_id = int(afk_channel_id)
         self._afk_channel_id = afk_channel_id
         self.afk_timeout = data.get("afk_timeout")
@@ -385,7 +394,7 @@ class Guild(Dataclass):
         # Create all the Role objects for the server.
         for role_data in data.get("roles", []):
             role_obj = role.Role(self._bot, **role_data)
-            role_obj.guild = self
+            role_obj.guild_id = self.id
             self._roles[role_obj.id] = role_obj
 
         # Create all the Member objects for the server.
@@ -403,7 +412,6 @@ class Guild(Dataclass):
         # Create all of the channel objects.
         for channel_data in data.get("channels", []):
             channel_obj = channel.Channel(self._bot, **channel_data)
-            channel_obj.guild = self
             channel_obj._update_overwrites(channel_data.get("permission_overwrites", []))
             # sometimes this doesn't show up in the data
             channel_obj.guild_id = self.id
@@ -465,7 +473,8 @@ class Guild(Dataclass):
         :return: The splash URL for this guild, or None if one isn't set.
         """
         if self._splash_hash:
-            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id, self._splash_hash)
+            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id,
+                                                                           self._splash_hash)
 
     # Guild methods.
     async def leave(self):
@@ -549,8 +558,8 @@ class Guild(Dataclass):
         """
         Bans somebody from the guild.
 
-        This can either ban a Member, in which they must be in the guild. Or this can ban a User, which does not need
-        to be in the guild.
+        This can either ban a :class:`~.Member`, in which they must be in the guild. 
+        Or this can ban a :class:`~.User`, which does not need to be in the guild.
 
         Example for banning a member:
 
@@ -590,7 +599,8 @@ class Guild(Dataclass):
         else:
             raise TypeError("Victim must be a Member or a User")
 
-        await self._bot.http.ban_user(guild_id=self.id, user_id=victim_id, delete_message_days=delete_message_days)
+        await self._bot.http.ban_user(guild_id=self.id, user_id=victim_id,
+                                      delete_message_days=delete_message_days)
 
     async def unban(self, user: 'dt_user.User'):
         """
@@ -644,12 +654,12 @@ class Guild(Dataclass):
 
         await self._bot.http.delete_webhook(webhook.id)
 
-    async def add_roles(self, member: 'dt_member.Member', *roles: 'typing.List[role.Role]'):
+    async def add_roles(self, member: 'dt_member.Member', *roles: 'role.Role'):
         """
         Adds roles to a member.
 
-        This will wait until the gateway returns the GUILD_MEMBER_UPDATE with the new role list for the member before
-        returning.
+        This will wait until the gateway returns the GUILD_MEMBER_UPDATE with the new role list 
+        for the member before returning.
 
         .. code:: python
 
@@ -666,7 +676,8 @@ class Guild(Dataclass):
         for _r in roles:
             if _r >= self.me.top_role:
                 raise HierachyError(
-                    "Cannot add role {} - it has a higher or equal position to our top role".format(_r.name)
+                    "Cannot add role {} - it has a higher or equal position to our top role".format(
+                        _r.name)
                 )
 
         async def _listener(before, after: dt_member.Member):
@@ -707,7 +718,8 @@ class Guild(Dataclass):
         for _r in roles:
             if _r >= self.me.top_role:
                 raise HierachyError(
-                    "Cannot remove role {} - it has a higher or equal position to our top role".format(_r.name)
+                    "Cannot remove role {} - it has a higher or equal position to our top role"
+                        .format(_r.name)
                 )
 
         async def _listener(before, after: dt_member.Member):
@@ -762,7 +774,8 @@ class Guild(Dataclass):
         async def _listener(before, after):
             return after.guild == self and after.id == member.id
 
-        listener = await curio.spawn(self._bot.wait_for("member_update", _listener))  # type: curio.Task
+        listener = await curio.spawn(
+            self._bot.wait_for("member_update", _listener))  # type: curio.Task
         try:
             await coro
         except:
@@ -777,7 +790,8 @@ class Guild(Dataclass):
         """
         Changes the positions of a mapping of roles.
 
-        :param roles: A dict or iterable of two-item tuples of new roles that is in the format of (role, position).
+        :param roles: A dict or iterable of two-item tuples of new roles that is in the format of \
+            (role, position).
         """
         if not self.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
@@ -807,7 +821,8 @@ class Guild(Dataclass):
         """
         Edits this guild.
 
-        For a list of available arguments, see https://discordapp.com/developers/docs/resources/guild#modify-guild.
+        For a list of available arguments, see 
+        https://discordapp.com/developers/docs/resources/guild#modify-guild.
         """
         if not self.me.guild_permissions.manage_server:
             raise PermissionsError("manage_server")
@@ -855,8 +870,8 @@ class Guild(Dataclass):
 
         channel_data = await self._bot.http.create_channel(self.id, **kwargs)
         channel_object = channel.Channel(client=self._bot, **channel_data)
-        channel_object.guild = self
-
+        # make sure
+        channel_object.guild_id = self.id
         return channel_object
 
     async def edit_channel(self, channel_object: 'channel.Channel', **kwargs):
@@ -927,7 +942,8 @@ class Guild(Dataclass):
                 permissions = permissions.bitfield
 
         await self._bot.http.edit_role(self.id, role.id,
-                                       name=name, permissions=permissions, colour=colour, hoist=hoist,
+                                       name=name, permissions=permissions, colour=colour,
+                                       hoist=hoist,
                                        position=position, mentionable=mentionable)
 
         return role
@@ -947,7 +963,8 @@ class Guild(Dataclass):
         """
         Gets the widget info for the current guild.
         
-        :return: A two-item tuple: If this widget is enabled, and the channel the widget has an invite for. 
+        :return: A two-item tuple: If this widget is enabled, and the channel the widget has an \ 
+            invite for. 
         """
         info = await self._bot.http.get_widget_status(self.id)
         return info.get("enabled", False), self.channels.get(int(info.get("channel_id", 0)))
@@ -972,15 +989,18 @@ class Guild(Dataclass):
     @property
     def recent_mentions(self):
         """
-        :return:A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for this user in this guild.
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for \ 
+            this user in this guild.
         """
-        return AsyncIteratorWrapper(self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True))
+        return AsyncIteratorWrapper(
+            self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True))
 
     def get_recent_mentions(self, *,
-                     limit: int = 25,
-                     everyone_mentions: bool = True, role_mentions: bool = True):
+                            limit: int = 25,
+                            everyone_mentions: bool = True, role_mentions: bool = True):
         """
         Gets mentions in this guild.
         """
-        return self.me.user.get_recent_mentions(guild=self, limit=limit, everyone_mentions=everyone_mentions,
+        return self.me.user.get_recent_mentions(guild=self, limit=limit,
+                                                everyone_mentions=everyone_mentions,
                                                 role_mentions=role_mentions)

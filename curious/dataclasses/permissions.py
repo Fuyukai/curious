@@ -16,7 +16,8 @@ from curious.dataclasses import member as dt_member, role as dt_role
 def build_permissions_class(name: str = "Permissions") -> type:
     """
     Builds the permissions class automagically.
-    This should ***not*** be used by normal user code - it is designed for internal usage by curious.
+    This should ***not*** be used by normal user code - it is designed for internal usage by 
+    curious.
 
     :param name: The name of the class.
     :return: A new type representing the permissions class.
@@ -26,8 +27,8 @@ def build_permissions_class(name: str = "Permissions") -> type:
     Represents the permissions a user can have.
     This type is automatically generated based upon a set of constant permission bits.
 
-    Every permission is accessible via a property getter and setter. The raw permissions value is accessible via
-    ``bitfield``.
+    Every permission is accessible via a property getter and setter. The raw permissions value is 
+    accessible via ``bitfield``.
     """
 
     def __init__(self, value: int = 0):
@@ -157,25 +158,30 @@ class Overwrite(object):
     """
     Represents a permission overwrite.
 
-    This has all properties that the base Permissions object, but it takes into accounts the overwrites for the
-    channels. It is always recommended to use this over the server permissions, as it will fall back to the default
-    permissions for the role if it can't find specific overwrites.
+    This has all properties that the base Permissions object, but it takes into accounts the 
+    overwrites for the channels. It is always recommended to use this over the server permissions, 
+    as it will fall back to the default permissions for the role if it can't find specific 
+    overwrites.
 
-    The overwrite has a permission marked as ``True`` if the object has a) an overwrite on the channel OR b) the object
-    has that permission and no overwrite. The overwrite is marked as ``False`` if the object has a) an overwrite on
-    the channel OR b) the object does not have that permission and no overwrite/a deny overwrite.
+    The overwrite has a permission marked as ``True`` if the object has a) an overwrite on the 
+    channel OR b) the object has that permission and no overwrite. The overwrite is marked as 
+    ``False`` if the object has a) an overwrite on the channel OR b) the object does not have that 
+    permission and no overwrite/a deny overwrite.
 
-    You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and False to set a deny
-    overwrite.
+    You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and 
+    False to set a deny overwrite.
 
-    :ivar allow: The :class:`Permissions` object that represents the allowed items for this overwrite.
+    :ivar allow: The :class:`Permissions` object that represents the allowed items for this \ 
+        overwrite.
     :ivar deny: The :class:`Permissions` object that represents the denied items for this overwrite.
-    :ivar target: The original object that this overwrite is for. This can either be a role or a member.
+    :ivar target: The original object that this overwrite is for. This can either be a role or a \ 
+        member.
     """
 
     __slots__ = "target", "channel", "allow", "deny"
 
-    def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions], obb, channel=None):
+    def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions],
+                 obb, channel=None):
         self.target = obb
 
         self.channel = channel
@@ -184,7 +190,9 @@ class Overwrite(object):
         self.deny = Permissions(value=deny if deny is not None else 0)
 
     def __repr__(self):
-        return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target, self.channel, self.allow,
+        return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target,
+                                                                               self.channel,
+                                                                               self.allow,
                                                                                self.deny)
 
     def __getattr__(self, item):

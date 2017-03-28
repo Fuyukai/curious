@@ -19,7 +19,8 @@ class Role(Dataclass):
 
     :ivar id: The ID of this role.
     """
-    __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", "guild"
+    __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", \
+                "guild_id"
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
@@ -45,8 +46,8 @@ class Role(Dataclass):
         #: The position of this role.
         self.position = kwargs.get("position", 0)
 
-        #: The :class:`~.Guild` this role is associated with.
-        self.guild = None  # type: dt_guild.Guild
+        #: The ID of the guild associated with this Role.
+        self.guild_id = int(kwargs.get("guild_id", 0))  # type: dt_guild.Guild
 
     def __lt__(self, other: 'Role'):
         if not isinstance(other, Role):
@@ -66,9 +67,16 @@ class Role(Dataclass):
         obb.permissions = self.permissions
         obb.managed = self.managed
         obb.position = self.position
-        obb.guild = self.guild
+        obb.guild_id = self.guild_id
 
         return obb
+
+    @property
+    def guild(self) -> 'dt_guild.Guild':
+        """
+        :return: The :class:`.Guild` associated with this role. 
+        """
+        return self._bot.guilds[self.guild_id]
 
     @property
     def is_default_role(self):

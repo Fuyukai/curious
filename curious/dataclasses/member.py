@@ -13,7 +13,7 @@ from curious.dataclasses import role as dt_role
 from curious.dataclasses.presence import Presence, Game, Status
 from curious.dataclasses import voice_state as dt_vs
 from curious.dataclasses import user as dt_user
-from curious.dataclasses import guild
+from curious.dataclasses import guild as dt_guild
 from curious.util import to_datetime
 
 
@@ -24,7 +24,7 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_roles", "joined_at", "nickname", "guild", "presence", "voice",)
+    __slots__ = ("_roles", "joined_at", "nickname", "guild_id", "presence", "voice",)
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -41,17 +41,25 @@ class Member(Dataclass):
         #: The member's current nickname.
         self.nickname = kwargs.get("nick", None)
 
-        #: The member's current :class:`~.Guild`.
-        self.guild = None  # type: guild.Guild
+        #: The ID of the guild that this member is in.
+        self.guild_id = None  # type: int
 
         #: The current :class:`~.Presence` of this member.
-        self.presence = Presence(status=kwargs.get("status", Status.OFFLINE), game=kwargs.get("game", None))
+        self.presence = Presence(status=kwargs.get("status", Status.OFFLINE),
+                                 game=kwargs.get("game", None))
 
         #: The current :class:`~.VoiceState` of this member.
         self.voice = None  # type: dt_vs.VoiceState
 
+    @property
+    def guild(self) -> 'dt_guild.Guild':
+        """
+        :return: The :class:`~.Guild` associated with this member. 
+        """
+        return self._bot.guilds[self.guild_id]
+
     def __hash__(self):
-        return hash(self.guild.id) + hash(self.user.id)
+        return hash(self.guild_id) + hash(self.user.id)
 
     def __eq__(self, other):
         if not isinstance(other, Member):
@@ -69,7 +77,7 @@ class Member(Dataclass):
         new_object.id = self.id
         new_object._roles = self._roles.copy()
         new_object.joined_at = self.joined_at
-        new_object.guild = self.guild
+        new_object.guild_id = self.guild_id
         new_object.presence = self.presence
         new_object.nickname = self.nickname
 

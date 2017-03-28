@@ -371,7 +371,7 @@ class State(object):
         author_id = int(event_data.get("author", {}).get("id", 0))
 
         message.channel = channel
-        message.guild = channel.guild
+        message.guild_id = channel.guild_id
         if message.channel.type == ChannelType.PRIVATE:
             if author_id == self._user.id:
                 message.author = self._user
@@ -970,7 +970,7 @@ class State(object):
             return
 
         member = Member(self.client, **event_data)
-        member.guild = guild
+        member.guild_id = guild.id
 
         guild._members[member.id] = member
         guild.member_count += 1
@@ -1082,7 +1082,7 @@ class State(object):
         if channel.is_private:
             self._private_channels[channel.id] = channel
         else:
-            channel.guild = guild
+            channel.guild_id = guild.id
             channel._update_overwrites((event_data.get("permission_overwrites", [])))
             if channel.id not in guild._channels:
                 guild._channels[channel.id] = channel
@@ -1139,7 +1139,7 @@ class State(object):
 
         if int(event_data.get("role", {}).get("id", 0)) not in guild._roles:
             role = Role(self.client, **event_data.get("role", {}))
-            role.guild = guild
+            role.guild_id = guild.id
             guild._roles[role.id] = role
         else:
             role = guild._roles[event_data["role"].get("id", 0)]

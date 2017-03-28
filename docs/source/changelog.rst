@@ -40,6 +40,9 @@ This document displays the differences between each release of curious.
  - Add :meth:`.AsyncIteratorWrapper.next` and
    :meth:`.AsyncIteratorWrapper.all`.
 
+ - Change Guild objects on dataclasses to mostly look up via property or
+   weak reference rather than having a strong reference.
+
 0.3.0
 -----
 
