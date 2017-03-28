@@ -96,11 +96,11 @@ def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
     """
     The default message function factory.
     
-    This provides a callable that will fire a command if the message begins with the specified prefix or list of 
-    prefixes.
+    This provides a callable that will fire a command if the message begins with the specified 
+    prefix or list of prefixes.
     
-    If ``command_prefix`` is provided to the :class:`.Client`, then it will automatically call this function to get a 
-    message check function to use.
+    If ``command_prefix`` is provided to the :class:`.Client`, then it will automatically call this 
+    function to get a message check function to use.
     
     .. code-block:: python
         
@@ -111,10 +111,11 @@ def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
         # implicit form
         cl = Client(command_prefix=["!", "?"])
         
-    The :attr:`prefix` is set on the returned function that can be used to retrieve the prefixes defined to create 
-    the function at any time.
+    The :attr:`prefix` is set on the returned function that can be used to retrieve the prefixes 
+    defined to create  the function at any time.
     
-    :param prefix: A :class:`str` or :class:`typing.Iterable[str]` that represents the prefix(es) to use. 
+    :param prefix: A :class:`str` or :class:`typing.Iterable[str]` that represents the prefix(es) \ 
+        to use. 
     :return: A callable that can be used for the ``message_check`` function on the client.
     """
 
@@ -147,8 +148,8 @@ class Client(object):
     """
     The main client class. This is used to interact with Discord.
 
-    When creating a client object, you can either pass a token explicitly, or pass in in the :meth:`start` call or
-    similar.
+    When creating a client object, you can either pass a token explicitly, or pass in in the 
+    :meth:`start` call or similar.
 
     .. code:: python
 
@@ -169,12 +170,14 @@ class Client(object):
             This can be passed as None and can be initialized later.
             
         :param enable_commands: Should commands integration be enabled?  
-            If this is False, commands can still be registered etc, they just won't fire (the event won't appear).
+            If this is False, commands can still be registered etc, they just won't fire (the event 
+            won't appear).
         
         :param command_prefix: The command prefix for this bot.
         :param message_check: The message check function for this bot.  
         
-            This should take two arguments, the client and message, and should return either None or a 3-item tuple:
+            This should take two arguments, the client and message, and should return either None 
+            or a 3-item tuple:
               - The command word matched
               - The tokens after the command word
               - The prefix that was matched.
@@ -211,8 +214,8 @@ class Client(object):
         self.events = multidict.MultiDict()
 
         #: The current "temporary" listener storage.
-        #: Temporary listeners are events that listen, and if they return True the listener is remove.
-        #: They are used in the HTTP method by `wait=`, for example.
+        #: Temporary listeners are events that listen, and if they return True the listener is
+        #: removed. They are used in the HTTP method by `wait=`, for example.
         self._temporary_listeners = multidict.MultiDict()
 
         #: The :class:`~.HTTPClient` used for this bot.
@@ -235,7 +238,7 @@ class Client(object):
 
             self._message_check = message_check or prefix_check_factory(command_prefix)
         else:
-            self._message_check = lambda x: None
+            self._message_check = lambda a, b: False
 
         #: The description of this bot.
         self.description = description
@@ -286,7 +289,8 @@ class Client(object):
         """
         :return: The invite URL for this bot.
         """
-        return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(self.application_info.client_id)
+        return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(
+            self.application_info.client_id)
 
     @property
     def events_handled(self) -> collections.Counter:
@@ -417,7 +421,9 @@ class Client(object):
         """
         Scans this class for functions marked with an event decorator.
         """
-        for _, item in inspect.getmembers(self, predicate=lambda x: hasattr(x, "event") and getattr(x, "scan", False)):
+        for _, item in inspect.getmembers(self,
+                                          predicate=lambda x: hasattr(x, "event") and
+                                                  getattr(x, "scan", False)):
             self._logger.info("Registering event function {} for event {}".format(_, item.event))
             self.add_event(item)
 
@@ -503,7 +509,8 @@ class Client(object):
 
         self._logger.debug(
             "Dispatching event {} to {} listeners"
-            " on shard {}".format(event_name, len(coros) + len(temporary_listeners), gateway.shard_id)
+            " on shard {}".format(event_name, len(coros) + len(temporary_listeners),
+                                  gateway.shard_id)
         )
 
         if "ctx" not in kwargs:
@@ -513,10 +520,12 @@ class Client(object):
 
         tasks = []
         for event in coros.copy():
-            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs), daemon=True))
+            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs),
+                                           daemon=True))
 
         for listener in temporary_listeners:
-            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx, *args, **kwargs),
+            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx,
+                                                                   *args, **kwargs),
                                            daemon=True))
 
         return tasks
@@ -589,14 +598,15 @@ class Client(object):
         ctx.name = command_word
         ctx.raw_args = args
 
-        await curio.spawn(self._wrap_context(ctx))
+        # daemon = True means eat the task not joined errors
+        await curio.spawn(self._wrap_context(ctx), daemon=True)  # type: curio.Task
 
     def add_command(self, command_name: str, command: 'cmd.Command'):
         """
         Adds a command to the internal registry of commands.
 
         :param command_name: The name of the command to add.
-        :param command: The command object to add.
+        :param command: The :class:`~.Command` object to add.
         """
         if command_name in self.commands:
             if not self.commands[command_name]._overridable:
@@ -605,6 +615,14 @@ class Client(object):
                 self.commands.pop(command_name)
 
         self.commands[command_name] = command
+
+    def remove_command(self, name: str):
+        """
+        Removes a command from the bot.
+        
+        :param name: The name of the command to remove. 
+        """
+        return self.commands.pop(name)
 
     def add_plugin(self, plugin_class):
         """
@@ -625,6 +643,14 @@ class Client(object):
             self.add_command(command.name, command)
 
         self.plugins[plugin_class.name] = plugin_class
+
+    def remove_plugin(self, name: str):
+        """
+        Removes a plugin from the bot.
+        
+        :param name: The name of the :class:`~.Plugin` to remove.  
+        """
+        return self.plugins.pop(name)
 
     async def load_plugins_from(self, import_name: str, *args, **kwargs):
         """
@@ -669,7 +695,8 @@ class Client(object):
             mod[1].append(member)
 
         if len(mod[1]) == 0:
-            raise ValueError("Plugin contained no plugin classes (classes that inherit from Plugin)")
+            raise ValueError(
+                "Plugin contained no plugin classes (classes that inherit from Plugin)")
 
         self._plugin_modules[import_name] = mod
 
@@ -718,7 +745,8 @@ class Client(object):
         del self._plugin_modules[import_name]
         del mod
 
-    def get_commands_for(self, plugin: 'plugin.Plugin') -> typing.Generator['cmd.Command', None, None]:
+    def get_commands_for(self, plugin: 'plugin.Plugin') \
+            -> typing.Generator['cmd.Command', None, None]:
         """
         Gets the commands for the specified plugin.
 
@@ -744,7 +772,8 @@ class Client(object):
         return next(f, None)
 
     # Gateway functions
-    async def change_status(self, game: Game = None, status: Status = Status.ONLINE, afk: bool = False,
+    async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
+                            afk: bool = False,
                             shard_id: int = 0, *, sync: bool = False):
         """
         Changes the bot's current status.
@@ -772,10 +801,11 @@ class Client(object):
 
         .. code:: python
 
-            message = await client.wait_for("message_create", predicate=lambda m: m.content == "Heck")
+            message = await client.wait_for("message_create", 
+                                            predicate=lambda m: m.content == "Heck")
 
-        You can pass any function to this predicate. If this function takes an error, it will remove the listener,
-        then raise into your code.
+        You can pass any function to this predicate. If this function takes an error, it will 
+        remove the listener, then raise into your code.
 
         .. code:: python
 
@@ -846,8 +876,8 @@ class Client(object):
         """
         Edits the profile of this bot.
 
-        The user is **not** edited in-place - instead, you must wait for the `USER_UPDATE` event to be fired on the
-        websocket.
+        The user is **not** edited in-place - instead, you must wait for the `USER_UPDATE` event to 
+        be fired on the websocket.
 
         :param username: The new username of the bot.
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
@@ -868,7 +898,8 @@ class Client(object):
     async def edit_avatar(self, path: str):
         """
         A higher-level way to change your avatar.
-        This allows you to provide a path to the avatar file instead of having to read it in manually.
+        This allows you to provide a path to the avatar file instead of having to read it in 
+        manually.
 
         :param path: The path-like object to the avatar file.
         """
@@ -912,7 +943,7 @@ class Client(object):
         return self.state.make_webhook(await self.http.get_webhook(webhook_id))
 
     async def get_invite(self, invite_code: str, *,
-                         with_counts: bool=True) -> Invite:
+                         with_counts: bool = True) -> Invite:
         """
         Gets an invite by code.
 
@@ -951,7 +982,8 @@ class Client(object):
 
         gateway_url = await self.get_gateway_url()
         self._gateways[shard_id] = await Gateway.from_token(self._token, self.state, gateway_url,
-                                                            shard_id=shard_id, shard_count=self.shard_count)
+                                                            shard_id=shard_id,
+                                                            shard_count=self.shard_count)
         await self._gateways[shard_id].websocket.wait_for_ready()
 
         return self
@@ -974,8 +1006,8 @@ class Client(object):
                     return
 
                 if e.code in [1000, 4007] or gw.session_id is None:
-                    self._logger.info("Shard {} disconnected with code {}, creating new session".format(shard_id,
-                                                                                                        e.code))
+                    self._logger.info("Shard {} disconnected with code {}, "
+                                      "creating new session".format(shard_id, e.code))
                     self.state._reset(gw.shard_id)
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
@@ -1069,6 +1101,9 @@ class Client(object):
         :param token: The token to run with.
         :param shards: The number of shards to run.
             If this is None, the bot will autoshard.
+            
+        :param monitor_host: The host of the Curio monitor to use.
+        :param monitor_port: The port of the Curio monitor to use.
         """
         if token is not None:
             self._token = token
@@ -1086,29 +1121,7 @@ class Client(object):
         try:
             return kernel.run(coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
-            if kernel._crashed:
-                self._logger.info("Kernel crashed, not cleaning up.")
-                return
-            self._logger.info("C-c/C-d received, killing bot. Waiting 5 seconds for all connections to close.")
-            # Cleanup.
-            coros = []
-            for gateway in self._gateways.values():
-                coros.append(gateway.websocket.close_now(1000, reason="Client closed connection"))
-                coros.append(gateway._close())
-
-            async def __cleanup():
-                tasks = []
-                for task in coros:
-                    tasks.append(await curio.spawn(task))
-
-                self._logger.info("Need to wait for {} task(s) to complete.".format(len(tasks)))
-
-                # silence exceptions
-                await curio.gather(tasks, return_exceptions=True)
-                self._logger.info("Clean-up complete.")
-                raise SystemExit()
-
-            return kernel.run(__cleanup(), timeout=5)
+            return
 
     @classmethod
     def from_token(cls, token: str = None):
