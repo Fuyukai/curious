@@ -12,6 +12,7 @@ is not cached by curious. Otherwise, full :class:`~.Guild` and :class:`~.Channel
 
 .. currentmodule:: curious.dataclasses.invite
 """
+import weakref
 
 import typing
 
@@ -134,8 +135,11 @@ class Invite(object):
         guild_id = int(kwargs["guild"]["id"])
         # check to see if it's in our state first, failing that construct an InviteGuild object.
         if guild_id in client.state.guilds:
-            self._real_guild = client.state.guilds[guild_id]
-            self._real_channel = self._real_guild.channels[int(kwargs["channel"]["id"])]
+            # get a weakref to the guild
+            self._real_guild = weakref.ref(client.state.guilds[guild_id])
+            # get a weakref to the channel, using the previous weakref
+            self._real_channel = weakref.ref(self._real_guild()
+                                             .channels[int(kwargs["channel"]["id"])])
         else:
             self._real_guild = None
             self._real_channel = None
@@ -174,14 +178,14 @@ class Invite(object):
         """
         :return: The guild this invite is associated with.
         """
-        return self._real_guild or self._invite_guild
+        return self._real_guild() or self._invite_guild
 
     @property
     def channel(self) -> 'typing.Union[dt_channel.Channel, InviteChannel]':
         """
         :return: The channel this invite is associated with.
         """
-        return self._real_channel or self._invite_channel
+        return self._real_channel() or self._invite_channel
 
     async def delete(self):
         """

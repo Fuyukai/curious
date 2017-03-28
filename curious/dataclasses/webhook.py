@@ -29,7 +29,8 @@ class Webhook(Dataclass):
     :ivar id: The ID of the webhook.
     """
 
-    __slots__ = "user", "guild", "channel", "token", "owner", "_default_name", "_default_avatar"
+    __slots__ = "user", "guild_id", "channel_id", "token", "owner", \
+                "_default_name", "_default_avatar"
 
     def __init__(self, client, **kwargs):
         # Use the webhook ID is provided (i.e created from a message object).
@@ -39,11 +40,11 @@ class Webhook(Dataclass):
         #: The user object associated with this webhook.
         self.user = None  # type: dt_user.User
 
-        #: The guild object associated with this webhook.
-        self.guild = None  # type: dt_guild.Guild
+        #: The ID of the Guild associated with this object.
+        self.guild_id = None  # type: int
 
-        #: The channel object associated with this webhook.
-        self.channel = None  # type: dt_channel.Channel
+        #: The ID of the Channel associated with this object.
+        self.channel_id = None  # type: int
 
         #: The token associated with this webhook.
         #: This is None if the webhook was received from a Message object.
@@ -60,26 +61,27 @@ class Webhook(Dataclass):
 
     def __repr__(self):
         return "<Webhook id={} name={} channel={} owner={}>".format(self.id, self.name,
-                                                                    repr(self.channel), repr(self.owner))
+                                                                    repr(self.channel),
+                                                                    repr(self.owner))
 
     __str__ = __repr__
 
     @property
-    def default_name(self):
+    def default_name(self) -> str:
         """
         :return: The default name of this webhook.
         """
         return self._default_name
 
     @property
-    def default_avatar_url(self):
+    def default_avatar_url(self) -> str:
         """
         :return: The default avatar URL for this webhook.
         """
         return "https://cdn.discordapp.com/avatars/{}/{}.png".format(self.id, self._default_avatar)
 
     @property
-    def avatar_url(self):
+    def avatar_url(self) -> str:
         """
         :return: The computed avatar URL for this webhook.
         """
@@ -88,12 +90,26 @@ class Webhook(Dataclass):
         return self.user.avatar_url
 
     @property
-    def name(self):
+    def name(self) -> str:
         """
         :return: The computed name for this webhook.
         """
         # this is kept so you can easily do `message.author.name` all the time.
         return self.user.name or self.default_name
+
+    @property
+    def guild(self):
+        """
+        :return: The :class:`~.Guild` this webhook is in.
+        """
+        return self._bot.guilds[self.guild_id]
+
+    @property
+    def channel(self):
+        """
+        :return: The :class:`~.Channel` this webhook is in. 
+        """
+        return self.guild.channels[self.channel_id]
 
     @classmethod
     def create(cls, channel: 'dt_channel.Channel', *,
@@ -108,7 +124,7 @@ class Webhook(Dataclass):
         """
         return channel.create_webhook(name=name, avatar=avatar)
 
-    async def get_token(self):
+    async def get_token(self) -> str:
         """
         Gets the token for this webhook, if no token was set earlier.
         :return: The token for the webhook.
@@ -120,7 +136,7 @@ class Webhook(Dataclass):
         self.token = us.get("token")
         return self.token
 
-    async def delete(self):
+    async def delete(self) -> None:
         """
         Deletes the webhook.
 
@@ -132,7 +148,7 @@ class Webhook(Dataclass):
             return await self.guild.delete_webhook(self)
 
     async def edit(self, *,
-                   name: str = None, avatar: bytes = None):
+                   name: str = None, avatar: bytes = None) -> 'Webhook':
         """
         Edits this webhook.
 
@@ -159,7 +175,8 @@ class Webhook(Dataclass):
 
     async def execute(self, *,
                       content: str = None, username: str = None, avatar_url: str = None,
-                      embeds: 'typing.List[dt_embed.Embed]'=None, wait: bool = False) -> typing.Union[None, str]:
+                      embeds: 'typing.List[dt_embed.Embed]'=None, wait: bool = False) \
+            -> typing.Union[None, str]:
         """
         Executes the webhook.
 

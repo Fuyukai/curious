@@ -28,6 +28,10 @@ class Status(enum.Enum):
 
     @property
     def strength(self) -> int:
+        """
+        :return: The strength of the presence, when computing the final presence on multiple \ 
+            connections. 
+        """
         return strengths.index(self)
 
 

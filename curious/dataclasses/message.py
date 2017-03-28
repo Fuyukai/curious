@@ -27,10 +27,7 @@ CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 class Message(Dataclass):
     """
     Represents a Message.
-
-    :ivar id: The ID of this message.
     """
-
     __slots__ = ("content", "guild_id", "author", "channel", "created_at", "edited_at", "embeds",
                  "attachments", "_mentions", "_role_mentions", "reactions", "channel_id",
                  "author_id")
@@ -40,6 +37,9 @@ class Message(Dataclass):
 
         #: The content of the message.
         self.content = kwargs.get("content", None)  # type: str
+
+        #: The ID of the guild this message is in.
+        self.guild_id = None
 
         #: The ID of the channel the message was sent in.
         self.channel_id = int(kwargs.get("channel_id", 0))  # type: int
@@ -54,7 +54,7 @@ class Message(Dataclass):
         #: :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
 
-        #: The true timestamp of this message.
+        #: The true timestamp of this message, a :class:`datetime.datetime`.
         #: This is not the snowflake timestamp.
         self.created_at = to_datetime(kwargs.get("timestamp", None))
 
@@ -66,7 +66,7 @@ class Message(Dataclass):
         else:
             self.edited_at = None
 
-        #: The list of embeds this message contains.
+        #: The list of :class:`~.Embed` objects this message contains.
         self.embeds = []
         for embed in kwargs.get("embeds", []):
             self.embeds.append(Embed(**embed))
@@ -108,7 +108,9 @@ class Message(Dataclass):
         
         .. warning::
             
-            The mentions in this will **not** be in order. Discord does not return them in any paticular order.
+            The mentions in this will **not** be in order. Discord does not return them in any 
+            particular order.
+
         """
         return self._resolve_mentions(self._mentions, "member")
 
@@ -119,7 +121,9 @@ class Message(Dataclass):
         
         .. warning::
             
-            The mentions in this will **not** be in order. Discord does not return them in any paticular order.
+            The mentions in this will **not** be in order. Discord does not return them in any 
+            particular order.
+
         """
 
         return self._resolve_mentions(self._role_mentions, "role")
@@ -132,13 +136,20 @@ class Message(Dataclass):
         .. note::
         
             These mentions **are** in order. They are parsed from the message content.
+
         """
         mentions = CHANNEL_REGEX.findall(self.content)
         return self._resolve_mentions(mentions, "channel")
 
-    def _resolve_mentions(self, mentions, type_: str):
+    def _resolve_mentions(self,
+                          mentions: typing.List[typing.Union[dict, str]],
+                          type_: str) \
+            -> 'typing.List[typing.Union[dt_channel.Channel, dt_role.Role, dt_member.Member]]':
         """
         Resolves the mentions for this message.
+        
+        :param mentions: The mentions to resolve; a list of dicts or ints.
+        :param type_: The type of mention to resolve: ``channel``, ``role``, or ``member``.
         """
         final_mentions = []
         for mention in mentions:
@@ -146,7 +157,9 @@ class Message(Dataclass):
                 id = int(mention["id"])
                 obb = self.guild.members.get(id)
                 if obb is None:
-                    obb = dt_user.User(**mention)
+                    obb = self._bot.state.make_user(**mention)
+                    # always check for a decache
+                    self._bot.state._check_decache_user(id)
             elif type_ == "role":
                 obb = self.guild.roles.get(int(mention))
             elif type_ == "channel":
@@ -173,7 +186,8 @@ class Message(Dataclass):
         """
         Deletes this message.
 
-        You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own message.
+        You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own 
+        message.
         """
         if self.guild is None:
             me = self._bot.user.id
@@ -209,10 +223,13 @@ class Message(Dataclass):
         if embed:
             embed = embed.to_dict()
 
-        # Prevent race conditions by spawning a listener, then waiting for the task once we've sent the HTTP request.
-        t = await curio.spawn(self._bot.wait_for("message_edit", predicate=lambda o, n: n.id == self.id))
+        # Prevent race conditions by spawning a listener, then waiting for the task once we've
+        # sent the HTTP request.
+        t = await curio.spawn(self._bot.wait_for("message_edit",
+                                                 predicate=lambda o, n: n.id == self.id))
         try:
-            await self._bot.http.edit_message(self.channel.id, self.id, content=new_content, embed=embed)
+            await self._bot.http.edit_message(self.channel.id, self.id, content=new_content,
+                                              embed=embed)
         except:
             await t.cancel()
             raise
@@ -275,8 +292,8 @@ class Message(Dataclass):
         """
         Reacts to a message with an emoji.
 
-        This requires an Emoji object for reacting to messages with custom reactions, or a string containing the
-        literal unicode (e.g ™) for normal emoji reactions.
+        This requires an Emoji object for reacting to messages with custom reactions, or a string 
+        containing the literal unicode (e.g ™) for normal emoji reactions.
 
         :param emoji: The emoji to react with.
         """
@@ -293,7 +310,8 @@ class Message(Dataclass):
 
         await self._bot.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def unreact(self, reaction: 'typing.Union[dt_emoji.Emoji, str]', victim: 'dt_member.Member' = None):
+    async def unreact(self, reaction: 'typing.Union[dt_emoji.Emoji, str]',
+                      victim: 'dt_member.Member' = None):
         """
         Removes a reaction from a user.
 
@@ -313,7 +331,8 @@ class Message(Dataclass):
         else:
             emoji = reaction
 
-        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji, victim=victim.id if victim else None)
+        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji,
+                                             victim=victim.id if victim else None)
 
     async def remove_all_reactions(self):
         """

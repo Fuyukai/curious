@@ -61,8 +61,8 @@ class SearchResults(collections.AsyncIterator):
     An async iterator that can be used to iterate over the results of a search.
     This will automatically fill results, and return messages as appropriate.
     
-    The return type of iterating over this is a :class:`~.MessageGroup`, which contains the messages around the message
-    that matched the search result.
+    The return type of iterating over this is a :class:`~.MessageGroup`, which contains the messages 
+    around the message that matched the search result.
     
     .. code-block:: python
     
@@ -120,8 +120,8 @@ class SearchResults(collections.AsyncIterator):
         """
         Gets the next page of results.
         
-        If no results were found, this will raise an IndexError, and you must fetch the next page with
-        :meth:`.SearchResults.fetch_next_page`.
+        If no results were found, this will raise an IndexError, and you must fetch the next page 
+        with :meth:`.SearchResults.fetch_next_page`.
         
         :return: A :class:`~.MessageGroup` for the next page of results, if applicable.
         """
@@ -177,8 +177,8 @@ class SearchQuery(object):
         for result in results:
             ...
             
-    It is recommended to use the ``async for`` form, as this will automatically page the results and return the next 
-    page of results as soon as the current one is exhausted.
+    It is recommended to use the ``async for`` form, as this will automatically page the results 
+    and return the next page of results as soon as the current one is exhausted.
     """
 
     def __init__(self, guild: 'dt_guild.Guild' = None, channel: 'dt_channel.Channel' = None):
@@ -308,7 +308,8 @@ class SearchQuery(object):
         
         .. warning::
             
-            This is an internal method, used by the library. Use :meth:`.get_messages(page)` instead of this.
+            This is an internal method, used by the library. Use :meth:`.get_messages(page)` instead
+            of this.
         
         :param page: The page of results to return.
         :return: A list of :class:`~.Message` which returns the results of the search query.

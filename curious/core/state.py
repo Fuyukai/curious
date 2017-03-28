@@ -117,7 +117,9 @@ class State(object):
         self._messages = collections.deque(maxlen=max_messages)
 
         self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: curio.Event())
-        self.__voice_state_crap = collections.defaultdict(lambda *args, **kwargs: ((curio.Event(), curio.Event()), {}))
+        self.__voice_state_crap = collections.defaultdict(
+            lambda *args, **kwargs: ((curio.Event(), curio.Event()), {})
+        )
 
     def is_ready(self, shard_id: int) -> curio.Event:
         """
@@ -186,7 +188,9 @@ class State(object):
 
         if self.have_all_chunks(gw.shard_id):
             # Have all chunks anyway, dispatch now.
-            self.logger.info("All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id))
+            self.logger.info(
+                "All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id)
+            )
             await self.is_ready(gw.shard_id).set()
             await self.client.fire_event("ready", gateway=gw)
 
@@ -302,13 +306,15 @@ class State(object):
         user = User(self.client, **user)
         user.bot = True
         webhook = Webhook(client=self.client, webhook_id=webhook_id, **event_data)
-        webhook.channel = channel
+        webhook.guild_id = channel.guild_id
+        webhook.channel_id = channel.id
         webhook.user = user
         webhook.token = event_data.get("token", None)
 
         if owner:
             # only create Owner if the data was returned
             webhook.owner = self.make_user(owner)
+            self._check_decache_user(webhook.owner.id)
 
         # default fields, these are lazily loaded by properties
         webhook._default_name = event_data.get("name", None)
@@ -432,7 +438,8 @@ class State(object):
         # cache ourselves
         self._users[self._user.id] = self._user
 
-        self.logger.info("Parsing ready for `{}#{}` ({})".format(self._user.username, self._user.discriminator,
+        self.logger.info("Parsing ready for `{}#{}` ({})".format(self._user.username,
+                                                                 self._user.discriminator,
                                                                  self._user.id))
 
         self.logger.info("Logged in as a userbot: {}".format(not self._user.bot))
@@ -499,7 +506,8 @@ class State(object):
             await gw.request_chunks([g for g in self.guilds.values()])
             self.logger.info("Chunking {} guilds immediately.".format(len(self.guilds)))
 
-        self.logger.info("Ready processed for shard {}. Delaying until all guilds are chunked.".format(gw.shard_id))
+        self.logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."
+                         .format(gw.shard_id))
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect", gateway=gw)
@@ -551,7 +559,8 @@ class State(object):
             # re-create the user object
             if "username" in event_data["user"]:
                 # full user object
-                self._friends[user_id] = self.make_user(event_data["user"], user_klass=RelationshipUser,
+                self._friends[user_id] = self.make_user(event_data["user"],
+                                                        user_klass=RelationshipUser,
                                                         override_cache=True)
                 fr = self._friends[user_id]
 
@@ -656,7 +665,10 @@ class State(object):
             member.presence = Presence(**presence)
 
         self.logger.info("Processed a guild sync for guild {} with "
-                         "{} members and {} presences.".format(guild.name, len(members), len(presences)))
+                         "{} members and {} presences.".format(guild.name, len(members),
+                                                               len(presences)))
+
+        await self.client.fire_event("guild_sync", guild, gateway=gw)
 
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -692,7 +704,8 @@ class State(object):
                 guild.from_guild_create(**event_data)
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
-                self.logger.debug("Joined guild {} ({}), requesting members if applicable".format(guild.name, guild.id))
+                self.logger.debug("Joined guild {} ({}), requesting members if applicable"
+                                  .format(guild.name, guild.id))
                 if guild.large:
                     await gw.request_chunks([guild])
                 if self._user.bot:
@@ -747,7 +760,8 @@ class State(object):
         """
         guild_id = int(event_data.get("id", 0))
         # Check if the `unavailable` flag is there.
-        # If it is, we want to semi-discard this event, because all it means is the guild becomes unavailable.
+        # If it is, we want to semi-discard this event, because all it means is the guild
+        # becomes unavailable.
         if event_data.get("unavailable", False):
             # Set the guild to unavailable, but don't delete it.
             guild = self._guilds.get(guild_id)
@@ -1272,14 +1286,14 @@ class State(object):
             new_voice_state = None
         else:
             new_voice_state = VoiceState(**event_data)
-            new_voice_state.guild = guild
-            new_voice_state.channel = guild.channels.get(new_voice_state._channel_id)
+            new_voice_state._guild_id = guild.id
 
         old_voice_state = member.voice
 
         member.voice = new_voice_state
 
-        await self.client.fire_event("voice_state_update", member, old_voice_state, new_voice_state, gateway=gw)
+        await self.client.fire_event("voice_state_update", member, old_voice_state,
+                                     new_voice_state, gateway=gw)
 
     async def handle_webhooks_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1303,11 +1317,12 @@ class State(object):
         self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
 
         # update status
-        #new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
-        #for guild in self.guilds.values():
+        # new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
+        # for guild in self.guilds.values():
         #    guild.me.status = new_status
 
-        await self.client.fire_event("user_settings_update", old_settings, self._user.settings, gateway=gw)
+        await self.client.fire_event("user_settings_update", old_settings, self._user.settings,
+                                     gateway=gw)
 
     async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
         """

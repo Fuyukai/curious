@@ -5,6 +5,7 @@ Wrappers for Role objects.
 """
 
 import functools
+import typing
 
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses import guild as dt_guild
@@ -16,8 +17,6 @@ from curious.dataclasses import permissions as dt_permissions
 class Role(Dataclass):
     """
     Represents a role on a server.
-
-    :ivar id: The ID of this role.
     """
     __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", \
                 "guild_id"
@@ -79,29 +78,64 @@ class Role(Dataclass):
         return self._bot.guilds[self.guild_id]
 
     @property
-    def is_default_role(self):
+    def is_default_role(self) -> bool:
         """
         :return: If this role is the default role of the guild.
         """
         return self.guild.id == self.id
 
     @property
-    def mention(self):
+    def mention(self) -> str:
+        """
+        Gets the string that can be used to mention this role. 
+        
+        .. warning::
+        
+            If :attr:`.Role.mentionable` is ``False``, this will not actually mention the role.
+        
+        """
         return "<@&{}>".format(self.id)
 
-    def assign_to(self, member: 'dt_member.Member'):
+    def assign_to(self, member: 'dt_member.Member') -> 'typing.Awaitable[dt_member.Member]':
         """
         Assigns this role to a member.
+        
+        .. seealso::
+        
+            :meth:`.Guild.add_roles`
 
         :param member: The :class:`~.Member` to assign to.
         """
         return self.guild.add_roles(member, self)
 
     def remove_from(self, member: 'dt_member.Member'):
+        """
+        Removes this role from a member.
+        
+        .. seealso::
+        
+            :meth:`.Guild.remove_roles`
+        
+        :param member: The :class:`~.Member` to assign to. 
+        """
         return self.guild.remove_roles(member, self)
 
     def delete(self):
+        """
+        Deletes this role in its guild.
+        
+        .. seealso::
+            
+            :meth:`.Guild.delete_role`
+        """
         return self.guild.delete_role(self)
 
     def edit(self, **kwargs):
+        """
+        Edits this role in its guild.
+        
+        .. seealso::
+        
+            :meth:`.Guild.edit_role`
+        """
         return self.guild.edit_role(self, **kwargs)

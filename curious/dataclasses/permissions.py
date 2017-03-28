@@ -5,6 +5,7 @@ This class uses some automatic generation to create the objects.
 
 .. currentmodule:: curious.dataclasses.permissions
 """
+import weakref
 
 import typing
 
@@ -184,7 +185,7 @@ class Overwrite(object):
                  obb, channel=None):
         self.target = obb
 
-        self.channel = channel
+        self.channel = weakref.ref(channel)
 
         self.allow = Permissions(value=allow if allow is not None else 0)
         self.deny = Permissions(value=deny if deny is not None else 0)

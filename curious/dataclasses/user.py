@@ -5,6 +5,8 @@ Wrappers for User objects.
 """
 
 import enum
+from typing import Sequence
+
 import typing
 from collections import namedtuple
 
@@ -14,7 +16,7 @@ from types import MappingProxyType
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.appinfo import AuthorizedApp, AppInfo
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.presence import Game, Status, Presence
+from curious.dataclasses.presence import Presence
 from curious.exc import CuriousError
 
 
@@ -73,7 +75,8 @@ class User(Dataclass):
     :ivar id: The ID of this user.
     """
 
-    __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot", "_bot")
+    __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot",
+                 "_bot")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
@@ -117,7 +120,9 @@ class User(Dataclass):
         :return: The avatar URL of this user.
         """
         if not self._avatar_hash:
-            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(int(self.discriminator) % 5)
+            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
+                int(self.discriminator) % 5
+            )
 
         # `a_` signifies Nitro and that they have an animated avatar.
         if self._avatar_hash.startswith("a_"):
@@ -125,7 +130,8 @@ class User(Dataclass):
         else:
             suffix = ".webp"
 
-        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self._avatar_hash, suffix)
+        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self._avatar_hash,
+                                                                   suffix)
 
     @property
     def name(self):
@@ -147,7 +153,8 @@ class User(Dataclass):
         return self.timestamp
 
     def __repr__(self):
-        return "<{} id={} name={} discrim={}>".format(type(self).__name__, self.id, self.name, self.discriminator)
+        return "<{} id={} name={} discrim={}>".format(type(self).__name__, self.id, self.name,
+                                                      self.discriminator)
 
     def __str__(self):
         return "{}#{}".format(self.username, self.discriminator)
@@ -345,14 +352,17 @@ class BotUser(User):
     @property
     def recent_mentions(self) -> 'typing.AsyncIterator[dt_message.Message]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for this user.
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for \ 
+            this user.
         """
-        return AsyncIteratorWrapper(self.get_recent_mentions(role_mentions=True, everyone_mentions=True, limit=100))
+        return AsyncIteratorWrapper(self.get_recent_mentions(role_mentions=True,
+                                                             everyone_mentions=True,
+                                                             limit=100))
 
     async def get_recent_mentions(self, *,
                                   guild: 'dt_guild.Guild' = None, limit: int=25,
                                   role_mentions: bool=True,
-                                  everyone_mentions: bool=True) -> 'typing.Sequence[dt_message.Message]':
+                                  everyone_mentions: bool=True) -> 'Sequence[dt_message.Message]':
         """
         Gets a list of recent mentions for this user. 
         
@@ -382,7 +392,8 @@ class BotUser(User):
     @property
     def authorized_apps(self) -> 'typing.AsyncIterator[AuthorizedApp]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized apps for this user. 
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized apps \ 
+            for this user. 
         """
         return AsyncIteratorWrapper(self.get_authorized_apps())
 
@@ -414,7 +425,8 @@ class BotUser(User):
     @property
     def blocks(self) -> typing.Mapping[int, 'RelationshipUser']:
         """
-        :return: A mapping of :class:`~.RelationshipUser` that represents the blocked users for this user.
+        :return: A mapping of :class:`~.RelationshipUser` that represents the blocked users for \ 
+            this user.
         """
         if self.bot:
             raise CuriousError("Bots cannot have friends")

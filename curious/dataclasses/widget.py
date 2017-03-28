@@ -3,6 +3,7 @@ Wrappers for Widget objects.
 
 .. currentmodule:: curious.dataclasses.widget
 """
+import weakref
 import typing
 from types import MappingProxyType
 
@@ -90,19 +91,22 @@ class WidgetGuild(Dataclass):
     @property
     def channels(self) -> 'typing.Mapping[int, WidgetChannel]':
         """
-        :return: A read-only mapping of :class:`~.WidgetChannel` representing the channels for this guild. 
+        :return: A read-only mapping of :class:`~.WidgetChannel` representing the channels for \ 
+            this guild. 
         """
         return MappingProxyType(self._channels)
 
     @property
     def members(self) -> 'typing.Mapping[int, WidgetMember]':
         """
-        :return: A read-only mapping of :class:`~.WidgetMember` representing the channels for this guild. 
+        :return: A read-only mapping of :class:`~.WidgetMember` representing the channels for \ 
+            this guild. 
         """
         return MappingProxyType(self._members)
 
     def __repr__(self):
-        return "<WidgetGuild id={} members={} name='{}'>".format(self.id, len(self.members), self.name)
+        return "<WidgetGuild id={} members={} name='{}'>".format(self.id, len(self.members),
+                                                                 self.name)
 
     __str__ = __repr__
 
@@ -120,7 +124,7 @@ class Widget(object):
 
         # chekc to see if we have the real guild
         try:
-            self._real_guild = client.guilds[id_]
+            self._real_guild = weakref.ref(client.guilds[id_])
         except KeyError:
             self._real_guild = None
             self._widget_guild = WidgetGuild(self._bot, **kwargs)
@@ -136,7 +140,7 @@ class Widget(object):
         :return: The guild object associated with this widget. 
         :rtype: One of :class:`~.Guild`, :class:`~.WidgetGuild`.
         """
-        return self._real_guild or self._widget_guild
+        return self._real_guild() or self._widget_guild
 
     @property
     def channels(self) -> 'typing.Iterable[typing.Union[dt_channel.Channel, WidgetChannel]]':
