@@ -98,7 +98,7 @@ class Command(object):
             # This isn't always accurate, but you should provide `name=` if you want that.
             self.name = self.callable.__name__
 
-        self.description = description if description is not None else inspect.getdoc(self.callable)
+        self.description = description or inspect.getdoc(self.callable)
         self.aliases = [self.name] + (aliases if aliases else [])
 
         # Pre-calculate the function signature.
