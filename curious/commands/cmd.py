@@ -79,7 +79,7 @@ class Command(object):
     def __init__(self, cbl, *,
                  name: str = None, aliases: typing.List[str] = None,
                  invokation_checks: list = None, group: bool = False,
-                 overridable: bool=False):
+                 overridable: bool=False, description: str = None):
         """
         :param cbl: The callable to use.
         :param name: The name of this command.
@@ -88,6 +88,7 @@ class Command(object):
         :param aliases: A list of aliases that this command can be called as.
         :param group: Is this the root command for a group?
         :param overridable: Can this command be overridden?
+        :param description: This command's description (for e.g. help purposes)
         """
         self.callable = cbl
 
@@ -97,6 +98,7 @@ class Command(object):
             # This isn't always accurate, but you should provide `name=` if you want that.
             self.name = self.callable.__name__
 
+        self.description = description if description is not None else inspect.getdoc(self.callable)
         self.aliases = [self.name] + (aliases if aliases else [])
 
         # Pre-calculate the function signature.
@@ -223,7 +225,7 @@ class Command(object):
         """
         :return: The help text for this command.
         """
-        doc = inspect.getdoc(self.callable)
+        doc = self.description
         if not doc:
             return "This command has no help."
         else:
