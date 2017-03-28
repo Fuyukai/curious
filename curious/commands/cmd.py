@@ -88,7 +88,7 @@ class Command(object):
         :param aliases: A list of aliases that this command can be called as.
         :param group: Is this the root command for a group?
         :param overridable: Can this command be overridden?
-        :param description: This command's description (for e.g. help purposes)
+        :param description: This command's description (for e.g. help purposes).
         """
         self.callable = cbl
 
@@ -98,7 +98,7 @@ class Command(object):
             # This isn't always accurate, but you should provide `name=` if you want that.
             self.name = self.callable.__name__
 
-        self.description = description or inspect.getdoc(self.callable)
+        self.description = description
         self.aliases = [self.name] + (aliases if aliases else [])
 
         # Pre-calculate the function signature.
@@ -225,7 +225,7 @@ class Command(object):
         """
         :return: The help text for this command.
         """
-        doc = self.description
+        doc = self.description or inspect.getdoc(self.callable)
         if not doc:
             return "This command has no help."
         else:
