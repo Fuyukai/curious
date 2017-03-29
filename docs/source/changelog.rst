@@ -43,6 +43,13 @@ This document displays the differences between each release of curious.
  - Change Guild objects on dataclasses to mostly look up via property or
    weak reference rather than having a strong reference.
 
+ - Change commands:
+
+    - A callable that takes ``(bot, message)`` and returns (a) prefix(es)
+      to match can now be provided for ``command_prefix``.
+
+    - Functions are unwrapped for the `.factory` attr if possible.
+
 0.3.0
 -----
 

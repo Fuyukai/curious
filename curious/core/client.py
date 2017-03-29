@@ -92,7 +92,9 @@ def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     return parts
 
 
-def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
+def prefix_check_factory(
+        prefix: typing.Union[str, typing.Iterable[str], typing.Callable[['Client', Message], str]]
+):
     """
     The default message function factory.
     
@@ -119,15 +121,23 @@ def prefix_check_factory(prefix: typing.Union[str, typing.Iterable[str]]):
     :return: A callable that can be used for the ``message_check`` function on the client.
     """
 
-    def __inner(bot: Client, message):
+    async def __inner(bot: Client, message):
+        # move prefix out of global scope
+        _prefix = prefix
         matched = None
-        if isinstance(prefix, str):
-            match = message.content.startswith(prefix)
+
+        if callable(_prefix):
+            _prefix = _prefix(bot, message)
+            if inspect.isawaitable(_prefix):
+                _prefix = await _prefix
+
+        if isinstance(_prefix, str):
+            match = message.content.startswith(_prefix)
             if match:
-                matched = prefix
+                matched = _prefix
 
         elif isinstance(prefix, collections.Iterable):
-            for i in prefix:
+            for i in _prefix:
                 if message.content.startswith(i):
                     matched = i
                     break
@@ -174,6 +184,13 @@ class Client(object):
             won't appear).
         
         :param command_prefix: The command prefix for this bot.
+            
+            This can be one of the following:
+                - A string
+                - A list of strings
+                - A callable that takes ``(bot, message)`` and returns a string or list of strings 
+                  of prefixes.
+        
         :param message_check: The message check function for this bot.  
         
             This should take two arguments, the client and message, and should return either None 
@@ -498,14 +515,14 @@ class Client(object):
         gateway = kwargs.pop("gateway")
 
         if not self.state.is_ready(gateway.shard_id).is_set() and event_name != "connect":
-            return
+            return []
 
         coros = self.events.getall(event_name, [])
 
         temporary_listeners = self._temporary_listeners.getall(event_name, [])
 
         if not coros and not temporary_listeners:
-            return
+            return []
 
         self._logger.debug(
             "Dispatching event {} to {} listeners"

@@ -55,9 +55,9 @@ class Plugin(object):
 
         for name, value in self.__class__.__dict__.items():
             if hasattr(value, "__wrapped__"):
-                factory = getattr(value.__wrapped__, "factory")
+                factory = getattr(value.__wrapped__, "factory", None)
             else:
-                factory = getattr(value, "factory")
+                factory = getattr(value, "factory", None)
 
             if factory is not None:
                 if getattr(value, "_subcommand", False):
