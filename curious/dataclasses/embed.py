@@ -147,6 +147,16 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
 
         return self
 
+    def set_thumbnail(self, *, url: str) -> 'Embed':
+        """
+        Sets the thumbnail image of this embed.
+        
+        :param url: The image URL of this thumbnail. 
+        :return: The Embed object.
+        """
+        self.thumbnail = attrdict()
+        self.thumbnail.url = url
+
     def to_dict(self):
         """
         Converts this embed into a flattened dict.
