@@ -67,7 +67,7 @@ class Plugin(object):
                 cmd = factory()
                 commands.append(cmd)
 
-            elif hasattr(value, "event"):
+            elif hasattr(value, "events"):
                 def _wtf(v):
                     @functools.wraps(v)
                     def _event_wrapper(*args, **kwargs):

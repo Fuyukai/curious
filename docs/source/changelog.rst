@@ -50,6 +50,8 @@ This document displays the differences between each release of curious.
 
     - Functions are unwrapped for the `.factory` attr if possible.
 
+ - Add the ability to listen to multiple events with one function.
+
 0.3.0
 -----
 

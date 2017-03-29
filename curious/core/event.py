@@ -15,7 +15,10 @@ def event(name, scan: bool=True):
     """
 
     def __innr(f):
-        f.event = name
+        if not hasattr(f, "events"):
+            f.events = set()
+
+        f.events.add(name)
         f.scan = scan
         return f
 

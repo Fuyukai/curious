@@ -389,9 +389,13 @@ class Client(object):
             raise TypeError("Event must be a coroutine function")
 
         if name is None:
-            name = func.event
+            evs = func.events
+        else:
+            evs = [name]
 
-        self.events.add(name, func)
+        for ev_name in evs:
+            self._logger.debug("Registered event `{}` handling `{}`".format(func, name))
+            self.events.add(ev_name, func)
 
     def add_listener(self, name: str, func):
         """
@@ -447,9 +451,9 @@ class Client(object):
         Scans this class for functions marked with an event decorator.
         """
         for _, item in inspect.getmembers(self,
-                                          predicate=lambda x: hasattr(x, "event") and
+                                          predicate=lambda x: hasattr(x, "events") and
                                                   getattr(x, "scan", False)):
-            self._logger.info("Registering event function {} for event {}".format(_, item.event))
+            self._logger.info("Registering event function {} for events {}".format(_, item.events))
             self.add_event(item)
 
     async def _error_wrapper(self, func, *args, **kwargs):
@@ -660,7 +664,9 @@ class Client(object):
 
         for event in events:
             event.plugin = plugin_class
-            self.events.add(event.event, event)
+
+            for ev_name in event.events:
+                self.events.add(ev_name, event)
 
         for command in commands:
             # Bind the command to the plugin.
