@@ -79,7 +79,8 @@ class Command(object):
     def __init__(self, cbl, *,
                  name: str = None, aliases: typing.List[str] = None,
                  invokation_checks: list = None, group: bool = False,
-                 overridable: bool=False, description: str = None):
+                 overridable: bool = False, description: str = None,
+                 hidden: bool = False):
         """
         :param cbl: The callable to use.
         :param name: The name of this command.
@@ -89,6 +90,7 @@ class Command(object):
         :param group: Is this the root command for a group?
         :param overridable: Can this command be overridden?
         :param description: This command's description (for e.g. help purposes).
+        :param hidden: Is this command hidden?
         """
         self.callable = cbl
 
@@ -100,6 +102,7 @@ class Command(object):
 
         self.description = description
         self.aliases = [self.name] + (aliases if aliases else [])
+        self.hidden = hidden
 
         # Pre-calculate the function signature.
         # Saves a few MS every command in
