@@ -650,7 +650,24 @@ class Client(object):
         
         :param name: The name of the :class:`~.Plugin` to remove.  
         """
-        return self.plugins.pop(name)
+        plugin = self.plugins.pop(name)
+
+        for name, command in self.commands.values():
+            if command.instance == plugin:
+                # clean up instances
+                command.instance = None
+                self.commands.pop(name)
+
+        # remove all events registered
+        for name, event in self.events.copy().items():
+            # not a plugin event
+            if not hasattr(event, "plugin"):
+                continue
+            if isinstance(event.plugin, plugin):
+                event.plugin = None
+                self.remove_event(name, event)
+
+        return plugin
 
     async def load_plugins_from(self, import_name: str, *args, **kwargs):
         """
@@ -728,7 +745,7 @@ class Client(object):
                 if not hasattr(event, "plugin"):
                     continue
                 if isinstance(event.plugin, plugin):
-                    event.plugins = None
+                    event.plugin = None
                     self.remove_event(name, event)
 
             # now that all commands are dead, call `unload()` on all of the instances
