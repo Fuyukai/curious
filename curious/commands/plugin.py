@@ -54,12 +54,17 @@ class Plugin(object):
         commands = []
 
         for name, value in self.__class__.__dict__.items():
-            if hasattr(value, "factory"):
+            if hasattr(value, "__wrapped__"):
+                factory = getattr(value.__wrapped__, "factory")
+            else:
+                factory = getattr(value, "factory")
+
+            if factory is not None:
                 if getattr(value, "_subcommand", False):
                     # don't add subcommands
                     continue
                 # this is set by the decorator to create a new command instance
-                cmd = value.factory()
+                cmd = factory()
                 commands.append(cmd)
 
             elif hasattr(value, "event"):

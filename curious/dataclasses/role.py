@@ -13,6 +13,33 @@ from curious.dataclasses import member as dt_member
 from curious.dataclasses import permissions as dt_permissions
 
 
+class _MentionableRole(object):
+    """
+    A wrapper class that makes a role mentionable for a short time period.
+    
+    .. code-block:: python
+    
+        async with role.allow_mentions():
+            await ctx.channel.send(role.mention)
+            
+    """
+    def __init__(self, r: 'Role'):
+        self.role = r
+
+    def allow_mentions(self):
+        return self.role.edit(mentionable=True)
+
+    def disallow_mentions(self):
+        return self.role.edit(mentionable=False)
+
+    def __aenter__(self):
+        return self.allow_mentions()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.disallow_mentions()
+        return False
+
+
 @functools.total_ordering
 class Role(Dataclass):
     """
