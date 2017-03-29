@@ -167,6 +167,14 @@ class Client(object):
         bot.run("'b'")  # or pass to the run call.
 
     """
+    #: A list of events to ignore the READY status.
+    IGNORE_READY = [
+        "connect",
+        "guild_streamed",
+        "guild_chunk",
+        "guild_available",
+        "guild_sync"
+    ]
 
     def __init__(self, token: str = None, *,
                  enable_commands: bool = True,
@@ -514,7 +522,8 @@ class Client(object):
         """
         gateway = kwargs.pop("gateway")
 
-        if not self.state.is_ready(gateway.shard_id).is_set() and event_name != "connect":
+        if not self.state.is_ready(gateway.shard_id).is_set() \
+                and event_name not in self.IGNORE_READY:
             return []
 
         coros = self.events.getall(event_name, [])
