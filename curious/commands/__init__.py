@@ -20,7 +20,8 @@ from curious.commands.cmd import Command
 def command(*args, klass: type = Command, **kwargs):
     """
     A decorator to mark a function as a command.
-    This will put a `factory` attribute on the function, which can later be called to create the Command instance.
+    This will put a `factory` attribute on the function, which can later be called to create the 
+    Command instance.
 
     All arguments are passed to the Command class.
 
@@ -39,17 +40,18 @@ def group(*args, klass: type = Command, **kwargs):
     """
     A decorator to mark a function as a group command.
 
-    This takes the same parameters as the normal ``command`` decorator. The returned function will have a `command`
-    attribute which can be used to create a new command, and a `group` attribute which can be used to make subgroups.
+    This takes the same parameters as the normal ``command`` decorator. The returned function will 
+    have a `command` attribute which can be used to create a new command, and a `group` attribute 
+    which can be used to make subgroups.
     """
 
     def __inner(func):
         # nested hell!
-        # this is similar to the `command` decorator defined above, except it appends to `subcommands` on the
-        # function with the factory.
+        # this is similar to the `command` decorator defined above, except it appends to
+        # `subcommands` on the function with the factory.
 
-        # the function objects left in the command object do NOT get registered as normal commands, as we leave a
-        # mark that tells the scanner not to add them.
+        # the function objects left in the command object do NOT get registered as normal commands,
+        # as we leave a mark that tells the scanner not to add them.
         def _command_attr(*args, klass: type = Command, **kwargs):
             def _i_command_attr(_func):
                 f = command(*args, klass=klass, **kwargs)(_func)

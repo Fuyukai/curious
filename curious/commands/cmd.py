@@ -83,36 +83,48 @@ class Command(object):
                  hidden: bool = False):
         """
         :param cbl: The callable to use.
+        
         :param name: The name of this command.
             If this isn't provided, it will be automatically determined from the callable name.
 
         :param aliases: A list of aliases that this command can be called as.
+        
         :param group: Is this the root command for a group?
+        
         :param overridable: Can this command be overridden?
+        
         :param description: This command's description (for e.g. help purposes).
         :param hidden: Is this command hidden?
         """
+        #: The callable function that is invoked.
         self.callable = cbl
 
+        #: The name of the command.
         self.name = name
         if not self.name:
             # Use the __name__ of the callable instead
             # This isn't always accurate, but you should provide `name=` if you want that.
             self.name = self.callable.__name__
 
+        #: The description of the command.
         self.description = description
+
+        #: The aliases for this command.
         self.aliases = [self.name] + (aliases if aliases else [])
+
+        #: If this command is marked as hidden.
         self.hidden = hidden
 
         # Pre-calculate the function signature.
-        # Saves a few MS every command in
+        # Saves a few MS every command invokation
         self._signature = inspect.signature(self.callable)
 
         #: The plugin instance to pass to this command.
         #: If this is None, it is assumed the command invoker does not need an instance.
         self._instance = None
 
-        #: A list of invokation checks that must all return True before the underlying function is run.
+        #: A list of invokation checks that must all return True before the underlying
+        #: function is run.
         self.invokation_checks = invokation_checks if invokation_checks else []
 
         #: Is this a group command?
@@ -155,7 +167,8 @@ class Command(object):
             subcommand.instance = value
 
     def __repr__(self):
-        return "<Command name='{}' plugin='{}' subcommands={}>".format(self.name, self.instance, self.subcommands)
+        return "<Command name='{}' plugin='{}' subcommands={}>".format(self.name, self.instance,
+                                                                       self.subcommands)
 
     @classmethod
     def add_converter(cls, type_: typing.Type, func: typing.Callable[[Context, typing.Any], str]):
@@ -199,7 +212,8 @@ class Command(object):
 
             # switch based on kind (again...)
             assert isinstance(param, inspect.Parameter)
-            if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
+            if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                              inspect.Parameter.POSITIONAL_ONLY]:
                 if param.annotation is not inspect.Parameter.empty:
                     s = "<{}: {}>".format(param.name, param.annotation.__name__)
                 else:
@@ -279,7 +293,8 @@ class Command(object):
                 arg = param.default
 
             # Begin the consumption!
-            if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD, inspect.Parameter.POSITIONAL_ONLY]:
+            if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                              inspect.Parameter.POSITIONAL_ONLY]:
                 # Only add it to the final_args, then continue the loop.
                 arg = replace_quotes(arg)
                 converter = self._lookup_converter(arg, param.annotation)
