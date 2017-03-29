@@ -43,6 +43,8 @@ Documentation
    tutorial/gettingstarted
    tutorial/firstbot
 
+   events
+
    changelog
 
 API Documentation
