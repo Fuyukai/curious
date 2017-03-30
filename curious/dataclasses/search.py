@@ -201,8 +201,8 @@ class SearchQuery(object):
         """
         params = {}
 
-        if self._guild is not None and self._channel is not None:
-            params["channel_id"] = self._channel.id
+        if self.guild is not None and self.channel is not None:
+            params["channel_id"] = self.channel.id
 
         if self._query is not None:
             params["content"] = self._query
