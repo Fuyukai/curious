@@ -303,7 +303,9 @@ class State(object):
             owner = event_data.get("user", {})
 
         channel = self.find_channel(int(event_data.get("channel_id")))
-        user = User(self.client, **user)
+        user = self.make_user(user)
+        # ensure the webhook user is decached
+        self._check_decache_user(user.id)
         user.bot = True
         webhook = Webhook(client=self.client, webhook_id=webhook_id, **event_data)
         webhook.guild_id = channel.guild_id
