@@ -130,6 +130,8 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if icon_url:
             self.footer.icon_url = icon_url
 
+        return self
+
     def set_image(self, *, image_url: str) -> 'Embed':
         """
         Sets the image of this embed.
@@ -156,6 +158,8 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         """
         self.thumbnail = attrdict()
         self.thumbnail.url = url
+
+        return self
 
     def to_dict(self):
         """

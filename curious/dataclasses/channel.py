@@ -298,7 +298,7 @@ class Channel(Dataclass):
         return MappingProxyType(self._recipients)
 
     @property
-    def user(self) -> 'dt_user.User':
+    def user(self) -> 'typing.Union[dt_user.User, None]':
         """
         :return: If this channel is a private channel, the :class:`~.User` of the other user.
         """
@@ -308,7 +308,7 @@ class Channel(Dataclass):
         return list(self.recipients.values())[0]
 
     @property
-    def owner(self) -> 'dt_user.User':
+    def owner(self) -> 'typing.Union[dt_user.User, None]':
         """
         :return: If this channel is a group channel, the owner of the channel.
         """
@@ -348,13 +348,13 @@ class Channel(Dataclass):
             filter(lambda member: member.voice.channel == self, self.guild.members.values()))
 
     def permissions(self,
-                    object: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
+                    obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
         """
-        overwrite = self._overwrites.get(object.id)
+        overwrite = self._overwrites.get(obb.id)
         if not overwrite:
-            return dt_permissions.Overwrite(0, 0, object, channel=self)
+            return dt_permissions.Overwrite(0, 0, obb, channel=self)
 
         return overwrite
 
@@ -369,7 +369,7 @@ class Channel(Dataclass):
         obb = object.__new__(self.__class__)
         obb.name = self.name
         obb.type = self.type
-        obb.guild = self.guild
+        obb.guild_id = self.guild_id
         obb._recipients = self._recipients
         obb.position = self.position
         obb._bot = self._bot
@@ -502,7 +502,7 @@ class Channel(Dataclass):
 
         return webhook
 
-    async def delete_webhook(self, webhook: 'dt_webhook.Webhook'):
+    async def delete_webhook(self, webhook: 'dt_webhook.Webhook') -> 'dt_webhook.Webhook':
         """
         Deletes a webhook.
 
@@ -521,7 +521,7 @@ class Channel(Dataclass):
         await self._bot.http.delete_webhook(webhook.id)
         return webhook
 
-    async def create_invite(self, **kwargs):
+    async def create_invite(self, **kwargs) -> 'dt_invite.Invite':
         """
         Creates an invite in this channel.
         
@@ -854,7 +854,7 @@ class Channel(Dataclass):
         await listener.join()
         return self
 
-    def edit(self, **kwargs):
+    def edit(self, **kwargs) -> 'typing.Awaitable[Channel, None, None]':
         """
         Edits this channel.
         """
@@ -863,7 +863,7 @@ class Channel(Dataclass):
 
         return self.guild.edit_channel(self, **kwargs)
 
-    def delete(self):
+    def delete(self) -> 'typing.Awaitable[Channel, None, None]':
         """
         Deletes this channel.
         """

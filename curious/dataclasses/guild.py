@@ -893,7 +893,7 @@ class Guild(Dataclass):
         await self._bot.http.edit_channel(channel_object.id, **kwargs)
         return channel_object
 
-    async def delete_channel(self, channel: 'channel.Channel'):
+    async def delete_channel(self, channel: 'channel.Channel') -> 'channel.Channel':
         """
         Deletes a channel in this guild.
 
@@ -905,7 +905,7 @@ class Guild(Dataclass):
         await self._bot.http.delete_channel(channel.id)
         return channel
 
-    async def create_role(self, **kwargs):
+    async def create_role(self, **kwargs) -> 'role.Role':
         """
         Creates a new role in this guild.
 
@@ -917,13 +917,13 @@ class Guild(Dataclass):
 
         role_obb = role.Role(client=self._bot, **(await self._bot.http.create_role(self.id)))
         self._roles[role_obb.id] = role_obb
-        role_obb.guild = self
+        role_obb.guild_id = self.id
         return await self.edit_role(role_obb, **kwargs)
 
     async def edit_role(self, role: 'role.Role', *,
                         name: str = None, permissions: 'dt_permissions.Permissions' = None,
                         colour: int = None, position: int = None,
-                        hoist: bool = None, mentionable: bool = None):
+                        hoist: bool = None, mentionable: bool = None) -> 'role.Role':
         """
         Edits a role.
 
