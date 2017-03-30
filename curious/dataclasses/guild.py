@@ -135,7 +135,7 @@ class Guild(Dataclass):
         return obb
 
     @property
-    def channels(self) -> 'typing.Mapping[channel.Channel]':
+    def channels(self) -> 'typing.Mapping[int, channel.Channel]':
         """
         :return: A list of :class:`~.Channel` that represent the channels on this guild.
         """
@@ -170,28 +170,37 @@ class Guild(Dataclass):
         return self._members[self._owner_id]
 
     @property
-    def me(self) -> 'dt_member.Member':
+    def me(self) -> 'typing.Union[dt_member.Member, None]':
         """
         :return: A :class:`~.Member` object that represents the current user in this guild.
         """
-        return self._members[self._bot.user.id]
+        try:
+            return self._members[self._bot.user.id]
+        except KeyError:
+            return None
 
     @property
-    def default_channel(self) -> 'channel.Channel':
+    def default_channel(self) -> 'typing.Union[channel.Channel, None]':
         """
         :return: A :class:`~.Channel` that represents the default channel of this guild.
         """
-        return self._channels[self.id]
+        try:
+            return self._channels[self.id]
+        except KeyError:
+            return None
 
     @property
-    def default_role(self) -> 'role.Role':
+    def default_role(self) -> 'typing.Union[role.Role, None]':
         """
         :return: A :class:`~.Role` that represents the default role of this guild.
         """
-        return self._roles[self.id]
+        try:
+            return self._roles[self.id]
+        except KeyError:
+            return None
 
     @property
-    def afk_channel(self) -> 'channel.Channel':
+    def afk_channel(self) -> 'typing.Union[None, channel.Channel]':
         """
         :return: A :class:`~.Channel` representing the AFK channel for this guild.
         """
@@ -205,7 +214,7 @@ class Guild(Dataclass):
     def embed_url(self) -> str:
         """
         Gets the default embed url for this guild.
-        The widget must be enabled.
+        If the widget is not enabled, this endpoint will 404.
         
         :return: The embed URL for this guild. 
         """
@@ -220,9 +229,8 @@ class Guild(Dataclass):
         return sum(1 for member in self._members.values() if member.status is not Status.OFFLINE)
 
     # Presence methods
-    def members_with_status(self, status: Status) -> 'typing.Generator[' \
-                                                     'dt_member.Member, None, None' \
-                                                     ']':
+    def members_with_status(self,
+                            status: Status) -> 'typing.Generator[dt_member.Member, None, None]':
         """
         A generator that returns the members that match the specified status.
         """
@@ -429,8 +437,9 @@ class Guild(Dataclass):
             voice_state = dt_vs.VoiceState(**vs_data)
 
             vs_channel = self._channels.get(int(vs_data.get("channel_id", 0)))
-            voice_state.channel = vs_channel
-            voice_state.guild = self
+            if vs_channel is not None:
+                voice_state.channel_id = vs_channel.id
+                voice_state.guild_id = self.id
             member.voice = voice_state
 
         # Create all of the emoji objects for the server.

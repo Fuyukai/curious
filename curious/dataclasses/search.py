@@ -5,6 +5,8 @@ Wrappers for Search objects.
 """
 import collections
 import functools
+import weakref
+
 import typing
 
 from curious.dataclasses import guild as dt_guild
@@ -186,10 +188,10 @@ class SearchQuery(object):
         :param guild: The :class:`~.Guild` to search the messages for.
         :param channel: The :class:`~.Channel` to search messages for. Only used for DMs.
         """
-        self._guild = guild
+        self._guild = weakref.ref(guild) if guild is not None else None
 
         # internal vars used for the search
-        self._channel = channel  # type: dt_channel.Channel
+        self._channel = weakref.ref(channel) if channel is not None else None
         self._query = None  # type: str
         self._author = None  # type: typing.Union[dt_user.User, dt_member.Member]
 
@@ -228,28 +230,31 @@ class SearchQuery(object):
         """
         :return: The built URL to execute this search query on. 
         """
-        if self._guild is not None:
-            return functools.partial(self._bot.http.search_guild, self._guild.id)
+        if self.guild is not None:
+            return functools.partial(self._bot.http.search_guild, self.guild.id)
 
-        return functools.partial(self._bot.http.search_channel, self._channel.id)
+        return functools.partial(self._bot.http.search_channel, self.channel.id)
 
     @property
     def _bot(self):
         if self._guild is not None:
-            return self._guild._bot
+            return self._guild()._bot
 
-        return self._channel._bot
+        return self._channel()._bot
 
     # public properties
     @property
-    def guild(self) -> 'dt_guild.Guild':
+    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
         """
         :return: The :class:`~.Guild` this search query is searching. 
         """
-        return self._guild
+        if self._guild is None:
+            return None
+
+        return self._guild()
 
     @property
-    def channel(self) -> 'dt_channel':
+    def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
         The :class:`~.Channel` that is being searched.
         
@@ -260,7 +265,10 @@ class SearchQuery(object):
         :getter: Gets the :class:`~.Channel` to be searched.
         :setter: Sets the :class:`~.Channel` to be searched. 
         """
-        return self._channel
+        if self._channel is None:
+            return None
+
+        return self._channel()
 
     @channel.setter
     def channel(self, value):
@@ -276,7 +284,7 @@ class SearchQuery(object):
         if self._guild is not None and value.guild != self._guild:
             raise ValueError("Channel to search must be in the same guild")
 
-        self._channel = value
+        self._channel = weakref.ref(value)
 
     @property
     def content(self) -> str:
