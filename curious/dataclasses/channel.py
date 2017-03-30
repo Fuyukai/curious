@@ -723,7 +723,7 @@ class Channel(Dataclass):
         return obb
 
     async def send_file(self, file_content: bytes, filename: str,
-                        *, message_content: typing.Optional[str]) -> 'dt_message.Message':
+                        *, message_content: typing.Optional[str] = None) -> 'dt_message.Message':
         """
         Uploads a message to this channel.
 
@@ -734,9 +734,9 @@ class Channel(Dataclass):
             with open("/tmp/emilia_best_girl.jpg", 'rb') as f:
                 await channel.send_file(f.read(), "my_waifu.jpg")
 
-
         :param file_content: The bytes-like file content to upload.
             This **cannot** be a file-like object.
+            
         :param filename: The filename of the file.
         :param message_content: Optional: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
@@ -762,6 +762,7 @@ class Channel(Dataclass):
         A higher level interface to ``send_file``.
 
         This allows you to specify one of the following to upload:
+
             - A filename (str)
             - A file-like object
             - A path-like object
@@ -854,7 +855,7 @@ class Channel(Dataclass):
         await listener.join()
         return self
 
-    def edit(self, **kwargs) -> 'typing.Awaitable[Channel, None, None]':
+    def edit(self, **kwargs) -> 'typing.Coroutine[None, None, Channel]':
         """
         Edits this channel.
         """
@@ -863,7 +864,7 @@ class Channel(Dataclass):
 
         return self.guild.edit_channel(self, **kwargs)
 
-    def delete(self) -> 'typing.Awaitable[Channel, None, None]':
+    def delete(self) -> 'typing.Coroutine[None, None, Channel]':
         """
         Deletes this channel.
         """
