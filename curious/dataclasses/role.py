@@ -111,6 +111,17 @@ class Role(Dataclass):
         """
         return self.guild.id == self.id
 
+    def allow_mentions(self) -> _MentionableRole:
+        """
+        Temporarily allows this role to be mentioned during.
+         
+        .. code-block:: python
+    
+            async with role.allow_mentions():
+                await ctx.channel.send(role.mention)
+        """
+        return _MentionableRole(self)
+
     @property
     def mention(self) -> str:
         """
