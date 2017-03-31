@@ -438,8 +438,8 @@ class Guild(Dataclass):
 
             vs_channel = self._channels.get(int(vs_data.get("channel_id", 0)))
             if vs_channel is not None:
-                voice_state.channel_id = vs_channel.id
-                voice_state.guild_id = self.id
+                voice_state._channel_id = vs_channel.id
+                voice_state._guild_id = self.id
             member.voice = voice_state
 
         # Create all of the emoji objects for the server.

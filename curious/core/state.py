@@ -604,7 +604,13 @@ class State(object):
         # update the nickname
         member.nickname = event_data.get("nick", member.nickname)
 
-        if not isinstance(member.user, RelationshipUser):
+        try:
+            user = member.user
+        except KeyError:
+            # make the new user
+            user = self.make_user(event_data["user"])
+
+        if not isinstance(user, RelationshipUser):
             # recreate the user object, so the user is properly cached
             if "username" in event_data["user"]:
                 self.make_user(event_data["user"], override_cache=True)
