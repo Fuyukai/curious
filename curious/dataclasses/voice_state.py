@@ -60,7 +60,7 @@ class VoiceState(object):
             return None
 
     def __del__(self):
-        if not hasattr(self, "channel") or not self.channel:
+        if not hasattr(self, "_channel") or not self._channel:
             return
 
         # decache if appropriate

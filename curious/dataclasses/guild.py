@@ -3,7 +3,7 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
-
+import weakref
 from math import ceil
 
 import curio
@@ -440,6 +440,10 @@ class Guild(Dataclass):
             if vs_channel is not None:
                 voice_state._channel_id = vs_channel.id
                 voice_state._guild_id = self.id
+
+                voice_state._guild = weakref.ref(self)
+                voice_state._channel = weakref.ref(vs_channel)
+
             member.voice = voice_state
 
         # Create all of the emoji objects for the server.
