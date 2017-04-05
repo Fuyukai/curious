@@ -350,7 +350,7 @@ class Gateway(object):
             try:
                 guild.me.presence.game = game
                 guild.me.presence.status = status
-            except KeyError:
+            except AttributeError:
                 # sent before our member object exists - i.e just after READY happens
                 # we can ignore this
                 pass
