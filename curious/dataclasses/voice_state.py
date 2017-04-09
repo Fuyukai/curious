@@ -40,6 +40,9 @@ class VoiceState(object):
         """
         :return: The :class:`~.Guild` associated, or None if the guild is uncached.
         """
+        if self._guild is None:
+            return None
+
         return self._guild()
 
     @property
@@ -47,6 +50,9 @@ class VoiceState(object):
         """
         :return: The :class:`~.Channel` associated, or None if the channel is uncached.
         """
+        if self._channel is None:
+            return None
+
         return self._channel()
 
     @property
