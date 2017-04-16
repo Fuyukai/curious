@@ -101,26 +101,26 @@ class VoiceState(object):
                                                                         self.muted,
                                                                         self.channel)
 
-    async def mute(self):
+    def mute(self):
         """
         Server mutes this member on the guild.
         """
-        await self.guild.change_voice_state(self.member, mute=True)
+        return self.guild.change_voice_state(self.member, mute=True)
 
-    async def unmute(self):
+    def unmute(self):
         """
         Server unmutes this member on the guild.
         """
-        await self.guild.change_voice_state(self.member, mute=False)
+        return self.guild.change_voice_state(self.member, mute=False)
 
     async def deafen(self):
         """
         Server deafens this member on the guild.
         """
-        await self.guild.change_voice_state(self.member, deaf=True)
+        return self.guild.change_voice_state(self.member, deaf=True)
 
     async def undeafen(self):
         """
         Server undeafens this member on the guild.
         """
-        await self.guild.change_voice_state(self.member, deaf=False)
+        return self.guild.change_voice_state(self.member, deaf=False)

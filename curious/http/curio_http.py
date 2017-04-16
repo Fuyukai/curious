@@ -475,8 +475,6 @@ class ClientSession:
 
         await conn.open()
 
-        self.open_connections.append(conn)
-
         raw_response = await conn.request(h11_request, body)
 
         return Response(raw_response, h11_request, conn)

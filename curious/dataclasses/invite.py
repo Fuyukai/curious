@@ -123,8 +123,8 @@ class Invite(object):
     Represents an invite object.
     """
 
-    __slots__ = ("_bot", "code", "_real_guild", "_real_channel", "_invite_guild", "_invite_channel", "_invite_metadata",
-                 "inviter")
+    __slots__ = ("_bot", "code", "_real_guild", "_real_channel", "_invite_guild",
+                 "_invite_channel", "_invite_metadata", "inviter")
 
     def __init__(self, client, **kwargs):
         self._bot = client
