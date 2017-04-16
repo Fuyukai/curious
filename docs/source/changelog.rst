@@ -56,6 +56,8 @@ This document displays the differences between each release of curious.
    :class:`~.NotificationLevel`, :class:`~.ContentFilterLevel`, and update
    the relevant attributes on :class:`~.Guild`.
 
+ - Add HTTP downloading methods to :class:`~.Client`.
+
 0.3.0
 -----
 
