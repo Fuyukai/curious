@@ -3,12 +3,15 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
+import enum
 import weakref
 from math import ceil
 
 import curio
 import typing
 from types import MappingProxyType
+
+import datetime
 
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
     member as dt_member, \
@@ -26,19 +29,111 @@ except ImportError:
     voice_client = None
 
 
+class MFALevel(enum.IntEnum):
+    """
+    Represents the MFA level of a :class:`~.Guild`.
+    """
+    #: Used when MFA authentication is **disabled**.
+    #: This means moderation actions will not require multi-factor auth.
+    DISABLED = 0
+
+    #: Used when MFA authentication is **enabled**.
+    #: This means moderation actions *will* require multi-factor auth.
+    ENABLED = 1
+
+
+class VerificationLevel(enum.IntEnum):
+    """
+    Represents the verification levels for a :class:`~.Guild`.
+    """
+    #: No verification level.
+    #: All users can speak after joining immediately.
+    NONE = 0
+
+    #: Low verification level.
+    #: Users must have a verified email on their account.
+    LOW = 1
+
+    #: Medium verification level.
+    #: Users must have been on Discord for longer than 5 minutes.
+    MEDIUM = 2
+
+    #: High/tableflip verification level.
+    #: Users must have been on the server for longer than 10 minutes.
+    TABLEFLIP = 3
+
+    def can_speak(self, member: 'dt_member.Member') -> bool:
+        """
+        Checks if a :class:`~.Member` can speak in their :class:`~.Guild`.
+        
+        :param member: The member to check.
+        :return: True if they can speak, False if they can't.
+        """
+        # none always allows people to speak
+        if self is VerificationLevel.NONE:
+            return True
+
+        if self is VerificationLevel.LOW:
+            # can't validate, assume True
+            if member.user.verified is None:
+                return True
+
+            return member.user.verified is True
+
+        if self is VerificationLevel.MEDIUM:
+            dt = datetime.datetime.now() - datetime.timedelta(minutes=5)
+
+            # ensure their created at time is before 5 minutes before now
+            if member.user.created_at < dt:
+                return True
+
+        if self is VerificationLevel.TABLEFLIP:
+            dt = datetime.datetime.now() - datetime.timedelta(minutes=10)
+
+            # ensure their joined at time is before 10 minutes before now
+            if member.joined_at < dt:
+                return True
+
+        # other verification levels ???
+        return True
+
+
+class NotificationLevel(enum.IntEnum):
+    """
+    Represents the default notification level for a :class:`~.Guild`.
+    """
+    #: All messages notify members, by default.
+    ALL_MESSAGES = 0
+
+    #: Only mentions notify members, by default.
+    ONLY_MENTIONS = 1
+
+
+class ContentFilterLevel(enum.IntEnum):
+    """
+    Represents the content filter level for a :class:`~.Guild`. 
+    """
+    #: No messages will be scanned.
+    SCAN_NONE = 0
+
+    #: Messages from users without roles will be scanned.
+    SCAN_WITHOUT_ROLES = 1
+
+    #: All messages will be scanned.
+    SCAN_ALL = 2
+
+
 class Guild(Dataclass):
     """
     Represents a guild object on Discord.
-
-    :ivar id: The ID of this guild.
     """
 
     __slots__ = (
         "id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
-        "afk_timeout", "region", "mfa_level", "verification_level", "shard_id", "_roles",
-        "_members",
-        "_channels", "_emojis", "_finished_chunking", "member_count", "_large", "_chunks_left",
-        "voice_client",
+        "afk_timeout", "region",
+        "mfa_level", "verification_level", "notification_level", "content_filter_level",
+        "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count", "_large",
+        "_chunks_left", "_finished_chunking", "voice_client",
     )
 
     def __init__(self, bot, **kwargs):
@@ -54,11 +149,9 @@ class Guild(Dataclass):
         # Placeholder values.
         #: The name of this guild.
         self.name = None  # type: str
-
         #: The icon hash of this guild.
         #: Used to construct the icon URL later.
         self._icon_hash = None  # type: str
-
         #: The splash hash of this guild.
         #: Used to construct the splash URL later.
         self._splash_hash = None  # type: str
@@ -68,7 +161,6 @@ class Guild(Dataclass):
 
         #: The AFK channel ID of this guild.
         self._afk_channel_id = None  # type: int
-
         #: The AFK timeout for this guild.
         self.afk_timeout = None  # type: int
 
@@ -76,23 +168,23 @@ class Guild(Dataclass):
         self.region = None  # type: str
 
         #: The MFA level of this guild.
-        self.mfa_level = 0  # type: int
-
+        self.mfa_level = MFALevel.DISABLED  # type: MFALevel
         #: The verification level of this guild.
-        self.verification_level = 0  # type: int
+        self.verification_level = VerificationLevel.NONE  # type: int
+        #: The notification level of this guild.
+        self.notification_level = NotificationLevel.ALL_MESSAGES
+        #: The content filter level of this guild.
+        self.content_filter_level = ContentFilterLevel.SCAN_NONE
 
         #: The shard ID this guild is associated with.
         self.shard_id = None
 
         #: The roles that this guild has.
         self._roles = {}
-
         #: The members of this guild.
         self._members = {}
-
         #: The channels of this guild.
         self._channels = {}
-
         #: The emojis that this guild has.
         self._emojis = {}
 
@@ -313,6 +405,7 @@ class Guild(Dataclass):
         except StopIteration:
             return None
 
+    # creation methods
     def start_chunking(self):
         """
         Marks a guild to start guild chunking.
@@ -394,8 +487,11 @@ class Guild(Dataclass):
             afk_channel_id = int(afk_channel_id)
         self._afk_channel_id = afk_channel_id
         self.afk_timeout = data.get("afk_timeout")
-        self.verification_level = data.get("verification_level")
-        self.mfa_level = data.get("mfa_level")
+
+        self.verification_level = VerificationLevel(data.get("verification_level", 0))
+        self.mfa_level = MFALevel(data.get("mfa_level", 0))
+        self.notification_level = NotificationLevel(data.get("default_message_notifications"))
+        self.content_filter_level = ContentFilterLevel(data.get("explicit_content_filter", 0))
 
         self.member_count = data.get("member_count", 0)
 
@@ -831,18 +927,36 @@ class Guild(Dataclass):
         await self._bot.http.edit_member_voice_state(self.id, member.id, deaf=deaf, mute=mute)
         return member.voice
 
-    async def modify_guild(self, **kwargs):
+    async def modify_guild(self, *, afk_channel: 'channel.Channel' = None,
+                           verification_level: VerificationLevel = None,
+                           content_filter_level: ContentFilterLevel = None,
+                           notification_level: NotificationLevel = None,
+                           **kwargs):
         """
         Edits this guild.
 
         For a list of available arguments, see 
         https://discordapp.com/developers/docs/resources/guild#modify-guild.
+        
+        :param afk_channel: The :class:`~.Channel` that represents the AFK voice channel.
+        :param verification_level: The :class:`.VerificationLevel` to use for this guild.
+        :param content_filter_level: The :class:`.ContentFilterLevel` to use for this guild.
+        :param notification_level: The :class:`.NotificationLevel` to use for this guild.
         """
         if not self.me.guild_permissions.manage_server:
             raise PermissionsError("manage_server")
 
-        if "afk_channel" in kwargs:
-            kwargs["afk_channel_id"] = kwargs.pop("afk_channel").id
+        if afk_channel is not None:
+            kwargs["afk_channel_id"] = afk_channel.id
+
+        if verification_level is not None:
+            kwargs["verification_level"] = verification_level.value
+
+        if notification_level is not None:
+            kwargs["default_message_notifications"] = notification_level.value
+
+        if content_filter_level is not None:
+            kwargs["explicit_content_filter"] = content_filter_level.value
 
         await self._bot.http.edit_guild(self.id, **kwargs)
         return self

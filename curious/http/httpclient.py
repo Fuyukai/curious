@@ -78,7 +78,7 @@ class HTTPClient(object):
             "User-Agent": "DiscordBot (https://github.com/SunDwarf/curious {0}) "
                           "Python/{1[0]}.{1[1]} "
                           "curio/{2}"
-                          .format(curious.__version__, sys.version_info, curio.__version__)
+                .format(curious.__version__, sys.version_info, curio.__version__)
         }
 
         if bot:
@@ -213,7 +213,7 @@ class HTTPClient(object):
                     else:
                         self.logger.debug(
                             "Being ratelimited under bucket {}, waking in {} seconds"
-                            .format(bucket, sleep_time))
+                                .format(bucket, sleep_time))
                     # Sleep that amount of time.
                     await curio.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
@@ -528,7 +528,7 @@ class HTTPClient(object):
         :param message_id: The message ID of the message.
         :param emoji: The emoji to react with.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/@me")\
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/@me") \
             .format(
             channel_id=channel_id,
             message_id=message_id,
@@ -773,11 +773,13 @@ class HTTPClient(object):
                          region: str = None, verification_level: int = None,
                          default_message_notifications: int = None,
                          afk_channel_id: int = None, afk_timeout: int = None,
-                         splash_content: bytes = None):
+                         splash_content: bytes = None,
+                         explicit_content_filter: int = None):
         """
         Modifies a guild.
 
-        See https://discordapp.com/developers/docs/resources/guild#modify-guild for the fields available.
+        See https://discordapp.com/developers/docs/resources/guild#modify-guild for the fields 
+        available.
         """
         url = self.GUILD_BASE.format(guild_id=guild_id)
         payload = {}
@@ -792,10 +794,10 @@ class HTTPClient(object):
             payload["region"] = region
 
         if verification_level is not None:
-            payload["verification_level"] = verification_level
+            payload["verification_level"] = str(verification_level)
 
         if default_message_notifications is not None:
-            payload["default_message_notifications"] = default_message_notifications
+            payload["default_message_notifications"] = str(default_message_notifications)
 
         if afk_channel_id == 0:
             payload["afk_channel_id"] = None
@@ -803,10 +805,13 @@ class HTTPClient(object):
             payload["afk_channel_id"] = str(afk_channel_id)
 
         if afk_timeout:
-            payload["afk_timeout"] = afk_timeout
+            payload["afk_timeout"] = str(afk_timeout)
 
         if splash_content:
             payload["splash"] = splash_content
+
+        if explicit_content_filter is not None:
+            payload["explicit_content_filter"] = str(explicit_content_filter)
 
         data = await self.patch(url, bucket="guild_edit:{}".format(guild_id), json=payload)
         return data

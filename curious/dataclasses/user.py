@@ -10,6 +10,8 @@ from typing import Sequence
 import typing
 from collections import namedtuple
 
+import datetime
+
 from curious.util import attrdict, AsyncIteratorWrapper
 from types import MappingProxyType
 
@@ -134,18 +136,18 @@ class User(Dataclass):
                                                                    suffix)
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.username
 
     @property
-    def mention(self):
+    def mention(self) -> str:
         """
         :return: A string that mentions this user.
         """
         return "<@{}>".format(self.id)
 
     @property
-    def created_at(self):
+    def created_at(self) -> datetime.datetime:
         """
         :return: The time this user was created.
         :rtype: datetime.datetime

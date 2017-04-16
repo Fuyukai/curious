@@ -31,7 +31,7 @@ This document displays the differences between each release of curious.
  - Add search support:
 
     - :meth:`.HTTPClient.search_channel` and
-      :meth:`.HTTPClient .search_guild` are the raw HTTP methods for
+      :meth:`.HTTPClient.search_guild` are the raw HTTP methods for
       searching.
 
     - :class:`.SearchQuery`, :class:`.SearchResults` and
@@ -40,8 +40,8 @@ This document displays the differences between each release of curious.
  - Add :meth:`.AsyncIteratorWrapper.next` and
    :meth:`.AsyncIteratorWrapper.all`.
 
- - Change Guild objects on dataclasses to mostly look up via property or
-   weak reference rather than having a strong reference.
+ - Change :class:`~.Guild` objects on dataclasses to mostly look up via
+   property or weak reference rather than having a strong reference.
 
  - Change commands:
 
@@ -51,6 +51,10 @@ This document displays the differences between each release of curious.
     - Functions are unwrapped for the `.factory` attr if possible.
 
  - Add the ability to listen to multiple events with one function.
+
+ - Add :class:`~.MFALevel`, :class:`~.VerificationLevel`,
+   :class:`~.NotificationLevel`, :class:`~.ContentFilterLevel`, and update
+   the relevant attributes on :class:`~.Guild`.
 
 0.3.0
 -----
