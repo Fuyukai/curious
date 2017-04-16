@@ -50,7 +50,8 @@ class HTTPClient(object):
     """
     The HTTP client object used to make requests to Discord's servers.
 
-    If a particular method is not listed here, you can use one of the five following methods to make a manual request:
+    If a particular method is not listed here, you can use one of the five following methods to make
+    a manual request:
 
         - :meth:`HTTPClient.get`
         - :meth:`HTTPClient.post`
@@ -58,10 +59,10 @@ class HTTPClient(object):
         - :meth:`HTTPClient.delete`
         - :meth:`HTTPClient.patch`
 
-    All of these functions require a **ratelimit bucket** which will be used to prevent the client from hitting 429
-    ratelimits.
+    All of these functions require a **ratelimit bucket** which will be used to prevent the client 
+    from hitting 429 ratelimits.
     """
-    API_BASE = "https://discordapp.com/api/v6"
+    API_BASE = "https://discordapp.com/api/v7"
     GUILD_BASE = API_BASE + "/guilds/{guild_id}"
     CHANNEL_BASE = API_BASE + "/channels/{channel_id}"
 
@@ -74,9 +75,10 @@ class HTTPClient(object):
 
         # Calculated headers
         headers = {
-            "User-Agent": "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}"
-                          " curio/{2}".format(curious.__version__, sys.version_info,
-                                              curio.__version__)
+            "User-Agent": "DiscordBot (https://github.com/SunDwarf/curious {0}) "
+                          "Python/{1[0]}.{1[1]} "
+                          "curio/{2}"
+                          .format(curious.__version__, sys.version_info, curio.__version__)
         }
 
         if bot:
@@ -93,7 +95,7 @@ class HTTPClient(object):
         #: Ratelimit remaining times
         self._ratelimit_remaining = _make_lru_dict(1024)
 
-        # Global ratelimit lock
+        #: The global ratelimit lock.
         self.global_lock = curio.Lock()
 
         self._is_bot = bot
@@ -135,10 +137,10 @@ class HTTPClient(object):
         # First, it loads the curio-based lock from the defaultdict of lock, keyed by bucket.
         # Then, it tries to acquire the lock. This is held by one request at a time, naturally.
 
-        # Normally, the lock is immediately released upon a request finishing, which allows the next request to
-        # handle it. However, once X-Ratelimit-Remaining is 0, we don't want any more requests to be made until the
-        # time limit is over. So the request sleeps for (X-RateLimit-Reset - time.time()) seconds, then unlocks the
-        # lock.
+        # Normally, the lock is immediately released upon a request finishing, which allows the
+        # next request to handle it. However, once X-Ratelimit-Remaining is 0, we don't want any
+        # more requests to be made until the time limit is over. So the request sleeps for
+        # (X-RateLimit-Reset - time.time()) seconds, then unlocks the lock.
 
         lock = self.get_ratelimit_lock(bucket)
         # If we're being globally ratelimited, this will block until the global lock is finished.
@@ -209,15 +211,17 @@ class HTTPClient(object):
                         self.logger.debug("Reached the global ratelimit, acquiring global lock.")
                         await self.global_lock.acquire()
                     else:
-                        self.logger.debug("Being ratelimited under bucket {}, waking in {} seconds".format(bucket,
-                                                                                                           sleep_time))
+                        self.logger.debug(
+                            "Being ratelimited under bucket {}, waking in {} seconds"
+                            .format(bucket, sleep_time))
                     # Sleep that amount of time.
                     await curio.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
                     if is_global:
                         await self.global_lock.release()
 
-                # Now, we have that nuisance out of the way, we can try and get the result from the request.
+                # Now, we have that nuisance out of the way, we can try and get the result from
+                # the request.
                 result = await self.get_response_data(response)
 
                 # Close the response.
@@ -301,8 +305,8 @@ class HTTPClient(object):
     # Non-generic methods
     async def get_gateway_url(self):
         """
-        It is not recommended to use this method - use :meth:`HTTPClient.get_shard_count` instead. That method
-        provides the gateway URL as well.
+        It is not recommended to use this method - use :meth:`HTTPClient.get_shard_count` instead. 
+        That method provides the gateway URL as well.
 
         :return: The websocket gateway URL to get.
         """
@@ -341,7 +345,8 @@ class HTTPClient(object):
         """
         url = (self.API_BASE + "/users/{user_id}").format(user_id=user_id)
 
-        data = await self.get(url, bucket="user:get")  # user_id isn't a major param, so handle under one bucket
+        # user_id isn't a major param, so handle under one bucket
+        data = await self.get(url, bucket="user:get")
         return data
 
     async def get_guild(self, guild_id: int):
@@ -396,7 +401,8 @@ class HTTPClient(object):
         :param guild_id: The guild ID to get.
         :param member_id: The member ID to get.
         """
-        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id,
+                                                                member_id=member_id)
 
         data = await self.get(url, bucket="guild:{}".format(guild_id))
         return data
@@ -423,7 +429,8 @@ class HTTPClient(object):
         data = await self.post(url, bucket="typing:{}".format(channel_id))
         return data
 
-    async def send_message(self, channel_id: int, content: str, tts: bool = False, embed: dict = None):
+    async def send_message(self, channel_id: int, content: str, tts: bool = False,
+                           embed: dict = None):
         """
         Sends a message to a channel.
 
@@ -482,12 +489,14 @@ class HTTPClient(object):
         :param channel_id: The channel ID that the message is in.
         :param message_id: The message ID of the message.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id,
+                                                                    message_id=message_id)
 
         data = await self.delete(url, "messages:{}".format(channel_id))
         return data
 
-    async def edit_message(self, channel_id: int, message_id: int, content: str = None, embed: dict = None):
+    async def edit_message(self, channel_id: int, message_id: int, content: str = None,
+                           embed: dict = None):
         """
         Edits a message.
 
@@ -498,7 +507,8 @@ class HTTPClient(object):
         :param content: The new content of the message.
         :param embed: The new embed of the message.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id,
+                                                                    message_id=message_id)
         payload = {}
 
         if content is not None:
@@ -518,9 +528,12 @@ class HTTPClient(object):
         :param message_id: The message ID of the message.
         :param emoji: The emoji to react with.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/@me").format(channel_id=channel_id,
-                                                                                          message_id=message_id,
-                                                                                          emoji=emoji)
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}/@me")\
+            .format(
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji
+        )
 
         data = await self.put(url, "reactions:{}".format(channel_id))
         return data
@@ -564,9 +577,10 @@ class HTTPClient(object):
         :param message_id: The message ID to check.
         :param emoji: The emoji to get reactions for.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}").format(channel_id=channel_id,
-                                                                                      message_id=message_id,
-                                                                                      emoji=emoji)
+        url = (self.CHANNEL_BASE + "/messages/{message_id}/reactions/{emoji}").format(
+            channel_id=channel_id,
+            message_id=message_id,
+            emoji=emoji)
 
         data = await self.get(url, bucket="reactions:{}".format(channel_id))
         return data
@@ -578,7 +592,8 @@ class HTTPClient(object):
         :param channel_id: The channel ID to pin in.
         :param message_id: The message ID of the message to pin.
         """
-        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id,
+                                                                message_id=message_id)
 
         data = await self.put(url, "pins:{}".format(channel_id), json={})
         return data
@@ -590,7 +605,8 @@ class HTTPClient(object):
         :param channel_id: The channel ID to unpin in.
         :param message_id: The message ID of the message to unpin.
         """
-        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        url = (self.CHANNEL_BASE + "/pins/{message_id}").format(channel_id=channel_id,
+                                                                message_id=message_id)
 
         data = await self.delete(url, "pins:{}".format(channel_id))
         return data
@@ -603,7 +619,8 @@ class HTTPClient(object):
         :param message_id: The message ID of the message to get.
         :return: The message data.
         """
-        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id, message_id=message_id)
+        url = (self.CHANNEL_BASE + "/messages/{message_id}").format(channel_id=channel_id,
+                                                                    message_id=message_id)
 
         data = await self.get(url, "messages:{}".format(channel_id))
         return data
@@ -667,7 +684,8 @@ class HTTPClient(object):
             "messages": [str(message_id) for message_id in message_ids]
         }
 
-        data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id), json=payload)
+        data = await self.post(url, bucket="messages:bulk_delete:{}".format(channel_id),
+                               json=payload)
         return data
 
     # Profile endpoints
@@ -714,7 +732,8 @@ class HTTPClient(object):
         :param guild_id: The guild ID to kick in.
         :param member_id: The member ID to kick from the guild.
         """
-        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id,
+                                                                member_id=member_id)
 
         data = await self.delete(url, bucket="members:{}".format(guild_id))
         return data
@@ -942,13 +961,15 @@ class HTTPClient(object):
         :param member_id: The member ID to add the role to.
         :param role_id: The role ID to add to the member.
         """
-        url = (self.GUILD_BASE + "/members/{member_id}/roles/{role_id}").format(guild_id=guild_id, member_id=member_id,
+        url = (self.GUILD_BASE + "/members/{member_id}/roles/{role_id}").format(guild_id=guild_id,
+                                                                                member_id=member_id,
                                                                                 role_id=role_id)
 
         data = await self.put(url, bucket="member_edit:{}".format(guild_id))
         return data
 
-    async def edit_member_roles(self, guild_id: int, member_id: int, role_ids: typing.Iterable[int]):
+    async def edit_member_roles(self, guild_id: int, member_id: int,
+                                role_ids: typing.Iterable[int]):
         """
         Modifies the roles that a member object contains.
 
@@ -956,7 +977,8 @@ class HTTPClient(object):
         :param member_id: The member ID to add the role to.
         :param role_ids: The role IDs to add to the member.
         """
-        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id,
+                                                                member_id=member_id)
         payload = {
             "roles": [str(id) for id in role_ids]
         }
@@ -964,7 +986,8 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="member_edit:{}".format(guild_id), json=payload)
         return data
 
-    async def edit_role_positions(self, guild_id: int, role_mapping: typing.List[typing.Tuple[str, int]]):
+    async def edit_role_positions(self, guild_id: int,
+                                  role_mapping: typing.List[typing.Tuple[str, int]]):
         """
         Changes the position of a set of roles.
 
@@ -977,7 +1000,8 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="roles", json=payload)
         return data
 
-    async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int = None, me: bool = False):
+    async def change_nickname(self, guild_id: int, nickname: str, *, member_id: int = None,
+                              me: bool = False):
         """
         Changes the nickname of a member.
 
@@ -991,7 +1015,8 @@ class HTTPClient(object):
         if me:
             url = (self.GUILD_BASE + "/members/@me/nick").format(guild_id=guild_id)
         else:
-            url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+            url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id,
+                                                                    member_id=member_id)
         payload = {
             "nick": nickname
         }
@@ -1010,7 +1035,8 @@ class HTTPClient(object):
         :param mute: Should the member be muted?
         :param channel_id: What channel should the member be moved to?
         """
-        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id, member_id=member_id)
+        url = (self.GUILD_BASE + "/members/{member_id}").format(guild_id=guild_id,
+                                                                member_id=member_id)
         payload = {}
 
         if deaf is not None:
@@ -1037,14 +1063,16 @@ class HTTPClient(object):
         :param allow: The permission bitfield of permissions to allow.
         :param deny: The permission bitfield of permissions to deny.
         """
-        url = (self.CHANNEL_BASE + "/permissions/{target_id}").format(channel_id=channel_id, target_id=target_id)
+        url = (self.CHANNEL_BASE + "/permissions/{target_id}").format(channel_id=channel_id,
+                                                                      target_id=target_id)
         payload = {
             "allow": allow,
             "deny": deny,
             "type": type_
         }
 
-        data = await self.put(url, bucket="channels:permissions:{}".format(channel_id), json=payload)
+        data = await self.put(url, bucket="channels:permissions:{}".format(channel_id),
+                              json=payload)
         return data
 
     async def remove_overwrite(self, channel_id: int, target_id: int):
@@ -1054,7 +1082,8 @@ class HTTPClient(object):
         :param channel_id: The channel ID to edit.
         :param target_id: The target of the override.
         """
-        url = (self.CHANNEL_BASE + "/permissions/{target_id}".format(channel_id=channel_id, target_id=target_id))
+        url = (self.CHANNEL_BASE + "/permissions/{target_id}".format(channel_id=channel_id,
+                                                                     target_id=target_id))
 
         data = await self.delete(url, bucket="channels:permissions:{}".format(channel_id))
         return data
@@ -1088,7 +1117,8 @@ class HTTPClient(object):
         
         :param guild_id: The guild edit to edit the widget of. 
         :param enabled: Is the widget enabled in this guild? 
-        :param channel_id: What channel ID is the instant invite for? This can be None to disable the channel.
+        :param channel_id: What channel ID is the instant invite for? This can be None to disable \ 
+            the channel.
         """
         url = (self.GUILD_BASE + "/embed").format(guild_id=guild_id)
         payload = {}
@@ -1185,7 +1215,8 @@ class HTTPClient(object):
         :param name: The name of the webhook to edit.
         :param avatar: The base64 encoded avatar to send.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=token)
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
+                                                                        token=token)
         payload = {}
 
         if avatar is not None:
@@ -1215,7 +1246,8 @@ class HTTPClient(object):
         :param webhook_id: The ID of the webhook to delete.
         :param token: The token of the webhook.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=token)
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
+                                                                        token=token)
 
         data = await self.delete(url, bucket="webhooks")
         return data
@@ -1235,7 +1267,8 @@ class HTTPClient(object):
         :param avatar_url: The avatar URL to send.
         :param wait: If we should wait for the message to send.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id, token=webhook_token)
+        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
+                                                                        token=webhook_token)
         payload = {}
 
         if content:
@@ -1258,7 +1291,7 @@ class HTTPClient(object):
 
     # Invites
     async def get_invite(self, invite_code: str, *,
-                         with_counts: bool=True):
+                         with_counts: bool = True):
         """
         Gets an invite by code.
 
@@ -1410,7 +1443,8 @@ class HTTPClient(object):
         """
         url = (self.USER_ME + "/relationships/{user_id}").format(user_id=user_id)
 
-        data = await self.put(url, bucket="user:relationships", json={"type": 2})  # type 2 means block
+        data = await self.put(url, bucket="user:relationships",
+                              json={"type": 2})  # type 2 means block
         return data
 
     async def update_user_settings(self, **settings):
@@ -1445,7 +1479,8 @@ class HTTPClient(object):
         url = (self.API_BASE + "/oauth2/authorize")
 
         try:
-            data = await self.get(url, bucket="oauth2", params={"client_id": application_id, "scope": "bot"})
+            data = await self.get(url, bucket="oauth2",
+                                  params={"client_id": application_id, "scope": "bot"})
         except HTTPException as e:
             if e.error_code != 50010:
                 raise
