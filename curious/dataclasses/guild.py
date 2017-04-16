@@ -202,7 +202,8 @@ class Guild(Dataclass):
         #: The current voice client associated with this guild.
         self.voice_client = None  # type: VoiceClient
 
-        self.from_guild_create(**kwargs)
+        if kwargs:
+            self.from_guild_create(**kwargs)
 
     def _copy(self):
         obb = object.__new__(self.__class__)
@@ -226,6 +227,13 @@ class Guild(Dataclass):
 
         return obb
 
+    def __repr__(self):
+        return "<Guild id='{}' name='{}' members='{}'>".format(self.id, self.name,
+                                                               self.member_count)
+
+    def __str__(self):
+        return repr(self)
+
     @property
     def channels(self) -> 'typing.Mapping[int, channel.Channel]':
         """
@@ -241,7 +249,7 @@ class Guild(Dataclass):
         return MappingProxyType(self._members)
 
     @property
-    def roles(self) -> 'typing.Mapping[int, dt_member.Member]':
+    def roles(self) -> 'typing.Mapping[int, role.Role]':
         """
         :return: A mapping of :class:`~.Role` on this guild.
         """
@@ -439,11 +447,6 @@ class Guild(Dataclass):
                 member_obj = self._members[id]
             else:
                 member_obj = dt_member.Member(self._bot, **member_data)
-
-            for role_ in member_data.get("roles", []):
-                role_obj = self._roles.get(int(role_))
-                if role_obj:
-                    member_obj._roles[role_obj.id] = role_obj
 
             member_obj.nickname = member_data.get("nick", member_obj.nickname)
             member_obj.guild_id = self.id

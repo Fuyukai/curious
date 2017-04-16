@@ -279,6 +279,7 @@ class State(object):
         # didn't return, so no references
         self._users.pop(id, None)
 
+    # make_ methods
     def make_webhook(self, event_data: dict) -> Webhook:
         """
         Creates a new webhook object from the event data.
@@ -591,15 +592,7 @@ class State(object):
         roles = event_data.get("roles", [])
         if roles:
             # clear roles
-            member._roles = {}
-            for role_id in roles:
-                role_id = int(role_id)
-                role = guild.roles.get(role_id)
-
-                if not role:
-                    continue
-
-                member._roles[role.id] = role
+            member._role_ids = [int(rid) for rid in roles]
 
         # update the nickname
         member.nickname = event_data.get("nick", member.nickname)

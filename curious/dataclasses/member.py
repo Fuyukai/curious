@@ -24,7 +24,7 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_roles", "joined_at", "nickname", "guild_id", "presence", "voice",)
+    __slots__ = ("_role_ids", "joined_at", "nickname", "guild_id", "presence", "voice",)
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -32,8 +32,8 @@ class Member(Dataclass):
         # make the user to use and cache
         self._bot.state.make_user(kwargs["user"])
 
-        #: A dictionary of :class:`Role` this user has.
-        self._roles = {}
+        #: An iterable of role IDs this member has.
+        self._role_ids = [int(rid) for rid in kwargs.get("roles", [])]
 
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))
@@ -56,7 +56,7 @@ class Member(Dataclass):
         """
         :return: The :class:`~.Guild` associated with this member. 
         """
-        return self._bot.guilds[self.guild_id]
+        return self._bot.guilds.get(self.guild_id)
 
     def __hash__(self):
         return hash(self.guild_id) + hash(self.user.id)
@@ -75,7 +75,7 @@ class Member(Dataclass):
         new_object._bot = self._bot
 
         new_object.id = self.id
-        new_object._roles = self._roles.copy()
+        new_object._role_ids = self._role_ids.copy()
         new_object.joined_at = self.joined_at
         new_object.guild_id = self.guild_id
         new_object.presence = self.presence
@@ -133,9 +133,12 @@ class Member(Dataclass):
     @property
     def roles(self) -> 'typing.Iterable[dt_role.Role]':
         """
-        :return: A list of :class:`~.Role` this user has.
+        :return: A list of :class:`~.Role` that this member has. 
         """
-        return self._roles.values()
+        if not self.guild:
+            return None
+
+        return [self.guild.roles[i] for i in self._role_ids]
 
     @property
     def colour(self) -> int:

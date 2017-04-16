@@ -27,6 +27,8 @@ from curio.task import Task, TaskGroup
 from curious.commands import cmd, context, plugin
 from curious.core.event import EventContext, event as ev_dec
 from curious.dataclasses import guild as dt_guild
+from curious.dataclasses import member as dt_member
+from curious.dataclasses import channel as dt_channel
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
@@ -840,7 +842,7 @@ class Client(object):
         gateway = self._gateways[shard_id]
         return await gateway.send_status(game, status, afk=afk)
 
-    async def wait_for(self, event_name: str, predicate: typing.Callable = None):
+    async def wait_for(self, event_name: str, predicate = None):
         """
         Wait for an event to happen in the gateway.
 
@@ -1011,6 +1013,125 @@ class Client(object):
         """
         data = await self.http.get_widget_data(guild_id)
         return Widget(self, **data)
+
+    # download_ methods
+    async def download_guild_member(self, guild_id: int, member_id: int) -> 'dt_member.Member':
+        """
+        Downloads a :class:`~.Member` over HTTP.
+        
+        .. warning::
+            
+            The :attr:`~.Member.roles` and similar fields will be empty when downloading a Member, 
+            unless the guild was in cache.
+        
+        :param guild_id: The ID of the guild which the member is in. 
+        :param member_id: The ID of the member to get.
+        :return: The :class:`~.Member` object downloaded.
+        """
+        member_data = await self.http.get_guild_member(guild_id=guild_id, member_id=member_id)
+        member = dt_member.Member(self, **member_data)
+        member.guild_id = guild_id
+
+        # manual refcounts :ancap:
+        self.state._check_decache_user(member.id)
+
+        return member
+
+    async def download_guild_members(self, guild_id: int, *,
+                                     after: int = None, limit: int = 1000,
+                                     get_all: bool = True) -> 'typing.Iterable[dt_member.Member]':
+        """
+        Downloads the members for a :class:`~.Guild` over HTTP.
+        
+        .. warning::
+        
+            This can take a long time on big guilds.
+        
+        :param guild_id: The ID of the guild to download members for.
+        :param after: The member ID after which to get members for.
+        :param limit: The maximum number of members to return. By default, this is 1000 members.
+        :param get_all: Should *all* members be fetched?
+        :return: An iterable of :class:`~.Member`.
+        """
+        member_data = []
+        if get_all is True:
+            last_id = 0
+            while True:
+                next_data = await self.http.get_guild_members(guild_id=guild_id, limit=limit,
+                                                              after=last_id)
+                # no more members to get
+                if not next_data:
+                    break
+
+                member_data.extend(next_data)
+                # if there's less data than limit, we are finished downloading members
+                if len(next_data) < limit:
+                    break
+
+                last_id = member_data[-1]["user"]["id"]
+        else:
+            next_data = await self.http.get_guild_members(guild_id=guild_id, limit=limit,
+                                                          after=after)
+            member_data.extend(next_data)
+
+        # create the member objects
+        members = []
+        for datum in member_data:
+            m = dt_member.Member(self, **datum)
+            m.guild_id = guild_id
+            members.append(m)
+
+        return members
+
+    async def download_channels(self, guild_id: int) -> 'typing.List[dt_channel.Channel]':
+        """
+        Downloads all the :class:`~.Channel` for a Guild.
+        
+        :param guild_id: The ID of the guild to download channels for. 
+        :return: An iterable of :class:`~.Channel` objects.
+        """
+        channel_data = await self.http.get_guild_channels(guild_id=guild_id)
+        channels = []
+        for datum in channel_data:
+            channel = dt_channel.Channel(self, **datum)
+            channel.guild_id = guild_id
+            channels.append(channel)
+
+        return channels
+
+    async def download_guild(self, guild_id: int, *,
+                             full: bool = False) -> 'dt_guild.Guild':
+        """
+        Downloads a :class:`~.Guild` over HTTP.
+        
+        .. warning::
+        
+            If ``full`` is True, this will fetch and fill ALL objects of the guild, including 
+            channels and members. This can take a *long* time if the guild is large.
+        
+        :param guild_id: The ID of the Guild object to download. 
+        :param full: If all extra data should be downloaded alongside it.
+        :return: The :class:`~.Guild` object downloaded.
+        """
+        guild_data = await self.http.get_guild(guild_id)
+        # create the new guild using the data specified
+        guild = dt_guild.Guild(self, **guild_data)
+        guild.unavailable = False
+
+        # update the guild store
+        self.state._guilds[guild_id] = guild
+
+        if full:
+            # download all of the members
+            members = await self.download_guild_members(guild_id=guild_id, get_all=True)
+            # update the `_members` dict
+            guild._members = {m.id: m for m in members}
+
+            # download all of the channels
+            channels = await self.download_channels(guild_id=guild_id)
+            guild._channels = {c.id: c for c in channels}
+
+        return guild
 
     # Utility functions
     async def connect(self, token: str = None, shard_id: int = 1):
