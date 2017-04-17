@@ -9,6 +9,7 @@ import logging
 import mimetypes
 import random
 import string
+import typing
 from functools import partial
 try:
     import ujson as py_json
@@ -340,7 +341,8 @@ class HTTPConnection:
 
             return event
 
-    async def request(self, h11_request: h11.Request, data=None) -> h11.Response:
+    async def request(self, h11_request: h11.Request,
+                      data: typing.Union[str, bytes]=None) -> h11.Response:
         """
         Makes a request.
 
@@ -352,6 +354,9 @@ class HTTPConnection:
 
         # Send data chunks.
         if data is not None:
+            if isinstance(data, str):
+                data = data.encode()
+
             await self._send(h11.Data(data=data))
 
         # Finally, send the EOF.
