@@ -1197,7 +1197,10 @@ class State(object):
 
         # Remove the role from all members.
         for member in guild.members.values():
-            member._roles.pop(role.id, None)
+            try:
+                member._role_ids.remove(role.id)
+            except ValueError:
+                continue
 
         await self.client.fire_event("role_delete", role, gateway=gw)
 
