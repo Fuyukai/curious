@@ -19,7 +19,8 @@ class ReactionsPaginator(object):
     BUTTON_FORWARD   = "▶"
     BUTTON_STOP      = "⏹"
 
-    def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel, respond_to: User,
+    def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel,
+                 respond_to: typing.Union[Member, User],
                  break_at: int=2000):
         """
         :param content: The content to page through.
@@ -37,7 +38,8 @@ class ReactionsPaginator(object):
         if isinstance(content, list):
             self._message_chunks = content
         else:
-            self._message_chunks = [self._content[i:i + break_at] for i in range(0, len(self._content), break_at)]
+            self._message_chunks = [self._content[i:i + break_at] for i in
+                                    range(0, len(self._content), break_at)]
 
         #: The current page this paginator is on.
         self.page = 0
@@ -46,14 +48,15 @@ class ReactionsPaginator(object):
         self._message = None  # type: Message
 
     @classmethod
-    async def paginate_response(cls, content: str, responding_to: Message, break_at: int=2000) -> 'ReactionsPaginator':
+    async def paginate_response(cls, content: str,
+                                responding_to: Message, break_at: int=2000) -> 'ReactionsPaginator':
         """
         Paginates a response to a message.
 
         :param content: The content to paginate.
         :param responding_to: The message object that you are responding to.
         """
-        obb = cls(content, responding_to.channel, responding_to.author)
+        obb = cls(content, responding_to.channel, responding_to.author, break_at)
         await obb.paginate()
         return obb
 
