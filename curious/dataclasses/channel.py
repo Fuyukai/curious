@@ -381,8 +381,8 @@ class Channel(Dataclass):
         """
         Gets history for this channel.
 
-        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async iterated over to get
-        message history.
+        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async 
+        iterated over to get message history.
 
         .. code-block:: python
         
@@ -541,8 +541,8 @@ class Channel(Dataclass):
     async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
         """
         Deletes messages from a channel.
-
-        This is the low-level delete function - for the high-level function, see :meth:`.Channel.purge()`.
+        This is the low-level delete function - for the high-level function, see 
+        :meth:`.Channel.purge()`.
 
         Example for deleting all the last 100 messages:
 
