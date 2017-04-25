@@ -380,7 +380,8 @@ class State(object):
         author_id = int(event_data.get("author", {}).get("id", 0))
 
         message.channel = channel
-        message.guild_id = channel.guild_id
+        if channel is not None:
+            message.guild_id = channel.guild_id
         if message.channel.type == ChannelType.PRIVATE:
             if author_id == self._user.id:
                 message.author = self._user
