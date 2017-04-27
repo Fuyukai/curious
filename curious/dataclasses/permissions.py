@@ -72,6 +72,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
         "manage_channels": 4,
         "manage_server": 5,
         "add_reactions": 6,
+        "view_audit_log": 7,
         "read_messages": 10,
         "send_messages": 11,
         "send_tts_messages": 12,
