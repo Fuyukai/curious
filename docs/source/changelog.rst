@@ -3,8 +3,8 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.4.0
------
+0.4.0 (Released 2017-04-27)
+---------------------------
 
  - :class:`.VoiceState` now uses a property reference to the User object.
 
@@ -60,8 +60,8 @@ This document displays the differences between each release of curious.
 
  - Add :attr:`.Channel.nsfw`.
 
-0.3.0
------
+0.3.0 (Released 2017-03-10)
+---------------------------
 
  - :meth:`.Client.start` will now automatically reboot shards that return.
 
@@ -124,8 +124,8 @@ This document displays the differences between each release of curious.
 
  - Add event handler for ``USER_SETTINGS_UPDATE``.
 
-0.2.1
------
+0.2.1 (Released 2017-02-23)
+---------------------------
 
  - Sync/chunk guilds when a ``GUILD_CREATE`` is received during the main bot
    lifecycle.
@@ -148,8 +148,8 @@ This document displays the differences between each release of curious.
    Discord doesn't always send this properly, so fallback to
    ``member_count >= 250``.
 
-0.2.0
------
+0.2.0 (Released 2017-02-20)
+---------------------------
 
  - Add user account logging in support.
 
