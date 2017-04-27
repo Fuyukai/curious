@@ -347,6 +347,19 @@ class Channel(Dataclass):
         return list(
             filter(lambda member: member.voice.channel == self, self.guild.members.values()))
 
+    @property
+    def nsfw(self) -> bool:
+        """
+        :return: True if this is a NSFW channel, False otherwise. 
+        """
+        if self.guild is None:
+            return False
+
+        if self.type is not ChannelType.TEXT:
+            return False
+
+        return self.name.startswith("nsfw-")
+
     def permissions(self,
                     obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
         """

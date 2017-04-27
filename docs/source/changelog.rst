@@ -58,6 +58,8 @@ This document displays the differences between each release of curious.
 
  - Add HTTP downloading methods to :class:`~.Client`.
 
+ - Add :attr:`.Channel.nsfw`.
+
 0.3.0
 -----
 
