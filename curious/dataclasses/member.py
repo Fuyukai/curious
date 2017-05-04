@@ -84,7 +84,11 @@ class Member(Dataclass):
         return new_object
 
     def __del__(self):
-        self._bot.state._check_decache_user(self.id)
+        try:
+            self._bot.state._check_decache_user(self.id)
+        except AttributeError:
+            # during shutdown
+            pass
 
     @property
     def user(self) -> 'dt_user.User':

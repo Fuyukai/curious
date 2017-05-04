@@ -1008,9 +1008,6 @@ class State(object):
             # We can't see the member, so don't fire an event for it.
             return
 
-        # check if we should decache the user
-        self._check_decache_user(member.id)
-
         await self.client.fire_event("member_leave", member, gateway=gw)
 
     async def handle_guild_member_update(self, gw: 'gateway.Gateway', event_data: dict):
