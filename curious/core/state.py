@@ -1383,6 +1383,7 @@ class State(object):
                 "bot": u.bot
             }
         )
+        self._users[u_id] = new_user
 
         # maybe decache it anyway
         self._check_decache_user(u_id)
