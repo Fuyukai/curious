@@ -374,7 +374,7 @@ class State(object):
 
         # discord won't give us the Guild id
         # so we have to search it from the channels
-        channel_id = int(event_data.get("channel_id"))
+        channel_id = int(event_data.get("channel_id", 0))
         channel = self.find_channel(channel_id)
 
         author_id = int(event_data.get("author", {}).get("id", 0))
@@ -706,8 +706,8 @@ class State(object):
                 guild.from_guild_create(**event_data)
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
-                self.logger.debug("Joined guild {} ({}), requesting members if applicable"
-                                  .format(guild.name, guild.id))
+                self.logger.info("Joined guild {} ({}), requesting members if applicable"
+                                 .format(guild.name, guild.id))
                 if guild.large:
                     await gw.request_chunks([guild])
                 if self._user.bot:
@@ -1323,7 +1323,7 @@ class State(object):
         channel = self.find_channel(int(event_data.get("channel_id", 0)))
         try:
             message = self._find_message(int(event_data.get("message_id", 0)))
-        except ValueError:
+        except ValueError, TypeError:
             # message_id is None, wtf?
             return
 
