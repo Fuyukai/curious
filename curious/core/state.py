@@ -1323,7 +1323,7 @@ class State(object):
         channel = self.find_channel(int(event_data.get("channel_id", 0)))
         try:
             message = self._find_message(int(event_data.get("message_id", 0)))
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             # message_id is None, wtf?
             return
 
