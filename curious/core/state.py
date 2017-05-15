@@ -691,7 +691,7 @@ class State(object):
         try:
             guild.me.presence.game = gw.game
             guild.me.presence.status = gw.status
-        except KeyError:
+        except AttributeError:
             # unavailable guilds etc
             pass
 
@@ -1295,6 +1295,9 @@ class State(object):
         """
 
     async def handle_channel_pins_update(self, gw: 'gateway.Gateway', event_data: dict):
+        pass
+
+    async def handle_channel_pins_ack(self, gw: 'gateway.Gateway', event_data: dict):
         pass
 
     # Userbot only events.
