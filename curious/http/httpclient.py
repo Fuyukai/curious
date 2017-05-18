@@ -1120,7 +1120,7 @@ class HTTPClient(object):
         """
         Edits the widget status for this guild.
         
-        :param guild_id: The guild edit to edit the widget of. 
+        :param guild_id: The guild ID to edit the widget of. 
         :param enabled: Is the widget enabled in this guild? 
         :param channel_id: What channel ID is the instant invite for? This can be None to disable \ 
             the channel.
@@ -1135,6 +1135,32 @@ class HTTPClient(object):
             payload["channel_id"] = channel_id
 
         data = await self.patch(url, bucket="widget:{}".format(guild_id), json=payload)
+        return data
+
+    async def get_audit_logs(self, guild_id: int,
+                            *, limit: int = 50, user_id: int = None,
+                            action_type: int = None):
+        """
+        Gets the audit log for this guild.
+        
+        :param guild_id: The guild ID to get audit logs for.
+        :param limit: The maximum number of entries to return.
+        :param user_id: The user ID to filter by.
+        :param action_type: The action type to filter by.
+        """
+        url = (self.GUILD_BASE + "/audit-logs").format(guild_id=guild_id)
+        payload = {}
+
+        if limit is not None:
+            payload["limit"] = limit
+
+        if user_id is not None:
+            payload["user_id"] = user_id
+
+        if action_type is not None:
+            payload["action_type"] = action_type
+
+        data = await self.get(url, bucket="guild:{}:audit-logs".format(guild_id), params=payload)
         return data
 
     # Webhooks
@@ -1545,7 +1571,7 @@ class HTTPClient(object):
                 
         .. warning::
         
-            This is a **user-acount only** endpoint.
+            This is a **user-account only** endpoint.
         
         """
         url = self.API_BASE + "/oauth2/tokens"
