@@ -18,4 +18,4 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
     util
 """
 
-__version__ = "0.3.0"
+__version__ = "0.5.0"
