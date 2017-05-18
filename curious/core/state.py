@@ -1236,10 +1236,16 @@ class State(object):
             member = channel.guild.members.get(member_id)
             if not member:
                 return
+            await self.client.fire_event("member_typing", channel, member, gateway=gw)
         else:
-            member = channel.user
+            if len(channel.recipients) == 1:
+                await self.client.fire_event("user_typing", channel, channel.user, gateway=gw)
+            else:
+                user = channel.recipients.get(member_id)
+                if user is None:
+                    return
 
-        await self.client.fire_event("user_typing", channel, member, gateway=gw)
+                await self.client.fire_event("user_typing", channel, user, gateway=gw)
 
     # Voice bullshit
     async def handle_voice_server_update(self, gw: 'gateway.Gateway', event_data: dict):
@@ -1313,6 +1319,7 @@ class State(object):
         This event is effectively useless.
         """
 
+    # TODO: Flesh these out
     async def handle_channel_pins_update(self, gw: 'gateway.Gateway', event_data: dict):
         pass
 

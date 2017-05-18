@@ -497,6 +497,8 @@ class Gateway(object):
             await self._close()
             raise
 
+        await self.state.client.fire_event("gateway_message_received", event, gateway=self)
+
         if isinstance(event, (bytes, bytearray)) and _fmt == "json":
             # decompress the message
             event = zlib.decompress(event, 15, 10490000)
@@ -520,25 +522,25 @@ class Gateway(object):
         # Switch based on op.
         if op == GatewayOp.HELLO:
             # Start heartbeating, with the specified heartbeat duration.
+            await self.state.client.fire_event("gateway_hello", data['_trace'], gateway=self)
             heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
             self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
             await self._start_heartbeating(heartbeat_interval)
             self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
 
         elif op == GatewayOp.HEARTBEAT_ACK:
-            await self.state.client.fire_event("heartbeat_ack", gateway=self)
+            await self.state.client.fire_event("gateway_heartbeat_ack", gateway=self)
             self.hb_stats.heartbeat_acks += 1
             self.hb_stats.last_ack = time.monotonic()
 
         elif op == GatewayOp.HEARTBEAT:
             # Send a heartbeat back.
-            hb = self._get_heartbeat()
-            await self._send_dict(hb)
-            self.hb_stats.heartbeats += 1
-            self.hb_stats.last_heartbeat = time.monotonic()
+            await self.state.client.fire_event("gateway_heartbeat_received", gateway=self)
+            await self.send_heartbeat()
 
         elif op == GatewayOp.INVALIDATE_SESSION:
             # Clean up our session.
+            await self.state.client.fire_event("gateway_invalidate_session", gateway=self)
             should_resume = data
             if should_resume is True:
                 self.logger.debug("Sending RESUME again")
@@ -551,6 +553,7 @@ class Gateway(object):
 
         elif op == GatewayOp.RECONNECT:
             # Try and reconnect to the gateway.
+            await self.state.client.fire_event("gateway_reconnect_received", gateway=self)
             self._close()
             raise ReconnectWebsocket()
 
@@ -562,7 +565,7 @@ class Gateway(object):
             if handler:
                 self.logger.debug("Parsing event {}.".format(event))
                 self._dispatches_handled[event] += 1
-                await self.state.client.fire_event("dispatch_received", data, gateway=self)
+                await self.state.client.fire_event("gateway_dispatch_received", data, gateway=self)
                 # Invoke the handler, which will parse the data and update the cache internally.
                 # Yes, handlers are async.
                 # This is because curio requires `spawn()` to be async.

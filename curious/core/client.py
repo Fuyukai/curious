@@ -529,7 +529,7 @@ class Client(object):
         gateway = kwargs.pop("gateway")
 
         if not self.state.is_ready(gateway.shard_id).is_set() \
-                and event_name not in self.IGNORE_READY:
+                and (event_name not in self.IGNORE_READY or event_name.startswith("gateway_")):
             return []
 
         coros = self.events.getall(event_name, [])
