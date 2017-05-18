@@ -133,7 +133,8 @@ class Gateway(object):
     #: The current gateway version to connect to Discord via.
     GATEWAY_VERSION = 6
 
-    def __init__(self, token: str, connection_state):
+    def __init__(self, token: str, connection_state, *,
+                 large_threshold: int = 250):
         """
         :param token: The bot token to connect with.
         """
@@ -167,6 +168,10 @@ class Gateway(object):
 
         #: The current status for this gateway.
         self.status = None
+
+        #: The "large threshold" for this Gateway.
+        #: For guilds with members above this number, offline members will not be sent.
+        self.large_threshold = min(250, large_threshold)  # bound to 250
 
         self._prev_seq = 0
         self._dispatches_handled = collections.Counter()
@@ -283,7 +288,7 @@ class Gateway(object):
                     "$referring_domain": ""
                 },
                 "compress": True,
-                "large_threshold": 250,
+                "large_threshold": self.large_threshold,
                 "v": self.GATEWAY_VERSION,
                 "shard": [self.shard_id, self.shard_count]
             }
@@ -407,7 +412,8 @@ class Gateway(object):
 
     @classmethod
     async def from_token(cls, token: str, state, gateway_url: str,
-                         *, shard_id: int = 0, shard_count: int = 1) -> 'Gateway':
+                         *, shard_id: int = 0, shard_count: int = 1,
+                         **kwargs) -> 'Gateway':
         """
         Creates a new gateway connection from a token.
 
@@ -420,7 +426,7 @@ class Gateway(object):
 
         :return: A new :class:`Gateway` that is connected to the API.
         """
-        obb = cls(token, state)
+        obb = cls(token, state, **kwargs)
         obb.shard_id = shard_id
         obb.shard_count = shard_count
 

@@ -1134,7 +1134,8 @@ class Client(object):
         return guild
 
     # Utility functions
-    async def connect(self, token: str = None, shard_id: int = 1):
+    async def connect(self, token: str = None, shard_id: int = 1,
+                      *, large_threshold: int = 250):
         """
         Connects the bot to the gateway.
 
@@ -1153,7 +1154,8 @@ class Client(object):
         gateway_url = await self.get_gateway_url()
         self._gateways[shard_id] = await Gateway.from_token(self._token, self.state, gateway_url,
                                                             shard_id=shard_id,
-                                                            shard_count=self.shard_count)
+                                                            shard_count=self.shard_count,
+                                                            large_threshold=large_threshold)
         await self._gateways[shard_id].websocket.wait_for_ready()
 
         return self
@@ -1191,7 +1193,8 @@ class Client(object):
                 # We've been told to reconnect, try and RESUME.
                 await gw.reconnect(resume=True)
 
-    async def boot_shard(self, shard_id: int, shard_count: int = None) -> curio.Task:
+    async def boot_shard(self, shard_id: int, shard_count: int = None,
+                         **kwargs) -> curio.Task:
         """
         Boots a single gateway shard.
         
@@ -1204,12 +1207,12 @@ class Client(object):
         if shard_count:
             self.shard_count = shard_count
 
-        await self.connect(self._token, shard_id=shard_id)
+        await self.connect(self._token, shard_id=shard_id, **kwargs)
         t = await curio.spawn(self.poll(shard_id))
         t.task_local_storage["shard_id"] = {"id": shard_id}
         return t
 
-    async def start(self, shards: int = 1):
+    async def start(self, shards: int = 1, **kwargs):
         """
         Starts the gateway polling loop.
 
@@ -1220,7 +1223,7 @@ class Client(object):
         self.shard_count = shards
         tasks = []
         for shard_id in range(0, shards):
-            await self.boot_shard(shard_id)
+            await self.boot_shard(shard_id, **kwargs)
             self._logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
@@ -1250,7 +1253,7 @@ class Client(object):
 
         return results
 
-    async def start_autosharded(self, token: str = None):
+    async def start_autosharded(self, token: str = None, **kwargs):
         """
         Starts the bot with an automatically set number of shards.
         """
@@ -1261,10 +1264,11 @@ class Client(object):
 
         shards = await self.get_shard_count()
         self.shard_count = shards
-        await self.start(shards=shards)
+        await self.start(shards=shards, **kwargs)
 
     def run(self, token: str = None, shards: typing.Union[int, object] = 1, *,
-            monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT):
+            monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT,
+            **kwargs):
         """
         Runs your bot with Curio with the monitor enabled.
 
@@ -1284,9 +1288,9 @@ class Client(object):
         kernel = curio.Kernel()
         monitor = Monitor(kernel, monitor_host, monitor_port)
         if shards == AUTOSHARD:
-            coro = self.start_autosharded(token)
+            coro = self.start_autosharded(token, **kwargs)
         else:
-            coro = self.start(shards=shards)
+            coro = self.start(shards=shards, **kwargs)
 
         try:
             return kernel.run(coro, shutdown=True)
