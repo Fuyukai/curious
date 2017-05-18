@@ -21,7 +21,7 @@ try:
     import earl
 
 
-    def _loader(data: dict):
+    def _loader(data: bytes):
         return earl.unpack(data, encoding="utf-8", encode_binary_ext=True)
 
 
@@ -37,7 +37,7 @@ except ImportError:
         import json
 
 
-    def _loader(data: dict):
+    def _loader(data: str):
         return json.loads(data)
 
 
@@ -101,6 +101,7 @@ class HeartbeatStats:
         return self.last_ack - self.last_heartbeat
 
 
+@async_thread(daemon=True)
 def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     """
     Heartbeat looper that loops and sends heartbeats to the gateway.
@@ -112,9 +113,7 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     # send the first heartbeat
     hb = gw._get_heartbeat()
     gw.logger.debug("Sending initial heartbeat.")
-    AWAIT(gw.send(hb))
-    gw.hb_stats.heartbeats += 1
-    gw.hb_stats.last_heartbeat = time.monotonic()
+    AWAIT(gw.send_heartbeat())
     while True:
         # this is similar to the normal threaded event waiter
         # it will time out after heartbeat_interval seconds.
@@ -124,24 +123,14 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
             pass
         else:
             break
-        hb = gw._get_heartbeat()
-        gw.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
-        AWAIT(gw.send(hb))
-        gw.hb_stats.heartbeats += 1
-        gw.hb_stats.last_heartbeat = time.monotonic()
-
-# try and use a daemon thread if possible for newer curio
-try:
-    _heartbeat_loop = async_thread(_heartbeat_loop, daemon=True)
-except:
-    _heartbeat_loop = async_thread(_heartbeat_loop)
+        AWAIT(gw.send_heartbeat())
 
 
 class Gateway(object):
     """
     Interacts with the Discord Gateway.
     """
-
+    #: The current gateway version to connect to Discord via.
     GATEWAY_VERSION = 6
 
     def __init__(self, token: str, connection_state):
@@ -154,19 +143,11 @@ class Gateway(object):
         #: The current websocket connection.
         self.websocket = None  # type: WSClient
 
-        #: If the gateway is open or not.
-        self._open = False
-
         #: The current sequence number.
         self.sequence_num = 0
 
-        #: The current logger.
-        self._logger = None
-
         #: The connection state used for this connection.
         self.state = connection_state
-
-        self._cached_gateway_url = None  # type: str
 
         #: The shard ID this gateway is representing.
         self.shard_id = 0
@@ -174,7 +155,10 @@ class Gateway(object):
         #: The number of shards the client is connected to.
         self.shard_count = 1
 
+        #: The current session ID for this gateway.
         self.session_id = None
+
+        #: The current heartbeat statistic counter for this gateway.
         self.hb_stats = HeartbeatStats()
 
         #: The current game for this gateway.
@@ -185,10 +169,12 @@ class Gateway(object):
         self.status = None
 
         self._prev_seq = 0
-
         self._dispatches_handled = collections.Counter()
         self._enqueued_guilds = []
         self._stop_heartbeating = curio.Event()
+        self._logger = None
+        self._cached_gateway_url = None  # type: str
+        self._open = False
 
     @property
     def logger(self):
@@ -291,8 +277,8 @@ class Gateway(object):
                 "token": self.token,
                 "properties": {
                     "$os": sys.platform,
-                    "$browser": 'curious',
-                    "$device": 'curious',
+                    "$browser": "curious",
+                    "$device": "curious",
                     "$referrer": "",
                     "$referring_domain": ""
                 },
@@ -374,6 +360,20 @@ class Gateway(object):
         }
 
         await self._send_dict(payload)
+
+    async def send_heartbeat(self):
+        """
+        Sends a single heartbeat.
+        """
+        hb = self._get_heartbeat()
+        self.logger.debug("Heartbeating with sequence {}".format(hb["d"]))
+
+        # increment the stats
+        self.hb_stats.heartbeats += 1
+        self.hb_stats.last_heartbeat = time.monotonic()
+
+        await self._send_dict(hb)
+        return self.hb_stats.heartbeats
 
     async def send_guild_sync(self, guilds):
         """
@@ -471,7 +471,9 @@ class Gateway(object):
         """
         for guild in self._enqueued_guilds:
             guild.start_chunking()
-            self.logger.info("Requesting {} member chunk(s) from guild {}.".format(guild._chunks_left, guild.name))
+            self.logger.info("Requesting {} member chunk(s) from guild {}."
+                             .format(guild._chunks_left, guild.name))
+
         await self.request_chunks(self._enqueued_guilds)
         self._enqueued_guilds.clear()
 
@@ -524,6 +526,7 @@ class Gateway(object):
             self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
 
         elif op == GatewayOp.HEARTBEAT_ACK:
+            await self.state.client.fire_event("heartbeat_ack", gateway=self)
             self.hb_stats.heartbeat_acks += 1
             self.hb_stats.last_ack = time.monotonic()
 
@@ -569,7 +572,8 @@ class Gateway(object):
                     # We need to download all member chunks from this guild.
                     await self._get_chunks()
                 except Exception:
-                    self.logger.exception("Error decoding event {} with data {}".format(event, data))
+                    self.logger.exception("Error decoding event {} with data "
+                                          "{}".format(event, data))
                     await self._close()
                     await self.websocket.close_now()
                     raise
