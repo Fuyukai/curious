@@ -435,6 +435,9 @@ class State(object):
         """
         Called when READY is dispatched.
         """
+        guilds = event_data.pop("guilds")
+        pprint.pprint(event_data)
+        event_data["guilds"] = guilds
         gw.session_id = event_data.get("session_id")
 
         # Create our bot user.
@@ -494,7 +497,7 @@ class State(object):
         self.logger.info("Processed {} private channels.".format(len(self._private_channels)))
 
         # Create all of the guilds.
-        for guild in event_data.get("guilds"):
+        for guild in event_data.get("guilds", []):
             new_guild = Guild(self.client, **guild)
             new_guild.shard_id = gw.shard_id
             self._guilds[new_guild.id] = new_guild
@@ -527,8 +530,16 @@ class State(object):
             await self.client.fire_event("ready", gateway=gw)
 
     async def handle_resumed(self, gw: 'gateway.Gateway', event_data: dict):
-        self.logger.info("Successfully resumed session on shard ID {}.".format(gw.shard_id))
-        await self.client.fire_event("resumed", gateway=gw)
+        """
+        Called when the gateway connection is resumed.
+        """
+        prev_seq = gw._prev_seq
+        gw._prev_seq = gw.sequence_num
+        new_events = gw.sequence_num - prev_seq
+
+        self.logger.info("Successfully resumed session on shard ID {}, replayed"
+                         "{} new events.".format(gw.shard_id, new_events))
+        await self.client.fire_event("resumed", new_events, gateway=gw)
 
     async def handle_user_update(self, gw: 'gateway.Gateway', event_data: dict):
         """

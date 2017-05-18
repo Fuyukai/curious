@@ -166,7 +166,6 @@ class Gateway(object):
         #: The connection state used for this connection.
         self.state = connection_state
 
-        #: The cached gateway URL.
         self._cached_gateway_url = None  # type: str
 
         #: The shard ID this gateway is representing.
@@ -175,9 +174,7 @@ class Gateway(object):
         #: The number of shards the client is connected to.
         self.shard_count = 1
 
-        #: The session ID of this connection.
         self.session_id = None
-
         self.hb_stats = HeartbeatStats()
 
         #: The current game for this gateway.
@@ -187,8 +184,9 @@ class Gateway(object):
         #: The current status for this gateway.
         self.status = None
 
-        self._dispatches_handled = collections.Counter()
+        self._prev_seq = 0
 
+        self._dispatches_handled = collections.Counter()
         self._enqueued_guilds = []
         self._stop_heartbeating = curio.Event()
 
