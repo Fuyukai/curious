@@ -265,15 +265,26 @@ class State(object):
 
         This will check if there is any guild with a reference to the user.
         """
+        # don't check if its not there
+        if id not in self._users:
+            return
+
+        # don't decache ourself
+        if self._users[id] == self._user:
+            return
+
+        # if its in friends/blocked, keep the RelationshipUser
         if id in self._friends or id in self._blocked:
             return
 
-        for guild in self._guilds.values():
-            if id in guild.members:
-                return
-
+        # check if its in a private channel
         for channel in self._private_channels.values():
             if id in [m.id for m in channel.recipients.values()]:
+                return
+
+        # check if it's any guilds
+        for guild in self._guilds.values():
+            if id in guild.members:
                 return
 
         # didn't return, so no references
