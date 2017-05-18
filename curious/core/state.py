@@ -435,9 +435,6 @@ class State(object):
         """
         Called when READY is dispatched.
         """
-        guilds = event_data.pop("guilds")
-        pprint.pprint(event_data)
-        event_data["guilds"] = guilds
         gw.session_id = event_data.get("session_id")
 
         # Create our bot user.
