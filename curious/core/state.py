@@ -160,7 +160,7 @@ class State(object):
         """
         :return: A mapping of int -> :class:`~.Guild`. 
         """
-        return MappingProxyType(self._guilds)
+        return self._guilds.view()
 
     def have_all_chunks(self, shard_id: int):
         """
@@ -827,6 +827,9 @@ class State(object):
 
         # Hope that messages are ordered!
         message.channel._last_message_id = message.id
+
+        if self._user in message.mentions:
+            await self.client.fire_event("message_mentioned", message, gateway=gw)
 
         await self.client.fire_event("message_create", message, gateway=gw)
 
