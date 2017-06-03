@@ -418,6 +418,33 @@ class HTTPClient(object):
         data = await self.get(url, bucket="channel:{}".format(channel_id))
         return data
 
+    async def get_vanity_url(self, guild_id: int):
+        """
+        Gets the vanity URL for a guild.
+
+        :param guild_id: The guild ID to get the vanity URL of.
+        """
+        url = (self.GUILD_BASE + "/vanity-url")
+
+        data = await self.get(url, bucket="guild:{}".format(guild_id))
+        return data
+
+    async def edit_vanity_url(self, guild_id: int, code: str):
+        """
+        Edits the vanity URL for a guild.
+
+        :param guild_id: The guild ID to edit the vanity URL in.
+        :param code: The code of the vanity url (the part after the /).
+        """
+        url = (self.GUILD_BASE + "/vanity-url")
+
+        payload = {
+            "code": code,
+        }
+
+        data = await self.patch(url, bucket="guild:{}".format(guild_id), json=payload)
+        return data
+
     async def send_typing(self, channel_id: str):
         """
         Starts typing in a channel.
