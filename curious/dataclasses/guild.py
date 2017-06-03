@@ -20,7 +20,7 @@ from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite,
     search as dt_search
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Game, Status, Presence
-from curious.exc import CuriousError, HierachyError, PermissionsError
+from curious.exc import CuriousError, HierachyError, PermissionsError, HTTPException
 from curious.util import AsyncIteratorWrapper, base64ify
 
 try:
@@ -61,6 +61,10 @@ class VerificationLevel(enum.IntEnum):
     #: High/tableflip verification level.
     #: Users must have been on the server for longer than 10 minutes.
     TABLEFLIP = 3
+
+    #: Extreme/double tableflip verification level.
+    #: Users must have a phone number associated with their account.
+    DOUBLE_TABLEFLIP = 4
 
     def can_speak(self, member: 'dt_member.Member') -> bool:
         """
@@ -167,6 +171,9 @@ class Guild(Dataclass):
         #: The voice region of this guild.
         self.region = None  # type: str
 
+        #: The features this guild has.
+        self.features = None  # type: typing.List[str]
+
         #: The MFA level of this guild.
         self.mfa_level = MFALevel.DISABLED  # type: MFALevel
         #: The verification level of this guild.
@@ -224,6 +231,7 @@ class Guild(Dataclass):
         obb.afk_timeout = self.afk_timeout
         obb.mfa_level = self.mfa_level
         obb._emojis = self._emojis.copy()
+        obb.features = self.features
 
         return obb
 
@@ -484,6 +492,7 @@ class Guild(Dataclass):
         self._splash_hash = data.get("splash")  # type: str
         self._owner_id = int(data.get("owner_id"))  # type: int
         self._large = data.get("large", None)
+        self.features = data.get("features", [])
         self.region = data.get("region")
         afk_channel_id = data.get("afk_channel_id")
         if afk_channel_id is not None:
@@ -626,6 +635,14 @@ class Guild(Dataclass):
         """
         invites = await self._bot.http.get_invites_for(self.id)
         invites = [dt_invite.Invite(self._bot, **i) for i in invites]
+
+        try:
+            invite = await self.get_vanity_invite()
+        except (CuriousError, HTTPException):
+            pass
+        else:
+            if invite is not None:
+                invites.append(invite)
 
         return invites
 
@@ -1116,6 +1133,58 @@ class Guild(Dataclass):
             channel_id = channel.id
 
         await self._bot.http.edit_widget(self.id, enabled=status, channel_id=channel_id)
+
+    async def get_vanity_invite(self) -> 'dt_invite.Invite':
+        """
+        Gets the vanity :class:`~.Invite` for this guild.
+
+        :return: The :class:`~.Invite` that corresponds with this guild.
+        """
+        if 'vanity-url' not in self.features:
+            raise CuriousError("This guild has no vanity URL")
+
+        try:
+            resp = await self._bot.http.get_vanity_url(self.id)
+        except HTTPException as e:
+            if e.error_code != 50020:
+                raise
+
+            raise CuriousError("This guild has no vanity URL")
+        code = resp.get("code", None)
+        if code is None:
+            return None
+
+        invite_data = await self._bot.http.get_invite(code)
+        invite = dt_invite.Invite(self._bot, **invite_data)
+
+        return invite
+
+    async def set_vanity_invite(self, url: str) -> 'dt_invite.Invite':
+        """
+        Sets the vanity :class:`~.Invite` for this guild.
+
+        :param url: The code to use for this guild.
+        :return: The :class:`~.Invite` produced.
+        """
+        if 'vanity-url' not in self.features:
+            raise CuriousError("This guild has no vanity URL")
+
+        try:
+            resp = await self._bot.http.edit_vanity_url(self.id, url)
+        except HTTPException as e:
+            if e.error_code != 50020:
+                raise
+
+            raise CuriousError("This guild has no vanity URL")
+
+        code = resp.get("code", None)
+        if code is None:
+            return None
+
+        invite_data = await self._bot.http.get_invite(code)
+        invite = dt_invite.Invite(self._bot, **invite_data)
+
+        return invite
 
     @property
     def recent_mentions(self):

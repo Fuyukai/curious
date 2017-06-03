@@ -10,6 +10,13 @@ This document displays the differences between each release of curious.
 
  - Add gateway event dispatching.
 
+ - Add :meth:`.HTTPClient.get_vanity_url` and
+   :meth:`.HTTPClient.edit_vanity_url`.
+
+ - Add :meth:`.Guild.get_vanity_invite` and :meth:`.Guild.set_vanity_invite`.
+
+ - :meth:`.Guild.get_invites` will now return the vanity invite, if applicable.
+
 0.4.0 (Released 2017-04-27)
 ---------------------------
 
