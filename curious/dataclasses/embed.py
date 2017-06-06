@@ -9,9 +9,6 @@ import datetime
 from curious.util import attrdict
 
 
-def _(s, n, v): raise KeyError(n)
-
-
 class Attachment(attrdict):
     def __init__(self, **kwargs):
         self.id = int(kwargs.get("id", 0))

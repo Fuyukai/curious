@@ -4,22 +4,19 @@ Wrappers for User objects.
 .. currentmodule:: curious.dataclasses.user
 """
 
+import datetime
 import enum
-from typing import Sequence
-
 import typing
 from collections import namedtuple
-
-import datetime
-
-from curious.util import attrdict, AsyncIteratorWrapper
 from types import MappingProxyType
+from typing import Sequence
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
-from curious.dataclasses.appinfo import AuthorizedApp, AppInfo
+from curious.dataclasses.appinfo import AppInfo, AuthorizedApp
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Presence
 from curious.exc import CuriousError
+from curious.util import AsyncIteratorWrapper, attrdict
 
 
 class FriendType(enum.IntEnum):
@@ -383,7 +380,8 @@ class BotUser(User):
             guild_id = None
 
         mentions = await self._bot.http.get_mentions(guild_id=guild_id, limit=limit,
-                                                     roles=role_mentions, everyone=everyone_mentions)
+                                                     roles=role_mentions,
+                                                     everyone=everyone_mentions)
 
         messages = []
         for mention in mentions:
@@ -402,6 +400,7 @@ class BotUser(User):
     async def get_authorized_apps(self) -> typing.Sequence[AuthorizedApp]:
         """
         Gets a list of authorized applications for this user.
+
         :return: A sequence of :class:`~.AuthorizedApp`.
         """
         data = await self._bot.http.get_authorized_apps()
