@@ -515,28 +515,28 @@ class Guild(Dataclass):
     @property
     def online_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of online :class:`~.Member`s.
+        :return: A generator of online :class:`~.Member` objects.
         """
         return self.members_with_status(Status.ONLINE)
 
     @property
     def idle_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of idle :class:`~.Member`s. 
+        :return: A generator of idle :class:`~.Member` objects.
         """
         return self.members_with_status(Status.IDLE)
 
     @property
     def dnd_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of DnD :class:`~.Member`s. 
+        :return: A generator of DnD :class:`~.Member` objects.
         """
         return self.members_with_status(Status.DND)
 
     @property
     def offline_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of offline/invisible :class:`~.Member`s. 
+        :return: A generator of offline/invisible :class:`~.Member` objects.
         """
         return self.members_with_status(Status.OFFLINE)
 
@@ -697,7 +697,6 @@ class Guild(Dataclass):
             channel_obj.guild_id = self.id
             channel_obj._update_overwrites(channel_data.get("permission_overwrites", []),
                                            guild=self)
-            # sometimes this doesn't show up in the data
             self._channels[channel_obj.id] = channel_obj
 
         # Create all of the voice states.
