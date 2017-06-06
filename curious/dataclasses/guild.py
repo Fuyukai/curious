@@ -970,10 +970,9 @@ class Guild(Dataclass):
         # Ensure we can add all of these roles.
         for _r in roles:
             if _r >= self.me.top_role:
-                raise HierarchyError(
-                    "Cannot add role {} - it has a higher or equal position to our top role".format(
-                        _r.name)
-                )
+                msg = "Cannot add role {} - it has a higher or equal position to our top role" \
+                    .format(_r.name)
+                raise HierarchyError(msg)
 
         async def _listener(before, after: dt_member.Member):
             if after.id != member.id:
@@ -1069,7 +1068,9 @@ class Guild(Dataclass):
             return after.guild == self and after.id == member.id
 
         listener = await curio.spawn(
-            self._bot.wait_for("member_update", _listener))  # type: curio.Task
+            self._bot.wait_for("member_update", _listener)
+        )  # type: curio.Task
+
         try:
             await coro
         except:
@@ -1260,7 +1261,8 @@ class Guild(Dataclass):
             this user in this guild.
         """
         return AsyncIteratorWrapper(
-            self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True))
+            self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True)
+        )
 
     def get_recent_mentions(self, *,
                             limit: int = 25,
@@ -1268,6 +1270,9 @@ class Guild(Dataclass):
         """
         Gets mentions in this guild.
         """
+        if self.me.user.bot is True:
+            raise CuriousError("Cannot get recent mentions on bot accounts")
+
         return self.me.user.get_recent_mentions(guild=self, limit=limit,
                                                 everyone_mentions=everyone_mentions,
                                                 role_mentions=role_mentions)
