@@ -3,24 +3,21 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
+import datetime
 import enum
+import typing
 import weakref
 from math import ceil
-
-import curio
-import typing
 from types import MappingProxyType
 
-import datetime
+import curio
 
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
-    member as dt_member, \
-    permissions as dt_permissions, role, user as dt_user, voice_state as dt_vs, \
-    webhook as dt_webhook, \
-    search as dt_search
+    member as dt_member, permissions as dt_permissions, role, search as dt_search, user as dt_user, \
+    voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.presence import Game, Status, Presence
-from curious.exc import CuriousError, HierachyError, PermissionsError, HTTPException
+from curious.dataclasses.presence import Presence, Status
+from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify
 
 try:
@@ -677,7 +674,7 @@ class Guild(Dataclass):
             raise ValueError("Member must be from this guild (try `member.user` instead)")
 
         if victim.top_role >= self.me.top_role:
-            raise HierachyError("Top role is equal to or lower than victim's top role")
+            raise HierarchyError("Top role is equal to or lower than victim's top role")
 
         victim_id = victim.user.id
 
@@ -713,13 +710,13 @@ class Guild(Dataclass):
 
         if isinstance(victim, dt_member.Member):
             if self.owner == victim:
-                raise HierachyError("Cannot ban the owner")
+                raise HierarchyError("Cannot ban the owner")
 
             if victim.guild != self:
                 raise ValueError("Member must be from this guild (try `member.user` instead)")
 
             if victim.top_role >= self.me.top_role:
-                raise HierachyError("Top role is equal to or lower than victim's top role")
+                raise HierarchyError("Top role is equal to or lower than victim's top role")
 
             victim_id = victim.user.id
 
@@ -805,7 +802,7 @@ class Guild(Dataclass):
         # Ensure we can add all of these roles.
         for _r in roles:
             if _r >= self.me.top_role:
-                raise HierachyError(
+                raise HierarchyError(
                     "Cannot add role {} - it has a higher or equal position to our top role".format(
                         _r.name)
                 )
@@ -833,7 +830,7 @@ class Guild(Dataclass):
 
         return member
 
-    async def remove_roles(self, member: 'dt_member.Member', *roles: 'typing.List[role.Role]'):
+    async def remove_roles(self, member: 'dt_member.Member', *roles: 'role.Role'):
         """
         Removes roles from a member.
 
@@ -847,10 +844,9 @@ class Guild(Dataclass):
 
         for _r in roles:
             if _r >= self.me.top_role:
-                raise HierachyError(
-                    "Cannot remove role {} - it has a higher or equal position to our top role"
-                        .format(_r.name)
-                )
+                msg = "Cannot remove role {} - it has a higher or equal position to our top role" \
+                      .format(_r.name)
+                raise HierarchyError(msg)
 
         async def _listener(before, after: dt_member.Member):
             if after.id != member.id:
@@ -893,7 +889,7 @@ class Guild(Dataclass):
                 raise PermissionsError("manage_nicknames")
 
         if member.top_role >= self.me.top_role and member != self.me:
-            raise HierachyError("Top role is equal to or lower than victim's top role")
+            raise HierarchyError("Top role is equal to or lower than victim's top role")
 
         if new_nickname is not None and len(new_nickname) > 32:
             raise ValueError("Nicknames cannot be longer than 32 characters")
@@ -928,6 +924,13 @@ class Guild(Dataclass):
 
         if isinstance(roles, dict):
             roles = roles.items()
+
+        to_send = []
+        for r, new_position in roles:
+            if new_position >= self.me.top_role.position:
+                raise HierarchyError("Cannot move role above our top role")
+
+            to_send.append((str(r.id), new_position))
 
         to_send = [(str(r.id), new_position) for (r, new_position) in roles]
         await self._bot.http.edit_role_positions(to_send)
