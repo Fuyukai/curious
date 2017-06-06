@@ -6,11 +6,10 @@ Defines :class:`~.State`.
 
 import collections
 import logging
-
-import curio
-import pprint
 import typing
 from types import MappingProxyType
+
+import curio
 
 from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
@@ -19,11 +18,10 @@ from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
+from curious.dataclasses.presence import Presence
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
-from curious.dataclasses.presence import Game, Status, Presence
-from curious.dataclasses.user import BotUser, User, FriendType, UserSettings
-from curious.dataclasses.user import RelationshipUser
+from curious.dataclasses.user import BotUser, FriendType, RelationshipUser, User, UserSettings
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
@@ -279,7 +277,7 @@ class State(object):
 
         # check if its in a private channel
         for channel in self._private_channels.values():
-            if id in [m.id for m in channel.recipients.values()]:
+            if id in channel.recipients:
                 return
 
         # check if it's any guilds
@@ -1164,12 +1162,21 @@ class State(object):
         if not guild:
             return
 
-        if int(event_data.get("role", {}).get("id", 0)) not in guild._roles:
-            role = Role(self.client, **event_data.get("role", {}))
+        role_data = event_data.get("role")  # type: dict
+        if role_data is None:
+            return
+
+        role_id = int(role_data.get("id", 0))
+        if not role_id:
+            return
+
+        if role_id not in guild._roles:
+            role = Role(self.client, **role_data)
             role.guild_id = guild.id
-            guild._roles[role.id] = role
+            guild._roles[role_id] = role
         else:
-            role = guild._roles[event_data["role"].get("id", 0)]
+            # thinking
+            role = guild._roles[role_id]
 
         await self.client.fire_event("role_create", role, gateway=gw)
 
@@ -1183,8 +1190,15 @@ class State(object):
         if not guild:
             return
 
-        role = guild.roles.get(int(event_data["role"]["id"]))
+        role_data = event_data.get("role")  # type: dict
+        if role_data is None:
+            return
 
+        role_id = int(role_data.get("id", 0))
+        if not role_id:
+            return
+
+        role = guild.roles.get(role_id)
         if not role:
             return
 
@@ -1213,7 +1227,6 @@ class State(object):
             return
 
         role = guild._roles.pop(int(event_data["role_id"]), None)
-
         if not role:
             return
 

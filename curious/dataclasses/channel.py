@@ -9,16 +9,16 @@ import enum
 import pathlib
 import sys
 import time
+import typing
 from math import floor
+from types import MappingProxyType
 
 import curio
-import typing
-from types import MappingProxyType
 
 from curious.core import client as dt_client
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
-    message as dt_message, \
-    permissions as dt_permissions, role as dt_role, webhook as dt_webhook, user as dt_user
+    message as dt_message, permissions as dt_permissions, role as dt_role, user as dt_user, \
+    webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, Forbidden, PermissionsError
@@ -360,8 +360,8 @@ class Channel(Dataclass):
 
         return self.name.startswith("nsfw-")
 
-    def permissions(self,
-                    obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> 'dt_permissions.Overwrite':
+    def permissions(self, obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> \
+            'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
         """
@@ -593,22 +593,23 @@ class Channel(Dataclass):
                     fallback_from_bulk: bool = False):
         """
         Purges messages from a channel.
-        This will attempt to use ``bulk-delete`` if possible, but otherwise will use the normal delete endpoint
-        (which can get ratelimited severely!) if ``fallback_from_bulk`` is True.
+        This will attempt to use ``bulk-delete`` if possible, but otherwise will use the normal
+        delete endpoint (which can get ratelimited severely!) if ``fallback_from_bulk`` is True.
 
         Example for deleting all messages owned by the bot:
 
-        .. code:: python
+        .. code-block:: python3
 
             me = channel.guild.me
             await channel.purge(limit=100, author=me)
 
-        Custom check functions can also be applied which specify any extra checks. They take one argument (the
-        Message object) and return a boolean (True or False) determining if the message should be deleted.
+        Custom check functions can also be applied which specify any extra checks. They take one
+        argument (the Message object) and return a boolean (True or False) determining if the
+        message should be deleted.
 
         For example, to delete all messages with the letter ``i`` in them:
 
-        .. code:: python
+        .. code-block:: python3
 
             await channel.purge(limit=100, predicate=lambda message: 'i' in message.content)
 
@@ -645,13 +646,11 @@ class Channel(Dataclass):
         # Split into chunks of 100.
         message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
         for chunk in message_chunks:
-            minimum_allowed = floor(
-                (time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+            m = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
             message_ids = []
             for message in chunk:
-                if message.id < minimum_allowed:
-                    raise CuriousError(
-                        "Cannot delete messages older than {}".format(minimum_allowed))
+                if message.id < m:
+                    raise CuriousError("Cannot delete messages older than {}".format(m))
                 message_ids.append(message.id)
             # First, try and bulk delete all the messages.
             if can_bulk_delete:

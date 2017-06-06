@@ -1,21 +1,16 @@
 """
 A module that assists with implementing the Discord OAuth2 flow.
 """
+import collections
+import datetime
 import enum
-import base64
-import json
 import secrets
 import typing
-
-import collections
-
-import datetime
 
 from oauthlib.oauth2 import OAuth2Error
 from oauthlib.oauth2.rfc6749.clients import WebApplicationClient
 
-from curious.http.curio_http import ClientSession, Response
-from curious.exc import HTTPException
+from curious.http.curio_http import ClientSession
 
 
 class InvalidStateError(Exception):
@@ -70,7 +65,6 @@ class OAuth2Token(object):
         """
         Creates a token from a dict, similar to one provided by the token endpoint.
         """
-        print(d)
         if "expiration_time" not in d:
             expiration_time = datetime.datetime.utcnow() + \
                               datetime.timedelta(seconds=d["expires_in"])
@@ -194,7 +188,7 @@ class OAuth2Client(object):
         :return: The refreshed :class:`~.OAuth2Token`.
         """
         if isinstance(token, OAuth2Token):
-            ref = OAuth2Token.refresh_token
+            ref = token.refresh_token
             scopes = [scope.name.lower() for scope in token.scopes]
         else:
             ref = token
