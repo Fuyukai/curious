@@ -147,7 +147,7 @@ class State(object):
             raise gateway.ChunkGuilds
 
         if len(gw._enqueued_guilds) >= 74:
-            # bump it up to 74
+            # bump it up to 75, if applicable
             gw._enqueued_guilds.append(guild)
             raise gateway.ChunkGuilds
 

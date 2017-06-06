@@ -2,6 +2,7 @@
 Exceptions raised from within the library.
 """
 import enum
+import warnings
 
 from curious.http.curio_http import Response
 
@@ -74,8 +75,14 @@ class HTTPException(CuriousError):
     def __init__(self, response: Response, error: dict):
         self.response = response
 
-        #: The error code for this response.
-        self.error_code = ErrorCode(error.get("code", 0))
+        error_code = error.get("code", 0)
+        try:
+            #: The error code for this response.
+            self.error_code = ErrorCode(error_code)
+        except ValueError:
+            warnings.warn("Received unknown error code {}")
+            #: The error code for this response.
+            self.error_code = ErrorCode.UNKNOWN
         self.error_message = error.get("message")
 
         self.error = error
@@ -118,12 +125,13 @@ class PermissionsError(CuriousError):
         self.permission_required = permission_required
 
     def __str__(self):
-        return "Bot requires the permission {} to perform this action".format(self.permission_required)
+        return "Bot requires the permission {} to perform this action"\
+            .format(self.permission_required)
 
     __repr__ = __str__
 
 
-class HierachyError(CuriousError):
+class HierarchyError(CuriousError):
     """
-    Raised when you can't do something due to the hierachy.
+    Raised when you can't do something due to the hierarchy.
     """
