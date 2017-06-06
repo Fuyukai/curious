@@ -3,18 +3,16 @@ Websocket gateway code.
 
 .. currentmodule:: curious.core.gateway
 """
-import enum
-import threading
-
 import collections
-import typing
+import enum
+import logging
 import queue
 import sys
-import logging
+import threading
+import time
+import typing
 import warnings
 import zlib
-
-import time
 
 try:
     # Prefer ETF data.
@@ -376,6 +374,8 @@ class Gateway(object):
         # increment the stats
         self.hb_stats.heartbeats += 1
         self.hb_stats.last_heartbeat = time.monotonic()
+
+        await self.state.client.fire_event("gateway_heartbeated", self.hb_stats, gateway=self)
 
         await self._send_dict(hb)
         return self.hb_stats.heartbeats
