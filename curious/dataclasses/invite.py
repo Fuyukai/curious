@@ -1,20 +1,21 @@
 """
 Wrappers for Invite objects.
 
-Invite objects are linked to a real channel and real guild, but Discord does not return the full data for these objects.
-Therefore, a few "mini" objects are provided that represent the objects:
+Invite objects are linked to a real channel and real guild, but Discord does not return the full
+data for these objects. Therefore, a few "mini" objects are provided that represent the objects:
 
- - :class:`~.InviteGuild`, which contains the ``name``, ``splash_url`` and ``icon_url`` of the Guild.
+ - :class:`~.InviteGuild`, which contains the ``name``, ``splash_url`` and ``icon_url`` of the
+   Guild.
  - :class:`~.InviteChannel`, which contains the ``name`` and ``type`` of the Channel.
  
-These objects will be returned on :attr`~.Invite.guild` and :attr:`~.Invite.channel` respectively if the data for each 
-is not cached by curious. Otherwise, full :class:`~.Guild` and :class:`~.Channel` objects will be returned.
+These objects will be returned on :attr`~.Invite.guild` and :attr:`~.Invite.channel` respectively
+if the data for each  is not cached by curious. Otherwise, full :class:`~.Guild` and
+:class:`~.Channel` objects will be returned.
 
 .. currentmodule:: curious.dataclasses.invite
 """
-import weakref
-
 import typing
+import weakref
 
 from curious import util
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, user as dt_user

@@ -136,7 +136,8 @@ class HistoryIterator(collections.AsyncIterator):
         """
         Called to fill the next <n> messages.
         
-        This is called automatically by :meth:`.__anext__`, but can be used to fill the messages anyway.
+        This is called automatically by :meth:`.__anext__`, but can be used to fill the messages
+        anyway.
         """
         if self.max_messages < 0:
             to_get = 100
@@ -293,7 +294,7 @@ class Channel(Dataclass):
     @property
     def recipients(self) -> 'typing.Mapping[int, dt_user.User]':
         """
-        :return: A mapping of int -> :class:`~.User` objects for the recipients of this private chat.
+        :return: A mapping of int -> :class:`~.User` for the recipients of this private chat.
         """
         return MappingProxyType(self._recipients)
 
@@ -317,7 +318,8 @@ class Channel(Dataclass):
     @property
     def history(self) -> HistoryIterator:
         """
-        :return: A :class:`~.AsyncIteratorWrapper: that can be used to iterate over the last infinity messages.
+        :return: A :class:`~.AsyncIteratorWrapper: that can be used to iterate over the last \
+            infinity messages.
         """
         return self.get_history(before=self._last_message_id, limit=-1)
 
@@ -617,7 +619,8 @@ class Channel(Dataclass):
         :param author: Only delete messages made by this author.
         :param content: Only delete messages that exactly match this content.
         :param predicate: A callable that determines if a message should be deleted.
-        :param fallback_from_bulk: If this is True, messages will be regular deleted if they cannot be bulk deleted.
+        :param fallback_from_bulk: If this is True, messages will be regular deleted if they \
+            cannot be bulk deleted.
         :return: The number of messages deleted.
         """
         if self.guild:
@@ -717,11 +720,12 @@ class Channel(Dataclass):
             content = str(content)
 
         # check for empty messages
-        if not content and \
-                (embed is None or (self.guild is not None and self.permissions(
-                    self.guild.me).embed_links is False)):
-            raise CuriousError(
-                "Content is empty and embed is either empty or you have no permission to embed")
+        if not content:
+            if not embed:
+                raise CuriousError("Cannot send an empty message")
+
+            if self.guild and not self.permissions(self.guild.me).embed_links:
+                raise PermissionsError("embed_links")
         else:
             if content and len(content) > 2000:
                 raise CuriousError("Content must be less than 2000 characters")

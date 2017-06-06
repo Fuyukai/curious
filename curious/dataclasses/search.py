@@ -5,15 +5,11 @@ Wrappers for Search objects.
 """
 import collections
 import functools
+import typing
 import weakref
 
-import typing
-
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import message as dt_message
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
+    message as dt_message, user as dt_user
 
 
 class MessageGroup:
@@ -316,7 +312,7 @@ class SearchQuery(object):
         
         .. warning::
             
-            This is an internal method, used by the library. Use :meth:`.get_messages(page)` instead
+            This is an internal method, used by the library. Use :meth:`.get_messages` instead
             of this.
         
         :param page: The page of results to return.
