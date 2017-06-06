@@ -293,7 +293,7 @@ class GuildRoleWrapper(collections.Mapping, collections.Iterable):
 
     def delete(self, role: 'role.Role'):
         """
-        Deletes a channel.
+        Deletes a role.
         """
         if role.id not in self._roles:
             raise CuriousError("This role is not part of this guild")
@@ -387,6 +387,7 @@ class Guild(Dataclass):
         #: The :class:`.GuildChannelWrapper` that wraps the channels in this Guild.
         self.channels = GuildChannelWrapper(self, self._channels)
         #: The :class:`.GuildRoleWrapper` that wraps the roles in this Guild.
+        self.roles = GuildRoleWrapper(self, self._roles)
 
         if kwargs:
             self.from_guild_create(**kwargs)
