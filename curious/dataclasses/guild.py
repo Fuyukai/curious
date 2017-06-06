@@ -3,6 +3,7 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
+import collections
 import datetime
 import enum
 import typing
@@ -124,17 +125,194 @@ class ContentFilterLevel(enum.IntEnum):
     SCAN_ALL = 2
 
 
+class GuildChannelWrapper(collections.Mapping, collections.Iterable):
+    """
+    A wrapper for channels on a guild. This provides some convenience methods which make channel
+    management more fluent.
+    """
+
+    def __init__(self, guild: 'Guild',
+                 channels: 'typing.MutableMapping[int, channel.Channel]'):
+        """
+        :param guild: The :class:`~.Guild` object that owns this wrapper.
+        :param channels: The dictionary of channels that this wrapper contains.
+        """
+        self._guild = guild
+        self._channels = channels
+
+    @property
+    def view(self) -> 'typing.Mapping[int, channel.Channel]':
+        """
+        :return: A read-only view into the channels for this wrapper.
+        """
+        return MappingProxyType(self._channels)
+
+    def __iter__(self):
+        return iter(self.view.keys())
+
+    def __getitem__(self, key):
+        return self._channels[key]
+
+    def __len__(self):
+        return len(self._channels)
+
+    def __repr__(self):
+        return "<GuildChannelWrapper channels={}>".format(self._channels)
+
+    async def create(self, name: str, type: 'channel.ChannelType',
+                     permission_overwrites: 'typing.List[dt_permissions.Overwrite]' = None,
+                     *,
+                     bitrate: int = 64, user_limit: int = 0,
+                     topic: str = None) -> 'channel.Channel':
+        """
+        Creates a new channel.
+
+        :param name: The name of the channel.
+        :param type: The :class:`.ChannelType` of the channel.
+        :param permission_overwrites: The list of permission overwrites to use for this channel.
+
+        For voice channels:
+
+        :param bitrate: The bitrate of the channel, if it is a voice channel.
+        :param user_limit: The maximum number of users that can be in the channel.
+
+        For text channels:
+
+        :param topic: The topic of the channel, or None to set no topic.
+        """
+        if not self._guild.me.guild_permissions.manage_channels:
+            raise PermissionsError("manage_channels")
+
+        kwargs = {
+            "name": name,
+            "type": type.value,
+            "permission_overwrites": permission_overwrites,
+        }
+        if type is channel.ChannelType.VOICE:
+            kwargs["bitrate"] = bitrate
+            kwargs["user_limit"] = user_limit
+
+        # create a listener so we wait for the WS before editing
+        async def _listener(channel: channel.Channel):
+            if channel.name == name and channel.guild == self._guild:
+                return True
+
+            return False
+
+        listener = await curio.spawn(self._guild._bot.wait_for("member_update", _listener))
+        try:
+            channel_data = await self._guild._bot.http.create_channel(self._guild.id, **kwargs)
+            # if it's a text channel and the topic was provided, automatically add it
+            if type is channel.ChannelType.TEXT and topic is not None:
+                await self._guild._bot.http.edit_channel(channel_id=channel_data["id"], topic=topic)
+        except:
+            await listener.cancel()
+            raise
+
+        # wait on the listener
+        await listener.wait()
+        # we can safely assume this exists
+        return self._channels[int(channel_data.get("id"))]
+
+    def edit(self, channel: 'channel.Channel', **kwargs):
+        """
+        Edits a channel.
+        """
+        if channel.id not in self._channels:
+            raise CuriousError("This channel is not part of this guild")
+
+        return channel.edit(**kwargs)
+
+    def delete(self, channel: 'channel.Channel'):
+        """
+        Deletes a channel.
+        """
+        if channel.id not in self._channels:
+            raise CuriousError("This channel is not part of this guild")
+
+        return channel.delete()
+
+
+class GuildRoleWrapper(collections.Mapping, collections.Iterable):
+    """
+    A wrapper for roles on a guild. Contains some convenience methods that make role management
+    more fluent.
+    """
+
+    def __init__(self, guild: 'Guild',
+                 roles: 'typing.MutableMapping[int, role.Role]'):
+        """
+        :param guild: The :class:`~.Guild` object that owns this wrapper.
+        :param roles: The dictionary of roles that this wrapper contains.
+        """
+        self._guild = guild
+        self._roles = roles
+
+    @property
+    def view(self) -> 'typing.Mapping[int, role.Role]':
+        """
+        :return: A read-only view into the channels for this wrapper.
+        """
+        return MappingProxyType(self._roles)
+
+    def __iter__(self):
+        return iter(self.view.keys())
+
+    def __getitem__(self, key):
+        return self._roles[key]
+
+    def __len__(self):
+        return len(self._roles)
+
+    def __repr__(self):
+        return "<GuildChannelWrapper channels={}>".format(self._roles)
+
+    async def create(self, **kwargs) -> 'role.Role':
+        """
+        Creates a new role in this guild.
+
+        :return: A new :class:`~.Role`.
+        """
+        if not self._guild.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        role_obb = role.Role(client=self._guild._bot,
+                             **(await self._guild._bot.http.create_role(self._guild.id)))
+        self._roles[role_obb.id] = role_obb
+        role_obb.guild_id = self._guild.id
+        return await role_obb.edit(**kwargs)
+
+    def edit(self, role: 'role.Role', **kwargs):
+        """
+        Edits a role.
+        """
+        if role.id not in self._roles:
+            raise CuriousError("This role is not part of this guild")
+
+        return role.edit(**kwargs)
+
+    def delete(self, role: 'role.Role'):
+        """
+        Deletes a channel.
+        """
+        if role.id not in self._roles:
+            raise CuriousError("This role is not part of this guild")
+
+        return role.delete()
+
+
 class Guild(Dataclass):
     """
     Represents a guild object on Discord.
     """
 
     __slots__ = (
-        "id", "unavailable", "name", "_icon_hash", "_splash_hash", "_owner_id", "_afk_channel_id",
-        "afk_timeout", "region",
-        "mfa_level", "verification_level", "notification_level", "content_filter_level",
-        "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count", "_large",
-        "_chunks_left", "_finished_chunking", "voice_client",
+        "id", "unavailable", "name", "afk_timeout", "region",
+        "mfa_level", "verification_level", "notification_level", "content_filter_level", "features",
+        "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count",
+        "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash", "_owner_id",
+        "_afk_channel_id", "voice_client",
+        "channels", "roles"
     )
 
     def __init__(self, bot, **kwargs):
@@ -206,6 +384,10 @@ class Guild(Dataclass):
         #: The current voice client associated with this guild.
         self.voice_client = None  # type: VoiceClient
 
+        #: The :class:`.GuildChannelWrapper` that wraps the channels in this Guild.
+        self.channels = GuildChannelWrapper(self, self._channels)
+        #: The :class:`.GuildRoleWrapper` that wraps the roles in this Guild.
+
         if kwargs:
             self.from_guild_create(**kwargs)
 
@@ -240,25 +422,11 @@ class Guild(Dataclass):
         return repr(self)
 
     @property
-    def channels(self) -> 'typing.Mapping[int, channel.Channel]':
-        """
-        :return: A list of :class:`~.Channel` that represent the channels on this guild.
-        """
-        return MappingProxyType(self._channels)
-
-    @property
     def members(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
         :return: A mapping of :class:`~.Member` that represent members on this guild.
         """
         return MappingProxyType(self._members)
-
-    @property
-    def roles(self) -> 'typing.Mapping[int, role.Role]':
-        """
-        :return: A mapping of :class:`~.Role` on this guild.
-        """
-        return MappingProxyType(self._roles)
 
     @property
     def emojis(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
@@ -845,7 +1013,7 @@ class Guild(Dataclass):
         for _r in roles:
             if _r >= self.me.top_role:
                 msg = "Cannot remove role {} - it has a higher or equal position to our top role" \
-                      .format(_r.name)
+                    .format(_r.name)
                 raise HierarchyError(msg)
 
         async def _listener(before, after: dt_member.Member):
@@ -1005,110 +1173,6 @@ class Guild(Dataclass):
         """
         with open(path, 'rb') as f:
             return self.change_icon(f.read())
-
-    async def create_channel(self, **kwargs):
-        """
-        Creates a new channel in this guild.
-        """
-        if not self.me.guild_permissions.manage_channels:
-            raise PermissionsError("manage_channels")
-
-        if "type_" in kwargs:
-            kwargs["type"] = kwargs["type_"]
-
-        if "type" not in kwargs:
-            kwargs["type"] = channel.ChannelType.TEXT
-
-        channel_data = await self._bot.http.create_channel(self.id, **kwargs)
-        channel_object = channel.Channel(client=self._bot, **channel_data)
-        # make sure
-        channel_object.guild_id = self.id
-        return channel_object
-
-    async def edit_channel(self, channel_object: 'channel.Channel', **kwargs):
-        """
-        Edits a channel in this guild.
-
-        :param channel_object: The :class:`~.Channel` to edit.
-        """
-        if not channel_object.permissions(self.me).manage_channels:
-            raise PermissionsError("manage_channels")
-
-        if "type_" in kwargs:
-            kwargs["type"] = kwargs["type_"]
-
-        if "type" not in kwargs:
-            kwargs["type"] = channel.ChannelType.TEXT
-
-        await self._bot.http.edit_channel(channel_object.id, **kwargs)
-        return channel_object
-
-    async def delete_channel(self, channel: 'channel.Channel') -> 'channel.Channel':
-        """
-        Deletes a channel in this guild.
-
-        :param channel: The :class:`~.Channel` to delete.
-        """
-        if not channel.permissions(self.me).manage_channels:
-            raise PermissionsError("manaqe_channels")
-
-        await self._bot.http.delete_channel(channel.id)
-        return channel
-
-    async def create_role(self, **kwargs) -> 'role.Role':
-        """
-        Creates a new role in this guild.
-
-        This does *not* edit the role in-place.
-        :return: A new :class:`~.Role`.
-        """
-        if not self.me.guild_permissions.manage_roles:
-            raise PermissionsError("manage_roles")
-
-        role_obb = role.Role(client=self._bot, **(await self._bot.http.create_role(self.id)))
-        self._roles[role_obb.id] = role_obb
-        role_obb.guild_id = self.id
-        return await self.edit_role(role_obb, **kwargs)
-
-    async def edit_role(self, role: 'role.Role', *,
-                        name: str = None, permissions: 'dt_permissions.Permissions' = None,
-                        colour: int = None, position: int = None,
-                        hoist: bool = None, mentionable: bool = None) -> 'role.Role':
-        """
-        Edits a role.
-
-        :param role: The :class:`~.Role` to edit.
-        :param name: The name of the role.
-        :param permissions: The permissions that the role has.
-        :param colour: The colour of the role.
-        :param position: The position in the sorting list that the role has.
-        :param hoist: Is this role hoisted (shows separately in the role list)?
-        :param mentionable: Is this mentionable by everyone?
-        """
-        if not self.me.guild_permissions.manage_roles:
-            raise PermissionsError("manage_roles")
-
-        if permissions is not None:
-            if isinstance(permissions, dt_permissions.Permissions):
-                permissions = permissions.bitfield
-
-        await self._bot.http.edit_role(self.id, role.id,
-                                       name=name, permissions=permissions, colour=colour,
-                                       hoist=hoist,
-                                       position=position, mentionable=mentionable)
-
-        return role
-
-    async def delete_role(self, role: 'role.Role'):
-        """
-        Deletes a role.
-
-        :param role: The :class:`~.Role` to delete.
-        """
-        if not self.me.guild_permissions.manage_roles:
-            raise PermissionsError("manage_roles")
-
-        await self._bot.http.delete_role(self.id, role.id)
 
     async def get_widget_info(self) -> 'typing.Tuple[bool, typing.Union[None, channel.Channel]]':
         """

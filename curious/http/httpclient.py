@@ -1165,8 +1165,8 @@ class HTTPClient(object):
         return data
 
     async def get_audit_logs(self, guild_id: int,
-                            *, limit: int = 50, user_id: int = None,
-                            action_type: int = None):
+                             *, limit: int = 50, user_id: int = None,
+                             action_type: int = None):
         """
         Gets the audit log for this guild.
         

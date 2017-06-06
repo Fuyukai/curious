@@ -274,6 +274,10 @@ websocket connection.
 
     Called when HELLO is received.
 
+.. py:cofunction:: gateway_heartbeat(ctx: EventContext, stats)
+
+    Called when a heartbeat is sent.
+
 .. py:cofunction:: gateway_heartbeat_ack(ctx: EventContext)
 
     Called when Discord ACKs a heartbeat we've sent.

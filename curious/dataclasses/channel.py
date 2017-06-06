@@ -867,23 +867,34 @@ class Channel(Dataclass):
         await listener.join()
         return self
 
-    def edit(self, **kwargs) -> 'typing.Coroutine[None, None, Channel]':
+    async def edit(self, **kwargs) -> 'Channel':
         """
         Edits this channel.
         """
         if self.guild is None:
-            raise NotImplementedError("Can only edit channels in a Guild")
+            raise CuriousError("Can only edit guild channels")
 
-        return self.guild.edit_channel(self, **kwargs)
+        if not self.permissions(self.guild.me).manage_channels:
+            raise PermissionsError("manage_channels")
 
-    def delete(self) -> 'typing.Coroutine[None, None, Channel]':
+        if "type_" in kwargs:
+            kwargs["type"] = kwargs["type_"]
+
+        if "type" not in kwargs:
+            kwargs["type"] = ChannelType.TEXT
+
+        await self._bot.http.edit_channel(self.id, **kwargs)
+        return self
+
+    async def delete(self) -> 'Channel':
         """
         Deletes this channel.
         """
-        if self.guild is None:
-            raise NotImplementedError("Can only delete channels in a Guild")
+        if not self.permissions(self.guild.me).manage_channels:
+            raise PermissionsError("manaqe_channels")
 
-        return self.guild.delete_channel(self)
+        await self._bot.http.delete_channel(self.id)
+        return self
 
     def connect(self):
         """

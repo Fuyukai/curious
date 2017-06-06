@@ -17,6 +17,24 @@ This document displays the differences between each release of curious.
 
  - :meth:`.Guild.get_invites` will now return the vanity invite, if applicable.
 
+ - Rearrange guild objects somewhat:
+
+    - Turn :attr:`.Guild.channels` into a :class:`.GuildChannelWrapper`.
+
+    - Turn :attr:`.Guild.roles` into a :class:`.GuildRoleWrapper`.
+
+    - Move :meth:`.Guild.create_channel` to :meth:`.GuildChannelWrapper.create`.
+
+    - Move :meth:`.Guild.edit_channel` to :meth:`.Channel.edit`.
+
+    - Move :meth:`.Guild.delete_channel` to :meth:`.Channel.delete`.
+
+    - Move :meth:`.Guild.create_role` to :meth:`.GuildRoleWrapper.create`.
+
+    - Move :meth:`.Guild.edit_role` to :meth:`.Role.edit`.
+
+    - Move :meth:`.Guild.delete_role` to :meth:`.Role.delete`.
+
 0.4.0 (Released 2017-04-27)
 ---------------------------
 

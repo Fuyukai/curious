@@ -7,10 +7,12 @@ Wrappers for Role objects.
 import functools
 import typing
 
+import curio
+
+from curious.dataclasses import guild as dt_guild, member as dt_member, \
+    permissions as dt_permissions
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import permissions as dt_permissions
+from curious.exc import PermissionsError
 
 
 class _MentionableRole(object):
@@ -158,22 +160,49 @@ class Role(Dataclass):
         """
         return self.guild.remove_roles(member, self)
 
-    def delete(self):
+    async def delete_role(self) -> 'Role':
         """
-        Deletes this role in its guild.
-        
-        .. seealso::
-            
-            :meth:`.Guild.delete_role`
+        Deletes this role.
         """
-        return self.guild.delete_role(self)
+        if not self.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
 
-    def edit(self, **kwargs):
+        await self._bot.http.delete_role(self.guild.id, self.id)
+        return self
+
+    async def edit(self, *,
+                   name: str = None, permissions: 'dt_permissions.Permissions' = None,
+                   colour: int = None, position: int = None,
+                   hoist: bool = None, mentionable: bool = None) -> 'Role':
         """
-        Edits this role in its guild.
-        
-        .. seealso::
-        
-            :meth:`.Guild.edit_role`
+        Edits this role.
+
+        :param name: The name of the role.
+        :param permissions: The permissions that the role has.
+        :param colour: The colour of the role.
+        :param position: The position in the sorting list that the role has.
+        :param hoist: Is this role hoisted (shows separately in the role list)?
+        :param mentionable: Is this mentionable by everyone?
         """
-        return self.guild.edit_role(self, **kwargs)
+        if not self.guild.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        if permissions is not None:
+            if isinstance(permissions, dt_permissions.Permissions):
+                permissions = permissions.bitfield
+
+        listener = await curio.spawn(self._bot.wait_for("role_update",
+                                                        lambda b, a: a.id == self.id))
+
+        try:
+            await self._bot.http.edit_role(self.guild.id, self.id,
+                                           name=name, permissions=permissions, colour=colour,
+                                           hoist=hoist,
+                                           position=position, mentionable=mentionable)
+        except:
+            await listener.cancel()
+            raise
+
+        await listener.join()
+
+        return self
