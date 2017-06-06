@@ -905,7 +905,7 @@ class HTTPClient(object):
         data = await self.delete(url, bucket="guild_roles:{}".format(guild_id))
         return data
 
-    async def create_channel(self, guild_id: int, name: str, type_: int, *,
+    async def create_channel(self, guild_id: int, name: str, type: int, *,
                              bitrate: int = None, user_limit: int = None,
                              permission_overwrites: list = None):
         """
@@ -913,7 +913,7 @@ class HTTPClient(object):
 
         :param guild_id: The guild ID to create the channel in.
         :param name: The name of the channel.
-        :param type_: The type of the channel (text/voice).
+        :param type: The type of the channel (text/voice).
         :param bitrate: The bitrate of the channel, if it is a voice channel.
         :param user_limit: The maximum number of users that can be in the channel.
         :param permission_overwrites: The list of permission overwrites to use for this channel.
@@ -921,10 +921,10 @@ class HTTPClient(object):
         url = (self.GUILD_BASE + "/channels").format(guild_id=guild_id)
         payload = {
             "name": name,
-            "type": type_
+            "type": type
         }
 
-        if type_ == 2:
+        if type == 2:
             if bitrate is not None:
                 payload["bitrate"] = bitrate
 
@@ -951,7 +951,7 @@ class HTTPClient(object):
         :param bitrate: The new bitrate of the channel.
         :param user_limit: The user limit of the channel.
         """
-        url = self.CHANNEL_BASE.format(channel_id)
+        url = self.CHANNEL_BASE.format(channel_id=channel_id)
         payload = {}
 
         if name is not None:
