@@ -265,7 +265,7 @@ class GuildRoleWrapper(collections.Mapping, collections.Iterable):
         return len(self._roles)
 
     def __repr__(self):
-        return "<GuildChannelWrapper channels={}>".format(self._roles)
+        return "<GuildRoleWrapper roles={}>".format(self._roles)
 
     async def create(self, **kwargs) -> 'role.Role':
         """
