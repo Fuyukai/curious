@@ -133,6 +133,18 @@ class User(Dataclass):
                                                                    suffix)
 
     @property
+    def static_avatar_url(self) -> str:
+        """
+        :return: The avatar URL of this user, but static.
+        """
+        if not self._avatar_hash:
+            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
+                int(self.discriminator) % 5
+            )
+
+        return "https://cdn.discordapp.com/avatars/{}/{}.png".format(self.id, self._avatar_hash)
+
+    @property
     def name(self) -> str:
         return self.username
 
