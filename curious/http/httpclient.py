@@ -1563,6 +1563,26 @@ class HTTPClient(object):
 
         return final
 
+    async def get_user_applications(self):
+        """
+        Gets the list of applications for a user.
+        """
+        url = self.API_BASE + "/oauth2/applications"
+
+        data = await self.get(url, "oauth2")
+        return data
+
+    async def get_application(self, application_id: int):
+        """
+        Gets an application by ID.
+
+        :param application_id: The ID of the application to get.
+        """
+        url = self.API_BASE + "/oauth2/applications/{}".format(application_id)
+
+        data = await self.get(url, "oauth2")
+        return data
+
     async def authorize_bot(self, application_id: int, guild_id: int,
                             *, permissions: int = 0):
         """
