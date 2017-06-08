@@ -150,7 +150,6 @@ class Gateway(object):
 
         #: The shard ID this gateway is representing.
         self.shard_id = 0
-
         #: The number of shards the client is connected to.
         self.shard_count = 1
 
@@ -163,13 +162,15 @@ class Gateway(object):
         #: The current game for this gateway.
         #: Only set when sending a change status packet.
         self.game = None
-
         #: The current status for this gateway.
         self.status = None
 
         #: The "large threshold" for this Gateway.
         #: For guilds with members above this number, offline members will not be sent.
         self.large_threshold = min(250, large_threshold)  # bound to 250
+
+        #: The data format for this gateway.
+        self.format = _fmt
 
         self._prev_seq = 0
         self._dispatches_handled = collections.Counter()
