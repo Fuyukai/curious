@@ -12,9 +12,11 @@ Commands helpers.
     plugin
 """
 import functools
-import typing
 
 from curious.commands.cmd import Command
+from curious.commands.exc import CheckFailureError, CommandInvokeError, CommandsError, \
+    ConversionFailedError, MissingArgumentError
+from curious.commands.plugin import Plugin
 
 
 def command(*args, klass: type = Command, **kwargs):

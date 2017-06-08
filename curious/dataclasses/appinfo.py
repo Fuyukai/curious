@@ -5,8 +5,8 @@ Wrappers for Application Info objects.
 """
 from collections import namedtuple
 
-from curious.exc import CuriousError
 from curious.dataclasses import guild as dt_guild
+from curious.exc import CuriousError
 
 AuthorizedApp = namedtuple("AuthorizedApp", "scopes id application")
 
@@ -56,7 +56,8 @@ class AppInfo(object):
             self.bot = None
 
     def __repr__(self):
-        return "<AppInfo owner='{}' name='{}' bot='{}'>".format(self.owner, self.name, self.bot)
+        return "<{} owner='{}' name='{}' bot='{}'>".format(type(self).__name__, self.owner,
+                                                           self.name, self.bot)
 
     @property
     def icon_url(self):
@@ -89,3 +90,9 @@ class AppInfo(object):
             raise CuriousError("This bot requires code grant")
 
         await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
+
+
+class OwnedAppInfo(AppInfo):
+    """
+    A special class for application info
+    """
