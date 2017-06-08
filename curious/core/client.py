@@ -19,16 +19,13 @@ from types import MappingProxyType
 
 import curio
 import multidict
-
 from cuiows.exc import WebsocketClosedError
-from curio.monitor import Monitor, MONITOR_HOST, MONITOR_PORT
+from curio.monitor import MONITOR_HOST, MONITOR_PORT, Monitor
 from curio.task import Task, TaskGroup
 
 from curious.commands import cmd, context, plugin
 from curious.core.event import EventContext, event as ev_dec
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import channel as dt_channel
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import Message
@@ -686,7 +683,7 @@ class Client(object):
         """
         plugin = self.plugins.pop(name)
 
-        for name, command in self.commands.values():
+        for name, command in self.commands.copy().items():
             if command.instance == plugin:
                 # clean up instances
                 command.instance = None
