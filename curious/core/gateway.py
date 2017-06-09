@@ -107,9 +107,6 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
     :param gw: The gateway to handle.
     """
     # async threads!
-
-    # send the first heartbeat
-    hb = gw._get_heartbeat()
     gw.logger.debug("Sending initial heartbeat.")
     AWAIT(gw.send_heartbeat())
     while True:
@@ -121,7 +118,11 @@ def _heartbeat_loop(gw: 'Gateway', heartbeat_interval: float):
             pass
         else:
             break
-        AWAIT(gw.send_heartbeat())
+
+        try:
+            AWAIT(gw.send_heartbeat())
+        except ReconnectWebsocket:
+            break
 
 
 class Gateway(object):
