@@ -352,7 +352,7 @@ class BotUser(User):
         """
         Edits the bot's current profile.
         """
-        return self._bot.edit_user(*args, **kwargs)
+        return self._bot.edit_profile(*args, **kwargs)
 
     def upload_avatar(self, path: str):
         """
