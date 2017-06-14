@@ -644,7 +644,7 @@ class State(object):
                          "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
 
         guild._handle_member_chunk(event_data.get("members"))
-        await self.client.fire_event("guild_chunk", guild, gateway=gw)
+        await self.client.fire_event("guild_chunk", guild, len(members), gateway=gw)
 
         if guild._chunks_left <= 0:
             # Set the finished chunking event.
@@ -689,7 +689,8 @@ class State(object):
                          "{} members and {} presences.".format(guild.name, len(members),
                                                                len(presences)))
 
-        await self.client.fire_event("guild_sync", guild, gateway=gw)
+        await self.client.fire_event("guild_sync", guild, len(members),
+                                     len(presences), gateway=gw)
 
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):
         """

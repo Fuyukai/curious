@@ -3,6 +3,7 @@ Special helpers for events.
 """
 import typing
 
+from curious.core import client as md_client
 from curious.dataclasses.user import User
 
 
@@ -30,7 +31,7 @@ class EventContext(object):
     Represents a special context that are passed to events.
     """
 
-    def __init__(self, cl, shard_id: int,
+    def __init__(self, cl: 'md_client.Client', shard_id: int,
                  event_name: str):
         #: The :class:`~.Client` instance that this event was fired under.
         self.bot = cl

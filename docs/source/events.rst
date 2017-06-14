@@ -38,11 +38,12 @@ State events
 
     Called when a guild is streamed during login.
 
-.. py:cofunction:: guild_chunk(ctx: EventContext, guild: Guild)
+.. py:cofunction:: guild_chunk(ctx: EventContext, guild: Guild, member_count: int)
 
     Called when a guild receives a Guild Member Chunk.
 
-.. py:cofunction:: guild_sync(ctx: EventContext, guild: Guild)
+.. py:cofunction:: guild_sync(ctx: EventContext, guild: Guild, member_count: int, \
+presence_count: int)
 
     Called when a guild receives a Guild Sync.
 
