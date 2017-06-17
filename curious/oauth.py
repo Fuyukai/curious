@@ -95,6 +95,10 @@ class OAuth2Token(object):
     def expired(self) -> bool:
         return self.expiration_time < datetime.datetime.utcnow()
 
+    def __repr__(self) -> str:
+        return "<OAuth2Token access='{}' refresh='{}'>".format(self.access_token,
+                                                               self.refresh_token)
+
 
 class OAuth2Client(object):
     """
