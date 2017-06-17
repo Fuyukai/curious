@@ -33,7 +33,23 @@ class OAuth2Scope(enum.Enum):
     #: Allows access to basic user info + their email.
     EMAIL = 'email'
     #: Allows access to user guild objects for this user.
-    GUILD = 'guild'
+    GUILDS = 'guilds'
+    #: Allows forcibly joining a guild on the behalf of a user.
+    GUILDS_JOIN = 'guilds.join'
+    #: Allows forcibly adding users to group DMs.
+    GDM_JOIN = 'gdm.join'
+
+    #: Allows reading messages via RPC.
+    MESSAGES_READ = 'messages.read'
+    #: Allows RPC client control.
+    RPC = 'rpc'
+    #: Allows RPC API control.
+    RPC_API = 'rpc.api'
+    #: Allows RPC notification reading.
+    RPC_NOTIFICATIONS_READ = 'rpc.notifications.read'
+
+    #: Creates an incoming webhook when authorized.
+    WEBHOOK_INCOMING = 'webhook.incoming'
 
 
 class OAuth2Token(object):
@@ -153,7 +169,7 @@ class OAuth2Client(object):
                                                       state=self._get_state())
         return url
 
-    async def fetch_token(self, code: str, state: str):
+    async def fetch_token(self, code: str, state: str) -> OAuth2Token:
         """
         Fetches the token when given an authorization code and state.
         

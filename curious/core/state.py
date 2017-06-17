@@ -628,6 +628,10 @@ class State(object):
 
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 
+    async def handle_presences_replace(self, gw: 'gateway.Gateway', event_data: dict):
+        # TODO
+        print("P_R", event_data)
+
     async def handle_guild_members_chunk(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when a chunk of members has arrived.
