@@ -730,7 +730,7 @@ class Guild(Dataclass):
         if self._large is not None:
             return self._large
 
-        return self.member_count >= 250
+        return self.member_count >= self._bot.gateways[self.shard_id].large_threshold
 
     @property
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':

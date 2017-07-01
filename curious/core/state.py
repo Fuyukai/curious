@@ -47,7 +47,7 @@ class GuildStore(collections.MutableMapping):
         return MappingProxyType(self.guilds)
 
     @property
-    def with_order(self):
+    def with_order(self) -> 'typing.Mapping[int, Guild]':
         """
         :return: A mapping of the guilds with the order specified in the ready packet.
         """
