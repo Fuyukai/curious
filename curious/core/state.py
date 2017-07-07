@@ -496,12 +496,6 @@ class State(object):
             self.logger.info("Processed {} friends "
                              "and {} blocked users.".format(len(self._friends), len(self._blocked)))
 
-        # Create all of the private channels.
-        for channel in event_data.get("private_channels"):
-            self.make_private_channel(channel)
-
-        self.logger.info("Processed {} private channels.".format(len(self._private_channels)))
-
         # Create all of the guilds.
         for guild in event_data.get("guilds", []):
             new_guild = Guild(self.client, **guild)
