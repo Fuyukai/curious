@@ -373,7 +373,7 @@ class HTTPConnection:
 def _prepare_request(method: str, url: yarl.URL, *,
                      params=None, headers=None,
                      body=None,
-                     json: dict = None, files: dict = None):
+                     json: dict = None, files: dict = None, **kwargs):
     """
     Prepares a new request, creating a :class:`h11.Request` object to be sent.
     Additionally, this also serializes the body into a bytestring ready to be sent.
@@ -469,8 +469,7 @@ class ClientSession:
         headers.extend(kwargs.get("headers", {}))
         kwargs["headers"] = headers
 
-        h11_request, body = _prepare_request(
-            method, url, *args, **kwargs)
+        h11_request, body = _prepare_request(method, url, **kwargs)
 
         conn = HTTPConnection(
             host=url.raw_host,

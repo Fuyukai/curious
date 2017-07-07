@@ -935,6 +935,12 @@ class Client(object):
             raise ValueError("Password must be passed for user bots")
 
         if username:
+            if any(x in username for x in ('@', ':', '```')):
+                raise ValueError("Username must not contain banned characters")
+
+            if any(x == username for x in ("discordtag", "everyone", "here")):
+                raise ValueError("Username cannot be a banned username")
+
             if not 2 <= len(username) <= 32:
                 raise ValueError("Username must be 2-32 characters")
 
