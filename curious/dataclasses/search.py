@@ -150,8 +150,8 @@ class SearchQuery(object):
     
     For example, to search a channel called ``general`` for messages with the content ``heck``:
     
-    .. code-block:: python
-    
+    .. code-block:: python3
+
         with ctx.guild.search as sq:
             sq.content = "heck"
             sq.channel = next(filter(lambda c: c.name == "general", ctx.guild.channels), None)
@@ -161,7 +161,7 @@ class SearchQuery(object):
             
     You can get results out of the query in two ways:
     
-    .. code-block:: python
+    .. code-block:: python3
     
         sq = SearchQuery(ctx.guild)
         sq.content = "heck"

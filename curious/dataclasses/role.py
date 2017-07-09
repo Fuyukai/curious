@@ -84,7 +84,9 @@ class Role(Dataclass):
         if other.guild != self.guild:
             raise ValueError("Cannot compare roles between guilds")
 
-        return self.position < other.position if self.position != other.position else self.id < other.id
+        return self.position < other.position \
+            if self.position != other.position \
+            else self.id < other.id
 
     def _copy(self):
         obb = object.__new__(self.__class__)

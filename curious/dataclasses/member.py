@@ -4,16 +4,13 @@ Wrappers for Member objects (Users with guilds).
 .. currentmodule:: curious.dataclasses.member
 """
 
-import copy
 import typing
 
+from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
+    voice_state as dt_vs
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses import role as dt_role
-from curious.dataclasses.presence import Presence, Game, Status
-from curious.dataclasses import voice_state as dt_vs
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import guild as dt_guild
+from curious.dataclasses.presence import Game, Presence, Status
 from curious.util import to_datetime
 
 
@@ -151,7 +148,10 @@ class Member(Dataclass):
         :rtype: int
         """
         roles = sorted(self.roles, reverse=True)
-        roles = filter(lambda role: role.colour, roles)
+        # NB: you can abuse discord and edit the defualt role's colour
+        # so explicitly check that it isn't the default role, and make sure it has a colour
+        # in order to get the correct calculated colour
+        roles = filter(lambda role: not role.is_default_role and role.colour, roles)
         try:
             return next(roles).colour
         except StopIteration:

@@ -86,6 +86,8 @@ class Presence(object):
         game = kwargs.get("game", None)
         #: The :class:`~.Game` for this presence.
         self._game = None  # type: Game
+
+        # NB: this does a property set to ensure the types are right.
         self.game = game
 
     def __repr__(self):

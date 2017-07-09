@@ -35,6 +35,21 @@ This document displays the differences between each release of curious.
 
     - Move :meth:`.Guild.delete_role` to :meth:`.Role.delete`.
 
+ - Add a ``message_mentioned`` event.
+
+ - Add :attr:`.User.static_avatar_url`.
+
+ - :attr:`.Guild.large` now obeys a custom ``large_threshold``.
+
+ - Add counts to ``guild_chunk`` and ``guild_sync`` events.
+
+ - Fix editing profile via :meth:`.User.edit`.
+
+ - Add :meth:`.HTTPClient.get_user_applications` and :meth:`.HTTPClient.get_application`.
+
+ - Don't include ``@everyone`` when calculating role colours.
+
+
 0.4.0 (Released 2017-04-27)
 ---------------------------
 
