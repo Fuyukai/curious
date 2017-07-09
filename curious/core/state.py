@@ -166,6 +166,9 @@ class State(object):
 
         :param shard_id: The shard ID to check.
         """
+        if any(guild.unavailable is True for guild in self.guilds.values()):
+            return False
+
         return all(guild._finished_chunking.is_set()
                    for guild in self.guilds.values()
                    if guild.shard_id == shard_id and guild.unavailable is False)
