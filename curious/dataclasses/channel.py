@@ -818,15 +818,12 @@ class Channel(Dataclass):
 
         return await self.send_file(file_data, name, message_content=message_content)
 
-    async def change_overwrite(self, target: 'typing.Union[dt_member.Member, dt_role.Role]',
-                               overwrite: 'dt_permissions.Overwrite'):
+    async def change_overwrite(self, overwrite: 'dt_permissions.Overwrite'):
         """
         Changes an overwrite for this channel.
 
         This overwrite must be an instance of :class:`~.Overwrite`.
 
-        :param target: The target to add an overwrite for.
-            This can either be a :class:`~.Member` or a :class:`~.Role`.
         :param overwrite: The specific overwrite to use.
             If this is None, the overwrite will be deleted.
         """
@@ -835,6 +832,8 @@ class Channel(Dataclass):
 
         if not self.permissions(self.guild.me).manage_roles:
             raise PermissionsError("manage_roles")
+
+        target = overwrite.target
 
         if isinstance(target, dt_member.Member):
             type_ = "member"
@@ -845,7 +844,7 @@ class Channel(Dataclass):
             # Delete the overwrite instead.
             coro = self._bot.http.remove_overwrite(channel_id=self.id, target_id=target.id)
 
-            async def _listener(ctx, before, after):
+            async def _listener(before, after):
                 if after.id != self.id:
                     return False
 
@@ -858,7 +857,7 @@ class Channel(Dataclass):
                                                  allow=overwrite.allow.bitfield,
                                                  deny=overwrite.deny.bitfield)
 
-            async def _listener(ctx, before, after):
+            async def _listener(before, after):
                 return after.id == self.id
 
             listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))

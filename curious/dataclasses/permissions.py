@@ -5,9 +5,8 @@ This class uses some automatic generation to create the objects.
 
 .. currentmodule:: curious.dataclasses.permissions
 """
-import weakref
-
 import typing
+import weakref
 
 from curious.dataclasses import member as dt_member, role as dt_role
 
@@ -32,15 +31,22 @@ def build_permissions_class(name: str = "Permissions") -> type:
     accessible via ``bitfield``.
     """
 
-    def __init__(self, value: int = 0):
+    def __init__(self, value: int = 0,
+                 **kwargs):
         """
         Creates a new Permissions object.
 
         :param value: The bitfield value of the permissions object.
         """
         self.bitfield = value
+        for perm, value in kwargs.items():
+            if perm not in permissions:
+                raise ValueError("Unknown permission", perm)
 
-    def __new__(cls, value):
+            setattr(self, perm, value)
+
+    def __new__(cls, value: int = 0,
+                **kwargs):
         if isinstance(value, cls):
             return value
 
@@ -186,9 +192,17 @@ class Overwrite(object):
                  obb, channel=None):
         self.target = obb
 
-        self.channel = weakref.ref(channel)
+        if channel is not None:
+            self.channel = weakref.ref(channel)
+        else:
+            self.channel = None
 
+        if isinstance(allow, Permissions):
+            allow = allow.bitfield
         self.allow = Permissions(value=allow if allow is not None else 0)
+
+        if isinstance(deny, Permissions):
+            deny = deny.bitfield
         self.deny = Permissions(value=deny if deny is not None else 0)
 
     def __repr__(self):
@@ -228,7 +242,7 @@ class Overwrite(object):
 
         return getattr(permissions, item, False)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: object) -> object:
         """
         Attribute setter helper.
         """
