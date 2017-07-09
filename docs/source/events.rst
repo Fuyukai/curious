@@ -287,7 +287,7 @@ websocket connection.
 
     Called when Discord asks us to send a heartbeat.
 
-.. py:cofunction:: gateway_invalidate_session(ctx: EventContext)
+.. py:cofunction:: gateway_invalidate_session(ctx: EventContext, resume: bool)
 
     Called when Discord invalidates our session.
 

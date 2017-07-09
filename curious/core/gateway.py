@@ -548,8 +548,9 @@ class Gateway(object):
 
         elif op == GatewayOp.INVALIDATE_SESSION:
             # Clean up our session.
-            await self.state.client.fire_event("gateway_invalidate_session", gateway=self)
             should_resume = data
+            await self.state.client.fire_event("gateway_invalidate_session", should_resume,
+                                               gateway=self)
             if should_resume is True:
                 self.logger.debug("Sending RESUME again")
                 await self.send_resume()
