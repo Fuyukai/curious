@@ -327,7 +327,7 @@ class Gateway(object):
                 "game": game.to_dict() if game else None,
                 "status": status.value,
                 "afk": afk,
-                "since": None
+                "since": None if not afk else int(time.time() * 1000)
             }
         }
 

@@ -454,9 +454,8 @@ class State(object):
         # cache ourselves
         self._users[self._user.id] = self._user
 
-        self.logger.info("Parsing ready for `{}#{}` ({})".format(self._user.username,
-                                                                 self._user.discriminator,
-                                                                 self._user.id))
+        self.logger.info("We have been issued a session, parsing ready for `{}#{}` ({})".format(
+            self._user.username, self._user.discriminator, self._user.id))
 
         self.logger.info("Logged in as a userbot: {}".format(not self._user.bot))
 
