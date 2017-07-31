@@ -3,8 +3,8 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.5.0
------
+0.5.0 (Released 2017-07-31)
+---------------------------
 
  - Add :meth:`.HTTPClient.get_audit_logs`.
 
