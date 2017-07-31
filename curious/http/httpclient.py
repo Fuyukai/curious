@@ -11,6 +11,8 @@ import weakref
 from email.utils import parsedate
 from math import ceil
 
+import pytz
+
 # try and load a C impl of LRU first
 try:
     from lru import LRU as c_lru
@@ -43,7 +45,8 @@ def parse_date_header(header: str) -> datetime.datetime:
     :param header: The contents of the header to parse.
     :return: A :class:`datetime.datetime` that corresponds to the date header.
     """
-    return datetime.datetime(*parsedate(header)[:6])
+    dt = datetime.datetime(*parsedate(header)[:6], tzinfo=pytz.UTC)
+    return dt
 
 
 class HTTPClient(object):
