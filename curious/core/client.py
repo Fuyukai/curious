@@ -914,6 +914,9 @@ class Client(object):
         if _exc is not None:
             raise _exc
         # Otherwise, return the event result.
+        if isinstance(result, tuple) and len(result) == 1:
+            return result[0]
+
         return result
 
     # HTTP Functions
