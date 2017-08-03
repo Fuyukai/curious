@@ -4,20 +4,15 @@ Wrappers for Message objects.
 .. currentmodule:: curious.dataclasses.message
 """
 
-import typing
 import re
+import typing
 
 import curio
 
+from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, guild as dt_guild, \
+    member as dt_member, role as dt_role, user as dt_user, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses import member as dt_member
-from curious.dataclasses import role as dt_role
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import webhook as dt_webhook
-from curious.dataclasses.embed import Embed, Attachment
-from curious.dataclasses import emoji as dt_emoji
+from curious.dataclasses.embed import Attachment, Embed
 from curious.exc import CuriousError, PermissionsError
 from curious.util import to_datetime
 
@@ -157,7 +152,7 @@ class Message(Dataclass):
                 id = int(mention["id"])
                 obb = self.guild.members.get(id)
                 if obb is None:
-                    obb = self._bot.state.make_user(**mention)
+                    obb = self._bot.state.make_user(mention)
                     # always check for a decache
                     self._bot.state._check_decache_user(id)
             elif type_ == "role":
