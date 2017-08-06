@@ -7,10 +7,9 @@ import enum
 import secrets
 import typing
 
+from asks.sessions import HSession
 from oauthlib.oauth2 import OAuth2Error
 from oauthlib.oauth2.rfc6749.clients import WebApplicationClient
-
-from curious.http.curio_http import ClientSession
 
 
 class InvalidStateError(Exception):
@@ -140,9 +139,9 @@ class OAuth2Client(object):
     """
 
     BASE = "https://discordapp.com"
-    API_BASE = BASE + "/api/v7"
-    AUTHORIZE_URL = BASE + "/oauth2/authorize"
-    TOKEN_URL = API_BASE + "/oauth2/token"
+    API_BASE = "/api/v7"
+    AUTHORIZE_URL = "/oauth2/authorize"
+    TOKEN_URL = "/oauth2/token"
 
     def __init__(self, client_id: int, client_secret: str,
                  redirect_uri: str):
@@ -152,7 +151,7 @@ class OAuth2Client(object):
 
         self._oauth2_client = WebApplicationClient(client_id=self.client_id,
                                                    redirect_url=self.redirect_uri)
-        self.sess = ClientSession()
+        self.sess = HSession(host=self.BASE, endpoint=self.API_BASE)
 
         #: A list of states that have been seen before.
         #: If the state was not seen, it will raise an invalid state error.
@@ -189,12 +188,12 @@ class OAuth2Client(object):
                                                       redirect_uri=self.redirect_uri,
                                                       client_secret=self.client_secret,
                                                       grant_type="authorization_code")
-        response = await self.sess.post(uri)
+        response = await self.sess.post(path=uri)
         if response.status_code != 200:
-            raise OAuth2Error(response, await response.json())
+            raise OAuth2Error(response, response.json())
 
         # construct the token
-        token = OAuth2Token.from_dict(await response.json())
+        token = OAuth2Token.from_dict(response.json())
         return token
 
     async def refresh_token(self, token: typing.Union[OAuth2Token, str],
@@ -218,7 +217,7 @@ class OAuth2Client(object):
             self.TOKEN_URL, refresh_token=ref, scope=scopes
         )
 
-        response = await self.sess.post(uri, headers=list(headers.items()), body=body)
+        response = await self.sess.post(path=uri, headers=list(headers.items()), body=body)
 
         self._oauth2_client.parse_request_body_response(body=await response.text())
         token = OAuth2Token.from_dict(await response.json())

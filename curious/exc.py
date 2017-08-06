@@ -4,7 +4,7 @@ Exceptions raised from within the library.
 import enum
 import warnings
 
-from curious.http.curio_http import Response
+from asks.response_objects import Response
 
 
 class CuriousError(Exception):

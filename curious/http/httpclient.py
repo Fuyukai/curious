@@ -11,9 +11,13 @@ import weakref
 from email.utils import parsedate
 from math import ceil
 
+import asks
+import curio
 import pytz
+from asks.response_objects import Response
 
 # try and load a C impl of LRU first
+
 try:
     from lru import LRU as c_lru
 
@@ -31,11 +35,8 @@ except ImportError:
     def _make_lru_dict(size):
         return py_lru(size)
 
-import curio
-
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
-from curious.http.curio_http import ClientSession, Response
 
 
 def parse_date_header(header: str) -> datetime.datetime:
@@ -64,33 +65,36 @@ class HTTPClient(object):
 
     All of these functions require a **ratelimit bucket** which will be used to prevent the client 
     from hitting 429 ratelimits.
-    """
-    API_BASE = "https://discordapp.com/api/v7"
-    GUILD_BASE = API_BASE + "/guilds/{guild_id}"
-    CHANNEL_BASE = API_BASE + "/channels/{channel_id}"
 
-    USER_ME = API_BASE + "/users/@me"
+    :param token: The token to use for all HTTP requests.
+    :param bot: Is this client a bot?
+    :param max_connections: The max connections for this HTTP client.
+    """
+    BASE = "https://discordapp.com"
+    API_BASE = "/api/v7"
+    GUILD_BASE = "/guilds/{guild_id}"
+    CHANNEL_BASE = "/channels/{channel_id}"
+
+    USER_ME = "/users/@me"
+
+    USER_AGENT = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}" \
+                 "curio/{2}".format(curious.__version__, sys.version_info, curio.__version__)
 
     def __init__(self, token: str, *,
-                 bot: bool = True):
+                 bot: bool = True,
+                 max_connections: int = 10):
         #: The token used for all requests.
         self.token = token
 
         # Calculated headers
         headers = {
-            "User-Agent": "DiscordBot (https://github.com/SunDwarf/curious {0}) "
-                          "Python/{1[0]}.{1[1]} "
-                          "curio/{2}"
-                .format(curious.__version__, sys.version_info, curio.__version__)
+            "User-Agent": self.USER_AGENT,
+            "Authorization": "{}{}".format("Bot " if bot else "", self.token)
         }
 
-        if bot:
-            headers["Authorization"] = "Bot {}".format(self.token)
-        else:
-            headers["Authorization"] = self.token
-
-        self.session = ClientSession()
-        self.session.headers = headers
+        self.session = asks.HSession(host=self.BASE, endpoint=self.API_BASE,
+                                     connections=max_connections)
+        self.headers = headers
 
         #: Ratelimit buckets.
         self._rate_limits = weakref.WeakValueDictionary()
@@ -117,16 +121,30 @@ class HTTPClient(object):
             return lock
 
     # Special wrapper functions
-    async def get_response_data(self, response: Response) -> typing.Union[str, dict]:
+    def get_response_data(self, response: Response) -> typing.Union[str, dict]:
         """
         Return either the text of a request or the JSON.
 
         :param response: The response to use.
         """
         if response.headers.get("Content-Type", None) == "application/json":
-            return await response.json()
+            return response.json()
 
-        return await response.text()
+        return response.content
+
+    async def _make_request(self, *args, **kwargs) -> Response:
+        """
+        Makes a request via the current session.
+
+        :returns: The response body.
+        """
+        headers = kwargs.get("headers", None)
+        if headers is not None:
+            headers.update(self.headers.copy())
+        else:
+            headers = self.headers.copy()
+
+        return await self.session.request(*args, headers=headers, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
         """
@@ -165,7 +183,7 @@ class HTTPClient(object):
 
             for tries in range(0, 5):
                 # Make the request.
-                response = await self.session.request(*args, **kwargs)
+                response = await self._make_request(*args, **kwargs)
                 self.logger.debug("{} {} => {}".format(kwargs.get("method", "???"),
                                                        kwargs.get("url", "???"),
                                                        response.status_code))
@@ -216,7 +234,8 @@ class HTTPClient(object):
                     else:
                         self.logger.debug(
                             "Being ratelimited under bucket {}, waking in {} seconds"
-                                .format(bucket, sleep_time))
+                                .format(bucket, sleep_time)
+                        )
                     # Sleep that amount of time.
                     await curio.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
@@ -225,10 +244,7 @@ class HTTPClient(object):
 
                 # Now, we have that nuisance out of the way, we can try and get the result from
                 # the request.
-                result = await self.get_response_data(response)
-
-                # Close the response.
-                await response.close()
+                result = self.get_response_data(response)
 
                 # Status codes between 200 and 300 mean success, so we return the data directly.
                 if 200 <= response.status_code < 300:
@@ -263,7 +279,7 @@ class HTTPClient(object):
         :param url: The URL to request.
         :param bucket: The ratelimit bucket to file this request under.
         """
-        return await self.request(("GET", bucket), method="GET", url=url, *args, **kwargs)
+        return await self.request(("GET", bucket), method="GET", path=url, *args, **kwargs)
 
     async def post(self, url: str, bucket: str,
                    *args, **kwargs):
@@ -273,7 +289,7 @@ class HTTPClient(object):
         :param url: The URL to request.
         :param bucket: The ratelimit bucket to file this request under.
         """
-        return await self.request(("POST", bucket), method="POST", url=url, *args, **kwargs)
+        return await self.request(("POST", bucket), method="POST", path=url, *args, **kwargs)
 
     async def put(self, url: str, bucket: str,
                   *args, **kwargs):
@@ -283,7 +299,7 @@ class HTTPClient(object):
         :param url: The URL to request.
         :param bucket: The ratelimit bucket to file this request under.
         """
-        return await self.request(("PUT", bucket), method="PUT", url=url, *args, **kwargs)
+        return await self.request(("PUT", bucket), method="PUT", path=url, *args, **kwargs)
 
     async def delete(self, url: str, bucket: str,
                      *args, **kwargs):
@@ -293,7 +309,7 @@ class HTTPClient(object):
         :param url: The URL to request.
         :param bucket: The ratelimit bucket to file this request under.
         """
-        return await self.request(("DELETE", bucket), method="DELETE", url=url, *args, **kwargs)
+        return await self.request(("DELETE", bucket), method="DELETE", path=url, *args, **kwargs)
 
     async def patch(self, url: str, bucket: str,
                     *args, **kwargs):
@@ -303,7 +319,7 @@ class HTTPClient(object):
         :param url: The URL to request.
         :param bucket: The ratelimit bucket to file this request under.
         """
-        return await self.request(("PATCH", bucket), method="PATCH", url=url, *args, **kwargs)
+        return await self.request(("PATCH", bucket), method="PATCH", path=url, *args, **kwargs)
 
     # Non-generic methods
     async def get_gateway_url(self):
@@ -313,9 +329,7 @@ class HTTPClient(object):
 
         :return: The websocket gateway URL to get.
         """
-        url = self.API_BASE + "/gateway"
-
-        data = await self.get(url, "gateway")
+        data = await self.get("/gateway", "gateway")
         return data["url"]
 
     async def get_shard_count(self):
@@ -325,18 +339,14 @@ class HTTPClient(object):
         if not self._is_bot:
             raise Forbidden(None, {"code": 20002, "message": "Only bots can use this endpoint"})
 
-        url = self.API_BASE + "/gateway/bot"
-
-        data = await self.get(url, "gateway")
+        data = await self.get("/gateway/bot", "gateway")
         return data["url"], data["shards"]
 
     async def get_this_user(self):
         """
         Gets the current user.
         """
-        url = self.USER_ME
-
-        data = await self.get(url, bucket="user:get")
+        data = await self.get(self.USER_ME, bucket="user:get")
         return data
 
     async def get_user(self, user_id: int):
@@ -346,7 +356,7 @@ class HTTPClient(object):
         :param user_id: The ID of the user to fetch.
         :return: A user dictionary.
         """
-        url = (self.API_BASE + "/users/{user_id}").format(user_id=user_id)
+        url = "/users/{user_id}".format(user_id=user_id)
 
         # user_id isn't a major param, so handle under one bucket
         data = await self.get(url, bucket="user:get")
@@ -1200,7 +1210,7 @@ class HTTPClient(object):
 
         :param webhook_id: The ID of the webhook to get.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+        url = "/webhooks/{webhook_id}".format(webhook_id=webhook_id)
 
         data = await self.get(url, bucket="webhooks")  # not a major param :(
         return data
@@ -1254,7 +1264,7 @@ class HTTPClient(object):
         :param name: The name of the webhook.
         :param avatar: The base64 encoded avatar to send.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+        url = "/webhooks/{webhook_id}".format(webhook_id=webhook_id)
         payload = {}
 
         if avatar is not None:
@@ -1276,8 +1286,8 @@ class HTTPClient(object):
         :param name: The name of the webhook to edit.
         :param avatar: The base64 encoded avatar to send.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
-                                                                        token=token)
+        url = "/webhooks/{webhook_id}/{token}".format(webhook_id=webhook_id,
+                                                      token=token)
         payload = {}
 
         if avatar is not None:
@@ -1295,7 +1305,7 @@ class HTTPClient(object):
 
         :param webhook_id: The ID of the webhook to delete.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}").format(webhook_id=webhook_id)
+        url = "/webhooks/{webhook_id}".format(webhook_id=webhook_id)
 
         data = await self.delete(url, bucket="webhooks")
         return data
@@ -1307,8 +1317,8 @@ class HTTPClient(object):
         :param webhook_id: The ID of the webhook to delete.
         :param token: The token of the webhook.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
-                                                                        token=token)
+        url = "/webhooks/{webhook_id}/{token}".format(webhook_id=webhook_id,
+                                                      token=token)
 
         data = await self.delete(url, bucket="webhooks")
         return data
@@ -1328,8 +1338,7 @@ class HTTPClient(object):
         :param avatar_url: The avatar URL to send.
         :param wait: If we should wait for the message to send.
         """
-        url = (self.API_BASE + "/webhooks/{webhook_id}/{token}").format(webhook_id=webhook_id,
-                                                                        token=webhook_token)
+        url = "/webhooks/{webhook_id}/{token}".format(webhook_id=webhook_id, token=webhook_token)
         payload = {}
 
         if content:
@@ -1359,7 +1368,7 @@ class HTTPClient(object):
         :param invite_code: The invite to get.
         :param with_counts: Should the estimated total and online members be included?
         """
-        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
+        url = "/invites/{invite_code}".format(invite_code=invite_code)
         params = {
             "with_counts": "true" if with_counts else "false"
         }
@@ -1414,7 +1423,7 @@ class HTTPClient(object):
 
         :param invite_code: The code of the invite to delete.
         """
-        url = (self.API_BASE + "/invites/{invite_code}").format(invite_code=invite_code)
+        url = "/invites/{invite_code}".format(invite_code=invite_code)
 
         data = await self.delete(url, bucket="invites")
         return data
@@ -1454,7 +1463,7 @@ class HTTPClient(object):
 
         :param user_id: The user ID of the profile to fetch.
         """
-        url = (self.API_BASE + "/users/{user_id}/profile").format(user_id=user_id)
+        url = "/users/{user_id}/profile".format(user_id=user_id)
 
         data = await self.get(url, bucket="user:get")
         return data
@@ -1553,7 +1562,7 @@ class HTTPClient(object):
         """
         :return: The application info for this bot.
         """
-        url = self.API_BASE + "/oauth2/applications/@me"
+        url = "/oauth2/applications/@me"
 
         data = await self.get(url, "oauth2")
         # httpclient is meant to be a "pure" wrapper, but add this anyway.
@@ -1570,7 +1579,7 @@ class HTTPClient(object):
         """
         Gets the list of applications for a user.
         """
-        url = self.API_BASE + "/oauth2/applications"
+        url = "/oauth2/applications"
 
         data = await self.get(url, "oauth2")
         return data
@@ -1581,7 +1590,7 @@ class HTTPClient(object):
 
         :param application_id: The ID of the application to get.
         """
-        url = self.API_BASE + "/oauth2/applications/{}".format(application_id)
+        url = "/oauth2/applications/{}".format(application_id)
 
         data = await self.get(url, "oauth2")
         return data
@@ -1600,7 +1609,7 @@ class HTTPClient(object):
         :param guild_id: The guild ID to add the bot to.
         :param permissions: The permissions to add the bot with.
         """
-        url = self.API_BASE + "/oauth2/authorize"
+        url = "/oauth2/authorize"
         params = {
             "client_id": str(application_id),
             "scope": "bot"
@@ -1624,7 +1633,7 @@ class HTTPClient(object):
             This is a **user-account only** endpoint.
         
         """
-        url = self.API_BASE + "/oauth2/tokens"
+        url = "/oauth2/tokens"
 
         data = await self.get(url, bucket="oauth2")
         return data
@@ -1640,7 +1649,7 @@ class HTTPClient(object):
         
         :param app_id: The ID of the application to revoke the authorization of. 
         """
-        url = (self.API_BASE + "/oauth2/tokens/{app_id}").format(app_id=app_id)
+        url = "/oauth2/tokens/{app_id}".format(app_id=app_id)
 
         data = await self.delete(url, bucket="oauth")
         return data

@@ -12,12 +12,11 @@ setup(
     description='A curio library for the Discord API',
     install_requires=[
         "cuiows>=0.1.10",
-        "curio==0.7.0",
-        "h11==0.7.0",
-        "multidict==2.1.4",
+        "curio>=0.7.0,<=0.8.0",
         "pylru==1.0.9",
-        "yarl==0.8.1", 'oauthlib==2.0.2',
-        "pytz"
+        "oauthlib==2.0.2",
+        "pytz",
+        "asks>=0.2.1"
     ],
     extras_require={
         "voice": ["opuslib==1.1.0",

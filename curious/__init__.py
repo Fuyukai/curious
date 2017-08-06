@@ -18,6 +18,8 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
     util
 """
 
+__version__ = "0.5.0"
+
 from curious.core.client import BotType, Client
 from curious.core.event import EventContext, event
 from curious.core.gateway import Gateway
@@ -41,5 +43,3 @@ from curious.dataclasses.user import BotUser, User, UserProfile, UserSettings
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget, WidgetChannel, WidgetGuild, WidgetMember
-
-__version__ = "0.5.0"
