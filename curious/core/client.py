@@ -40,6 +40,8 @@ from curious.util import attrdict, base64ify
 #: A sentinel value to indicate that the client should automatically shard.
 AUTOSHARD = object()
 
+logger = logging.getLogger("curious.client")
+
 
 class BotType(enum.IntEnum):
     """
@@ -253,9 +255,6 @@ class Client(object):
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
 
-        #: The logger for this bot.
-        self._logger = logging.getLogger("curious.client")
-
         if enable_commands:
             if not command_prefix and not message_check:
                 raise TypeError("Must provide one of `command_prefix` or `message_check`")
@@ -393,7 +392,7 @@ class Client(object):
             evs = [name]
 
         for ev_name in evs:
-            self._logger.debug("Registered event `{}` handling `{}`".format(func, name))
+            logger.debug("Registered event `{}` handling `{}`".format(func, name))
             self.events.add(ev_name, func)
 
     def add_listener(self, name: str, func):
@@ -452,14 +451,14 @@ class Client(object):
         for _, item in inspect.getmembers(self,
                                           predicate=lambda x: hasattr(x, "events") and
                                                   getattr(x, "scan", False)):
-            self._logger.info("Registering event function {} for events {}".format(_, item.events))
+            logger.info("Registering event function {} for events {}".format(_, item.events))
             self.add_event(item)
 
     async def _error_wrapper(self, func, *args, **kwargs):
         try:
             await func(*args, **kwargs)
         except Exception as e:
-            self._logger.exception("Unhandled exception in {}!".format(func.__name__))
+            logger.exception("Unhandled exception in {}!".format(func.__name__))
 
     async def _wrap_context(self, ctx: 'context.Context'):
         """
@@ -477,7 +476,7 @@ class Client(object):
         try:
             result = await listener(*args, **kwargs)
         except Exception as e:
-            self._logger.exception("Unhandled exception in {}!".format(listener.__name__))
+            logger.exception("Unhandled exception in {}!".format(listener.__name__))
             return
         if result is True:
             # Complex removal bullshit
@@ -536,7 +535,7 @@ class Client(object):
         if not coros and not temporary_listeners:
             return []
 
-        self._logger.debug(
+        logger.debug(
             "Dispatching event {} to {} listeners"
             " on shard {}".format(event_name, len(coros) + len(temporary_listeners),
                                   gateway.shard_id)
@@ -583,7 +582,7 @@ class Client(object):
         """
         # oddities
         if message.author is None:
-            self._logger.warning("Got None author...")
+            logger.warning("Got None author...")
             return
 
         user = message.author.user if hasattr(message.author, "user") else message.author
@@ -839,7 +838,7 @@ class Client(object):
         gateway = self._gateways[shard_id]
         return await gateway.send_status(game, status, afk=afk)
 
-    async def wait_for(self, event_name: str, predicate = None):
+    async def wait_for(self, event_name: str, predicate=None):
         """
         Wait for an event to happen in the gateway.
 
@@ -1184,13 +1183,13 @@ class Client(object):
                     return
 
                 if e.code in [1000, 4007] or gw.session_id is None:
-                    self._logger.info("Shard {} disconnected with code {}, "
+                    logger.info("Shard {} disconnected with code {}, "
                                       "creating new session".format(shard_id, e.code))
                     self.state._reset(gw.shard_id)
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
                     # Try and RESUME.
-                    self._logger.info("Shard {} disconnected with close code {}, reason {}, "
+                    logger.info("Shard {} disconnected with close code {}, reason {}, "
                                       "attempting a reconnect.".format(shard_id, e.code, e.reason))
                     await gw.reconnect(resume=True)
                 else:
@@ -1225,19 +1224,19 @@ class Client(object):
         This is a convenience method that polls on all the shards at once.
         This will **only reboot safely returned shards.** Erroring shards won't be rebooted.
         """
-        self._logger.info("Starting bot with {} shards.".format(shards))
+        logger.info("Starting bot with {} shards.".format(shards))
         self.shard_count = shards
         tasks = []
         for shard_id in range(0, shards):
             shard_listener = await self.boot_shard(shard_id, **kwargs)
             tasks.append(shard_listener)
-            self._logger.info("Sleeping for 5 seconds between shard creation.")
+            logger.info("Sleeping for 5 seconds between shard creation.")
             await curio.sleep(5)
 
         results = []
 
         # Wait for the next task.
-        self._logger.info("Managing {} shards.".format(len(tasks)))
+        logger.info("Managing {} shards.".format(len(tasks)))
         async with TaskGroup(tasks=tasks, name="shard waiter") as g:
             task = await g.next_done()  # type: curio.Task
             if task is None:
@@ -1247,10 +1246,10 @@ class Client(object):
                 result = await task.join()
             except Exception as e:
                 result = e
-                self._logger.exception("Shard {} crashed, not rebooting it.".format(task.id))
+                logger.exception("Shard {} crashed, not rebooting it.".format(task.id))
             else:
                 # reboot it
-                self._logger.warning("Rebooting shard {}.".format(task.id))
+                logger.warning("Rebooting shard {}.".format(task.id))
                 shard_id = task.task_local_storage["shard_id"]["id"]
                 t = await self.boot_shard(shard_id=shard_id)
                 t.task_local_storage["shard_id"] = {"id": shard_id}

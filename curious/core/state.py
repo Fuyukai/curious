@@ -27,6 +27,8 @@ from curious.dataclasses.webhook import Webhook
 
 UserType = typing.TypeVar("U", bound=User)
 
+logger = logging.getLogger("curious.state")
+
 
 class GuildStore(collections.MutableMapping):
     """
@@ -108,7 +110,7 @@ class State(object):
         self._users = {}
 
         #: The state logger.
-        self.logger = logging.getLogger("curious.state")
+        logger = logging.getLogger("curious.state")
 
         #: The deque of messages.
         #: This is bounded to prevent the message cache from growing infinitely.
@@ -189,7 +191,7 @@ class State(object):
 
         if self.have_all_chunks(gw.shard_id):
             # Have all chunks anyway, dispatch now.
-            self.logger.info(
+            logger.info(
                 "All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id)
             )
             await self.is_ready(gw.shard_id).set()
@@ -198,7 +200,7 @@ class State(object):
             # check for userbots
             if not self._user.bot:
                 # request a guild sync
-                self.logger.info("Requesting GUILD_SYNC to update our presences.")
+                logger.info("Requesting GUILD_SYNC to update our presences.")
                 await gw.send_guild_sync(self.guilds.values())
 
             return
@@ -454,12 +456,12 @@ class State(object):
         # cache ourselves
         self._users[self._user.id] = self._user
 
-        self.logger.info(
+        logger.info(
             "We have been issued a session on shard {}, parsing ready for `{}#{}` ({})"
                 .format(gw.shard_id, self._user.username, self._user.discriminator, self._user.id)
         )
 
-        self.logger.info("Logged in as a userbot: {}".format(not self._user.bot))
+        logger.info("Logged in as a userbot: {}".format(not self._user.bot))
 
         # User-bots only.
         # Parse relationships first before processing anything else.
@@ -485,7 +487,7 @@ class State(object):
                     u = int(presence["user"]["id"])
                 except KeyError:
                     # what the fuck?!?!?
-                    self.logger.warning("Got None user for presence. What?")
+                    logger.warning("Got None user for presence. What?")
                     continue
                 fr = self._friends.get(u)
 
@@ -497,7 +499,7 @@ class State(object):
 
             self._guilds.order = list(map(int, self._user.settings.guild_positions))
 
-            self.logger.info("Processed {} friends "
+            logger.info("Processed {} friends "
                              "and {} blocked users.".format(len(self._friends), len(self._blocked)))
 
         # Create all of the guilds.
@@ -515,9 +517,9 @@ class State(object):
         if not self._user.bot and len(event_data.get("guilds")) <= 100:
             # Chunk now, sync later.
             await gw.request_chunks([g for g in self.guilds.values()])
-            self.logger.info("Chunking {} guilds immediately.".format(len(self.guilds)))
+            logger.info("Chunking {} guilds immediately.".format(len(self.guilds)))
 
-        self.logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."
+        logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."
                          .format(gw.shard_id))
 
         # Don't fire `_ready` here, because we don't have all guilds.
@@ -529,7 +531,7 @@ class State(object):
         # However, if the client has no guilds, we DO want to fire ready.
         if len(event_data.get("guilds", {})) == 0:
             await self.is_ready(gw.shard_id).set()
-            self.logger.info("No more guilds to get for shard {}, or client is user. "
+            logger.info("No more guilds to get for shard {}, or client is user. "
                              "Dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
 
@@ -541,7 +543,7 @@ class State(object):
         gw._prev_seq = gw.sequence_num
         new_events = gw.sequence_num - prev_seq
 
-        self.logger.info("Successfully resumed session on shard ID {}, replayed"
+        logger.info("Successfully resumed session on shard ID {}, replayed"
                          "{} new events.".format(gw.shard_id, new_events))
         await self.client.fire_event("resumed", new_events, gateway=gw)
 
@@ -638,11 +640,11 @@ class State(object):
         guild = self._guilds.get(id)
 
         if not guild:
-            self.logger.warning("Got a chunk for a Guild that doesn't exist...")
+            logger.warning("Got a chunk for a Guild that doesn't exist...")
             return
 
         members = event_data.get("members", [])
-        self.logger.info("Got a chunk of {} members in guild {} "
+        logger.info("Got a chunk of {} members in guild {} "
                          "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
 
         guild._handle_member_chunk(event_data.get("members"))
@@ -665,7 +667,7 @@ class State(object):
 
         if not guild:
             # why
-            self.logger.warning("Got sync for guild we're not in...")
+            logger.warning("Got sync for guild we're not in...")
             return
 
         large = event_data.get("large", None)
@@ -687,7 +689,7 @@ class State(object):
 
             member.presence = Presence(**presence)
 
-        self.logger.info("Processed a guild sync for guild {} with "
+        logger.info("Processed a guild sync for guild {} with "
                          "{} members and {} presences.".format(guild.name, len(members),
                                                                len(presences)))
 
@@ -728,15 +730,15 @@ class State(object):
                 guild.from_guild_create(**event_data)
                 await self.client.fire_event("guild_join", guild, gateway=gw)
 
-                self.logger.info("Joined guild {} ({}), requesting members if applicable"
-                                 .format(guild.name, guild.id))
+                logger.info("Joined guild {} ({}), requesting members if applicable"
+                            .format(guild.name, guild.id))
                 if guild.large:
                     await gw.request_chunks([guild])
                 if self._user.bot:
                     await gw.send_guild_sync([guild])
 
         else:
-            self.logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
+            logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
             await self.client.fire_event("guild_streamed", guild, gateway=gw)
 
         if self._user.bot:
