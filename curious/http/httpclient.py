@@ -1526,7 +1526,7 @@ class HTTPClient(object):
         return data
 
     # Application info
-    async def get_app_info(self, application_id: int):
+    async def get_app_info(self, application_id: typing.Union[int, None]):
         """
         Gets some basic info about an application.
 
