@@ -58,11 +58,10 @@ class Game(object):
         :return: The dict representation of this object. 
         """
         d = {
-            "name": self.name
+            "name": self.name,
+            "type": self.type,
+            "url": self.url
         }
-        if self.type == 1:
-            d["type"] = 1
-            d["url"] = self.url
 
         return d
 

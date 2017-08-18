@@ -13,12 +13,12 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
+import functools
 import logging
 import socket
 import struct
 
 import curio
-import functools
 from nacl.secret import SecretBox
 from opuslib import Encoder
 
@@ -41,14 +41,15 @@ class VoiceClient(object):
     """
     The voice client instance controls connecting to Discord's voice servers.
 
-    This should ***not*** be created directly - instead use :class:`~.Channel.connect()` to connect to a voice channel,
-    and use the instance returned from.
+    This should ***not*** be created directly - instead use :class:`~.Channel.connect()` to connect
+    to a voice channel, and use the instance returned from.
     """
 
     def __init__(self, main_client,
                  channel):
         """
-        :param main_client: The :class:`~.curious.core.client.Client` object associated with this VoiceClient. 
+        :param main_client: The :class:`~.curious.core.client.Client` object associated with this
+            VoiceClient.
         :param channel: The :class:`~.Channel` associated with this VoiceClient.
         """
 
