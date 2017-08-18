@@ -47,6 +47,7 @@ class ChannelType(enum.Enum):
     #: Represents a category channel.
     CATEGORY = 4
 
+
 class _TypingCtxManager:
     """
     A context manager that when entered, starts typing, and cancels when exited.

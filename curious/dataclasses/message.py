@@ -3,7 +3,7 @@ Wrappers for Message objects.
 
 .. currentmodule:: curious.dataclasses.message
 """
-
+import enum
 import re
 import typing
 
@@ -19,13 +19,43 @@ from curious.util import to_datetime
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 
 
+class MessageType(enum.IntEnum):
+    """
+    Represents the type of a message.
+    """
+    #: The default (i.e. user message) type.
+    DEFAULT = 0
+
+    # 1 through 5 are groups only
+    #: The recipient add type, used when a recipient is added to a group.
+    RECIPIENT_ADD = 1
+
+    #: The recipient remove type, used when a recipient is added to a group.
+    RECIPIENT_REMOVE = 2
+
+    #: The call type, used when a call is started.
+    CALL = 3
+
+    #: The channel name change type, used when a group channel name is changed.
+    CHANNEL_NAME_CHANGE = 4
+
+    #: The channel icon change type, used when a group channel icon is changed.
+    CHANNEL_ICON_CHANGE = 5
+
+    #: The channel pinned message type, used when a message is pinned.
+    CHANNEL_PINNED_MESSAGE = 6
+
+    #: The guild member join type, used when a member joins a guild.
+    GUILD_MEMBER_JOIN = 7
+
+
 class Message(Dataclass):
     """
     Represents a Message.
     """
     __slots__ = ("content", "guild_id", "author", "channel", "created_at", "edited_at", "embeds",
                  "attachments", "_mentions", "_role_mentions", "reactions", "channel_id",
-                 "author_id")
+                 "author_id", "type")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
@@ -48,6 +78,10 @@ class Message(Dataclass):
         #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`,
         #: :class:`.User`.
         self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
+
+        type_ = kwargs.get("type", 0)
+        #: The type of this message.
+        self.type = MessageType(type_)
 
         #: The true timestamp of this message, a :class:`datetime.datetime`.
         #: This is not the snowflake timestamp.
