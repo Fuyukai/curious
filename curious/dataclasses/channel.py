@@ -44,6 +44,8 @@ class ChannelType(enum.Enum):
     #: Represents a group channel.
     GROUP = 3
 
+    #: Represents a category channel.
+    CATEGORY = 4
 
 class _TypingCtxManager:
     """
