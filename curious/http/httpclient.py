@@ -38,6 +38,9 @@ except ImportError:
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 
+# by default
+asks.init("curio")
+
 
 def parse_date_header(header: str) -> datetime.datetime:
     """
@@ -154,8 +157,8 @@ class HTTPClient(object):
             "Authorization": "{}{}".format("Bot " if bot else "", self.token)
         }
 
-        self.session = asks.HSession(host=self.BASE, endpoint=self.API_BASE,
-                                     connections=max_connections)
+        self.session = asks.Session(base_location=self.BASE, endpoint=self.API_BASE,
+                                    connections=max_connections)
         self.headers = headers
 
         #: Ratelimit buckets.
