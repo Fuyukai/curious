@@ -4,6 +4,7 @@ Wrappers for Guild objects.
 .. currentmodule:: curious.dataclasses.guild
 """
 import collections
+import copy
 import datetime
 import enum
 import typing
@@ -310,8 +311,9 @@ class Guild(Dataclass):
         "id", "unavailable", "name", "afk_timeout", "region",
         "mfa_level", "verification_level", "notification_level", "content_filter_level", "features",
         "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count",
-        "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash", "_owner_id",
-        "_afk_channel_id", "voice_client",
+        "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash",
+        "owner_id", "afk_channel_id", "system_channel_id",
+        "voice_client",
         "channels", "roles"
     )
 
@@ -335,11 +337,16 @@ class Guild(Dataclass):
         #: Used to construct the splash URL later.
         self._splash_hash = None  # type: str
 
-        #: The owner ID of this guild.
-        self._owner_id = None  # type: int
-
         #: The AFK channel ID of this guild.
-        self._afk_channel_id = None  # type: int
+        self.afk_channel_id = None  # type: int
+        #: The ID of the system channel for this guild.
+        #: This is where welcome messages and the likes are sent.
+        #: Effective replacement for default channel for bots.
+        self.system_channel_id = None
+
+        #: The owner ID of this guild.
+        self.owner_id = None  # type: int
+
         #: The AFK timeout for this guild.
         self.afk_timeout = None  # type: int
 
@@ -393,27 +400,7 @@ class Guild(Dataclass):
             self.from_guild_create(**kwargs)
 
     def _copy(self):
-        obb = object.__new__(self.__class__)
-
-        obb.unavailable = self.unavailable
-        obb.name = self.name
-        obb._icon_hash = self._icon_hash
-        obb._splash_hash = self._splash_hash
-        obb._owner_id = self._owner_id
-        obb.region = self.region
-        obb.shard_id = self.shard_id
-        obb._roles = self._roles.copy()
-        obb._members = self._members.copy()
-        obb._channels = self._members.copy()
-        obb.member_count = self.member_count
-        obb._large = self._large
-        obb._afk_channel_id = self._afk_channel_id
-        obb.afk_timeout = self.afk_timeout
-        obb.mfa_level = self.mfa_level
-        obb._emojis = self._emojis.copy()
-        obb.features = self.features
-
-        return obb
+        return copy.copy(self)
 
     def __repr__(self):
         return "<Guild id='{}' name='{}' members='{}'>".format(self.id, self.name,
@@ -454,22 +441,22 @@ class Guild(Dataclass):
             return None
 
     @property
-    def default_channel(self) -> 'typing.Union[channel.Channel, None]':
-        """
-        :return: A :class:`~.Channel` that represents the default channel of this guild.
-        """
-        try:
-            return self._channels[self.id]
-        except KeyError:
-            return None
-
-    @property
     def default_role(self) -> 'typing.Union[role.Role, None]':
         """
         :return: A :class:`~.Role` that represents the default role of this guild.
         """
         try:
-            return self._roles[self.id]
+            return self.roles[self.id]
+        except KeyError:
+            return None
+
+    @property
+    def system_channel(self) -> 'typing.Union[channel.Channel, None]':
+        """
+        :return: A :class:`~.Channel` that represents the system channel for this guild.
+        """
+        try:
+            return self.channels[self.system_channel_id]
         except KeyError:
             return None
 
@@ -479,7 +466,7 @@ class Guild(Dataclass):
         :return: A :class:`~.Channel` representing the AFK channel for this guild.
         """
         try:
-            return self._channels[self._afk_channel_id]
+            return self._channels[self.afk_channel_id]
         except IndexError:
             # the afk channel CAN be None
             return None
@@ -663,7 +650,7 @@ class Guild(Dataclass):
         afk_channel_id = data.get("afk_channel_id")
         if afk_channel_id is not None:
             afk_channel_id = int(afk_channel_id)
-        self._afk_channel_id = afk_channel_id
+        self.afk_channel_id = afk_channel_id
         self.afk_timeout = data.get("afk_timeout")
 
         self.verification_level = VerificationLevel(data.get("verification_level", 0))

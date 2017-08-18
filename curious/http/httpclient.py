@@ -875,7 +875,8 @@ class HTTPClient(object):
                          default_message_notifications: int = None,
                          afk_channel_id: int = None, afk_timeout: int = None,
                          splash_content: bytes = None,
-                         explicit_content_filter: int = None):
+                         explicit_content_filter: int = None,
+                         system_channel_id: int = None):
         """
         Modifies a guild.
 
@@ -900,7 +901,7 @@ class HTTPClient(object):
         if default_message_notifications is not None:
             payload["default_message_notifications"] = str(default_message_notifications)
 
-        if afk_channel_id == 0:
+        if not afk_channel_id:
             payload["afk_channel_id"] = None
         elif afk_channel_id:
             payload["afk_channel_id"] = str(afk_channel_id)
@@ -913,6 +914,9 @@ class HTTPClient(object):
 
         if explicit_content_filter is not None:
             payload["explicit_content_filter"] = str(explicit_content_filter)
+
+        if system_channel_id is not None:
+            payload["system_channel_id"] = str(system_channel_id)
 
         data = await self.patch(url, bucket="guild_edit:{}".format(guild_id), json=payload)
         return data
