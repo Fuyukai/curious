@@ -244,9 +244,10 @@ class State(object):
         :return: A :class:`~.Channel` that represents the channel, or None if no channel was found.
         """
         # default channel_id == guild id
+        # for old guilds with a default channel
         if channel_id in self._guilds:
             try:
-                return self._guilds[channel_id].default_channel
+                return self._guilds[channel_id].channels[channel_id]
             except KeyError:
                 return None
 
