@@ -643,7 +643,7 @@ class Guild(Dataclass):
         self.name = data.get("name")  # type: str
         self._icon_hash = data.get("icon")  # type: str
         self._splash_hash = data.get("splash")  # type: str
-        self._owner_id = int(data.get("owner_id"))  # type: int
+        self.owner_id = int(data.get("owner_id"))  # type: int
         self._large = data.get("large", None)
         self.features = data.get("features", [])
         self.region = data.get("region")

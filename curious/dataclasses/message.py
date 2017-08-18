@@ -117,10 +117,10 @@ class Message(Dataclass):
         #: The reactions for this message.
         self.reactions = []
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{0.__class__.__name__} id={0.id} content='{0.content}'>".format(self)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.content
 
     @property
@@ -158,7 +158,7 @@ class Message(Dataclass):
         return self._resolve_mentions(self._role_mentions, "role")
 
     @property
-    def channel_mentions(self):
+    def channel_mentions(self) -> 'typing.List[dt_channel.Channel]':
         """
         Returns a list of :class:`~.Channel` that were mentioned in this message.
         
@@ -211,7 +211,7 @@ class Message(Dataclass):
         return False
 
     # Message methods
-    async def delete(self):
+    async def delete(self) -> None:
         """
         Deletes this message.
 
@@ -265,7 +265,7 @@ class Message(Dataclass):
         old, new = await t.join()
         return new
 
-    async def pin(self):
+    async def pin(self) -> 'Message':
         """
         Pins this message.
 
@@ -276,8 +276,9 @@ class Message(Dataclass):
                 raise PermissionsError("manage_messages")
 
         await self._bot.http.pin_message(self.channel.id, self.id)
+        return self
 
-    async def unpin(self):
+    async def unpin(self) -> 'Message':
         """
         Unpins this message.
 
@@ -289,6 +290,7 @@ class Message(Dataclass):
                 raise PermissionsError("manage_messages")
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
+        return None
 
     async def get_who_reacted(self, emoji: 'typing.Union[dt_emoji.Emoji, str]') \
             -> 'typing.List[typing.Union[dt_user.User, dt_member.Member]]':
@@ -363,7 +365,7 @@ class Message(Dataclass):
         await self._bot.http.delete_reaction(self.channel.id, self.id, emoji,
                                              victim=victim.id if victim else None)
 
-    async def remove_all_reactions(self):
+    async def remove_all_reactions(self) -> None:
         """
         Removes all reactions from a message.
         """
