@@ -16,7 +16,7 @@ setup(
         "pylru==1.0.9",
         "oauthlib==2.0.2",
         "pytz",
-        "asks>=0.2.1"
+        "asks>=1.2.2"
     ],
     extras_require={
         "voice": ["opuslib==1.1.0",
