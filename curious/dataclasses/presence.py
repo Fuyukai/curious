@@ -60,8 +60,9 @@ class Game(object):
         d = {
             "name": self.name,
             "type": self.type,
-            "url": self.url
         }
+        if self.url is not None:
+            d["url"] = self.url
 
         return d
 
