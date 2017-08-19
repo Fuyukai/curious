@@ -3,6 +3,19 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.5.1 (Released 2017-08-19)
+---------------------------
+
+ - Switch to the ``asks`` HTTP library over the bundled HTTP library.
+
+ - Add :class:`.MessageType`.
+
+ - Add :attr:`.ChannelType.CATEGORY`.
+
+ - Separate out HTTP URLs into a :class:`.Endpoints` class.
+
+ - Properly wait on shards in the start handler.
+
 0.5.0 (Released 2017-07-31)
 ---------------------------
 
