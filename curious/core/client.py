@@ -1246,7 +1246,8 @@ class Client(object):
                 result = await task.join()
             except Exception as e:
                 result = e
-                logger.exception("Shard {} crashed, not rebooting it.".format(task.id))
+                logger.exception("Shard {} crashed, not rebooting it."
+                                 .format(task.task_local_storage["shard_id"]["id"]))
             else:
                 # reboot it
                 logger.warning("Rebooting shard {}.".format(task.id))
