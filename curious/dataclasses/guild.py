@@ -428,7 +428,7 @@ class Guild(Dataclass):
         """
         :return: A :class:`~.Member` object that represents the owner of this guild.
         """
-        return self._members[self._owner_id]
+        return self._members[self.owner_id]
 
     @property
     def me(self) -> 'typing.Union[dt_member.Member, None]':
