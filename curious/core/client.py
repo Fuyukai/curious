@@ -1274,6 +1274,14 @@ class Client(object):
         self.shard_count = shards
         await self.start(shards=shards, **kwargs)
 
+    async def _cleanup(self):
+        """
+        Performs cleanup.
+        """
+        for gateway in self._gateways.values():
+            await gateway._close()
+            await gateway.websocket.close()
+
     def run(self, token: str = None, shards: typing.Union[int, object] = 1, *,
             monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT,
             **kwargs):
@@ -1301,9 +1309,11 @@ class Client(object):
             coro = self.start(shards=shards, **kwargs)
 
         try:
-            return kernel.run(coro, shutdown=True)
+            return kernel.run(coro)
         except (KeyboardInterrupt, EOFError):
-            return
+            # we have to cleanup
+            kernel._crashed = False
+            return kernel.run(self._cleanup)
 
     @classmethod
     def from_token(cls, token: str = None):
