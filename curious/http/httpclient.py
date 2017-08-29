@@ -250,7 +250,7 @@ class HTTPClient(object):
                 # Make the request.
                 response = await self._make_request(*args, **kwargs)
                 self.logger.debug("{} {} => {}".format(kwargs.get("method", "???"),
-                                                       kwargs.get("url", "???"),
+                                                       kwargs.get("path", "???"),
                                                        response.status_code))
 
                 if response.status_code in range(500, 600):
