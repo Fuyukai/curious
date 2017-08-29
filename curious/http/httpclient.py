@@ -249,9 +249,9 @@ class HTTPClient(object):
             for tries in range(0, 5):
                 # Make the request.
                 response = await self._make_request(*args, **kwargs)
-                self.logger.debug("{} {} => {}".format(kwargs.get("method", "???"),
-                                                       kwargs.get("path", "???"),
-                                                       response.status_code))
+                method = kwargs.get("method", "???")
+                path = kwargs.get("path", "???")
+                self.logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
 
                 if response.status_code in range(500, 600):
                     # 502 means that we can retry without worrying about ratelimits.
