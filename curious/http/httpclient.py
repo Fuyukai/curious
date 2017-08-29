@@ -278,9 +278,8 @@ class HTTPClient(object):
                 # Next, check if we need to sleep.
                 # Check if we need to sleep.
                 # This is signaled by Ratelimit-Remaining being 0 or Ratelimit-Global being True.
-                should_sleep = remaining == 0 or \
-                               response.headers.get("X-Ratelimit-Global", None) is not None
                 is_global = response.headers.get("X-Ratelimit-Global", None) is not None
+                should_sleep = remaining == 0 or is_global
 
                 if should_sleep:
                     # The time until the reset is given by X-Ratelimit-Reset.

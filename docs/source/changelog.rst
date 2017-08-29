@@ -19,6 +19,10 @@ This document displays the differences between each release of curious.
 0.5.0 (Released 2017-07-31)
 ---------------------------
 
+.. warning::
+
+    This is the last version of curious that supports Python 3.5.
+
  - Add :meth:`.HTTPClient.get_audit_logs`.
 
  - Add gateway event dispatching.
