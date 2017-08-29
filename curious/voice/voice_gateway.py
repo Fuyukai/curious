@@ -74,6 +74,7 @@ class VoiceGateway(object):
         self.user_id = user_id
         self.guild_id = guild_id
         self.sequence = 0
+        self.ssrc_mapping = {}
 
         #: The main gateway object.
         self.main_gateway = None  # type: Gateway
@@ -303,9 +304,15 @@ class VoiceGateway(object):
 
         elif op == VGatewayOp.SESSION_DESCRIPTION:
             # Extract the secret key.
-            self.secret_key = data.get('secret_key')
+            self.secret_key = data["secret_key"]
             await self.send_speaking()
             await self._got_secret_key.set()
+
+        elif op == VGatewayOp.SPEAKING:
+            # build a cache of user_id -> ssrc
+            user_id = int(data.get("user_id"))
+            ssrc = data.get("ssrc")
+            self.ssrc_mapping[user_id] = ssrc
 
         elif op == VGatewayOp.HEARTBEAT:
             # silence

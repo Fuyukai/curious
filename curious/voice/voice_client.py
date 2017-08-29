@@ -212,7 +212,7 @@ class VoiceClient(object):
                 new_socket = socket.socket(item[0], item[1])
                 break
             except:
-                continue
+                logger.debug("Failed to make socket", exc_info=True)
         else:
             raise ConnectionError("Could not create voice socket")
 
