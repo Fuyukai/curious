@@ -13,15 +13,22 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
+import heapq
 import logging
 import socket
 import struct
+import time
+from io import BytesIO
+from typing import Tuple, Union
 
 import curio
+from curio.io import Socket
 from curio.socket import getaddrinfo
 from nacl.secret import SecretBox
-from opuslib import Encoder
+from opuslib import Decoder, Encoder
+from opuslib.exceptions import OpusError
 
+from curious.dataclasses import member as dt_member, user as dt_user
 from curious.voice import voice_player as vp
 from curious.voice.voice_gateway import VoiceGateway
 
@@ -71,8 +78,11 @@ class VoiceClient(object):
         self.sequence = 0  # sequence is 2 bytes
         self.timestamp = 0  # timestamp is 4 bytes
 
+        # Opus encoder/decoder
+        # Do not use
         self.encoder = Encoder(48000, 2, 'audio')
         self.encoder.bitrate = 96000
+        self.decoder = Decoder(48000, 2)
 
     @property
     def open(self):
@@ -126,6 +136,41 @@ class VoiceClient(object):
         packet[0:4] = struct.pack(">I", self.vs_ws.ssrc)
 
         return packet
+
+    def unpack_packet(self, data: bytes) -> Tuple[int, int, int, bytes]:
+        """
+        Unpacks a voice packet received from Discord.
+
+        :param data: The data to unpack.
+        :return: A tuple of (ssrc, sequence, timestamp, data).
+        """
+        header = data[:12]
+        encrypted_data = data[12:]
+
+        # unpack header data
+        type_ = header[0]
+        version = header[1]
+        sequence = struct.unpack(">H", header[2:4])[0]
+        timestamp = struct.unpack(">I", header[4:8])[0]
+        ssrc = struct.unpack(">I", header[8:12])[0]
+
+        # okay, for some reason discord sends malformed packets
+        # 0x90 as type means we need to chop off the first 8 bytes from the decrypted data
+        # because it's invalid opus
+        # first, decrypt the data
+
+        nonce = bytearray(24)
+        nonce[:12] = header
+
+        encryptor = SecretBox(bytes(self.vs_ws.secret_key))
+        decrypted = encryptor.decrypt(encrypted_data, nonce=bytes(nonce))
+
+        if type_ == 0x90:
+            decrypted = decrypted[8:]
+
+        pcm_frames = self.decoder.decode(decrypted, 3840)
+
+        return ssrc, sequence, timestamp, pcm_frames
 
     def _send_voice_packet(self, built_packet: bytes):
         """
@@ -202,7 +247,7 @@ class VoiceClient(object):
         # This is because we need a voice thread to be able to access it.
         # This prevents blocking actions from killing the entire voice connection.
 
-        addrinfo = await getaddrinfo(self.vs_ws.endpoint[:-5],
+        addrinfo = await getaddrinfo(self.vs_ws.endpoint,
                                      self.vs_ws.port,
                                      0,
                                      socket.SOCK_DGRAM)
@@ -252,6 +297,77 @@ class VoiceClient(object):
         self._sock.setblocking(False)
 
         # We are DONW!
+
+    async def receive_voice_data(self, author: 'Union[dt_user.User, dt_member.Member]',
+                                 start_timeout: int = 2000,
+                                 end_timeout: int = 500) -> BytesIO:
+        """
+        Receives voice data from the specified author.
+
+        This will automatically re-order any voice packets by their ``sequence`` field in the
+        header.
+
+        .. warning::
+
+            Only one call of this can be done per voice client at any given time.
+
+        :param author: The author to listen to. None to listen to ALL audio.
+        :param start_timeout: The number of ms to wait for the first UDP packets.
+        :param end_timeout: The number of ms to wait after a packet has been received to return.
+        :return: A :class:`BytesIO` with the data written to it.
+        """
+        # human explanation of what this does
+        # 1) it reads data from the UDP socket
+        # 2) it decodes the header, and body
+        # 3) it checks the ssrc, and if it matches with the one we have cached, we put it in the
+        #    heap ordered based on sequence
+        # 4) once no udp packets have been received in the last <timeout> ms, we join all the
+        #    data together and return
+        packet_heap = []
+        last_packet = 0
+
+        # wrap the socket in an io.Socket so we dont spam threads
+        sock = Socket(self._sock)
+
+        while True:
+            # check if it's been more than end_timeout ms and we've started to receive packets
+            if last_packet > 0 and (time.monotonic() - last_packet) >= end_timeout:
+                break
+
+            try:
+                timeout = end_timeout if last_packet > 0 else start_timeout
+                data = await curio.timeout_after(timeout / 1000, sock.recv(8192))
+            except curio.TaskTimeout:
+                # no data was received, so we need to timeout.
+                break
+
+            try:
+                ssrc, sequence, timestamp, data = self.unpack_packet(data)
+            except OpusError:
+                # malformed packet
+                continue
+
+            # ensure we dont have useless data
+            if ssrc not in self.vs_ws.ssrc_mapping:
+                continue
+
+            # check we're listening to the packet for the right author
+            if author is not None:
+                if author.id != self.vs_ws.ssrc_mapping[ssrc]:
+                    continue
+
+            item = (sequence, timestamp, data)
+            heapq.heappush(packet_heap, item)
+
+        body = BytesIO()
+        for i in range(len(packet_heap)):
+            body.write(heapq.heappop(packet_heap)[2])
+
+        # put it back to the start
+        # so that it can actually be read off of
+        body.seek(0)
+
+        return body
 
     @classmethod
     async def create(cls, main_client,

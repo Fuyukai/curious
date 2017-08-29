@@ -312,7 +312,7 @@ class VoiceGateway(object):
             # build a cache of user_id -> ssrc
             user_id = int(data.get("user_id"))
             ssrc = data.get("ssrc")
-            self.ssrc_mapping[user_id] = ssrc
+            self.ssrc_mapping[ssrc] = user_id
 
         elif op == VGatewayOp.HEARTBEAT:
             # silence
