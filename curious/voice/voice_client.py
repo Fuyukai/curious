@@ -13,12 +13,12 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
-import functools
 import logging
 import socket
 import struct
 
 import curio
+from curio.socket import getaddrinfo
 from nacl.secret import SecretBox
 from opuslib import Encoder
 
@@ -201,9 +201,11 @@ class VoiceClient(object):
         # Now, you may be wondering why we use raw UDP sockets instead of using "nice" sockets.
         # This is because we need a voice thread to be able to access it.
         # This prevents blocking actions from killing the entire voice connection.
-        addrinfo = await curio.abide(functools.partial(
-            socket.getaddrinfo, self.vs_ws.endpoint[:-5], self.vs_ws.port, type=socket.SOCK_DGRAM)
-        )
+
+        addrinfo = await getaddrinfo(self.vs_ws.endpoint[:-5],
+                                     self.vs_ws.port,
+                                     0,
+                                     socket.SOCK_DGRAM)
 
         for item in addrinfo:
             try:
@@ -236,8 +238,8 @@ class VoiceClient(object):
         # Find the index of the null byte, starting from 4th.
         ip_start = 4
         ip_end = packet_data.index(0, ip_start)
-
         our_ip = packet_data[ip_start:ip_end].decode('ascii')
+
         # Also, we need our local port.
         # Unpack the little-endian (thanks discord!) port from the very end of the voice packet.
         our_port = struct.unpack_from('<H', packet_data, len(packet_data) - 2)[0]
