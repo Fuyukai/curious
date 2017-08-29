@@ -13,11 +13,11 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
+import collections
 import heapq
 import logging
 import socket
 import struct
-import time
 from io import BytesIO
 from typing import Tuple, Union
 
@@ -26,9 +26,9 @@ from curio.io import Socket
 from curio.socket import getaddrinfo
 from nacl.secret import SecretBox
 from opuslib import Decoder, Encoder
-from opuslib.exceptions import OpusError
 
 from curious.dataclasses import member as dt_member, user as dt_user
+from curious.dataclasses.bases import Dataclass
 from curious.voice import voice_player as vp
 from curious.voice.voice_gateway import VoiceGateway
 
@@ -42,6 +42,90 @@ def simulate_overflow(value: int, bits: int, signed: bool):
     base = 1 << bits
     value %= base
     return value - base if signed and value.bit_length() == bits else value
+
+
+class _VoiceReceiver:
+    """
+    A class that allows arbitrary starting and stopping of recording voice.
+    """
+
+    def __init__(self, cl: 'VoiceClient'):
+        self.client = cl
+
+        # buffers for the packet heap
+        self._buffers = collections.defaultdict(lambda: [])
+
+        self._started: bool = False
+        self._task: curio.Task = None
+
+    async def _listen(self):
+        """
+        Listens to voice data, storing it in a buffer.
+        """
+        # wrap the socket so we dont spawn a billion threads
+        sock = Socket(self.client._sock)
+        while self._started:
+            try:
+                data = await sock.recv(8192)
+            except curio.TaskCancelled:
+                return
+
+            ssrc, sequence, timestamp, data = self.client.unpack_packet(data)
+            heapq.heappush(self._buffers[ssrc], (sequence, timestamp, data))
+
+    async def start(self):
+        """
+        Starts receiving voice.
+        """
+        if self._started:
+            return
+
+        self._started = True
+        self._task = await curio.spawn(self._listen)
+
+    async def stop(self):
+        """
+        Stops receiving voice.
+        """
+        if not self._started:
+            return
+
+        self._started = False
+        self._task.cancel()
+
+    def get_data(self, user: 'Union[int, dt_user.User, dt_member.Member, None]' = None) -> BytesIO:
+        """
+        Gets the data for a user in the buffers.
+
+        .. note::
+
+            If the user is not in voice, or has not sent anything, this will return an empty
+            BytesIO.
+
+        :param user: The :class:`.User`, :class:`.Member` or int ssrc to get the data of.
+        :return: A :class:`BytesIO` containing the PCM data for the user.
+        """
+        bio = BytesIO()
+        if isinstance(user, Dataclass):
+            user_id = user.id
+            ssrc = self.client.vs_ws.ssrc_mapping.get(user_id)
+
+            # return empty bytesio
+            if ssrc is None:
+                return bio
+        elif isinstance(user, int):
+            ssrc = user
+        else:
+            raise ValueError("Must pass a User/Member or ssrc")
+
+        # do a very fast sort on the buffer
+        buffer = self._buffers[ssrc]
+        buffer.sort()
+        for i in range(len(buffer)):
+            bio.write(buffer.pop(0))
+
+        bio.seek(0)
+        return bio
 
 
 class VoiceClient(object):
@@ -168,7 +252,7 @@ class VoiceClient(object):
         if type_ == 0x90:
             decrypted = decrypted[8:]
 
-        pcm_frames = self.decoder.decode(decrypted, 3840)
+        pcm_frames = self.decoder.decode(decrypted, 960)
 
         return ssrc, sequence, timestamp, pcm_frames
 
@@ -298,76 +382,17 @@ class VoiceClient(object):
 
         # We are DONW!
 
-    async def receive_voice_data(self, author: 'Union[dt_user.User, dt_member.Member]',
-                                 start_timeout: int = 2000,
-                                 end_timeout: int = 500) -> BytesIO:
+    def get_receiver(self) -> '_VoiceReceiver':
         """
-        Receives voice data from the specified author.
-
-        This will automatically re-order any voice packets by their ``sequence`` field in the
-        header.
-
-        .. warning::
-
-            Only one call of this can be done per voice client at any given time.
-
-        :param author: The author to listen to. None to listen to ALL audio.
-        :param start_timeout: The number of ms to wait for the first UDP packets.
-        :param end_timeout: The number of ms to wait after a packet has been received to return.
-        :return: A :class:`BytesIO` with the data written to it.
+        Get a voice receiver that can be used to receive voice.
         """
-        # human explanation of what this does
-        # 1) it reads data from the UDP socket
-        # 2) it decodes the header, and body
-        # 3) it checks the ssrc, and if it matches with the one we have cached, we put it in the
-        #    heap ordered based on sequence
-        # 4) once no udp packets have been received in the last <timeout> ms, we join all the
-        #    data together and return
-        packet_heap = []
-        last_packet = 0
+        if not self.open:
+            raise RuntimeError("Voice client must be open")
 
-        # wrap the socket in an io.Socket so we dont spam threads
-        sock = Socket(self._sock)
+        if self._sock is None:
+            raise RuntimeError("Voice client must be connected to UDP")
 
-        while True:
-            # check if it's been more than end_timeout ms and we've started to receive packets
-            if last_packet > 0 and (time.monotonic() - last_packet) >= end_timeout:
-                break
-
-            try:
-                timeout = end_timeout if last_packet > 0 else start_timeout
-                data = await curio.timeout_after(timeout / 1000, sock.recv(8192))
-            except curio.TaskTimeout:
-                # no data was received, so we need to timeout.
-                break
-
-            try:
-                ssrc, sequence, timestamp, data = self.unpack_packet(data)
-            except OpusError:
-                # malformed packet
-                continue
-
-            # ensure we dont have useless data
-            if ssrc not in self.vs_ws.ssrc_mapping:
-                continue
-
-            # check we're listening to the packet for the right author
-            if author is not None:
-                if author.id != self.vs_ws.ssrc_mapping[ssrc]:
-                    continue
-
-            item = (sequence, timestamp, data)
-            heapq.heappush(packet_heap, item)
-
-        body = BytesIO()
-        for i in range(len(packet_heap)):
-            body.write(heapq.heappop(packet_heap)[2])
-
-        # put it back to the start
-        # so that it can actually be read off of
-        body.seek(0)
-
-        return body
+        return _VoiceReceiver(self)
 
     @classmethod
     async def create(cls, main_client,
