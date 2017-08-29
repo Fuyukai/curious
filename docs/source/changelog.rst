@@ -3,6 +3,17 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.6.0
+-----
+
+ - Bring voice close inline with the standard of the rest of the code.
+
+    - Change the voice gateway to use an async thread, rather than a regular thread.
+
+    - Document and make public :meth:`.VoiceClient.get_packet_header`,
+      :meth:`.VoiceClient.get_voice_packet` and :meth:`.VoiceClient.get_ip_discovery_packet`.
+
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 

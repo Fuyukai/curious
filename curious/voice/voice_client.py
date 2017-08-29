@@ -79,7 +79,7 @@ class VoiceClient(object):
         return self.vs_ws._open
 
     # Voice encoder related things.
-    def _get_packet_header(self) -> bytes:
+    def get_packet_header(self) -> bytes:
         """
         Gets the voice packet header.
 
@@ -100,14 +100,14 @@ class VoiceClient(object):
 
         return header
 
-    def _get_voice_packet(self, opus_body: bytes) -> bytes:
+    def get_voice_packet(self, opus_body: bytes) -> bytes:
         """
         Gets the voice packet to send to Discord, after encryption.
 
         :param opus_body: The body of the packet to encrypt.
         :return: The bytes of the packet.
         """
-        header = self._get_packet_header()
+        header = self.get_packet_header()
         nonce = bytearray(24)
         # copy the header into nonce
         nonce[:12] = header
@@ -118,7 +118,7 @@ class VoiceClient(object):
         # pack_nonce is True, so the body can just be concatted
         return bytes(header + encrypted_body.ciphertext)
 
-    def _get_ip_discovery_packet(self) -> bytes:
+    def get_ip_discovery_packet(self) -> bytes:
         """
         Gets the IP discovery packet to send to Discord.
         """
@@ -131,7 +131,7 @@ class VoiceClient(object):
         """
         Sends a voice packet.
 
-        :param built_packet: The final built packet, as got by `_get_voice_packet`.
+        :param built_packet: The final built packet, as got by :meth:`.get_voice_packet`.
         """
         # Overflow values as appropriate.
         sequence = self.sequence + 1
@@ -154,7 +154,7 @@ class VoiceClient(object):
 
         :param opus_data: The data to send.
         """
-        packet = self._get_voice_packet(opus_data)
+        packet = self.get_voice_packet(opus_data)
         self._send_voice_packet(packet)
 
     def send_voice_packet(self, voice_data: bytes):
@@ -181,6 +181,9 @@ class VoiceClient(object):
             await self.vs_ws.next_event()
 
     async def close(self):
+        """
+        Closes the websocket. 
+        """
         await self.vs_ws._close()
         await self.main_task.cancel()
 
@@ -215,7 +218,7 @@ class VoiceClient(object):
 
         # Send an IP discovery packet.
         logger.info("Connecting to {}:{}".format(self.vs_ws.endpoint, self.vs_ws.port))
-        packet = self._get_ip_discovery_packet()
+        packet = self.get_ip_discovery_packet()
         logger.debug("Sending IP discovery packet")
         self._sock.sendto(packet, (self.vs_ws.endpoint, self.vs_ws.port))
 
