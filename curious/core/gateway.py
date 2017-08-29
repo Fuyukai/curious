@@ -223,10 +223,16 @@ class Gateway(object):
         return task
 
     # Utility methods.
-    async def _close(self):
+    async def close(self, code: int = 1000, reason: str = "Client disconnected"):
         """
         Closes the connection.
+
+        :param code: The close code.
+        :param reason: The close reason.
         """
+        if not self.websocket.closed:
+            await self.websocket.close_now(code=code, reason=reason)
+
         self._open = False
         await self._stop_heartbeating.set()
 
@@ -239,14 +245,13 @@ class Gateway(object):
         # Check if heartbeats have drifted.
         if self.hb_stats.heartbeat_acks + 2 < self.hb_stats.heartbeats:
             self.logger.error("Heartbeats have drifted, closing connection!")
-            await self.websocket.close_now(reason="Heartbeats timed out!")
-            await self._close()
+            await self.close(code=1000, reason="Failed to receive heartbeat ACKs in time")
             raise ReconnectWebsocket
 
         try:
             await self.websocket.send(data)
         except WebsocketClosedError:
-            await self._close()
+            await self.close()
 
     def _send_dict(self, payload: dict):
         """
@@ -502,7 +507,7 @@ class Gateway(object):
             event = await self.websocket.poll()
         except WebsocketClosedError:
             # Close ourselves.
-            await self._close()
+            await self.close()
             raise
 
         await self.state.client.fire_event("gateway_message_received", event, gateway=self)
@@ -563,7 +568,7 @@ class Gateway(object):
         elif op == GatewayOp.RECONNECT:
             # Try and reconnect to the gateway.
             await self.state.client.fire_event("gateway_reconnect_received", gateway=self)
-            self._close()
+            self.close()
             raise ReconnectWebsocket()
 
         elif op == GatewayOp.DISPATCH:
@@ -586,7 +591,7 @@ class Gateway(object):
                 except Exception:
                     self.logger.exception("Error decoding event {} with data "
                                           "{}".format(event, data))
-                    await self._close()
+                    await self.close(code=1006, reason="Client error")
                     await self.websocket.close_now()
                     raise
             else:

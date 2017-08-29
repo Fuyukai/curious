@@ -1279,8 +1279,7 @@ class Client(object):
         Performs cleanup.
         """
         for gateway in self._gateways.values():
-            await gateway._close()
-            await gateway.websocket.close()
+            await gateway.close()
 
     def run(self, token: str = None, shards: typing.Union[int, object] = 1, *,
             monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT,
