@@ -79,7 +79,12 @@ class VoiceClient(object):
         return self.vs_ws._open
 
     # Voice encoder related things.
-    def _get_packet_header(self):
+    def _get_packet_header(self) -> bytes:
+        """
+        Gets the voice packet header.
+
+        :return: The bytes of the header.
+        """
         header = bytearray(12)
 
         # constant values, provided by the docs
@@ -95,7 +100,13 @@ class VoiceClient(object):
 
         return header
 
-    def _get_voice_packet(self, opus_body: bytes):
+    def _get_voice_packet(self, opus_body: bytes) -> bytes:
+        """
+        Gets the voice packet to send to Discord, after encryption.
+
+        :param opus_body: The body of the packet to encrypt.
+        :return: The bytes of the packet.
+        """
         header = self._get_packet_header()
         nonce = bytearray(24)
         # copy the header into nonce
@@ -107,7 +118,10 @@ class VoiceClient(object):
         # pack_nonce is True, so the body can just be concatted
         return bytes(header + encrypted_body.ciphertext)
 
-    def _get_ip_discovery_packet(self):
+    def _get_ip_discovery_packet(self) -> bytes:
+        """
+        Gets the IP discovery packet to send to Discord.
+        """
         packet = bytearray(70)
         packet[0:4] = struct.pack(">I", self.vs_ws.ssrc)
 
@@ -131,8 +145,8 @@ class VoiceClient(object):
         except BlockingIOError:
             # can't send rn, oh well
             # opus is built for this
-            logger.error("Failed to send voice packet! Sequence: {}, timestamp: {}".format(self.sequence,
-                                                                                           self.timestamp))
+            logger.error("Failed to send voice packet! Sequence: {}, timestamp: {}".
+                         format(self.sequence, self.timestamp))
 
     def send_opus_data(self, opus_data: bytes):
         """
@@ -170,9 +184,11 @@ class VoiceClient(object):
         await self.vs_ws._close()
         await self.main_task.cancel()
 
-    async def connect(self, timeout=10):
+    async def connect(self, timeout: int = 10) -> None:
         """
         Connects the voice client to the UDP server.
+
+        :param timeout: The timeout before the connection is closed.
         """
         logger.info("Opening UDP connection to Discord voice servers.")
         # Wait before the voice socket is ready.
@@ -205,7 +221,8 @@ class VoiceClient(object):
 
         # Wait for our local IP to be received.
         try:
-            packet_data, addr = await curio.timeout_after(timeout, curio.abide(self._sock.recvfrom, 70))
+            packet_data, addr = await curio.timeout_after(timeout,
+                                                          curio.abide(self._sock.recvfrom, 70))
         except curio.TaskTimeout:
             self._sock.close()
             self.vs_ws._close()
@@ -223,7 +240,7 @@ class VoiceClient(object):
         our_port = struct.unpack_from('<H', packet_data, len(packet_data) - 2)[0]
 
         # Ask the voice websocket to send our SESSION DESCRIPTION packet.
-        self.vs_ws.send_select_protocol(our_ip, our_port)
+        await self.vs_ws.send_select_protocol(our_ip, our_port)
         await self.vs_ws._got_secret_key.wait()
         logger.info("Established connection to Discord's voice servers.")
 
@@ -237,10 +254,12 @@ class VoiceClient(object):
         """
         Creates a new VoiceClient from a channel and a gateway instance.
 
+        :param main_client: The main :class:`.Client` to use.
         :param gateway: The gateway instance to use.
         :param channel: The :class:`~.Channel` to connect to.
         """
-        vs_ws = await VoiceGateway.from_gateway(gw=gateway, channel_id=channel.id, guild_id=channel.guild.id)
+        vs_ws = await VoiceGateway.from_gateway(gw=gateway, channel_id=channel.id,
+                                                guild_id=channel.guild.id)
         obb = cls(main_client, channel=channel)
         obb.vs_ws = vs_ws
         obb.main_task = await curio.spawn(obb.poll())

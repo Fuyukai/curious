@@ -4,19 +4,20 @@ A special gateway client for Voice.
 import enum
 import json
 import logging
-import queue
 import socket
 import threading
+import time
+import typing
 import zlib
 
 import curio
-import time
-import typing
 from cuiows.client import WSClient
 from cuiows.exc import WebsocketClosedError
+from curio.thread import AWAIT, async_thread
 
-from curious.core.gateway import Gateway
+from curious.core.gateway import Gateway, ReconnectWebsocket
 
+logger = logging.getLogger("curious.voice")
 
 class VGatewayOp(enum.IntEnum):
     IDENTIFY = 0
@@ -29,62 +30,38 @@ class VGatewayOp(enum.IntEnum):
     HELLO = 8
 
 
-class _HeartbeatThread(threading.Thread):
+@async_thread(daemon=True)
+def _heartbeat_loop(gw: 'VoiceGateway', heartbeat_interval: float):
     """
-    A subclass of threading.Thread that sends heartbeats every <x> seconds.
+    Heartbeat looper that loops and sends heartbeats to the gateway.
+
+    :param gw: The gateway to handle.
     """
+    # async threads!
+    logger.debug("Sending initial heartbeat.")
+    AWAIT(gw.send_heartbeat())
+    while True:
+        # this is similar to the normal threaded event waiter
+        # it will time out after heartbeat_interval seconds.
+        try:
+            AWAIT(curio.timeout_after(heartbeat_interval, gw._stop_heartbeating.wait()))
+        except curio.TaskTimeout:
+            pass
+        else:
+            break
 
-    def __init__(self, gw: 'VoiceGateway', heartbeat_interval: float, *args, **kwargs):
-        # super() isn't used anywhere else so I'm scared to use it here
-        threading.Thread.__init__(self, *args, **kwargs)
-        self._gateway = gw
-        self._hb_interval = heartbeat_interval
-
-        # The event that tells us to stop heartbeating.
-        self._stop_heartbeating = threading.Event()
-
-        # This thread doesn't need to die before Python closes, so we can daemonize.
-        # This means that Python won't wait on us to shutdown.
-        self.daemon = True
-
-    def run(self):
-        """
-        Heartbeats every <x> seconds.
-        """
-        # This uses `Event.wait()` to wait for the next heartbeat.
-        # This is effectively a bootleg sleep(), but we can signal it at any time to stop.
-        # Which is really cool!
-
-        # Send the first heartbeat.
-        self._send_heartbeat()
-        while not self._stop_heartbeating.wait(self._hb_interval):
-            self._send_heartbeat()
-
-    def get_heartbeat(self):
-        """
-        :return: A heartbeat packet.
-        """
-        return {
-            "op": int(VGatewayOp.HEARTBEAT),
-            # ms time for v2
-            "d": int(round(time.time() * 1000))
-        }
-
-    def _send_heartbeat(self):
-        hb = self.get_heartbeat()
-
-        # Enqueue onto the sending queue.
-        logger.debug("Voice session heartbeating with sequence {}".format(hb["d"]))
-        self._gateway.send(hb)
-
-
-logger = logging.getLogger("curious.voice")
+        try:
+            AWAIT(gw.send_heartbeat())
+        except ReconnectWebsocket:
+            break
 
 
 class VoiceGateway(object):
     """
     A special type of websocket gateway that operates on the Voice connection.
     """
+
+    GATEWAY_VERSION = 3
 
     def __init__(self, session_id: str, token: str, endpoint: str, user_id: str, guild_id: str):
         #: The current cuiows websocket object.
@@ -101,14 +78,8 @@ class VoiceGateway(object):
         #: The main gateway object.
         self.main_gateway = None  # type: Gateway
 
-        #: The event queue.
-        self._event_queue = queue.Queue()
-
-        #: The sender task.
-        self._sender_task = None  # type: curio.Task
-
-        #: The current heartbeat thread.
-        self._heartbeat_thread = None
+        #: The current threading event used to signal if we need to stop heartbeating.
+        self._stop_heartbeating = curio.Event()
 
         #: Voice server stuff
         self.endpoint = endpoint
@@ -132,21 +103,6 @@ class VoiceGateway(object):
         self._open = True
         return self.websocket
 
-    # copied from main gateway
-    async def _send_events(self):
-        while self._open:
-            try:
-                next_item = await curio.abide(self._event_queue.get)
-            except curio.CancelledError:
-                self._event_queue.put_nowait(next_item)
-                return
-            if isinstance(next_item, dict):
-                # this'll come back around in a sec
-                self._send_json(next_item)
-            else:
-                logger.debug("Sending websocket data {}".format(next_item))
-                await self._send(next_item)
-
     async def _send(self, data):
         """
         Sends some data.
@@ -157,6 +113,23 @@ class VoiceGateway(object):
             await self.websocket.send(data)
         except WebsocketClosedError:
             await self._close()
+
+    def get_heartbeat(self):
+        """
+        :return: A heartbeat packet.
+        """
+        return {
+            "op": int(VGatewayOp.HEARTBEAT),
+            # ms time for v2/v3
+            "d": int(round(time.time() * 1000))
+        }
+
+    async def send_heartbeat(self):
+        """
+        Sends a heartbeat.
+        """
+        hb = self.get_heartbeat()
+        return await self._send_json(hb)
 
     def _send_json(self, payload: dict):
         """
@@ -169,19 +142,17 @@ class VoiceGateway(object):
         data = json.dumps(payload)
         return self.send(data)
 
-    def send(self, data: typing.Any):
+    async def send(self, data: typing.Any):
         """
         Enqueues some data to be sent down the websocket.
-
-        This does not send the data immediately - it is enqueued to be sent.
         """
-        try:
-            self._event_queue.put(data, block=False)
-        except queue.Full as e:
-            raise RuntimeError("Gateway queue is full - this should never happen!") from e
+        await self.websocket.send(data)
 
     # Sending methods
-    def send_identify(self):
+    async def send_identify(self):
+        """
+        Sends an IDENTIFY payload.
+        """
         payload = {
             "op": VGatewayOp.IDENTIFY,
             "d": {
@@ -191,9 +162,12 @@ class VoiceGateway(object):
                 "token": str(self.token)
             }
         }
-        self._send_json(payload)
+        await self._send_json(payload)
 
-    def send_select_protocol(self, ip: str, port: int):
+    async def send_select_protocol(self, ip: str, port: int):
+        """
+        Sends a SELECT PROTOCOL packet.
+        """
         payload = {
             "op": VGatewayOp.SELECT_PROTOCOL,
             "d": {
@@ -206,9 +180,12 @@ class VoiceGateway(object):
             }
         }
 
-        self._send_json(payload)
+        await self._send_json(payload)
 
-    def send_speaking(self, speaking: bool=True):
+    async def send_speaking(self, speaking: bool = True):
+        """
+        Sends a SPEAKING packet.
+        """
         payload = {
             "op": VGatewayOp.SPEAKING,
             "d": {
@@ -217,38 +194,38 @@ class VoiceGateway(object):
             }
         }
 
-        self._send_json(payload)
+        await self._send_json(payload)
 
-    def _start_heartbeating(self, heartbeat_interval: float) -> threading.Thread:
+    async def _start_heartbeating(self, heartbeat_interval: float) -> threading.Thread:
         """
         Starts the heartbeat thread.
         :param heartbeat_interval: The number of seconds between each heartbeat.
         """
-        if self._heartbeat_thread:
-            self._heartbeat_thread._stop_heartbeating.set()
+        if not self._stop_heartbeating.is_set():
+            # cancel some poor thread elsewhere
+            await self._stop_heartbeating.set()
+            del self._stop_heartbeating
 
-        t = _HeartbeatThread(self, heartbeat_interval)
-        t.start()
-        self._heartbeat_thread = t
-        return t
+        self._stop_heartbeating = curio.Event()
+
+        # dont reference the task - it'll die by itself
+        task = await curio.spawn(_heartbeat_loop(self, heartbeat_interval), daemon=True)
+
+        return task
 
     async def _close(self):
         if not self.websocket.closed:
             await self.websocket.close_now(code=1000, reason="Client disconnected")
 
         self._open = False
-        self._heartbeat_thread._stop_heartbeating.set()
-        await self._sender_task.cancel()
-        # put something on the queue to kill the old task
-        self._event_queue.put(None)
-        del self._event_queue
+        await self._stop_heartbeating.set()
 
     @classmethod
     async def from_gateway(cls, gw: Gateway, guild_id: int, channel_id: int) -> 'VoiceGateway':
         """
         Opens a new voice gateway connection from an existing Gateway connection.
 
-        :param gw: The existing :class:`Gateway` to create from.
+        :param gw: The existing :class:`.Gateway` to create from.
         :param guild_id: The guild ID we're opening to.
         :param channel_id: The channel ID we're connecting to.
         """
@@ -267,16 +244,16 @@ class VoiceGateway(object):
                   user_id=user_id, guild_id=guild_id)
         # Open our connection to the voice websocket.
         if port == "80":
-            await obb.connect("ws://{}/?v=2".format(state["endpoint"]))
+            await obb.connect(f"ws://{endpoint}/?v={cls.GATEWAY_VERSION}")
         elif port == "443":
-            await obb.connect("wss://{}/?v=2".format(state["endpoint"]))
-        obb._sender_task = await curio.spawn(obb._send_events())
+            await obb.connect(f"wss://{endpoint}/?v={cls.GATEWAY_VERSION}")
         # Send our IDENTIFY.
-        obb.send_identify()
+        logger.info("Sending IDENTIFY...")
+        await obb.send_identify()
 
         return obb
 
-    async def next_event(self):
+    async def next_event(self) -> None:
         """
         Gets the next event, in decoded form.
         """
@@ -317,7 +294,7 @@ class VoiceGateway(object):
             # Start heartbeating.
             heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
             logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
-            self._start_heartbeating(heartbeat_interval)
+            await self._start_heartbeating(heartbeat_interval)
             # Set our `ssrc`, `port` and `modes`.
             self.ssrc = data.get("ssrc")
             self.port = data.get("port")
@@ -327,7 +304,7 @@ class VoiceGateway(object):
         elif op == VGatewayOp.SESSION_DESCRIPTION:
             # Extract the secret key.
             self.secret_key = data.get('secret_key')
-            self.send_speaking()
+            await self.send_speaking()
             await self._got_secret_key.set()
 
         elif op == VGatewayOp.HEARTBEAT:
