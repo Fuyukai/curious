@@ -591,7 +591,7 @@ class Client(object):
         if self.bot_type & BotType.SELF_BOT and user != self.user:
             return
 
-        if self.bot_type & BotType.NO_DMS and message.channel.is_private:
+        if self.bot_type & BotType.NO_DMS and message.channel.private:
             return
 
         if self.bot_type & BotType.NO_GUILDS and message.channel.guild_id is not None:

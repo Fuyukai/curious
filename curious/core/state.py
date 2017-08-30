@@ -1110,7 +1110,7 @@ class State(object):
         guild = self._guilds.get(guild_id)
 
         channel = Channel(self.client, **event_data)
-        if channel.is_private:
+        if channel.private:
             self._private_channels[channel.id] = channel
         else:
             channel.guild_id = guild.id
@@ -1151,7 +1151,7 @@ class State(object):
         if not channel:
             return
 
-        if channel.is_private:
+        if channel.private:
             del self._private_channels[channel.id]
         else:
             del channel.guild._channels[channel.id]
@@ -1256,7 +1256,7 @@ class State(object):
         if not channel:
             return
 
-        if not channel.is_private:
+        if not channel.private:
             member = channel.guild.members.get(member_id)
             if not member:
                 return

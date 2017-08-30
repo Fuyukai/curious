@@ -226,7 +226,7 @@ class Channel(Dataclass):
 
         #: If private, the list of :class:`~.User` that are in this channel.
         self._recipients = {}
-        if self.is_private:
+        if self.private:
             for recipient in kwargs.get("recipients"):
                 u = self._bot.state.make_user(recipient)
                 self._recipients[u.id] = u
@@ -288,11 +288,11 @@ class Channel(Dataclass):
                                                             obb=obb, channel=self)
 
     @property
-    def is_private(self) -> bool:
+    def private(self) -> bool:
         """
         :return: If this channel is a private channel (i.e has no guild.)
         """
-        return self.type not in [ChannelType.TEXT, ChannelType.VOICE]
+        return self.guild is None
 
     @property
     def recipients(self) -> 'typing.Mapping[int, dt_user.User]':
