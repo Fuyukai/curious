@@ -4,6 +4,7 @@ Base classes that all dataclasses inherit from.
 .. currentmodule:: curious.dataclasses.bases
 """
 import datetime
+
 from curious.core import client
 
 DISCORD_EPOCH = 1420070400000
@@ -34,7 +35,7 @@ class IDObject(object):
     __str__ = __repr__
 
     @property
-    def timestamp(self):
+    def snowflake_timestamp(self) -> datetime.datetime:
         """
         :return: The timestamp of the snowflake.
         """

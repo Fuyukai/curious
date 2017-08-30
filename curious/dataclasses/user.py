@@ -161,7 +161,7 @@ class User(Dataclass):
         :return: The time this user was created.
         :rtype: datetime.datetime
         """
-        return self.timestamp
+        return self.snowflake_timestamp
 
     def __repr__(self):
         return "<{} id={} name={} discrim={}>".format(type(self).__name__, self.id, self.name,

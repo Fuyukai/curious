@@ -171,10 +171,9 @@ class Member(Dataclass):
         return next(iter(sorted(self.roles, reverse=True)), self.guild.default_role)
 
     @property
-    def guild_permissions(self):
+    def guild_permissions(self) -> Permissions:
         """
         :return: The calculated guild permissions for a member.
-        :rtype: :class:`.Permissions`
         """
         if self == self.guild.owner:
             return Permissions.all()

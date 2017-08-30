@@ -19,6 +19,10 @@ This document displays the differences between each release of curious.
 
  - Only sleep on shard creation until the last shard.
 
+ - Move :meth:`.Channel.is_private` to :meth:`.Channel.private`.
+
+ - Move :meth:`.IDObject.timestamp` to :meth:`.IDObject.snowflake_timestamp`.
+
 
 0.5.1 (Released 2017-08-19)
 ---------------------------
