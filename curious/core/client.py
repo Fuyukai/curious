@@ -1231,7 +1231,8 @@ class Client(object):
             shard_listener = await self.boot_shard(shard_id, **kwargs)
             tasks.append(shard_listener)
             logger.info("Sleeping for 5 seconds between shard creation.")
-            await curio.sleep(5)
+            if shard_id < shards - 1:
+                await curio.sleep(5)
 
         results = []
 

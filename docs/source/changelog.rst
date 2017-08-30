@@ -13,6 +13,12 @@ This document displays the differences between each release of curious.
     - Document and make public :meth:`.VoiceClient.get_packet_header`,
       :meth:`.VoiceClient.get_voice_packet` and :meth:`.VoiceClient.get_ip_discovery_packet`.
 
+ - Add voice receive API.
+
+ - Make :class:`.AppInfo` a subclass of :class:`.Dataclass`.
+
+ - Only sleep on shard creation until the last shard.
+
 
 0.5.1 (Released 2017-08-19)
 ---------------------------
