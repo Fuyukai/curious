@@ -21,13 +21,15 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_role_ids", "joined_at", "nickname", "guild_id", "presence", "voice",)
+    __slots__ = ("_user_data", "_role_ids", "joined_at", "nickname", "guild_id", "presence",
+                 "voice",)
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
 
-        # make the user to use and cache
-        self._bot.state.make_user(kwargs["user"])
+        # copy user data for when the user is decached
+        self._user_data = kwargs["user"]
+        self._bot.state.make_user(self._user_data)
 
         #: An iterable of role IDs this member has.
         self._role_ids = [int(rid) for rid in kwargs.get("roles", [])]
@@ -92,7 +94,11 @@ class Member(Dataclass):
         """
         :return: The underlying user for this member.
         """
-        return self._bot.state._users[self.id]
+        try:
+            return self._bot.state._users[self.id]
+        except KeyError:
+            # don't go through make_user as it'll cache it
+            return dt_user.User(self._bot, **self._user_data)
 
     @property
     def name(self) -> str:
@@ -139,7 +145,7 @@ class Member(Dataclass):
         if not self.guild:
             return None
 
-        return [self.guild.roles[i] for i in self._role_ids]
+        return sorted([self.guild.roles[i] for i in self._role_ids])
 
     @property
     def colour(self) -> int:
