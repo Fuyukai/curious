@@ -1300,7 +1300,7 @@ class Client(object):
 
         kernel = curio.Kernel()
         monitor = Monitor(kernel, monitor_host, monitor_port)
-        if shards == AUTOSHARD:
+        if shards == AUTOSHARD or shards is None:
             coro = self.start_autosharded(token, **kwargs)
         else:
             coro = self.start(shards=shards, **kwargs)
