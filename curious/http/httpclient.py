@@ -75,7 +75,7 @@ class Endpoints:
     GUILD_MEMBER_ROLE = GUILD_MEMBER + "/{role_id}"
     GUILD_VANITY_URL = GUILD_BASE + "/vanity-url"
     GUILD_BANS = GUILD_BASE + "/bans"
-    GUILD_BAN_USER = GUILD_BASE + "/{user_id}"
+    GUILD_BAN_USER = GUILD_BANS + "/{user_id}"
     GUILD_ROLES = GUILD_BASE + "/roles"
     GUILD_ROLE = GUILD_ROLES + "/{role_id}"
     GUILD_WIDGET = GUILD_BASE + "/widget.json"

@@ -5,7 +5,6 @@ Wrappers for Role objects.
 """
 
 import functools
-import typing
 
 import curio
 
@@ -138,7 +137,7 @@ class Role(Dataclass):
         """
         return "<@&{}>".format(self.id)
 
-    def assign_to(self, member: 'dt_member.Member') -> 'typing.Awaitable[dt_member.Member]':
+    async def assign_to(self, member: 'dt_member.Member') -> 'Role':
         """
         Assigns this role to a member.
         
@@ -148,9 +147,10 @@ class Role(Dataclass):
 
         :param member: The :class:`~.Member` to assign to.
         """
-        return self.guild.add_roles(member, self)
+        await self.guild.add_roles(member, self)
+        return self
 
-    def remove_from(self, member: 'dt_member.Member'):
+    async def remove_from(self, member: 'dt_member.Member'):
         """
         Removes this role from a member.
         
@@ -160,9 +160,10 @@ class Role(Dataclass):
         
         :param member: The :class:`~.Member` to assign to. 
         """
-        return self.guild.remove_roles(member, self)
+        await self.guild.remove_roles(member, self)
+        return self
 
-    async def delete_role(self) -> 'Role':
+    async def delete(self) -> 'Role':
         """
         Deletes this role.
         """

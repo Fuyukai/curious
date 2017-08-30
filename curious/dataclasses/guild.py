@@ -936,7 +936,8 @@ class Guild(Dataclass):
 
         await self._bot.http.delete_webhook(webhook.id)
 
-    async def add_roles(self, member: 'dt_member.Member', *roles: 'role.Role'):
+    async def add_roles(self, member: 'dt_member.Member', *roles: 'role.Role') \
+            -> 'dt_member.Member':
         """
         Adds roles to a member.
 

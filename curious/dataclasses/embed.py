@@ -10,6 +10,9 @@ from curious.util import attrdict
 
 
 class Attachment(attrdict):
+    """
+    Represents an attachment in a message.
+    """
     def __init__(self, **kwargs):
         self.id = int(kwargs.get("id", 0))
         attrdict.__init__(self, **kwargs)

@@ -1212,6 +1212,7 @@ class Client(object):
         if shard_count:
             self.shard_count = shard_count
 
+        logger.info(f"Spawning shard {shard_id}")
         await self.connect(token=self._token, shard_id=shard_id, **kwargs)
         t = await curio.spawn(self.poll(shard_id))
         t.task_local_storage["shard_id"] = {"id": shard_id}
@@ -1226,19 +1227,15 @@ class Client(object):
         """
         logger.info("Starting bot with {} shards.".format(shards))
         self.shard_count = shards
-        tasks = []
-        for shard_id in range(0, shards):
-            shard_listener = await self.boot_shard(shard_id, **kwargs)
-            tasks.append(shard_listener)
-            logger.info("Sleeping for 5 seconds between shard creation.")
-            if shard_id < shards - 1:
-                await curio.sleep(5)
-
         results = []
 
-        # Wait for the next task.
-        logger.info("Managing {} shards.".format(len(tasks)))
-        async with TaskGroup(tasks=tasks, name="shard waiter") as g:
+        async with TaskGroup(name="shard waiter") as g:
+            for shard_id in range(0, shards):
+                shard_listener = await g.spawn(self.boot_shard(shard_id, **kwargs))
+                logger.info("Sleeping for 5 seconds between shard creation.")
+                if shard_id < shards - 1:
+                    await curio.sleep(5)
+
             task = await g.next_done()  # type: curio.Task
             if task is None:
                 return
