@@ -6,23 +6,23 @@ Wrappers for Application Info objects.
 from collections import namedtuple
 
 from curious.dataclasses import guild as dt_guild
+from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
 AuthorizedApp = namedtuple("AuthorizedApp", "scopes id application")
 
 
-class AppInfo(object):
+class AppInfo(Dataclass):
     """
     Represents the application info for an OAuth2 application.
     """
 
     def __init__(self, client, **kwargs):
-        self._bot = client
-
         self._application = kwargs.get("application", {})
 
         #: The client ID of this application.
         self.client_id = int(self._application.get("id", 0))
+        super().__init__(self.client_id, client)
 
         if "owner" in self._application:
             owner = self._bot.state.make_user(self._application.get("owner"))
