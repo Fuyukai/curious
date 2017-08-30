@@ -44,8 +44,8 @@ class _Core(plugin.Plugin):
             if command_obb is None:
                 msg = "Command not found."
             else:
-                base = command_obb.get_usage(ctx, command) + "\n\n"
-                base += command_obb.get_help(ctx, command)
+                base = command_obb.get_usage(ctx, initial_name) + "\n\n"
+                base += command_obb.get_help(ctx, initial_name)
                 msg = f"```{base}```"
 
         await ctx.message.channel.send(msg)
