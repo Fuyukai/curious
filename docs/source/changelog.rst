@@ -6,7 +6,7 @@ This document displays the differences between each release of curious.
 0.6.0
 -----
 
- - Bring voice close inline with the standard of the rest of the code.
+ - Bring voice code inline with the standard of the rest of the code.
 
     - Change the voice gateway to use an async thread, rather than a regular thread.
 

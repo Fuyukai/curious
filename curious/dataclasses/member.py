@@ -192,24 +192,29 @@ class Member(Dataclass):
         return permissions
 
     # Member methods.
-    def send(self, content: str, *args, **kwargs):
-        return self.user.send(content, *args, **kwargs)
+    async def send(self, content: str, *args, **kwargs):
+        """
+        Sends a message to a member in DM.
 
-    def ban(self, delete_message_days: int=7):
+        This is a shortcut for :meth:`.User.send`.
+        """
+        return await self.user.send(content, *args, **kwargs)
+
+    async def ban(self, delete_message_days: int = 7):
         """
         Bans this member from the guild.
 
         :param delete_message_days: The number of days of messages to delete.
         """
-        return self.guild.ban(self, delete_message_days=delete_message_days)
+        return await self.guild.ban(self, delete_message_days=delete_message_days)
 
-    def kick(self):
+    async def kick(self):
         """
         Kicks this member from the guild.
         """
-        return self.guild.kick(self)
+        return await self.guild.kick(self)
 
-    def add_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
+    async def add_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
         """
         Adds roles to this member.
 
@@ -217,9 +222,9 @@ class Member(Dataclass):
 
         :param roles: The list of roles to add.
         """
-        return self.guild.add_roles(self, *roles)
+        return await self.guild.add_roles(self, *roles)
 
-    def remove_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
+    async def remove_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
         """
         Removes roles from this member.
 
@@ -227,12 +232,12 @@ class Member(Dataclass):
 
         :param roles: The list of roles to remove.
         """
-        return self.guild.remove_roles(self, *roles)
+        return await self.guild.remove_roles(self, *roles)
 
-    def change_nickname(self, new_nickname: typing.Union[str, None]):
+    async def change_nickname(self, new_nickname: typing.Union[str, None]):
         """
         Changes the nickname of this member.
 
         :param new_nickname: The nickname to change to, None to remove the nickname.
         """
-        return self.guild.change_nickname(self, new_nickname)
+        return await self.guild.change_nickname(self, new_nickname)
