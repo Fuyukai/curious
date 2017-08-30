@@ -970,8 +970,8 @@ class Guild(Dataclass):
 
             return True
 
-        role_ids = set([_r.id for _r in member.roles] + [_r.id for _r in roles])
         listener = await curio.spawn(self._bot.wait_for("member_update", _listener))
+        role_ids = set([_r.id for _r in member.roles] + [_r.id for _r in roles])
 
         try:
             await self._bot.http.edit_member_roles(self.id, member.id, role_ids)
@@ -1189,22 +1189,23 @@ class Guild(Dataclass):
 
         await self._bot.http.edit_widget(self.id, enabled=status, channel_id=channel_id)
 
-    async def get_vanity_invite(self) -> 'dt_invite.Invite':
+    async def get_vanity_invite(self) -> 'typing.Union[None, dt_invite.Invite]':
         """
         Gets the vanity :class:`~.Invite` for this guild.
 
-        :return: The :class:`~.Invite` that corresponds with this guild.
+        :return: The :class:`~.Invite` that corresponds with this guild, if it has one.
         """
         if 'vanity-url' not in self.features:
-            raise CuriousError("This guild has no vanity URL")
+            return None
 
         try:
             resp = await self._bot.http.get_vanity_url(self.id)
         except HTTPException as e:
             if e.error_code != 50020:
                 raise
+            else:
+                return None
 
-            raise CuriousError("This guild has no vanity URL")
         code = resp.get("code", None)
         if code is None:
             return None
