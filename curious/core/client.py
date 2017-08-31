@@ -1214,7 +1214,12 @@ class Client(object):
 
         logger.info(f"Spawning shard {shard_id}")
         await self.connect(token=self._token, shard_id=shard_id, **kwargs)
-        t = await curio.spawn(self.poll(shard_id))
+        if "task_group" in kwargs:
+            spawn = kwargs["task_group"].spawn
+        else:
+            spawn = curio.spawn
+
+        t = await spawn(self.poll(shard_id))
         t.task_local_storage["shard_id"] = {"id": shard_id}
         return t
 
@@ -1231,7 +1236,7 @@ class Client(object):
 
         async with TaskGroup(name="shard waiter") as g:
             for shard_id in range(0, shards):
-                shard_listener = await g.spawn(self.boot_shard(shard_id, **kwargs))
+                shard_listener = await self.boot_shard(shard_id, task_group=g, **kwargs)
                 logger.info("Sleeping for 5 seconds between shard creation.")
                 if shard_id < shards - 1:
                     await curio.sleep(5)
