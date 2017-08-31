@@ -11,6 +11,7 @@ from curious.commands.context import Context
 class _Core(plugin.Plugin):
     name = "Core"
     _include_in_scan = False
+
     async def _help_without_embeds(self, ctx: Context, command: str = None):
         """
         The default help command without embeds.
@@ -19,12 +20,29 @@ class _Core(plugin.Plugin):
             base = f"**Commands:**\n" \
                    f"Use `{ctx.prefix}help <command>` for more information about each command.\n\n"
 
-            for num, plugin in enumerate(ctx.bot.plugins.copy().values()):
-                gen = list(ctx.bot.get_commands_for(plugin))
-                cmds = sorted(gen, key=lambda c: c.name)
+            num = 0
+            for plugin in ctx.bot.plugins.copy().values():
+                cmds = sorted(list(ctx.bot.get_commands_for(plugin)), key=lambda c: c.name)
+
+                # check if the command can be ran by this user
+                # if they can, its appended to ``can_run``
+                # then built instead of the cmds list
+                can_run = []
+                for command in cmds:
+                    cannot, _ = await command.can_run(ctx)
+                    if not cannot:
+                        can_run.append(command)
+
+                # if can_run is empty this cog cannot be ran
+                if not can_run:
+                    continue
+
+                # increment the plguin number here
+                # so it doesn't go 1. 3. etc if nothing in 2 is runnable by the author
+                num += 1
 
                 names = " **|** ".join(f"`{cmd.name}`" for cmd in cmds)
-                base += f"**{num + 1}. {plugin.name}**: {names}\n"
+                base += f"**{num}. {plugin.name}**: {names}\n"
             msg = base
         else:
             initial_name = command

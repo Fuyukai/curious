@@ -14,6 +14,7 @@ Commands helpers.
 import functools
 
 from curious.commands.cmd import Command
+from curious.commands.context import Context
 from curious.commands.exc import CheckFailureError, CommandInvokeError, CommandsError, \
     ConversionFailedError, MissingArgumentError
 from curious.commands.plugin import Plugin
