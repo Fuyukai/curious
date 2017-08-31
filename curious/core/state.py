@@ -1061,7 +1061,7 @@ class State(object):
         # self._users[member.user.id] = member.user
 
         # Overwrite roles, we want to get rid of any roles that are stale.
-        member._role_ids = event_data.get("roles", [])
+        member._role_ids = [int(i) for i in event_data.get("roles", [])]
 
         guild._members[member.id] = member
 
