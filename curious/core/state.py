@@ -777,7 +777,7 @@ class State(object):
         guild.afk_channel_id = int(event_data.get("afk_channel", 0))
         guild.afk_timeout = event_data.get("afk_timeout")
         guild.verification_level = event_data.get("verification_level")
-        guild._owner_id = int(event_data.get("owner_id", 0))
+        guild.owner_id = int(event_data.get("owner_id", 0))
 
         await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
 
