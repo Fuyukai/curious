@@ -21,7 +21,7 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_user_data", "_role_ids", "joined_at", "nickname", "guild_id", "presence",
+    __slots__ = ("_user_data", "role_ids", "joined_at", "nickname", "guild_id", "presence",
                  "voice",)
 
     def __init__(self, client, **kwargs):
@@ -32,7 +32,7 @@ class Member(Dataclass):
         self._bot.state.make_user(self._user_data)
 
         #: An iterable of role IDs this member has.
-        self._role_ids = [int(rid) for rid in kwargs.get("roles", [])]
+        self.role_ids = [int(rid) for rid in kwargs.get("roles", [])]
 
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))
