@@ -4,7 +4,6 @@ Wrappers for Widget objects.
 .. currentmodule:: curious.dataclasses.widget
 """
 import typing
-import weakref
 from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild
@@ -119,17 +118,11 @@ class Widget(object):
     def __init__(self, client, **kwargs):
         self._bot = client
 
-        # we have a limited subsection of a full Guild object here
-        id_ = int(kwargs.get("id", 0))
+        #: The guild ID for this widget.
+        self.guild_id = int(kwargs.get("id", 0))
 
-        # chekc to see if we have the real guild
-        try:
-            self._real_guild = weakref.ref(client.guilds[id_])
-        except KeyError:
-            self._real_guild = None
-            self._widget_guild = WidgetGuild(self._bot, **kwargs)
-        else:
-            self._widget_guild = None
+        #: The widget guild for this widget.
+        self._widget_guild = WidgetGuild(self._bot, **kwargs)
 
         #: The invite URL that this widget represents.
         self.invite_url = kwargs.get("instant_invite", None)
@@ -137,10 +130,13 @@ class Widget(object):
     @property
     def guild(self) -> 'typing.Union[dt_guild.Guild, WidgetGuild]':
         """
-        :return: The guild object associated with this widget. 
-        :rtype: One of :class:`~.Guild`, :class:`~.WidgetGuild`.
+        :return: The guild object associated with this widget.
+            If the guild was cached, a :class:`.Guild`. Otherwise, a :class:`.WidgetGuild`.
         """
-        return self._real_guild() or self._widget_guild
+        try:
+            return self._bot.guilds[self.guild_id]
+        except KeyError:
+            return self._widget_guild
 
     @property
     def channels(self) -> 'typing.Mapping[int, typing.Union[dt_channel.Channel, WidgetChannel]]':
