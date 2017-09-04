@@ -6,11 +6,9 @@ Wrappers for Webhook objects.
 
 import typing
 
-from curious.dataclasses.bases import IDObject, Dataclass
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import channel as dt_channel
-from curious.dataclasses import embed as dt_embed
+from curious.dataclasses import channel as dt_channel, embed as dt_embed, guild as dt_guild, \
+    user as dt_user
+from curious.dataclasses.bases import Dataclass
 from curious.util import base64ify
 
 
@@ -85,7 +83,7 @@ class Webhook(Dataclass):
         """
         :return: The computed avatar URL for this webhook.
         """
-        if self.user._avatar_hash is None:
+        if self.user.avatar_hash is None:
             return self.default_avatar_url
         return self.user.avatar_url
 
@@ -98,22 +96,25 @@ class Webhook(Dataclass):
         return self.user.name or self.default_name
 
     @property
-    def guild(self):
+    def guild(self) -> 'dt_guild.Guild':
         """
         :return: The :class:`~.Guild` this webhook is in.
         """
-        return self._bot.guilds[self.guild_id]
+        return self._bot.guilds.get(self.guild_id)
 
     @property
-    def channel(self):
+    def channel(self) -> 'dt_channel.Channel':
         """
         :return: The :class:`~.Channel` this webhook is in. 
         """
-        return self.guild.channels[self.channel_id]
+        if self.guild is None:
+            return None
+
+        return self.guild.channels.get(self.channel_id)
 
     @classmethod
-    def create(cls, channel: 'dt_channel.Channel', *,
-               name: str, avatar: bytes) -> 'typing.Awaitable[Webhook]':
+    async def create(cls, channel: 'dt_channel.Channel', *,
+                     name: str, avatar: bytes) -> 'Webhook':
         """
         Creates a new webhook.
 
@@ -122,7 +123,7 @@ class Webhook(Dataclass):
         :param avatar: The bytes data for the webhook's default avatar.
         :return: A new :class:`~.Webhook`.
         """
-        return channel.create_webhook(name=name, avatar=avatar)
+        return await channel.create_webhook(name=name, avatar=avatar)
 
     async def get_token(self) -> str:
         """
@@ -167,7 +168,7 @@ class Webhook(Dataclass):
 
             # Update the user too
             self.user.username = data.get("name")
-            self.user._avatar_hash = data.get("avatar")
+            self.user.avatar_hash = data.get("avatar")
         else:
             await self.channel.edit_webhook(self, name=name, avatar=avatar)
 
