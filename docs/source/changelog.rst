@@ -23,6 +23,9 @@ This document displays the differences between each release of curious.
 
  - Move :meth:`.IDObject.timestamp` to :meth:`.IDObject.snowflake_timestamp`.
 
+ - Make some things use ID references rather than object references, and deprivatize the ID
+   attributes on these objects.
+
 
 0.5.1 (Released 2017-08-19)
 ---------------------------
