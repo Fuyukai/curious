@@ -1331,8 +1331,9 @@ class State(object):
             new_voice_state.guild_id = guild.id
 
         # copy the voice states
-        old_voice_state = guild._voice_states[new_voice_state.user_id]
-        guild._voice_states[new_voice_state.user_id] = new_voice_state
+        old_voice_state = guild._voice_states.pop(user_id)
+        if new_voice_state is not None:
+            guild._voice_states[new_voice_state.user_id] = new_voice_state
 
         await self.client.fire_event("voice_state_update", member, old_voice_state,
                                      new_voice_state, gateway=gw)
