@@ -21,8 +21,7 @@ class Member(Dataclass):
     :ivar id: The ID of this member.
     """
 
-    __slots__ = ("_user_data", "role_ids", "joined_at", "nickname", "guild_id", "presence",
-                 "voice",)
+    __slots__ = ("_user_data", "role_ids", "joined_at", "nickname", "guild_id", "presence")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -47,15 +46,22 @@ class Member(Dataclass):
         self.presence = Presence(status=kwargs.get("status", Status.OFFLINE),
                                  game=kwargs.get("game", None))
 
-        #: The current :class:`~.VoiceState` of this member.
-        self.voice = None  # type: dt_vs.VoiceState
-
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
         :return: The :class:`~.Guild` associated with this member. 
         """
         return self._bot.guilds.get(self.guild_id)
+
+    @property
+    def voice(self) -> 'dt_vs.VoiceState':
+        """
+        :return: The :class:`~.VoiceState` associated with this member.
+        """
+        try:
+            return self.guild._voice_states[self.id]
+        except (AttributeError, KeyError):
+            return None
 
     def __hash__(self):
         return hash(self.guild_id) + hash(self.user.id)
@@ -74,7 +80,7 @@ class Member(Dataclass):
         new_object._bot = self._bot
 
         new_object.id = self.id
-        new_object._role_ids = self._role_ids.copy()
+        new_object.role_ids = self.role_ids.copy()
         new_object.joined_at = self.joined_at
         new_object.guild_id = self.guild_id
         new_object.presence = self.presence
@@ -145,7 +151,7 @@ class Member(Dataclass):
         if not self.guild:
             return None
 
-        return sorted([self.guild.roles[i] for i in self._role_ids])
+        return sorted([self.guild.roles[i] for i in self.role_ids])
 
     @property
     def colour(self) -> int:

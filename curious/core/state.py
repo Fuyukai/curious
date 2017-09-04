@@ -557,7 +557,7 @@ class State(object):
         self._user.id = int(id)
         self._user.username = event_data.get("username", self._user.username)
         self._user.discriminator = event_data.get("discriminator", self._user.discriminator)
-        self._user._avatar_hash = event_data.get("avatar", self._user._avatar_hash)
+        self._user.avatar_hash = event_data.get("avatar", self._user.avatar_hash)
 
         await self.client.fire_event("user_update", gateway=gw)
 
@@ -611,7 +611,7 @@ class State(object):
         roles = event_data.get("roles", [])
         if roles:
             # clear roles
-            member._role_ids = [int(rid) for rid in roles]
+            member.role_ids = [int(rid) for rid in roles]
 
         # update the nickname
         member.nickname = event_data.get("nick", member.nickname)
@@ -1062,7 +1062,7 @@ class State(object):
 
         # Overwrite roles, we want to get rid of any roles that are stale.
         if "roles" in event_data:
-            member._role_ids = [int(i) for i in event_data.get("roles", [])]
+            member.role_ids = [int(i) for i in event_data.get("roles", [])]
 
         guild._members[member.id] = member
 
@@ -1240,7 +1240,7 @@ class State(object):
         # Remove the role from all members.
         for member in guild.members.values():
             try:
-                member._role_ids.remove(role.id)
+                member.role_ids.remove(role.id)
             except ValueError:
                 continue
 
@@ -1328,11 +1328,11 @@ class State(object):
             new_voice_state = None
         else:
             new_voice_state = VoiceState(**event_data)
-            new_voice_state._guild_id = guild.id
+            new_voice_state.guild_id = guild.id
 
-        old_voice_state = member.voice
-
-        member.voice = new_voice_state
+        # copy the voice states
+        old_voice_state = guild._voice_states[new_voice_state.user_id]
+        guild._voice_states[new_voice_state.user_id] = new_voice_state
 
         await self.client.fire_event("voice_state_update", member, old_voice_state,
                                      new_voice_state, gateway=gw)
@@ -1433,7 +1433,7 @@ class State(object):
                 "id": u_id,
                 "username": u.username,
                 "discriminator": u.discriminator,
-                "avatar": u._avatar_hash,
+                "avatar": u.avatar_hash,
                 "bot": u.bot
             }
         )

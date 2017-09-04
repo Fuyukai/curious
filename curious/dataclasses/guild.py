@@ -309,7 +309,7 @@ class Guild(Dataclass):
     __slots__ = (
         "id", "unavailable", "name", "afk_timeout", "region",
         "mfa_level", "verification_level", "notification_level", "content_filter_level", "features",
-        "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count",
+        "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count", "_voice_states",
         "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash",
         "owner_id", "afk_channel_id", "system_channel_id",
         "voice_client",
@@ -375,6 +375,8 @@ class Guild(Dataclass):
         self._channels = {}
         #: The emojis that this guild has.
         self._emojis = {}
+        #: The voice states that this guild has.
+        self._voice_states = {}
 
         #: The number of numbers this guild has.
         #: This is automatically updated.
@@ -697,7 +699,7 @@ class Guild(Dataclass):
                 voice_state.channel_id = vs_channel.id
                 voice_state.guild_id = self.id
 
-            member.voice = voice_state
+            self._voice_states[voice_state.user_id] = voice_state
 
         # Create all of the emoji objects for the server.
         self._handle_emojis(data.get("emojis", []))
