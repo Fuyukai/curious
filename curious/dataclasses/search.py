@@ -6,7 +6,6 @@ Wrappers for Search objects.
 import collections
 import functools
 import typing
-import weakref
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
     message as dt_message, user as dt_user
@@ -184,10 +183,10 @@ class SearchQuery(object):
         :param guild: The :class:`~.Guild` to search the messages for.
         :param channel: The :class:`~.Channel` to search messages for. Only used for DMs.
         """
-        self._guild = weakref.ref(guild) if guild is not None else None
+        self._guild = guild
 
         # internal vars used for the search
-        self._channel = weakref.ref(channel) if channel is not None else None
+        self._channel = channel
         self._query = None  # type: str
         self._author = None  # type: typing.Union[dt_user.User, dt_member.Member]
 
@@ -234,9 +233,9 @@ class SearchQuery(object):
     @property
     def _bot(self):
         if self._guild is not None:
-            return self._guild()._bot
+            return self._guild._bot
 
-        return self._channel()._bot
+        return self._channel._bot
 
     # public properties
     @property
@@ -244,10 +243,7 @@ class SearchQuery(object):
         """
         :return: The :class:`~.Guild` this search query is searching. 
         """
-        if self._guild is None:
-            return None
-
-        return self._guild()
+        return self._guild
 
     @property
     def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
@@ -261,10 +257,7 @@ class SearchQuery(object):
         :getter: Gets the :class:`~.Channel` to be searched.
         :setter: Sets the :class:`~.Channel` to be searched. 
         """
-        if self._channel is None:
-            return None
-
-        return self._channel()
+        return self._channel
 
     @channel.setter
     def channel(self, value):
@@ -280,7 +273,7 @@ class SearchQuery(object):
         if self._guild is not None and value.guild != self._guild:
             raise ValueError("Channel to search must be in the same guild")
 
-        self._channel = weakref.ref(value)
+        self._channel = value
 
     @property
     def content(self) -> str:
