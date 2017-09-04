@@ -1361,7 +1361,9 @@ class State(object):
 
         dict.update(self._user.settings, **event_data)
         # make sure to update the guild order
-        self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
+        guild_order = event_data.get("guild_positions")
+        if guild_order:
+            self._guilds.order = [int(x) for x in guild_order]
 
         # update status, if applicable
         new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
