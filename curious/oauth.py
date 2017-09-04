@@ -7,7 +7,7 @@ import enum
 import secrets
 import typing
 
-from asks.sessions import HSession
+from asks.sessions import Session
 from oauthlib.oauth2 import OAuth2Error
 from oauthlib.oauth2.rfc6749.clients import WebApplicationClient
 
@@ -105,7 +105,7 @@ class OAuth2Client(object):
     This will provide a URL that can be used to authorize a client, and then the ability to fetch a
     new :class:`~.OAuth2Token`.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         # note: we can't fetch the client ID automatically, unlike in regular bots :(
         # so you have to pass it manually
@@ -151,7 +151,7 @@ class OAuth2Client(object):
 
         self._oauth2_client = WebApplicationClient(client_id=self.client_id,
                                                    redirect_url=self.redirect_uri)
-        self.sess = HSession(host=self.BASE, endpoint=self.API_BASE)
+        self.sess = Session(base_location=self.BASE, endpoint=self.API_BASE)
 
         #: A list of states that have been seen before.
         #: If the state was not seen, it will raise an invalid state error.

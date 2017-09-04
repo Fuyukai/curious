@@ -61,7 +61,7 @@ class SearchResults(collections.AsyncIterator):
     The return type of iterating over this is a :class:`~.MessageGroup`, which contains the messages 
     around the message that matched the search result.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         async for i in sr:
             print(i.before)  # 2 messages from before
@@ -87,7 +87,7 @@ class SearchResults(collections.AsyncIterator):
         """
         Sets the maximum messages to fetch from this search result.
         
-        .. code-block:: python
+        .. code-block:: python3
         
             async for group in sr.limit(25):
                 ...

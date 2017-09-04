@@ -18,7 +18,7 @@ class Webhook(Dataclass):
     Messages in a guild can be sent by either a Member or a Webhook object - curious makes a key distinction between 
     them. These classes are *mostly* compatible and don't require much effort to use them generically.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         @event("message_create")
         async def handle_messages(ctx, message: Message):

@@ -75,7 +75,7 @@ def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
     Splits a message into individual parts by `delim`, returning a list of strings.
     This method preserves quotes.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         content = '!send "Fuyukai desu" "Hello, world!"'
         split = split_message_content(content, delim=" ")
@@ -105,8 +105,8 @@ def prefix_check_factory(
     If ``command_prefix`` is provided to the :class:`.Client`, then it will automatically call this 
     function to get a message check function to use.
     
-    .. code-block:: python
-        
+    .. code-block:: python3
+
         # verbose form
         message_check = prefix_check_factory(["!", "?"])
         cl = Client(message_check=message_check)
@@ -321,7 +321,7 @@ class Client(object):
         A :class:`collections.Counter` of all events that have been handled since the bot's bootup.
         This can be used to track statistics for events.
          
-        .. code-block:: python
+        .. code-block:: python3
         
             @command()
             async def events(self, ctx: Context):
@@ -428,7 +428,7 @@ class Client(object):
 
         This will copy it to the events dictionary, where it will be used as an event later on.
 
-        .. code-block:: python
+        .. code-block:: python3
         
             @bot.event("message_create")
             async def something(ctx, message: Message):

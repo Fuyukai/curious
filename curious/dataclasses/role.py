@@ -18,7 +18,7 @@ class _MentionableRole(object):
     """
     A wrapper class that makes a role mentionable for a short time period.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         async with role.allow_mentions():
             await ctx.channel.send(role.mention)
@@ -118,7 +118,7 @@ class Role(Dataclass):
         """
         Temporarily allows this role to be mentioned during.
          
-        .. code-block:: python
+        .. code-block:: python3
     
             async with role.allow_mentions():
                 await ctx.channel.send(role.mention)

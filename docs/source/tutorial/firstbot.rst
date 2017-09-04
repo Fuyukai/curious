@@ -32,7 +32,7 @@ Writing the Bot
 
 Open up ``bot.py`` and add the essential import:
 
-.. code-block:: python
+.. code-block:: python3
 
     from curious.core.client import Client
 
@@ -41,7 +41,7 @@ Discord.
 
 Next, you want to define your new bot object.
 
-.. code-block:: python
+.. code-block:: python3
 
     botto = Client(enable_commands=False)
 
@@ -63,7 +63,7 @@ by the websocket connection to process the event.
 To receive new messages automatically, we have to subscribe to the
 ``message_create`` event, using :meth:`.Client.event`.
 
-.. code-block:: python
+.. code-block:: python3
 
     @botto.event("message_create")
     async def my_handler(ctx, message):
@@ -83,7 +83,7 @@ object, which represents a message sent by Discord. We are interested in
 Modify the body of the function so that it prints to the console the
 message content:
 
-.. code-block:: python
+.. code-block:: python3
 
     print("Content:", message.content)
 
@@ -96,7 +96,7 @@ The final stage to this basic tutorial is to **run the bot**.
 The simplest method is to call :meth:`.Client.run` on the bot with your
 token as the argument.
 
-.. code-block:: python
+.. code-block:: python3
 
     botto.run("MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo")
 

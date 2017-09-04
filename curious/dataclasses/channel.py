@@ -52,7 +52,7 @@ class _TypingCtxManager:
     """
     A context manager that when entered, starts typing, and cancels when exited.
     
-    .. code-block:: python
+.. code-block:: python3
     
         async with ctx_man:
             await long_operation()
@@ -85,7 +85,7 @@ class HistoryIterator(collections.AsyncIterator):
     """
     An iterator that allows you to automatically fetch messages and async iterate over them.
     
-    .. code-block:: python
+.. code-block:: python3
     
         it = HistoryIterator(some_channel, bot, max_messages=100)
         
@@ -398,7 +398,7 @@ class Channel(Dataclass):
         This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async 
         iterated over to get message history.
 
-        .. code-block:: python
+        .. code-block:: python3
         
             async for message in channel.get_history(limit=1000):
                 print(message.content, "by", message.author.user.name)

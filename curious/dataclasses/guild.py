@@ -571,10 +571,7 @@ class Guild(Dataclass):
                                        and member.user.discriminator == sp[1]
 
         filtered = filter(predicate, self.members.values())
-        try:
-            return next(filtered)
-        except StopIteration:
-            return None
+        return next(filtered, None)
 
     # creation methods
     def start_chunking(self):
@@ -718,14 +715,16 @@ class Guild(Dataclass):
     @property
     def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are banned.
+        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are
+            banned.
         """
         return AsyncIteratorWrapper(self.get_bans())
 
     @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
         """
-        :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this guild. 
+        :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this
+            guild.
         """
         return AsyncIteratorWrapper(self.get_invites())
 

@@ -2,13 +2,10 @@
 Misc utilities shared throughout the library.
 """
 import base64
-import datetime
-
 import collections
+import datetime
 import imghdr
 import inspect
-
-import functools
 import typing
 
 NO_ITEM = object()
@@ -16,9 +13,10 @@ NO_ITEM = object()
 
 class AsyncIteratorWrapper(collections.AsyncIterator):
     """
-    Wraps a coroutine that returns a sequence of items into something that can iterated over asynchronously.
+    Wraps a coroutine that returns a sequence of items into something that can iterated over
+    asynchronously.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         async def a():
             # ... some long op
@@ -116,7 +114,7 @@ def replace_quotes(item: str) -> str:
     """
     Replaces the quotes in a string, but only if they are un-escaped.
     
-    .. code-block:: python
+    .. code-block:: python3
     
         some_weird_string = r'"this is quoted and removed" but \" that was kept and this isn't \\"'
         replace_quotes(some_weird_string)  # 'this is quoted and removed but " that was kept but this isnt \\'
