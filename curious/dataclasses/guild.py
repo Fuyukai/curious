@@ -621,11 +621,8 @@ class Guild(Dataclass):
         :param emojis: A list of emoji objects from Discord.
         """
         for emoji in emojis:
-            emoji_obj = dt_emoji.Emoji(**emoji)
-            emoji_obj.guild = self
-            for role_id in emoji_obj._role_ids:
-                emoji_obj.roles.append(self._roles.get(int(role_id)))
-
+            emoji_obj = dt_emoji.Emoji(**emoji, client=self._bot)
+            emoji_obj.guild_id = self
             self._emojis[emoji_obj.id] = emoji_obj
 
     def from_guild_create(self, **data: dict) -> 'Guild':
