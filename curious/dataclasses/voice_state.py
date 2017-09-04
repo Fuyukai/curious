@@ -3,31 +3,28 @@ Wrappers for voice state objects.
 
 .. currentmodule:: curious.dataclasses.voice_state
 """
-import typing
 
-from curious.dataclasses import user as dt_user
-from curious.dataclasses import guild as dt_guild
-from curious.dataclasses import channel as dt_channel
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 
 
 class VoiceState(object):
     """
     Represents the voice state of a user.
     """
-    __slots__ = ("_user_id", "_guild_id", "_guild", "_channel_id", "_channel", "_self_mute",
-                 "_server_mute", "_self_deaf", "_server_deaf")
+    __slots__ = ("user_id", "guild_id", "channel_id", "_self_mute",
+                 "_server_mute", "_self_deaf", "_server_deaf", "_bot")
 
     def __init__(self, **kwargs):
-        self._user_id = int(kwargs.get("user_id", 0)) or None
+        self._bot = kwargs.get("client")
 
-        self._guild_id = int(kwargs.get("guild_id", 0)) or None
+        #: The ID of the user for this VoiceState.
+        self.user_id = int(kwargs.get("user_id", 0)) or None
 
-        #: The :class:`~.Guild` this voice state is associated with.
-        self._guild = None
+        #: The ID of the guild for this VoiceState.
+        self.guild_id = int(kwargs.get("guild_id", 0)) or None
 
-        self._channel_id = int(kwargs.get("channel_id", 0)) or None
-        #: The voice channel this member is in.
-        self._channel = None
+        #: The ID of the channel for this VoiceState.
+        self.channel_id = int(kwargs.get("channel_id", 0)) or None
 
         # Internal state values.
         self._self_mute = kwargs.get("self_mute", False)
@@ -40,40 +37,21 @@ class VoiceState(object):
         """
         :return: The :class:`~.Guild` associated, or None if the guild is uncached.
         """
-        if self._guild is None:
-            return None
-
-        return self._guild()
+        return self._bot.guilds.get(self.guild_id)
 
     @property
     def channel(self) -> 'dt_channel.Channel':
         """
         :return: The :class:`~.Channel` associated, or None if the channel is uncached.
         """
-        if self._channel is None:
-            return None
-
-        return self._channel()
+        return self.guild.channels.get(self.channel_id)
 
     @property
-    def user(self) -> 'typing.Union[dt_user.User, None]':
+    def member(self) -> 'dt_member.Member':
         """
-        :return: The :class:`~.User` associated with this VoiceState. 
+        :return: The :class:`.Member` associated, or None.
         """
-        try:
-            return self.channel._bot.state._users.get(self._user_id)
-        except AttributeError:
-            return None
-
-    def __del__(self):
-        if not hasattr(self, "_channel") or not self._channel:
-            return
-
-        # decache if appropriate
-        try:
-            self.channel._bot.state._check_decache_user(self._user_id)
-        except AttributeError:
-            return None
+        return self.guild.members.get(self.user_id)
 
     @property
     def muted(self) -> bool:
@@ -89,38 +67,32 @@ class VoiceState(object):
         """
         return self._server_deaf or self._self_deaf
 
-    @property
-    def member(self):
-        """
-        :return: The member this is associated with.
-        """
-        return self.guild.members[int(self._user_id)]
-
     def __repr__(self):
-        return "<VoiceState user={} deaf={} mute={} channel={}>".format(self.user, self.deafened,
+        return "<VoiceState user={} deaf={} mute={} channel={}>".format(self.member.user,
+                                                                        self.deafened,
                                                                         self.muted,
                                                                         self.channel)
 
-    def mute(self):
+    async def mute(self):
         """
         Server mutes this member on the guild.
         """
-        return self.guild.change_voice_state(self.member, mute=True)
+        return await self.guild.change_voice_state(self.member, mute=True)
 
-    def unmute(self):
+    async def unmute(self):
         """
         Server unmutes this member on the guild.
         """
-        return self.guild.change_voice_state(self.member, mute=False)
+        return await self.guild.change_voice_state(self.member, mute=False)
 
     async def deafen(self):
         """
         Server deafens this member on the guild.
         """
-        return self.guild.change_voice_state(self.member, deaf=True)
+        return await self.guild.change_voice_state(self.member, deaf=True)
 
     async def undeafen(self):
         """
         Server undeafens this member on the guild.
         """
-        return self.guild.change_voice_state(self.member, deaf=False)
+        return await self.guild.change_voice_state(self.member, deaf=False)

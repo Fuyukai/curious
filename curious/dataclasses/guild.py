@@ -8,7 +8,6 @@ import copy
 import datetime
 import enum
 import typing
-import weakref
 from math import ceil
 from types import MappingProxyType
 
@@ -691,15 +690,12 @@ class Guild(Dataclass):
                 # o well
                 continue
 
-            voice_state = dt_vs.VoiceState(**vs_data)
+            voice_state = dt_vs.VoiceState(**vs_data, client=self._bot)
 
             vs_channel = self._channels.get(int(vs_data.get("channel_id", 0)))
             if vs_channel is not None:
-                voice_state._channel_id = vs_channel.id
-                voice_state._guild_id = self.id
-
-                voice_state._guild = weakref.ref(self)
-                voice_state._channel = weakref.ref(vs_channel)
+                voice_state.channel_id = vs_channel.id
+                voice_state.guild_id = self.id
 
             member.voice = voice_state
 
