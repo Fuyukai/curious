@@ -5,6 +5,7 @@ Defines :class:`~.State`.
 """
 
 import collections
+import copy
 import logging
 import typing
 from types import MappingProxyType
@@ -14,7 +15,8 @@ import curio
 from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.emoji import Emoji
-from curious.dataclasses.guild import Guild
+from curious.dataclasses.guild import ContentFilterLevel, Guild, MFALevel, NotificationLevel, \
+    VerificationLevel
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
@@ -762,22 +764,32 @@ class State(object):
         if not guild:
             return
 
-        old_guild = guild._copy()
+        old_guild = copy.copy(guild)
 
         guild.unavailable = event_data.get("unavailable", False)
-        guild.name = event_data.get("name")
+        guild.name = event_data.get("name", guild.name)
         guild.member_count = event_data.get("member_count", 0)
         if not guild.member_count:
             guild.member_count = len(guild._members)
-        guild._large = event_data.get("large")
-        guild._icon_hash = event_data.get("icon")
-        guild._splash_hash = event_data.get("splash")
-        guild.region = event_data.get("region")
-        guild.mfa_level = event_data.get("mfa_level")
-        guild.afk_channel_id = int(event_data.get("afk_channel", 0))
-        guild.afk_timeout = event_data.get("afk_timeout")
-        guild.verification_level = event_data.get("verification_level")
-        guild.owner_id = int(event_data.get("owner_id", 0))
+        guild._large = event_data.get("large", guild._large)
+        guild._icon_hash = event_data.get("icon", guild._icon_hash)
+        guild._splash_hash = event_data.get("splash", guild._splash_hash)
+        guild.region = event_data.get("region", guild.region)
+        guild.features = event_data.get("features", guild.features)
+
+        guild.mfa_level = MFALevel(event_data.get("mfa_level", guild.mfa_level))
+        guild.verification_level = VerificationLevel(event_data.get("verification_level",
+                                                                    guild.verification_level))
+        guild.notification_level = NotificationLevel(
+            event_data.get("default_message_notifications", guild.notification_level)
+        )
+        guild.content_filter_level = ContentFilterLevel(
+            event_data.get("explicit_content_filter", guild.content_filter_level)
+        )
+
+        guild.afk_channel_id = int(event_data.get("afk_channel", guild.afk_channel_id))
+        guild.afk_timeout = event_data.get("afk_timeout", guild.afk_timeout)
+        guild.owner_id = int(event_data.get("owner_id", guild.owner_id))
 
         await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
 
@@ -1065,8 +1077,8 @@ class State(object):
             member.role_ids = [int(i) for i in event_data.get("roles", [])]
 
         guild._members[member.id] = member
-
         member.nickname = event_data.get("nickname", member.nickname)
+
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 
     async def handle_guild_ban_add(self, gw: 'gateway.Gateway', event_data: dict):
@@ -1138,6 +1150,9 @@ class State(object):
         channel.name = event_data.get("name", channel.name)
         channel.position = event_data.get("position", channel.position)
         channel.topic = event_data.get("topic", channel.topic)
+        channel.nsfw = event_data.get("nsfw", channel.nsfw)
+        channel.icon_hash = event_data.get("icon_hash", channel.icon_hash)
+        channel.owner_id = event_data.get("owner_id", channel.owner_id)
 
         channel._update_overwrites(event_data.get("permission_overwrites", []))
         await self.client.fire_event("channel_update", old_channel, channel, gateway=gw)
