@@ -224,6 +224,9 @@ class Channel(Dataclass):
         #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))
 
+        #: If this channel is NSFW.
+        self.nsfw: bool = kwargs.get("nsfw", False)
+
         #: If private, the list of :class:`~.User` that are in this channel.
         self._recipients = {}
         if self.private:
@@ -252,7 +255,7 @@ class Channel(Dataclass):
         self.owner_id = int(kwargs.get("owner_id", 0)) or None
 
         #: The icon hash of the channel.
-        self._icon_hash = kwargs.get("icon", None)
+        self.icon_hash = kwargs.get("icon", None)
 
         #: The internal overwrites for this channel.
         self._overwrites = {}
@@ -338,8 +341,8 @@ class Channel(Dataclass):
         """
         :return: The icon URL for this channel if it is a group DM. 
         """
-        return "https://cdn.discordapp.com/channel-icons/{}/{}.webp".format(self.id,
-                                                                            self._icon_hash)
+        return "https://cdn.discordapp.com/channel-icons/{}/{}.webp" \
+            .format(self.id, self.icon_hash)
 
     @property
     def voice_members(self) -> 'typing.List[dt_member.Member]':
@@ -347,23 +350,11 @@ class Channel(Dataclass):
         :return: A list of members that are in this voice channel.
         """
         if self.type != ChannelType.VOICE:
-            raise NotImplementedError("No members for channels that aren't voice channels")
+            raise RuntimeError("No members for channels that aren't voice channels")
 
         return list(
-            filter(lambda member: member.voice.channel == self, self.guild.members.values()))
-
-    @property
-    def nsfw(self) -> bool:
-        """
-        :return: True if this is a NSFW channel, False otherwise. 
-        """
-        if self.guild is None:
-            return False
-
-        if self.type is not ChannelType.TEXT:
-            return False
-
-        return self.name.startswith("nsfw-")
+            filter(lambda member: member.voice.channel == self, self.guild.members.values())
+        )
 
     def permissions(self, obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> \
             'dt_permissions.Overwrite':
@@ -388,9 +379,14 @@ class Channel(Dataclass):
         obb.name = self.name
         obb.type = self.type
         obb.guild_id = self.guild_id
+        obb.nsfw = self.nsfw
         obb._recipients = self._recipients
+        obb.icon_hash = self.icon_hash
+        obb.owner_id = self.owner_id
+        obb.topic = self.topic
         obb.position = self.position
         obb._bot = self._bot
+        obb.typing = self.typing
         return obb
 
     def get_history(self, before: int = None,
@@ -516,7 +512,7 @@ class Channel(Dataclass):
         webhook._default_avatar = data.get("avatar")
 
         webhook.user.username = data.get("name")
-        webhook.user._avatar_hash = data.get("avatar")
+        webhook.user.avatar_hash = data.get("avatar")
 
         return webhook
 
@@ -902,11 +898,11 @@ class Channel(Dataclass):
         await self._bot.http.delete_channel(self.id)
         return self
 
-    def connect(self):
+    async def connect(self):
         """
         Connects to voice in this channel.
         """
         if self.type != ChannelType.VOICE:
             raise CuriousError("Cannot connect to a text channel")
 
-        return self.guild.connect_to_voice(self)
+        return await self.guild.connect_to_voice(self)

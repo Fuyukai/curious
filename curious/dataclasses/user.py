@@ -74,8 +74,8 @@ class User(Dataclass):
     :ivar id: The ID of this user.
     """
 
-    __slots__ = ("username", "discriminator", "_avatar_hash", "verified", "mfa_enabled", "bot",
-                 "_bot")
+    __slots__ = ("username", "discriminator", "avatar_hash", "verified", "mfa_enabled",
+                 "bot", "_bot")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
@@ -88,7 +88,7 @@ class User(Dataclass):
         self.discriminator = kwargs.get("discriminator", None)
 
         #: The avatar hash of this user.
-        self._avatar_hash = kwargs.get("avatar", None)
+        self.avatar_hash = kwargs.get("avatar", None)
 
         #: If this user is verified or not.
         self.verified = kwargs.get("verified", None)
@@ -104,7 +104,7 @@ class User(Dataclass):
         new_object.id = self.id
         new_object.username = self.username
         new_object.discriminator = self.discriminator
-        new_object._avatar_hash = self._avatar_hash
+        new_object.avatar_hash = self.avatar_hash
         new_object.verified = self.verified
         new_object.mfa_enabled = self.mfa_enabled
         new_object.bot = self.bot
@@ -118,18 +118,18 @@ class User(Dataclass):
         """
         :return: The avatar URL of this user.
         """
-        if not self._avatar_hash:
+        if not self.avatar_hash:
             return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
                 int(self.discriminator) % 5
             )
 
         # `a_` signifies Nitro and that they have an animated avatar.
-        if self._avatar_hash.startswith("a_"):
+        if self.avatar_hash.startswith("a_"):
             suffix = ".gif"  # soon: animated webp
         else:
             suffix = ".webp"
 
-        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self._avatar_hash,
+        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self.avatar_hash,
                                                                    suffix)
 
     @property
@@ -137,12 +137,12 @@ class User(Dataclass):
         """
         :return: The avatar URL of this user, but static.
         """
-        if not self._avatar_hash:
+        if not self.avatar_hash:
             return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
                 int(self.discriminator) % 5
             )
 
-        return "https://cdn.discordapp.com/avatars/{}/{}.png".format(self.id, self._avatar_hash)
+        return "https://cdn.discordapp.com/avatars/{}/{}.png".format(self.id, self.avatar_hash)
 
     @property
     def name(self) -> str:
@@ -163,11 +163,11 @@ class User(Dataclass):
         """
         return self.snowflake_timestamp
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{} id={} name={} discrim={}>".format(type(self).__name__, self.id, self.name,
                                                       self.discriminator)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "{}#{}".format(self.username, self.discriminator)
 
     async def open_private_channel(self) -> 'dt_channel.Channel':
@@ -175,7 +175,6 @@ class User(Dataclass):
         Opens a private channel with a user.
 
         :return: The newly created private channel.
-        :rtype: :class:`~.Channel`
         """
         if self.discriminator == "0000":
             raise CuriousError("Cannot open a private channel with a webhook")
@@ -230,13 +229,13 @@ class User(Dataclass):
 
         return message
 
-    def unban_from(self, guild: 'dt_guild.Guild'):
+    async def unban_from(self, guild: 'dt_guild.Guild'):
         """
         Unbans this user from a guild.
 
         :param guild: The :class:`~.Guild` to unban in.
         """
-        return guild.unban(self)
+        return await guild.unban(self)
 
 
 class UserSettings(attrdict):
@@ -348,17 +347,17 @@ class BotUser(User):
 
     remove_friend = send_friend_request
 
-    def edit(self, *args, **kwargs):
+    async def edit(self, *args, **kwargs):
         """
         Edits the bot's current profile.
         """
-        return self._bot.edit_profile(*args, **kwargs)
+        return await self._bot.edit_profile(*args, **kwargs)
 
-    def upload_avatar(self, path: str):
+    async def upload_avatar(self, path: str):
         """
-        Edits the bot's current avatar.
+        A higher level interface to editing the bot's avatar.
         """
-        return self._bot.edit_avatar(path)
+        return await self._bot.edit_avatar(path)
 
     @property
     def recent_mentions(self) -> 'typing.AsyncIterator[dt_message.Message]':

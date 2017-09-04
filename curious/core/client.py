@@ -960,7 +960,7 @@ class Client(object):
         :param path: The path-like object to the avatar file.
         """
         with open(path, 'rb') as f:
-            await self.edit_profile(avatar=f.read())
+            return await self.edit_profile(avatar=f.read())
 
     async def get_user(self, user_id: int) -> User:
         """
