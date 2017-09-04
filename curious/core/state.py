@@ -18,7 +18,7 @@ from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.presence import Presence
+from curious.dataclasses.presence import Presence, Status
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.user import BotUser, FriendType, RelationshipUser, User, UserSettings
@@ -1363,10 +1363,11 @@ class State(object):
         # make sure to update the guild order
         self._guilds.order = list(map(int, self._user.settings.get("guild_positions", [])))
 
-        # update status
-        # new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
-        # for guild in self.guilds.values():
-        #    guild.me.status = new_status
+        # update status, if applicable
+        new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
+        for guild in self.guilds.values():
+            if new_status.strength > guild.me.status.strength:
+                guild.me.status = new_status
 
         await self.client.fire_event("user_settings_update", old_settings, self._user.settings,
                                      gateway=gw)
