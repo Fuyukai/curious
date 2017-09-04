@@ -15,7 +15,6 @@ if the data for each  is not cached by curious. Otherwise, full :class:`~.Guild`
 .. currentmodule:: curious.dataclasses.invite
 """
 import typing
-import weakref
 
 from curious import util
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, user as dt_user
@@ -52,7 +51,7 @@ class InviteGuild(IDObject):
         #: The number of voice channels.
         self.voice_channel_count = kwargs.get("voice_channel_count")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<InviteGuild id={} name='{}'>".format(self.id, self.name)
 
     __str__ = __repr__
@@ -71,7 +70,8 @@ class InviteGuild(IDObject):
         :return: The splash URL for this guild, or None if one isn't set.
         """
         if self._splash_hash:
-            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id, self._splash_hash)
+            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id,
+                                                                           self._splash_hash)
 
 
 class InviteChannel(IDObject):
@@ -88,7 +88,7 @@ class InviteChannel(IDObject):
         #: The :class:`~.ChannelType` of this channel.
         self.type = dt_channel.ChannelType(kwargs.get("type"))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<InviteChannel name={}>".format(self.name)
 
 
@@ -124,8 +124,8 @@ class Invite(object):
     Represents an invite object.
     """
 
-    __slots__ = ("_bot", "code", "_real_guild", "_real_channel", "_invite_guild",
-                 "_invite_channel", "_invite_metadata", "inviter")
+    __slots__ = ("_bot", "code", "guild_id", "channel_id",
+                 "_invite_guild", "_invite_channel", "_invite_metadata", "inviter")
 
     def __init__(self, client, **kwargs):
         self._bot = client
@@ -133,17 +133,11 @@ class Invite(object):
         #: The invite code.
         self.code = kwargs.get("code")  # type: str
 
-        guild_id = int(kwargs["guild"]["id"])
-        # check to see if it's in our state first, failing that construct an InviteGuild object.
-        if guild_id in client.state.guilds:
-            # get a weakref to the guild
-            self._real_guild = weakref.ref(client.state.guilds[guild_id])
-            # get a weakref to the channel, using the previous weakref
-            self._real_channel = weakref.ref(self._real_guild()
-                                             .channels[int(kwargs["channel"]["id"])])
-        else:
-            self._real_guild = None
-            self._real_channel = None
+        #: The guild ID for this invite.
+        self.guild_id = int(kwargs["guild"]["id"])
+
+        #: The channel ID for this invite.
+        self.channel_id = int(kwargs["channel"]["id"])
 
         #: The invite guild this is attached to.
         #: The actual guild object can be more easily fetched with `.guild`.
@@ -167,10 +161,10 @@ class Invite(object):
         else:
             self._invite_metadata = InviteMetadata(**kwargs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Invite code={} guild={} channel={}>".format(self.code, self.guild, self.channel)
 
-    def __del__(self):
+    def __del__(self) -> None:
         if self.inviter:
             self._bot.state._check_decache_user(self.inviter.id)
 
@@ -179,14 +173,18 @@ class Invite(object):
         """
         :return: The guild this invite is associated with.
         """
-        return self._real_guild() or self._invite_guild
+        return self._bot.state.guilds.get(self.guild_id, self._invite_guild)
 
     @property
     def channel(self) -> 'typing.Union[dt_channel.Channel, InviteChannel]':
         """
         :return: The channel this invite is associated with.
         """
-        return self._real_channel() or self._invite_channel
+        g = self.guild
+        if g == self._invite_guild:
+            return self._invite_channel
+
+        return g.channels.get(self.channel_id, self._invite_channel)
 
     async def delete(self):
         """
@@ -194,8 +192,9 @@ class Invite(object):
 
         You must have MANAGE_CHANNELS permission in the guild to delete the invite.
         """
-        if self._real_guild is not None:
-            if not self._real_guild.guild_permissions.manage_channels:
+        guild = self.guild
+        if guild != self._invite_guild:
+            if not guild.me.guild_permissions.manage_channels:
                 raise PermissionsError("manage_channels")
 
         await self._bot.http.delete_invite(self.code)
