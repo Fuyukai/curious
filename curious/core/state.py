@@ -1250,7 +1250,7 @@ class State(object):
         """
         Called when a user starts typing.
         """
-        member_id = int(event_data.get("user_id"))
+        user_id = int(event_data.get("user_id"))
         channel_id = int(event_data.get("channel_id"))
 
         channel = self.find_channel(channel_id)
@@ -1258,19 +1258,16 @@ class State(object):
             return
 
         if not channel.private:
-            member = channel.guild.members.get(member_id)
+            member = channel.guild.members.get(user_id)
             if not member:
                 return
             await self.client.fire_event("member_typing", channel, member, gateway=gw)
         else:
-            if len(channel.recipients) == 1:
-                await self.client.fire_event("user_typing", channel, channel.user, gateway=gw)
-            else:
-                user = channel.recipients.get(member_id)
-                if user is None:
-                    return
+            user = channel.recipients.get(user_id)
+            if user is None:
+                return
 
-                await self.client.fire_event("user_typing", channel, user, gateway=gw)
+            await self.client.fire_event("user_typing", channel, user, gateway=gw)
 
     # Voice bullshit
     async def handle_voice_server_update(self, gw: 'gateway.Gateway', event_data: dict):
