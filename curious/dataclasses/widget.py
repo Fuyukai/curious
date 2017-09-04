@@ -50,6 +50,7 @@ class WidgetMember(Dataclass):
         }
         #: The :class:`~.User` object associated with this member.
         self.user = bot.state.make_user(user_dict)
+        bot.state._check_decache_user(user_dict["id"])
 
         #: The :class:`~.WidgetGuild` object associated with this member.
         self.guild = guild
