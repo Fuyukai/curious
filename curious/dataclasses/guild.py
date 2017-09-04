@@ -338,6 +338,7 @@ class Guild(Dataclass):
 
         #: The AFK channel ID of this guild.
         self.afk_channel_id = None  # type: int
+
         #: The ID of the system channel for this guild.
         #: This is where welcome messages and the likes are sent.
         #: Effective replacement for default channel for bots.

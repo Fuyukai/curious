@@ -503,7 +503,7 @@ class State(object):
             self._guilds.order = list(map(int, self._user.settings.guild_positions))
 
             logger.info("Processed {} friends "
-                             "and {} blocked users.".format(len(self._friends), len(self._blocked)))
+                        "and {} blocked users.".format(len(self._friends), len(self._blocked)))
 
         # Create all of the guilds.
         for guild in event_data.get("guilds", []):
@@ -523,7 +523,7 @@ class State(object):
             logger.info("Chunking {} guilds immediately.".format(len(self.guilds)))
 
         logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."
-                         .format(gw.shard_id))
+                    .format(gw.shard_id))
 
         # Don't fire `_ready` here, because we don't have all guilds.
         await self.client.fire_event("connect", gateway=gw)
@@ -535,7 +535,7 @@ class State(object):
         if len(event_data.get("guilds", {})) == 0:
             await self.is_ready(gw.shard_id).set()
             logger.info("No more guilds to get for shard {}, or client is user. "
-                             "Dispatching READY.".format(gw.shard_id))
+                        "Dispatching READY.".format(gw.shard_id))
             await self.client.fire_event("ready", gateway=gw)
 
     async def handle_resumed(self, gw: 'gateway.Gateway', event_data: dict):
@@ -547,7 +547,7 @@ class State(object):
         new_events = gw.sequence_num - prev_seq
 
         logger.info("Successfully resumed session on shard ID {}, replayed"
-                         "{} new events.".format(gw.shard_id, new_events))
+                    "{} new events.".format(gw.shard_id, new_events))
         await self.client.fire_event("resumed", new_events, gateway=gw)
 
     async def handle_user_update(self, gw: 'gateway.Gateway', event_data: dict):
@@ -618,12 +618,7 @@ class State(object):
         # update the nickname
         member.nickname = event_data.get("nick", member.nickname)
 
-        try:
-            user = member.user
-        except KeyError:
-            # make the new user
-            user = self.make_user(event_data["user"])
-
+        user = member.user
         if not isinstance(user, RelationshipUser):
             # recreate the user object, so the user is properly cached
             if "username" in event_data["user"]:
@@ -648,7 +643,7 @@ class State(object):
 
         members = event_data.get("members", [])
         logger.info("Got a chunk of {} members in guild {} "
-                         "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
+                    "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
 
         guild._handle_member_chunk(event_data.get("members"))
         await self.client.fire_event("guild_chunk", guild, len(members), gateway=gw)
@@ -693,8 +688,7 @@ class State(object):
             member.presence = Presence(**presence)
 
         logger.info("Processed a guild sync for guild {} with "
-                         "{} members and {} presences.".format(guild.name, len(members),
-                                                               len(presences)))
+                    "{} members and {} presences.".format(guild.name, len(members), len(presences)))
 
         await self.client.fire_event("guild_sync", guild, len(members),
                                      len(presences), gateway=gw)
@@ -787,6 +781,7 @@ class State(object):
             event_data.get("explicit_content_filter", guild.content_filter_level)
         )
 
+        guild.system_channel_id = int(event_data.get("system_channel_id", guild.system_channel_id))
         guild.afk_channel_id = int(event_data.get("afk_channel", guild.afk_channel_id))
         guild.afk_timeout = event_data.get("afk_timeout", guild.afk_timeout)
         guild.owner_id = int(event_data.get("owner_id", guild.owner_id))
