@@ -6,7 +6,6 @@ Websocket gateway code.
 import collections
 import enum
 import logging
-import queue
 import sys
 import threading
 import time
@@ -267,14 +266,11 @@ class Gateway(object):
     async def send(self, data: typing.Any):
         """
         Sends a variable type of data down the gateway.
-        """
-        try:
-            if isinstance(data, dict):
-                await self._send_dict(data)
-            else:
-                await self._send(data)
-        except queue.Full as e:
-            raise RuntimeError("Gateway queue is full - this should never happen!") from e
+    """
+        if isinstance(data, dict):
+            await self._send_dict(data)
+        else:
+            await self._send(data)
 
     # Sending events.
     async def send_identify(self):
