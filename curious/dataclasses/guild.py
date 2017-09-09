@@ -1064,9 +1064,8 @@ class Guild(Dataclass):
         async def _listener(before, after):
             return after.guild == self and after.id == member.id
 
-        listener = await curio.spawn(
-            self._bot.wait_for("member_update", _listener)
-        )  # type: curio.Task
+        coro = self._bot.wait_for("member_update", _listener)
+        listener = await curio.spawn(coro)  # type: curio.Task
 
         try:
             await coro

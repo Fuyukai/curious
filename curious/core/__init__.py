@@ -12,5 +12,6 @@ delegating it to client code.
     client
     event
     gateway
+    httpclient
     state
 """

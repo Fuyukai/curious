@@ -25,6 +25,7 @@ from curio.task import Task, TaskGroup
 
 from curious.commands import cmd, context, plugin
 from curious.core.event import EventContext, event as ev_dec
+from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
@@ -34,7 +35,6 @@ from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.exc import CuriousError
-from curious.http.httpclient import HTTPClient
 from curious.util import attrdict, base64ify
 
 #: A sentinel value to indicate that the client should automatically shard.

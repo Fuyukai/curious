@@ -266,8 +266,6 @@ class Channel(Dataclass):
         #: The internal overwrites for this channel.
         self._overwrites = {}
 
-        self.typing = self._typing
-
     def __repr__(self):
         return f"<Channel id={self.id} name={self.name} type={self.type.name} " \
                f"guild_id={self.guild_id}>"
