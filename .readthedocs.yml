@@ -1,10 +1,4 @@
 ## Read the docs config file.
 
-python:
-  # Use Python 3.5 to build docs.
-  version: 3.6
-  # Use `pip` to install into the environment.
-  pip_install: true
-  # Install `docs` extra requirements.
-  extra_requirements:
-    - docs
+conda:
+    file: environment.yml

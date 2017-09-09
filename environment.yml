@@ -1,0 +1,29 @@
+name: py36
+
+# python 3.6
+channels:
+  - conda-forge
+
+dependencies:
+  - openssl
+  - pip
+  - setuptools
+  - python=3.6.1
+  - pynacl
+  - wheel
+  - zlib
+  - libffi
+  # requirements for rtd
+  - pip:
+    - sphinx
+    - sphinx-autodoc-typehints
+    - sphinxcontrib-asyncio
+    - guzzle_sphinx_theme
+    - cuiows
+    - curio
+    - pylru
+    - asks
+    - pytz
+    - opuslib
+    - pynacl
+    - oauthlib
