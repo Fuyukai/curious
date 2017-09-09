@@ -162,6 +162,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
     async def create(self, name: str, type: 'channel.ChannelType',
                      permission_overwrites: 'typing.List[dt_permissions.Overwrite]' = None,
                      *,
+                     parent: 'channel.Channel' = None,
                      bitrate: int = 64, user_limit: int = 0,
                      topic: str = None) -> 'channel.Channel':
         """
@@ -170,6 +171,10 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         :param name: The name of the channel.
         :param type: The :class:`.ChannelType` of the channel.
         :param permission_overwrites: The list of permission overwrites to use for this channel.
+
+        For guild channels:
+
+        :param parent: The parent :class:`.Channel` for this channel.
 
         For voice channels:
 
@@ -191,6 +196,15 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         if type is channel.ChannelType.VOICE:
             kwargs["bitrate"] = bitrate
             kwargs["user_limit"] = user_limit
+
+        if parent is not None:
+            if parent.type != channel.ChannelType.CATEGORY:
+                raise CuriousError("Cannot create channel with non-category parent")
+
+            if type.value == channel.ChannelType.CATEGORY:
+                raise CuriousError("Cannot create category channel with category")
+
+            kwargs["parent_id"] = parent.id
 
         # create a listener so we wait for the WS before editing
         async def _listener(channel: channel.Channel):

@@ -26,6 +26,7 @@ This document displays the differences between each release of curious.
  - Make some things use ID references rather than object references, and deprivatize the ID
    attributes on these objects.
 
+ - Add support for channel categories in the API and the gateway.
 
 0.5.1 (Released 2017-08-19)
 ---------------------------

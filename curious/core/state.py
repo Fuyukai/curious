@@ -32,6 +32,16 @@ UserType = typing.TypeVar("U", bound=User)
 logger = logging.getLogger("curious.state")
 
 
+def int_or_none(val, default: typing.Any) -> typing.Union[int, None]:
+    """
+    Returns int or None.
+    """
+    if val is None:
+        return default
+
+    return int(val)
+
+
 class GuildStore(collections.MutableMapping):
     """
     A store for guilds in the state.
@@ -781,10 +791,12 @@ class State(object):
             event_data.get("explicit_content_filter", guild.content_filter_level)
         )
 
-        guild.system_channel_id = int(event_data.get("system_channel_id", guild.system_channel_id))
-        guild.afk_channel_id = int(event_data.get("afk_channel", guild.afk_channel_id))
+        guild.system_channel_id = int_or_none(event_data.get("system_channel_id"),
+                                              guild.system_channel_id)
+
+        guild.afk_channel_id = int_or_none(event_data.get("afk_channel"), guild.afk_channel_id)
         guild.afk_timeout = event_data.get("afk_timeout", guild.afk_timeout)
-        guild.owner_id = int(event_data.get("owner_id", guild.owner_id))
+        guild.owner_id = int_or_none(event_data.get("owner_id"), guild.owner_id)
 
         await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
 
@@ -1147,7 +1159,8 @@ class State(object):
         channel.topic = event_data.get("topic", channel.topic)
         channel.nsfw = event_data.get("nsfw", channel.nsfw)
         channel.icon_hash = event_data.get("icon_hash", channel.icon_hash)
-        channel.owner_id = event_data.get("owner_id", channel.owner_id)
+        channel.owner_id = int_or_none(event_data.get("owner_id"), channel.owner_id)
+        channel.parent_id = int_or_none(event_data.get("parent_id"), channel.parent_id)
 
         channel._update_overwrites(event_data.get("permission_overwrites", []))
         await self.client.fire_event("channel_update", old_channel, channel, gateway=gw)

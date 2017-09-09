@@ -27,7 +27,7 @@ from curious.util import AsyncIteratorWrapper, base64ify
 PY36 = sys.version_info[0:2] >= (3, 6)
 
 
-class ChannelType(enum.Enum):
+class ChannelType(enum.IntEnum):
     """
     Returns a mapping from Discord channel type.
     """
@@ -221,6 +221,13 @@ class Channel(Dataclass):
         #: The ID of the guild this is associated with.
         self.guild_id = int(kwargs.get("guild_id", 0)) or None
 
+        parent_id = kwargs.get("parent_id")
+        if parent_id is not None:
+            parent_id = int(parent_id)
+
+        #: The parent ID of this channel.
+        self.parent_id = parent_id
+
         #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))
 
@@ -262,15 +269,11 @@ class Channel(Dataclass):
 
         self.typing = self._typing
 
-    @property
-    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
-        """
-        :return: The :class:`~.Guild` associated with this Channel.
-        """
-        try:
-            return self._bot.guilds[self.guild_id]
-        except KeyError:
-            return None
+    def __repr__(self):
+        return f"<Channel id={self.id} name={self.name} type={self.type.name} " \
+               f"guild_id={self.guild_id}>"
+
+    __str__ = __repr__
 
     def _update_overwrites(self, overwrites: list, guild=None):
         self._overwrites = {}
@@ -289,6 +292,16 @@ class Channel(Dataclass):
             self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                             deny=overwrite["deny"],
                                                             obb=obb, channel=self)
+
+    @property
+    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
+        """
+        :return: The :class:`~.Guild` associated with this Channel.
+        """
+        try:
+            return self._bot.guilds[self.guild_id]
+        except KeyError:
+            return None
 
     @property
     def private(self) -> bool:
@@ -320,6 +333,16 @@ class Channel(Dataclass):
         :return: If this channel is a group channel, the owner of the channel.
         """
         return self._bot.state._users.get(self.owner_id)
+
+    @property
+    def parent(self) -> 'typing.Union[Channel, None]':
+        """
+        :return: If this channel has a parent, the parent category of this channel.
+        """
+        try:
+            return self.guild.channels[self.parent_id]
+        except (KeyError, AttributeError):
+            return None
 
     @property
     def history(self) -> HistoryIterator:
@@ -387,6 +410,7 @@ class Channel(Dataclass):
         obb.position = self.position
         obb._bot = self._bot
         obb.typing = self.typing
+        obb.parent_id = self.parent_id
         return obb
 
     def get_history(self, before: int = None,
@@ -708,7 +732,7 @@ class Channel(Dataclass):
         :param embed: An embed object to send with this message.
         :return: A new :class:`~.Message` object.
         """
-        if self.type == ChannelType.VOICE:
+        if self.type not in [ChannelType.TEXT, ChannelType.PRIVATE]:
             raise CuriousError("Cannot send messages to a voice channel")
 
         if self.guild:
@@ -884,6 +908,9 @@ class Channel(Dataclass):
 
         if "type" not in kwargs:
             kwargs["type"] = ChannelType.TEXT
+
+        if "parent" in kwargs:
+            kwargs["parent_id"] = kwargs["parent"].id
 
         await self._bot.http.edit_channel(self.id, **kwargs)
         return self
