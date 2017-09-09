@@ -3,13 +3,12 @@ Wrappers for Channel objects.
 
 .. currentmodule:: curious.dataclasses.channel
 """
-
 import collections
 import enum
 import pathlib
 import sys
 import time
-import typing
+import typing as _typing
 from math import floor
 from types import MappingProxyType
 
@@ -192,7 +191,7 @@ class HistoryIterator(collections.AsyncIterator):
         """
         return await self.__anext__()
 
-    async def all(self) -> 'typing.List[dt_message.Message]':
+    async def all(self) -> '_typing.List[dt_message.Message]':
         """
         Gets a flattened list of items from the history.
         """
@@ -294,7 +293,7 @@ class Channel(Dataclass):
                                                             obb=obb, channel=self)
 
     @property
-    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
+    def guild(self) -> '_typing.Union[dt_guild.Guild, None]':
         """
         :return: The :class:`~.Guild` associated with this Channel.
         """
@@ -311,14 +310,14 @@ class Channel(Dataclass):
         return self.guild_id is None
 
     @property
-    def recipients(self) -> 'typing.Mapping[int, dt_user.User]':
+    def recipients(self) -> '_typing.Mapping[int, dt_user.User]':
         """
         :return: A mapping of int -> :class:`~.User` for the recipients of this private chat.
         """
         return MappingProxyType(self._recipients)
 
     @property
-    def user(self) -> 'typing.Union[dt_user.User, None]':
+    def user(self) -> '_typing.Union[dt_user.User, None]':
         """
         :return: If this channel is a private channel, the :class:`~.User` of the other user.
         """
@@ -328,14 +327,20 @@ class Channel(Dataclass):
         return list(self.recipients.values())[0]
 
     @property
-    def owner(self) -> 'typing.Union[dt_user.User, None]':
+    def owner(self) -> '_typing.Union[dt_user.User, None]':
         """
         :return: If this channel is a group channel, the owner of the channel.
         """
-        return self._bot.state._users.get(self.owner_id)
+        if not self.owner_id:
+            return None
+
+        try:
+            return self._bot.state._users[self.owner_id]
+        except KeyError:
+            return None
 
     @property
-    def parent(self) -> 'typing.Union[Channel, None]':
+    def parent(self) -> '_typing.Union[Channel, None]':
         """
         :return: If this channel has a parent, the parent category of this channel.
         """
@@ -353,14 +358,14 @@ class Channel(Dataclass):
         return self.get_history(before=self._last_message_id, limit=-1)
 
     @property
-    def pins(self) -> 'typing.AsyncIterator[dt_message.Message]':
+    def pins(self) -> '_typing.AsyncIterator[dt_message.Message]':
         """
         :return: A :class:`~.AsyncIteratorWrapper` that can be used to iterate over the pins. 
         """
         return AsyncIteratorWrapper(self.get_pins())
 
     @property
-    def icon_url(self) -> typing.Union[str, None]:
+    def icon_url(self) -> _typing.Union[str, None]:
         """
         :return: The icon URL for this channel if it is a group DM. 
         """
@@ -368,7 +373,7 @@ class Channel(Dataclass):
             .format(self.id, self.icon_hash)
 
     @property
-    def voice_members(self) -> 'typing.List[dt_member.Member]':
+    def voice_members(self) -> '_typing.List[dt_member.Member]':
         """
         :return: A list of members that are in this voice channel.
         """
@@ -379,7 +384,7 @@ class Channel(Dataclass):
             filter(lambda member: member.voice.channel == self, self.guild.members.values())
         )
 
-    def permissions(self, obb: 'typing.Union[dt_member.Member, dt_role.Role]') -> \
+    def permissions(self, obb: '_typing.Union[dt_member.Member, dt_role.Role]') -> \
             'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
@@ -409,7 +414,6 @@ class Channel(Dataclass):
         obb.topic = self.topic
         obb.position = self.position
         obb._bot = self._bot
-        obb.typing = self.typing
         obb.parent_id = self.parent_id
         return obb
 
@@ -437,7 +441,7 @@ class Channel(Dataclass):
 
         return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
 
-    async def get_pins(self) -> 'typing.List[dt_message.Message]':
+    async def get_pins(self) -> '_typing.List[dt_message.Message]':
         """
         Gets the pins for a channel.
 
@@ -451,7 +455,7 @@ class Channel(Dataclass):
 
         return messages
 
-    async def get_webhooks(self) -> 'typing.List[dt_webhook.Webhook]':
+    async def get_webhooks(self) -> '_typing.List[dt_webhook.Webhook]':
         """
         Gets the webhooks for this channel.
 
@@ -470,7 +474,7 @@ class Channel(Dataclass):
         Gets a single message from this channel.
 
         :param message_id: The message ID to retrieve.
-        :return: A new :class:`~.Message` object.
+        :return: A new :class:`.Message` object.
         """
         if self.guild:
             if not self.permissions(self.guild.me).read_message_history:
@@ -496,7 +500,7 @@ class Channel(Dataclass):
 
         :param name: The name of the new webhook.
         :param avatar: The bytes content of the new webhook.
-        :return: A :class:`~.Webhook` that represents the webhook created.
+        :return: A :class:`.Webhook` that represents the webhook created.
         """
         if not self.permissions(self.guild.me).manage_webhooks:
             raise PermissionsError("manage_webhooks")
@@ -514,10 +518,10 @@ class Channel(Dataclass):
         """
         Edits a webhook.
 
-        :param webhook: The :class:`~.Webhook` to edit.
+        :param webhook: The :class:`.Webhook` to edit.
         :param name: The new name for the webhook.
         :param avatar: The new bytes for the avatar.
-        :return: The modified webhook object.
+        :return: The modified :class:`.Webhook`. object.
         """
         if avatar is not None:
             avatar = base64ify(avatar)
@@ -562,8 +566,11 @@ class Channel(Dataclass):
     async def create_invite(self, **kwargs) -> 'dt_invite.Invite':
         """
         Creates an invite in this channel.
-        
-        See :meth`~.HTTPClient.create_invite` for arguments that can be provided to this function.
+
+        :param max_age: The maximum age of the invite.
+        :param max_uses: The maximum uses of the invite.
+        :param temporary: Is this invite temporary?
+        :param unique: Is this invite unique?
         """
         if not self.guild:
             raise PermissionsError("create_instant_invite")
@@ -576,7 +583,7 @@ class Channel(Dataclass):
 
         return invite
 
-    async def delete_messages(self, messages: 'typing.List[dt_message.Message]'):
+    async def delete_messages(self, messages: '_typing.List[dt_message.Message]') -> int:
         """
         Deletes messages from a channel.
         This is the low-level delete function - for the high-level function, see 
@@ -595,6 +602,7 @@ class Channel(Dataclass):
             await channel.delete_messages(messages)
 
         :param messages: A list of :class:`~.Message` objects to delete.
+        :return: The number of messages deleted.
         """
         if self.guild:
             if not self.permissions(self.guild.me).manage_messages:
@@ -609,12 +617,12 @@ class Channel(Dataclass):
 
         await self._bot.http.delete_multiple_messages(self.id, ids)
 
-        return None
+        return len(ids)
 
     async def purge(self, limit: int = 100, *,
                     author: 'dt_member.Member' = None,
                     content: str = None,
-                    predicate: 'typing.Callable[[dt_message.Message], bool]' = None,
+                    predicate: '_typing.Callable[[dt_message.Message], bool]' = None,
                     fallback_from_bulk: bool = False):
         """
         Purges messages from a channel.
@@ -698,7 +706,7 @@ class Channel(Dataclass):
 
         return len(to_delete)
 
-    async def send_typing(self):
+    async def send_typing(self) -> None:
         """
         Starts typing in the channel for 5 seconds.
         """
@@ -712,7 +720,10 @@ class Channel(Dataclass):
         await self._bot.http.send_typing(self.id)
 
     @property
-    def _typing(self):
+    def typing(self):
+        """
+        :return: A context manager that sends typing repeatedly.
+        """
         return _TypingCtxManager(self)
 
     async def send(self, content: str = None, *,
@@ -762,7 +773,7 @@ class Channel(Dataclass):
         return obb
 
     async def send_file(self, file_content: bytes, filename: str,
-                        *, message_content: typing.Optional[str] = None) -> 'dt_message.Message':
+                        *, message_content: _typing.Optional[str] = None) -> 'dt_message.Message':
         """
         Uploads a message to this channel.
 

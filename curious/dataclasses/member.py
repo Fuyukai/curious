@@ -63,10 +63,10 @@ class Member(Dataclass):
         except (AttributeError, KeyError):
             return None
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.guild_id) + hash(self.user.id)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, Member):
             return NotImplemented
 
@@ -98,7 +98,7 @@ class Member(Dataclass):
     @property
     def user(self) -> 'dt_user.User':
         """
-        :return: The underlying user for this member.
+        :return: The underlying :class:`.User` for this member.
         """
         try:
             return self._bot.state._users[self.id]
@@ -157,7 +157,6 @@ class Member(Dataclass):
     def colour(self) -> int:
         """
         :return: The computed colour of this user.
-        :rtype: int
         """
         roles = sorted(self.roles, reverse=True)
         # NB: you can abuse discord and edit the defualt role's colour
