@@ -463,7 +463,7 @@ class Guild(Dataclass):
         self._chunks_left = 0
 
         #: The current voice client associated with this guild.
-        self.voice_client = None  # type: VoiceClient
+        self.voice_client = None
 
         #: The :class:`.GuildChannelWrapper` that wraps the channels in this Guild.
         self.channels = GuildChannelWrapper(self, self._channels)
@@ -829,8 +829,6 @@ class Guild(Dataclass):
         if voice_client is None:
             raise RuntimeError("Cannot to voice - voice support is not installed")
 
-        VoiceClient = voice_client.VoiceClient
-
         if channel.guild != self:
             raise CuriousError("Cannot use channel from a different guild")
 
@@ -838,7 +836,7 @@ class Guild(Dataclass):
             raise CuriousError("Voice client already exists in this guild")
 
         gw = self._bot._gateways[self.shard_id]
-        self.voice_client = await VoiceClient.create(self._bot, gw, channel)
+        self.voice_client = await voice_client.VoiceClient.create(self._bot, gw, channel)
         await self.voice_client.connect()
         return self.voice_client
 

@@ -26,13 +26,16 @@ from typing import List, Tuple, Union
 import curio
 from curio.io import Socket
 from curio.socket import getaddrinfo
-from nacl.secret import SecretBox
+
+try:
+    from nacl.secret import SecretBox
+except ImportError:
+    has_nacl = False
 
 try:
     from opuslib import Decoder, Encoder
 except Exception:
-    opuslib = None
-
+    has_opus = False
 
 from curious.dataclasses import member as dt_member, user as dt_user
 from curious.dataclasses.bases import Dataclass
@@ -178,7 +181,6 @@ class VoiceReceiver:
         if not self._started:
             return
 
-        self._stop_time = datetime.datetime.utcnow()
         await self._task.cancel(blocking=False)
 
     def get_data(self, user: 'Union[int, dt_user.User, dt_member.Member, None]' = None) \
@@ -221,7 +223,7 @@ class VoiceClient(object):
     """
 
     def __new__(cls, *args, **kwargs):
-        if opuslib is None:
+        if not has_opus or not has_nacl:
             raise RuntimeError("Cannot make new VoiceClients without libopus installed")
 
         return super().__new__(*args, **kwargs)
