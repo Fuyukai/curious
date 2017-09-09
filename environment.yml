@@ -27,3 +27,4 @@ dependencies:
     - opuslib
     - pynacl
     - oauthlib
+    - multidict
