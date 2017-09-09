@@ -82,7 +82,9 @@ class Endpoints:
     GUILD_EMBED = GUILD_BASE + "/embed"
     GUILD_AUDITLOGS = GUILD_BASE + "/audit-logs"
     GUILD_WEBHOOKS = GUILD_BASE + "/webhooks"
-    GUILD_INVITES = GUILD_BASE = "/invites"
+    GUILD_INVITES = GUILD_BASE + "/invites"
+    GUILD_EMOJIS = GUILD_BASE + "/emojis"
+    GUILD_EMOJI = GUILD_EMOJIS + "/{emoji_id}"
 
     CHANNEL_BASE = "/channels/{channel_id}"
     CHANNEL_TYPING = CHANNEL_BASE + "/typing"
@@ -1263,6 +1265,84 @@ class HTTPClient(object):
             payload["action_type"] = action_type
 
         data = await self.get(url, bucket="guild:{}:audit-logs".format(guild_id), params=payload)
+        return data
+
+    # Emojis
+    async def get_guild_emojis(self, guild_id: int):
+        """
+        Gets the emojis for a guild.
+
+        :param guild_id: The guild ID to get emojis for.
+        """
+        url = Endpoints.GUILD_EMOJIS.format(guild_id=guild_id)
+
+        data = await self.get(url, bucket=f"emojis:{guild_id}")
+        return data
+
+    async def get_guild_emoji(self, guild_id: int, emoji_id: int):
+        """
+        Gets an emoji object.
+
+        :param guild_id: The guild ID the emoji is in.
+        :param emoji_id: The emoji ID to get.
+        """
+        url = Endpoints.GUILD_EMOJI.format(guild_id=guild_id, emoji_id=emoji_id)
+
+        data = await self.get(url, bucket=f"emojis:{guild_id}")
+        return data
+
+    async def create_guild_emoji(self, guild_id: int, *,
+                                 name: str, image: str,
+                                 roles: typing.List[int] = None):
+        """
+        Creates an emoji in a guild.
+
+        :param guild_id: The ID of the guild to create the emoji in.
+        :param name: The name of the emoji.
+        :param image: The base64 image data for the emoji.
+        :param roles: A list of roles this emoji is limited to.
+        """
+        url = Endpoints.GUILD_EMOJIS.format(guild_id=guild_id)
+        params = {
+            "name": name,
+            "image": image,
+        }
+        if roles is not None:
+            params["roles"] = [int(r) for r in roles]
+
+        data = await self.post(url, bucket=f"emojis:{guild_id}", params=params)
+        return data
+
+    async def modify_guild_emoji(self, guild_id: int, emoji_id: int, *,
+                                 name: str = None, roles: typing.List[int] = None):
+        """
+        Modifies an emoji in a guild.
+
+        :param guild_id: The ID of the guild the emoji is in.
+        :param emoji_id: The ID of the emoji to modify.
+        :param name: The name of the emoji to edit.
+        :param roles: A list of roles this emoji is limited to.
+        """
+        url = Endpoints.GUILD_EMOJI.format(guild_id=guild_id, emoji_id=emoji_id)
+        params = {
+            "name": name,
+        }
+        if roles is not None:
+            params["roles"] = [int(r) for r in roles]
+
+        data = await self.patch(url, bucket=f"emojis:{guild_id}", params=params)
+        return data
+
+    async def delete_guild_emoji(self, guild_id: int, emoji_id: int):
+        """
+        Deletes an emoji in a guild.
+
+        :param guild_id: The ID of the guild the emoji is in.
+        :param emoji_id: The ID of the emoji to delete.
+        """
+        url = Endpoints.GUILD_EMOJI.format(guild_id=guild_id, emoji_id=emoji_id)
+
+        data = await self.delete(url, bucket=f"emojis:{guild_id}")
         return data
 
     # Webhooks
