@@ -13,7 +13,6 @@ dependencies:
   - wheel
   - zlib
   - libffi
-  - libopus
   # requirements for rtd
   - pip:
     - sphinx
@@ -25,8 +24,6 @@ dependencies:
     - pylru
     - asks
     - pytz
-    - opuslib
-    - pynacl
     - oauthlib
     - multidict
     - yarl

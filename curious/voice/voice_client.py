@@ -27,7 +27,12 @@ import curio
 from curio.io import Socket
 from curio.socket import getaddrinfo
 from nacl.secret import SecretBox
-from opuslib import Decoder, Encoder
+
+try:
+    from opuslib import Decoder, Encoder
+except Exception:
+    opuslib = None
+
 
 from curious.dataclasses import member as dt_member, user as dt_user
 from curious.dataclasses.bases import Dataclass
@@ -214,6 +219,12 @@ class VoiceClient(object):
     This should ***not*** be created directly - instead use :class:`~.Channel.connect()` to connect
     to a voice channel, and use the instance returned from.
     """
+
+    def __new__(cls, *args, **kwargs):
+        if opuslib is None:
+            raise RuntimeError("Cannot make new VoiceClients without libopus installed")
+
+        return super().__new__(*args, **kwargs)
 
     def __init__(self, main_client,
                  channel):
