@@ -13,6 +13,7 @@ dependencies:
   - wheel
   - zlib
   - libffi
+  - libopus
   # requirements for rtd
   - pip:
     - sphinx
