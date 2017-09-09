@@ -56,7 +56,7 @@ The documentation below is automatically generated from the docstrings.
    :caption: Autosummary
    :maxdepth: 3
 
-      autogen/curious
+   autogen/curious
 
 
 Indices and tables
