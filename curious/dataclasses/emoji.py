@@ -46,6 +46,29 @@ class Emoji(Dataclass):
     def __repr__(self):
         return "<Emoji guild={} id={}>".format(self.guild, self.id)
 
+    async def modify(self, *,
+                     name: str = None,
+                     roles: 'typing.List[dt_role.Role]' = None) -> 'Emoji':
+        """
+        Modifies this emoji.
+
+        :param name: The new name of the emoji.
+        :param roles: The new list of roles that can use this emoji.
+        :return: This emoji.
+        """
+        if roles is not None:
+            roles = [r.id for r in roles]
+
+        await self._bot.http.edit_guild_emoji(guild_id=self.guild_id, emoji_id=self.id,
+                                              name=name, roles=roles)
+        return self
+
+    async def delete(self):
+        """
+        Deletes this emoji.
+        """
+        await self._bot.http.delete_guild_emoji(self.guild_id, emoji_id=self.id)
+
     @property
     def guild(self) -> 'dt_guild.Guild':
         """

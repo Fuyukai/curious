@@ -315,6 +315,64 @@ class GuildRoleWrapper(collections.Mapping, collections.Iterable):
         return role.delete()
 
 
+class GuildEmojiWrapper(collections.Mapping, collections.Iterable):
+    """
+    Wrapper for emoji objects for a guild.
+    """
+
+    def __init__(self, guild: 'Guild',
+                 emojis: 'typing.MutableMapping[int, dt_emoji.Emoji]'):
+        """
+        :param guild: The :class:`.Guild` object that owns this wrapper.
+        :param emojis: The dictionary of emojis that this wrapper contains.
+        """
+        self._guild = guild
+        self._emojis = emojis
+
+    @property
+    def view(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
+        """
+        :return: A read-only view into the channels for this wrapper.
+        """
+        return MappingProxyType(self._emojis)
+
+    def __iter__(self):
+        return iter(self._emojis.keys())
+
+    def __getitem__(self, key):
+        return self._emojis[key]
+
+    def __len__(self):
+        return len(self._emojis)
+
+    def __repr__(self):
+        return "<GuildEmojiWrapper emojis={}>".format(self._emojis)
+
+    async def create(self, *,
+                     name: str, image_data: typing.Union[str, bytes],
+                     roles: 'typing.List[role.Role]' = None) -> 'dt_emoji.Emoji':
+        """
+        Creates a new emoji in this guild.
+
+        :param name: The name of the emoji.
+        :param image_data: The bytes image data or the str base64 data for the emoji.
+        :param roles: A list of roles this emoji is locked to.
+        :return: The :class:`.Emoji` created.
+        """
+        if isinstance(image_data, bytes):
+            image_data = base64ify(image_data)
+
+        if roles is not None:
+            roles = [r.id for r in roles]
+
+        emoji_data = await self._guild._bot.http.create_guild_emoji(self._guild.id,
+                                                                    name=name,
+                                                                    image_data=image_data,
+                                                                    roles=roles)
+        emoji = dt_emoji.Emoji(**emoji_data, client=self._guild._bot)
+        return emoji
+
+
 class Guild(Dataclass):
     """
     Represents a guild object on Discord.
@@ -327,7 +385,7 @@ class Guild(Dataclass):
         "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash",
         "owner_id", "afk_channel_id", "system_channel_id",
         "voice_client",
-        "channels", "roles"
+        "channels", "roles", "emojis"
     )
 
     def __init__(self, bot, **kwargs):
@@ -411,6 +469,8 @@ class Guild(Dataclass):
         self.channels = GuildChannelWrapper(self, self._channels)
         #: The :class:`.GuildRoleWrapper` that wraps the roles in this Guild.
         self.roles = GuildRoleWrapper(self, self._roles)
+        #: The :class:`.GuildEmojiWrapper` that wraps the emojis in this Guild.
+        self.emojis = GuildEmojiWrapper(self, self._emojis)
 
         if kwargs:
             self.from_guild_create(**kwargs)
@@ -431,13 +491,6 @@ class Guild(Dataclass):
         :return: A mapping of :class:`~.Member` that represent members on this guild.
         """
         return MappingProxyType(self._members)
-
-    @property
-    def emojis(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
-        """
-        :return: A mapping of :class:`~.Emoji` on this guild.
-        """
-        return MappingProxyType(self._emojis)
 
     @property
     def owner(self) -> 'dt_member.Member':

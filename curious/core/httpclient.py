@@ -1324,9 +1324,11 @@ class HTTPClient(object):
         :param roles: A list of roles this emoji is limited to.
         """
         url = Endpoints.GUILD_EMOJI.format(guild_id=guild_id, emoji_id=emoji_id)
-        params = {
-            "name": name,
-        }
+        params = {}
+
+        if name is not None:
+            params["name"] = name
+
         if roles is not None:
             params["roles"] = [str(r) for r in roles]
 
