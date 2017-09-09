@@ -1308,7 +1308,7 @@ class HTTPClient(object):
             "image": image,
         }
         if roles is not None:
-            params["roles"] = [int(r) for r in roles]
+            params["roles"] = [str(r) for r in roles]
 
         data = await self.post(url, bucket=f"emojis:{guild_id}", params=params)
         return data
@@ -1328,7 +1328,7 @@ class HTTPClient(object):
             "name": name,
         }
         if roles is not None:
-            params["roles"] = [int(r) for r in roles]
+            params["roles"] = [str(r) for r in roles]
 
         data = await self.patch(url, bucket=f"emojis:{guild_id}", params=params)
         return data
