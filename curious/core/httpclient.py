@@ -1313,8 +1313,8 @@ class HTTPClient(object):
         data = await self.post(url, bucket=f"emojis:{guild_id}", params=params)
         return data
 
-    async def modify_guild_emoji(self, guild_id: int, emoji_id: int, *,
-                                 name: str = None, roles: typing.List[int] = None):
+    async def edit_guild_emoji(self, guild_id: int, emoji_id: int, *,
+                               name: str = None, roles: typing.List[int] = None):
         """
         Modifies an emoji in a guild.
 
