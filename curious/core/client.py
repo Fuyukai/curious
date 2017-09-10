@@ -8,12 +8,8 @@ This contains a definition for :class:`.Client` which is used to interface prima
 
 import collections
 import enum
-import importlib
 import inspect
 import logging
-import re
-import sys
-import traceback
 import typing
 from types import MappingProxyType
 
@@ -23,19 +19,17 @@ from cuiows.exc import WebsocketClosedError
 from curio.monitor import MONITOR_HOST, MONITOR_PORT, Monitor
 from curio.task import Task, TaskGroup
 
-from curious.commands import cmd, context, plugin
 from curious.core.event import EventContext, event as ev_dec
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
-from curious.dataclasses.message import Message
 from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.exc import CuriousError
-from curious.util import attrdict, base64ify
+from curious.util import base64ify
 
 #: A sentinel value to indicate that the client should automatically shard.
 AUTOSHARD = object()
@@ -70,91 +64,6 @@ class BotType(enum.IntEnum):
     SELF_BOT = 64
 
 
-def split_message_content(content: str, delim: str = " ") -> typing.List[str]:
-    """
-    Splits a message into individual parts by `delim`, returning a list of strings.
-    This method preserves quotes.
-    
-    .. code-block:: python3
-    
-        content = '!send "Fuyukai desu" "Hello, world!"'
-        split = split_message_content(content, delim=" ")
-
-    :param content: The message content to split.
-    :param delim: The delimiter to split on.
-    :return: A list of items split
-    """
-
-    def replacer(m):
-        return m.group(0).replace(delim, "\x00")
-
-    parts = re.sub(r'".+?"', replacer, content).split()
-    parts = [p.replace("\x00", " ") for p in parts]
-    return parts
-
-
-def prefix_check_factory(
-        prefix: typing.Union[str, typing.Iterable[str], typing.Callable[['Client', Message], str]]
-):
-    """
-    The default message function factory.
-    
-    This provides a callable that will fire a command if the message begins with the specified 
-    prefix or list of prefixes.
-    
-    If ``command_prefix`` is provided to the :class:`.Client`, then it will automatically call this 
-    function to get a message check function to use.
-    
-    .. code-block:: python3
-
-        # verbose form
-        message_check = prefix_check_factory(["!", "?"])
-        cl = Client(message_check=message_check)
-        
-        # implicit form
-        cl = Client(command_prefix=["!", "?"])
-        
-    The :attr:`prefix` is set on the returned function that can be used to retrieve the prefixes 
-    defined to create  the function at any time.
-    
-    :param prefix: A :class:`str` or :class:`typing.Iterable[str]` that represents the prefix(es) \ 
-        to use. 
-    :return: A callable that can be used for the ``message_check`` function on the client.
-    """
-
-    async def __inner(bot: Client, message):
-        # move prefix out of global scope
-        _prefix = prefix
-        matched = None
-
-        if callable(_prefix):
-            _prefix = _prefix(bot, message)
-            if inspect.isawaitable(_prefix):
-                _prefix = await _prefix
-
-        if isinstance(_prefix, str):
-            match = message.content.startswith(_prefix)
-            if match:
-                matched = _prefix
-
-        elif isinstance(prefix, collections.Iterable):
-            for i in _prefix:
-                if message.content.startswith(i):
-                    matched = i
-                    break
-
-        if not matched:
-            return None
-
-        tokens = split_message_content(message.content[len(matched):])
-        command_word = tokens[0]
-
-        return command_word, tokens[1:], matched
-
-    __inner.prefix = prefix
-    return __inner
-
-
 class Client(object):
     """
     The main client class. This is used to interact with Discord.
@@ -178,44 +87,18 @@ class Client(object):
     ]
 
     def __init__(self, token: str = None, *,
-                 enable_commands: bool = True,
-                 command_prefix: typing.Union[str, list] = None,
-                 message_check=None,
-                 description: str = "The default curious description",
                  state_klass: type = None,
                  bot_type: int = (BotType.BOT | BotType.ONLY_USER)):
         """
         :param token: The current token for this bot.  
             This can be passed as None and can be initialized later.
             
-        :param enable_commands: Should commands integration be enabled?  
-            If this is False, commands can still be registered etc, they just won't fire (the event 
-            won't appear).
-        
-        :param command_prefix: The command prefix for this bot.
-            
-            This can be one of the following:
-                - A string
-                - A list of strings
-                - A callable that takes ``(bot, message)`` and returns a string or list of strings 
-                  of prefixes.
-        
-        :param message_check: The message check function for this bot.  
-        
-            This should take two arguments, the client and message, and should return either None 
-            or a 3-item tuple:
-              - The command word matched
-              - The tokens after the command word
-              - The prefix that was matched.
-              
-        :param description: The description of this bot for usage in the default help command.
-            
         :param state_klass: The class to construct the connection state from.
         
         :param bot_type: A union of :class:`~.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.
-        self._gateways = {}  # type: typing.Dict[int, Gateway]
+        self._gateways = {}
 
         #: The number of shards this client has.
         self.shard_count = 0
@@ -254,33 +137,6 @@ class Client(object):
         #: Instance of :class:`~.AppInfo`.
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
-
-        if enable_commands:
-            if not command_prefix and not message_check:
-                raise TypeError("Must provide one of `command_prefix` or `message_check`")
-
-            self._message_check = message_check or prefix_check_factory(command_prefix)
-        else:
-            self._message_check = lambda a, b: False
-
-        #: The description of this bot.
-        self.description = description
-
-        #: The dictionary of command objects to use.
-        self.commands = attrdict()
-
-        #: The dictionary of plugins to use.
-        self.plugins = {}
-
-        self._plugin_modules = {}
-
-        if enable_commands:
-            # Add the handle_commands as a message_create event.
-            self.add_event(self.handle_commands)
-            self.add_event(self.default_command_error)
-
-            from curious.commands.plugin_core import _Core
-            self.add_plugin(_Core(self))
 
         self.scan_events()
 
@@ -353,7 +209,10 @@ class Client(object):
         """
         return self.state.find_channel(channel_id)
 
-    async def get_gateway_url(self):
+    async def get_gateway_url(self) -> str:
+        """
+        :return: The gateway URL for this bot.
+        """
         if self._gw_url:
             return self._gw_url
 
@@ -361,6 +220,9 @@ class Client(object):
         return self._gw_url
 
     async def get_shard_count(self):
+        """
+        :return: The shard count recommended for this bot.
+        """
         gw, shards = await self.http.get_shard_count()
         self._gw_url = gw
 
@@ -433,7 +295,6 @@ class Client(object):
             @bot.event("message_create")
             async def something(ctx, message: Message):
                 pass
-                
 
         :param name: The name of the event.
         """
@@ -448,9 +309,16 @@ class Client(object):
         """
         Scans this class for functions marked with an event decorator.
         """
-        for _, item in inspect.getmembers(self,
-                                          predicate=lambda x: hasattr(x, "events") and
-                                                  getattr(x, "scan", False)):
+        def _pred(f):
+            if not hasattr(x, "events"):
+                return False
+
+            if getattr(x, "scan", False):
+                return True
+
+            return False
+
+        for _, item in inspect.getmembers(self, predicate=_pred):
             logger.info("Registering event function {} for events {}".format(_, item.events))
             self.add_event(item)
 
@@ -459,18 +327,6 @@ class Client(object):
             await func(*args, **kwargs)
         except Exception as e:
             logger.exception("Unhandled exception in {}!".format(func.__name__))
-
-    async def _wrap_context(self, ctx: 'context.Context'):
-        """
-        Wraps a context in a safety wrapper.
-
-        This will dispatch ``command_exception`` when an error happens.
-        """
-        try:
-            await ctx.invoke()
-        except Exception as e:
-            gw = self._gateways[ctx.event_context.shard_id]
-            await self.fire_event("command_error", e, ctx=ctx, gateway=gw)
 
     async def _temporary_wrapper(self, event, listener, *args, **kwargs):
         try:
@@ -524,22 +380,15 @@ class Client(object):
         """
         gateway = kwargs.pop("gateway")
 
-        if not self.state.is_ready(gateway.shard_id).is_set() \
-                and (event_name not in self.IGNORE_READY or event_name.startswith("gateway_")):
-            return []
+        if not self.state.is_ready(gateway.shard_id).is_set():
+            if event_name not in self.IGNORE_READY or event_name.startswith("gateway_"):
+                return []
 
         coros = self.events.getall(event_name, [])
-
         temporary_listeners = self._temporary_listeners.getall(event_name, [])
 
         if not coros and not temporary_listeners:
             return []
-
-        logger.debug(
-            "Dispatching event {} to {} listeners"
-            " on shard {}".format(event_name, len(coros) + len(temporary_listeners),
-                                  gateway.shard_id)
-        )
 
         if "ctx" not in kwargs:
             ctx = EventContext(self, gateway.shard_id, event_name)
@@ -557,266 +406,6 @@ class Client(object):
                                            daemon=True))
 
         return tasks
-
-    # commands
-    @ev_dec("command_error", scan=False)
-    async def default_command_error(self, ctx, e):
-        """
-        Default error handler.
-
-        This is meant to be overriden - normally it will just print the traceback.
-        """
-        if len(self.events.getall("command_error")) >= 2:
-            # remove ourselves
-            self.remove_event("command_error", self.default_command_error)
-            return
-
-        traceback.print_exception(None, e, e.__traceback__)
-
-    @ev_dec("message_create", scan=False)
-    async def handle_commands(self, event_ctx: EventContext, message: Message):
-        """
-        Handles invokation of commands.
-
-        This is added as an event during initialization.
-        """
-        # oddities
-        if message.author is None:
-            logger.warning("Got None author...")
-            return
-
-        user = message.author.user if hasattr(message.author, "user") else message.author
-
-        # check for bot type
-        if self.bot_type & BotType.SELF_BOT and user != self.user:
-            return
-
-        if self.bot_type & BotType.NO_DMS and message.channel.private:
-            return
-
-        if self.bot_type & BotType.NO_GUILDS and message.channel.guild_id is not None:
-            return
-
-        if self.bot_type & BotType.ONLY_USER and user.bot:
-            return
-
-        if not message.content:
-            # Minor optimization - don't fire on empty messages.
-            return
-
-        # use the message check function
-        _ = self._message_check(self, message)
-        if inspect.isawaitable(_):
-            _ = await _
-
-        if not _:
-            # not a command, do not bother
-            return
-
-        # func should return command_word and args for the command
-        command_word, args, prefix = _
-        command = self.get_command(command_word)
-        if command is None:
-            return
-
-        # Create the context object that will be passed in.
-        ctx = context.Context(self, command=command, message=message,
-                              event_ctx=event_ctx)
-        ctx.prefix = prefix
-        ctx.name = command_word
-        ctx.raw_args = args
-
-        # daemon = True means eat the task not joined errors
-        await curio.spawn(self._wrap_context(ctx), daemon=True)  # type: curio.Task
-
-    def add_command(self, command_name: str, command: 'cmd.Command'):
-        """
-        Adds a command to the internal registry of commands.
-
-        :param command_name: The name of the command to add.
-        :param command: The :class:`~.Command` object to add.
-        """
-        if command_name in self.commands:
-            if not self.commands[command_name]._overridable:
-                raise ValueError("Command {} already exists".format(command_name))
-            else:
-                self.commands.pop(command_name)
-
-        self.commands[command_name] = command
-
-    def remove_command(self, name: str):
-        """
-        Removes a command from the bot.
-        
-        :param name: The name of the command to remove. 
-        """
-        return self.commands.pop(name)
-
-    def add_plugin(self, plugin_class):
-        """
-        Adds a plugin to the bot.
-
-        :param plugin_class: The plugin class to add.
-        """
-        events, commands = plugin_class._scan_body()
-
-        for event in events:
-            event.plugin = plugin_class
-
-            for ev_name in event.events:
-                self.events.add(ev_name, event)
-
-        for command in commands:
-            # Bind the command to the plugin.
-            command.instance = plugin_class
-            # dont add any aliases
-            self.add_command(command.name, command)
-
-        self.plugins[plugin_class.name] = plugin_class
-
-    def remove_plugin(self, name: str):
-        """
-        Removes a plugin from the bot.
-        
-        :param name: The name of the :class:`~.Plugin` to remove.  
-        """
-        plugin = self.plugins.pop(name)
-
-        for name, command in self.commands.copy().items():
-            if command.instance == plugin:
-                # clean up instances
-                command.instance = None
-                self.commands.pop(name)
-
-        # remove all events registered
-        for name, event in self.events.copy().items():
-            # not a plugin event
-            if not hasattr(event, "plugin"):
-                continue
-            if isinstance(event.plugin, plugin):
-                event.plugin = None
-                self.remove_event(name, event)
-
-        return plugin
-
-    async def load_plugins_from(self, import_name: str, *args, **kwargs):
-        """
-        Loads a plugin and adds it to the internal registry.
-
-        :param import_name: The import name of the plugin to add (e.g `bot.plugins.moderation`).
-        """
-        module = importlib.import_module(import_name)
-        mod = [module, []]
-
-        # Locate all of the Plugin types.
-        for name, member in inspect.getmembers(module):
-            if not isinstance(member, type):
-                # We only want to inspect instances of type (i.e classes).
-                continue
-
-            inherits = inspect.getmro(member)
-            # remove `member` from the mro
-            # this prevents us registering Plugin as a plugin
-            inherits = [i for i in inherits if i != member]
-            if plugin.Plugin not in inherits:
-                # Only inspect instances of plugin.
-                continue
-
-            if not hasattr(member, "__dict__"):
-                # don't be difficult
-                continue
-
-            # evil cpython type implementation detail abuse
-            if member.__dict__.get("_include_in_scan", True) is False:
-                # this won't show up for subclasses.
-                # so they always have to be explicitly set
-                continue
-
-            # Assume it has a setup method on it.
-            result = member.setup(self, *args, **kwargs)
-            if inspect.isawaitable(result):
-                result = await result
-
-            # Add it to the list of plugins we need to destroy when unloading.
-            # We add the type, not the instance, as the instances are destroyed separately.
-            mod[1].append(member)
-
-        if len(mod[1]) == 0:
-            raise ValueError(
-                "Plugin contained no plugin classes (classes that inherit from Plugin)")
-
-        self._plugin_modules[import_name] = mod
-
-    async def unload_plugins_from(self, import_name: str):
-        """
-        Unloads plugins from the specified import name.
-
-        This is the opposite to :meth:`.load_plugins_from`.
-        """
-        mod, plugins = self._plugin_modules[import_name]
-        # we can't do anything with the module currently because it's still in our locals scope
-        # so we have to wait to delete it
-        # i'm not sure this is how python imports work but better to be safe
-        # (especially w/ custom importers)
-
-        for plugin in plugins:
-            # find all the Command instances with this plugin as the body
-            for name, command in self.commands.copy().items():
-                # isinstance() checks ensures that the type of the instance is this plugin
-                if isinstance(command.instance, plugin):
-                    # make sure the instance isn't lingering around
-                    command.instance = None
-                    # rip
-                    self.commands.pop(name)
-
-            # remove all events registered
-            for name, event in self.events.copy().items():
-                # not a plugin event
-                if not hasattr(event, "plugin"):
-                    continue
-                if isinstance(event.plugin, plugin):
-                    event.plugin = None
-                    self.remove_event(name, event)
-
-            # now that all commands are dead, call `unload()` on all of the instances
-            for name, instance in self.plugins.copy().items():
-                if isinstance(instance, plugin):
-                    r = instance.unload()
-                    if inspect.isawaitable(r):
-                        await r
-
-                    self.plugins.pop(name)
-
-        # remove from sys.modules and our own registry to remove all references
-        del sys.modules[import_name]
-        del self._plugin_modules[import_name]
-        del mod
-
-    def get_commands_for(self, plugin: 'plugin.Plugin') \
-            -> typing.Generator['cmd.Command', None, None]:
-        """
-        Gets the commands for the specified plugin.
-
-        :param plugin: The plugin instance to get commands of.
-        :return: A list of :class:`~.Command`.
-        """
-        for command in self.commands.copy().values():
-            if command.instance == plugin:
-                yield command
-
-    def get_command(self, command_name: str) -> 'typing.Union[cmd.Command, None]':
-        """
-        Gets a command object for the specified command name.
-
-        :param command_name: The name of the command.
-        :return: The command object if found, otherwise None.
-        """
-
-        def _f(cmd: cmd.Command):
-            return cmd.can_be_invoked_by(command_name)
-
-        f = filter(_f, self.commands.values())
-        return next(f, None)
 
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
@@ -1184,13 +773,13 @@ class Client(object):
 
                 if e.code in [1000, 4007] or gw.session_id is None:
                     logger.info("Shard {} disconnected with code {}, "
-                                      "creating new session".format(shard_id, e.code))
+                                "creating new session".format(shard_id, e.code))
                     self.state._reset(gw.shard_id)
                     await gw.reconnect(resume=False)
                 elif e.code not in (4004, 4011):
                     # Try and RESUME.
                     logger.info("Shard {} disconnected with close code {}, reason {}, "
-                                      "attempting a reconnect.".format(shard_id, e.code, e.reason))
+                                "attempting a reconnect.".format(shard_id, e.code, e.reason))
                     await gw.reconnect(resume=True)
                 else:
                     raise
