@@ -6,6 +6,7 @@ import inspect
 import re
 from typing import Callable, Iterable, List, Union
 
+from curious.commands.exc import MissingArgumentError
 from curious.core.client import Client
 from curious.dataclasses.message import Message
 from curious.util import replace_quotes
