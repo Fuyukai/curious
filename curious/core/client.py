@@ -313,7 +313,7 @@ class Client(object):
             if not hasattr(f, "events"):
                 return False
 
-            if getattr(x, "scan", False):
+            if getattr(f, "scan", False):
                 return True
 
             return False

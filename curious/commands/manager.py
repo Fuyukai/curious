@@ -1,9 +1,14 @@
 """
 Contains the class for the commands manager for a client.
 """
+import importlib
 import inspect
+import sys
+import typing
+from collections import defaultdict
 
 from curious.commands.context import Context
+from curious.commands.plugin import Plugin
 from curious.commands.utils import prefix_check_factory
 from curious.core import client as md_client
 from curious.core.event import EventContext, event
@@ -69,6 +74,7 @@ class CommandsManager(object):
 
     These will then be available to the client.
     """
+
     def __init__(self, client: 'md_client.Client', *,
                  message_check=None, command_prefix: str = None):
         """
@@ -98,11 +104,121 @@ class CommandsManager(object):
         #: A dictionary of stand-alone commands, i.e. commands not associated with a plugin.
         self.commands = {}
 
+        self._module_plugins = defaultdict(lambda: [])
+
     def register_events(self) -> None:
         """
         Copies the events to the client specified on this manager.
         """
         self.client.add_event(self.handle_message)
+
+    async def load_plugin(self, klass: typing.Type[Plugin], *args,
+                          module: str):
+        """
+        Loads a plugin.
+        .. note::
+
+            The client instance will automatically be provided to the Plugin's ``__init__``.
+
+        :param klass: The plugin class to load.
+        :param args: Any args to provide to the plugin.
+        :param module: The module name provided with this plugin. Only used interally.
+        """
+        # get the name and create the plugin object
+        plugin_name = getattr(klass, "name", klass.__name__)
+        instance = klass(self.client, *args)
+
+        # call load, of course
+        await instance.load()
+
+        self.plugins[plugin_name] = instance
+        if module is not None:
+            self._module_plugins[module].append(instance)
+
+        return instance
+
+    async def unload_plugin(self, klass: typing.Union[Plugin, str]):
+        """
+        Unloads a plugin.
+
+        :param klass: The plugin class or name of plugin to unload.
+        """
+        p = None
+        if isinstance(klass, str):
+            p = self.plugins.pop(klass)
+
+        for k, p in self.plugins.copy().items():
+            if type(p) == klass:
+                p = self.plugins.pop(k)
+                break
+
+        if p is not None:
+            await p.unload()
+
+        return p
+
+    async def add_command(self, command):
+        """
+        Adds a command.
+
+        :param command: A command function.
+        """
+        if not hasattr(command, "is_cmd"):
+            raise ValueError("Commands must be decorated with the command decorator")
+
+        self.commands[command.cmd_name] = command
+        return command
+
+    async def remove_command(self, command):
+        """
+        Removes a command.
+
+        :param command: The name of the command, or the command function.
+        """
+        if isinstance(command, str):
+            return self.commands.pop(command)
+        else:
+            for k, p in self.commands.copy().items():
+                if p == command:
+                    return self.commands.pop(k)
+
+    async def load_plugins_from(self, import_path: str):
+        """
+        Loads plugins from the specified module.
+
+        :param import_path: The import path to import.
+        """
+        mod = importlib.import_module(import_path)
+
+        # define the predicate for the body scanner
+        def predicate(item):
+            # only accept plugin subclasses
+            if not issubclass(item, Plugin):
+                return False
+
+            # ensure item is not actually Plugin
+            if item == Plugin:
+                return False
+
+            # it is a plugin
+            return True
+
+        for plugin_name, plugin_class in inspect.getmembers(mod, predicate=predicate):
+            await self.load_plugin(plugin_class, mod=mod)
+
+    async def unload_plugins_from(self, import_path: str):
+        """
+        Unloads plugins from the specified module.
+        This will delete the module from sys.path.
+
+        :param import_path: The import path.
+        """
+        for plugin in self._module_plugins[import_path]:
+            await plugin.unload()
+            self.plugins.pop(getattr(plugin, "name", "__name__"))
+
+        del sys.modules[import_path]
+        del self._module_plugins[import_path]
 
     async def handle_commands(self, ctx: EventContext, message: Message):
         """
