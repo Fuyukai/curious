@@ -310,7 +310,7 @@ class Client(object):
         Scans this class for functions marked with an event decorator.
         """
         def _pred(f):
-            if not hasattr(x, "events"):
+            if not hasattr(f, "events"):
                 return False
 
             if getattr(x, "scan", False):

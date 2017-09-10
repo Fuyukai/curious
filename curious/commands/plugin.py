@@ -1,90 +1,36 @@
 """
-Defines :class:`.Plugin`, the base class for plugins.
+Classes for plugin objects.
 """
-import functools
+import inspect
 
-import typing
-
-from curious.commands import context
-from curious.core import client as cl
+from curious.core import client as md_client
 
 
 class Plugin(object):
-    # mark as true to prevent being scanned
-    _include_in_scan = False
+    """
+    Represents a plugin (a collection of events and commands under one class).
+    """
+    def __init__(self, client: 'md_client.Client'):
+        #: The client for this plugin.
+        self.client = client
 
-    def __init__(self, bot: 'cl.Client'):
-        self.bot = bot
-
-    def __repr__(self):
-        return "<Plugin name='{}'>".format(self.name, self.bot)
-
-    @property
-    def name(self):
+    async def load(self) -> None:
         """
-        Gets the name of this plugin.
+        Called when this plugin is loaded.
 
-        This is mostly for usage in subclasses to customize the name of the plugin from the default type name.
+        By default, this does nothing. It is meant to be overridden to customize behaviour.
         """
-        return self.__class__.__name__
+        pass
 
-    async def load(self):
+    async def unload(self) -> None:
         """
-        Called just after the plugin has loaded, before any commands have been registered. Used for async loading.
-        """
+        Called when this plugin is unloaded.
 
-    async def unload(self):
-        """
-        Called just before the plugin is to be unloaded, after all commands have been removed.
+        By default, this does nothing. It is meant to be overridden to customize behaviour.
         """
 
-    async def plugin_check(self, ctx: 'context.Context'):
+    def _get_commands(self) -> list:
         """
-        Added as a check for every command in this plugin.
+        Gets the commands for this plugin.
         """
-        return True
-
-    def _scan_body(self) -> typing.Tuple[list, list]:
-        """
-        Scans the body of this type for events and commands.
-
-        :return: Two lists, the first one containing events and the second one containing commands.
-        """
-        events = []
-        commands = []
-
-        for name, value in self.__class__.__dict__.items():
-            if hasattr(value, "__wrapped__"):
-                factory = getattr(value.__wrapped__, "factory", None)
-            else:
-                factory = getattr(value, "factory", None)
-
-            if factory is not None:
-                if getattr(value, "_subcommand", False):
-                    # don't add subcommands
-                    continue
-                # this is set by the decorator to create a new command instance
-                cmd = factory()
-                commands.append(cmd)
-
-            elif hasattr(value, "events"):
-                def _wtf(v):
-                    @functools.wraps(v)
-                    def _event_wrapper(*args, **kwargs):
-                        return v(self, *args, **kwargs)
-                    return _event_wrapper
-
-                events.append(_wtf(value))
-
-        return events, commands
-
-    @classmethod
-    async def setup(cls, bot: 'cl.Client', *args, **kwargs):
-        """
-        Default setup function for a plugin.
-
-        This will create a new instance of the class, then add it as a Plugin to the bot.
-        """
-        instance = cls(bot, *args, **kwargs)
-        await instance.load()
-        bot.add_plugin(instance)
+        return [i[1] for i in inspect.getmembers(self, predicate=lambda i: hasattr(i, "is_cmd"))]
