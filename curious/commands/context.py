@@ -2,6 +2,7 @@
 Class for the commands context.
 """
 import inspect
+import types
 from typing import Any, List, Tuple, Union
 
 from curious.commands.utils import _convert
@@ -79,12 +80,19 @@ class Context(object):
         """
         Attempts to match a command with this context.
         """
+        # don't match subcommands
+        if func.cmd_subcommand:
+            return False
+
+        # match on name
         if self.command_name == func.cmd_name:
             return True
 
+        # match on alias
         if self.command_name in func.cmd_aliases:
             return True
 
+        # no match
         return False
 
     def _lookup_converter(self, annotation):
@@ -94,8 +102,14 @@ class Context(object):
         if annotation in self._converters:
             return self._converters[annotation]
 
+        if annotation is inspect.Parameter.empty:
+            return lambda ctx, i: i
+
+        # str etc
         if callable(annotation):
             return annotation
+
+        return lambda ctx, i: i
 
     async def _get_converted_args(self, func) -> Tuple[tuple, dict]:
         """
@@ -114,10 +128,51 @@ class Context(object):
         # so we can copy the plugin straight to us
         self.plugin = command.__self__
 
-        # convert all the arguments into the command
-        converted_args, converted_kwargs = await self._get_converted_args(command)
+        # try and do a group lookup
+        # how this works:
+        # 1) it checks for the current command's subcommands
+        # 1a) if empty, it assumes the current matched command is the best we can do
+        #     and exits loop
+        # 1b) if not empty, it checks all the subcommands for the current command
+        # 2) when checking, it checks if the name of the subcommand matches
+        # 3a) if it does, set current_command and matched_command, go back to 1
+        # 3b) if it doesn't, exit loop so that current_command is the parent command
+        matched_command = command
+        current_command = command
+        # used for subcommands only
+        self_ = None
+        if hasattr(current_command, "__self__"):
+            self_ = current_command.__self__
 
-        return await command(self, *converted_args, **converted_kwargs)
+        while True:
+            if not current_command.cmd_subcommands:
+                break
+
+            if not self.tokens:
+                break
+
+            token = self.tokens[0]
+            for command in current_command.cmd_subcommands:
+                if command.cmd_name == token or token in command.cmd_aliases:
+                    matched_command = command
+                    current_command = command
+                    # update tokens so that they're consumed
+                    self.tokens = self.tokens[1:]
+                    break
+            else:
+                # we didnt match any subcommand
+                # so escape the loop now
+                break
+
+        # bind method, if appropriate
+        if not hasattr(matched_command, "__self__") and self_ is not None:
+            matched_command = types.MethodType(matched_command, self_)
+
+        # convert all the arguments into the command
+        converted_args, converted_kwargs = await self._get_converted_args(matched_command)
+
+        # todo: safety wrapper
+        return await matched_command(self, *converted_args, **converted_kwargs)
 
     async def try_invoke(self) -> Any:
         """

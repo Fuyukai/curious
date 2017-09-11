@@ -4,7 +4,6 @@ Special helpers for events.
 import typing
 
 from curious.core import client as md_client
-from curious.dataclasses.user import User
 
 
 def event(name, scan: bool=True):
@@ -33,24 +32,16 @@ class EventContext(object):
 
     def __init__(self, cl: 'md_client.Client', shard_id: int,
                  event_name: str):
-        #: The :class:`~.Client` instance that this event was fired under.
+        #: The :class:`.Client` instance that this event was fired under.
         self.bot = cl
 
-        # shard info
         #: The shard this event was received on.
-        self.shard_id = shard_id
+        self.shard_id: int = shard_id
         #: The shard for this bot.
-        self.shard_count = cl.shard_count
+        self.shard_count: int = cl.shard_count
 
         #: The event name for this event.
-        self.event_name = event_name
-
-    @property
-    def user(self) -> User:
-        """
-        :return: The :class:`~.User` associated with this event. 
-        """
-        return self.bot.user
+        self.event_name: str = event_name
 
     @property
     def handlers(self) -> typing.List[typing.Callable[['EventContext'], None]]:

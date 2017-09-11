@@ -46,7 +46,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                           inspect.Parameter.POSITIONAL_ONLY]:
             # Only add it to the final_args, then continue the loop.
             arg = replace_quotes(arg)
-            converter = ctx._lookup_converter(arg, param.annotation)
+            converter = ctx._lookup_converter(param.annotation)
             final_args.append(converter(ctx, arg))
             continue
 
@@ -83,7 +83,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
 
                 f.append(next_arg)
 
-            converter = ctx._lookup_converter(arg, param.annotation)
+            converter = ctx._lookup_converter(param.annotation)
             final_args.append(converter(ctx, " ".join(f)))
 
         if param.kind in [inspect.Parameter.VAR_KEYWORD]:

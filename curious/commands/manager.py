@@ -113,7 +113,7 @@ class CommandsManager(object):
         self.client.add_event(self.handle_message)
 
     async def load_plugin(self, klass: typing.Type[Plugin], *args,
-                          module: str):
+                          module: str = None):
         """
         Loads a plugin.
         .. note::
