@@ -5,6 +5,7 @@ import inspect
 import types
 from typing import Any, List, Tuple, Union
 
+from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
 from curious.dataclasses.channel import Channel
@@ -19,12 +20,12 @@ class Context(object):
     A class that represents the context for a command.
     """
     _converters = {
-        # Channel: _convert_channel,
-        # Member: _convert_member,
+        Channel: convert_channel,
+        Member: convert_member,
         # Guild: _convert_guild,
-        str: lambda ctx, tokens: tokens,
-        # int: _convert_int,
-        # float: _convert_float,
+        str: lambda ctx, arg: arg,
+        int: convert_int,
+        float: convert_float,
     }
 
     def __init__(self, message: Message, event_context: EventContext):
