@@ -5,7 +5,10 @@ import inspect
 import types
 from typing import Any, List, Tuple, Union
 
+import curio
+
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
+from curious.commands.exc import CommandInvokeError, CommandsError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
 from curious.dataclasses.channel import Channel
@@ -118,6 +121,20 @@ class Context(object):
         """
         return await _convert(self, self.tokens, inspect.signature(func))
 
+    async def _safety_wrapper(self, coro):
+        """
+        Runs a command in a safety wrapper.
+        """
+        try:
+            await coro
+        except CommandsError as e:
+            await self.manager._client.fire_event("command_error", self, e)
+        except Exception as e:
+            try:
+                raise CommandInvokeError(self) from e
+            except CommandInvokeError as e2:
+                await self.manager._client.fire_event("command_error", self, e2)
+
     async def invoke(self, command) -> Any:
         """
         Invokes a command.
@@ -173,7 +190,9 @@ class Context(object):
         converted_args, converted_kwargs = await self._get_converted_args(matched_command)
 
         # todo: safety wrapper
-        return await matched_command(self, *converted_args, **converted_kwargs)
+        coro = matched_command(self, *converted_args, **converted_kwargs)
+        t = await curio.spawn(self._safety_wrapper(coro))
+        return t
 
     async def try_invoke(self) -> Any:
         """
