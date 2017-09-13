@@ -159,7 +159,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
     def __repr__(self):
         return "<GuildChannelWrapper channels={}>".format(self._channels)
 
-    async def create(self, name: str, type: 'channel.ChannelType',
+    async def create(self, name: str, type_: 'channel.ChannelType' = None,
                      permission_overwrites: 'typing.List[dt_permissions.Overwrite]' = None,
                      *,
                      parent: 'channel.Channel' = None,
@@ -169,7 +169,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         Creates a new channel.
 
         :param name: The name of the channel.
-        :param type: The :class:`.ChannelType` of the channel.
+        :param type_: The :class:`.ChannelType` of the channel.
         :param permission_overwrites: The list of permission overwrites to use for this channel.
 
         For guild channels:
@@ -188,12 +188,15 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         if not self._guild.me.guild_permissions.manage_channels:
             raise PermissionsError("manage_channels")
 
+        if type_ is None:
+            type_ = channel.ChannelType.TEXT
+
         kwargs = {
             "name": name,
-            "type": type.value,
+            "type": type_.value,
             "permission_overwrites": permission_overwrites,
         }
-        if type is channel.ChannelType.VOICE:
+        if type_ is channel.ChannelType.VOICE:
             kwargs["bitrate"] = bitrate
             kwargs["user_limit"] = user_limit
 
@@ -201,7 +204,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
             if parent.type != channel.ChannelType.CATEGORY:
                 raise CuriousError("Cannot create channel with non-category parent")
 
-            if type.value == channel.ChannelType.CATEGORY:
+            if type_.value == channel.ChannelType.CATEGORY:
                 raise CuriousError("Cannot create category channel with category")
 
             kwargs["parent_id"] = parent.id
