@@ -14,6 +14,19 @@ from curious.util import remove_from_multidict
 logger = logging.getLogger("curious.events")
 
 
+class ListenerExit(Exception):
+    """
+    Raised when a temporary listener is to be exited.
+
+    .. code-block:: python3
+
+        def listener(ctx, message):
+            if message.author.id == message.guild.owner_id:
+                raise ListenerExit
+
+    """
+
+
 class EventManager(object):
     """
     A manager for events.
@@ -56,10 +69,31 @@ class EventManager(object):
         """
         Removes a function event.
 
-        :param name: The name the event is registered under/.
+        :param name: The name the event is registered under.
         :param func: The function to remove.
         """
         self.event_listeners = remove_from_multidict(self.event_listeners, key=name, item=func)
+
+    def add_temporary_listener(self, name: str, listener):
+        """
+        Adds a new temporary listener.
+
+        To remove the listener, you can raise ListenerExit which will exit it and remove the
+        listener from the list.
+
+        :param name: The name of the event to listen to.
+        :param listener: The listener function.
+        """
+        self.temporary_listeners.add(name, listener)
+
+    def remove_listener_early(self, name: str, listener):
+        """
+        Removes a temporary listener early.
+
+        :param name: The name of the event the listener is registered under.
+        :param listener: The listener function.
+        """
+        self.event_listeners = remove_from_multidict(self.event_listeners, key=name, item=listener)
 
     # wrapper functions
     async def _safety_wrapper(self, func, *args, **kwargs):
@@ -69,7 +103,71 @@ class EventManager(object):
         try:
             await func(*args, **kwargs)
         except Exception as e:
-            logger.exception("Unhandled exception in {}!".format(func.__name__))
+            logger.exception("Unhandled exception in {}!".format(func.__name__), exc_info=True)
+
+    async def _listener_wrapper(self, key: str, func, *args, **kwargs):
+        """
+        Wraps a listener, ensuring ListenerExit is handled properly.
+        """
+        try:
+            await func(*args, **kwargs)
+        except ListenerExit:
+            # remove the function
+            self.temporary_listeners = remove_from_multidict(self.temporary_listeners, key, func)
+        except Exception:
+            logger.exception("Unhandled exception in listener {}!".format(func.__name__),
+                             exc_info=True)
+            self.temporary_listeners = remove_from_multidict(self.temporary_listeners, key, func)
+
+    async def wait_for(self, event_name: str, predicate = None):
+        """
+        Waits for an event.
+
+        Returning a truthy value from the predicate will cause it to exit and return.
+
+        :param event_name: The name of the event.
+        :param predicate: The predicate to use to check for the event.
+        """
+        p = curio.Promise()
+        errored = False
+
+        async def listener(ctx, *args):
+            # exit immediately if the predicate is none
+            if predicate is None:
+                await p.set(args)
+                raise ListenerExit
+
+            try:
+                res = predicate(*args)
+                if inspect.isawaitable(res):
+                    res = await res
+            except ListenerExit:
+                # ???
+                await p.set(args)
+                raise
+            except Exception as e:
+                # something bad happened, set exception and exit
+                logger.exception("Exception in wait_for predicate!")
+                # signal that an error happened
+                nonlocal errored
+                errored = True
+                await p.set(e)
+                raise ListenerExit
+            else:
+                # exit now if result is true
+                if res is True:
+                    await p.set(args)
+                    raise ListenerExit
+
+        self.add_temporary_listener(name=event_name, listener=listener)
+        output = await p.get()
+        if errored:
+            raise output
+
+        # unwrap tuples, if applicable
+        if len(output) == 1:
+            return output[0]
+        return output
 
     async def fire_event(self, event_name: str, *args, **kwargs):
         """
@@ -95,7 +193,7 @@ class EventManager(object):
             await curio.spawn(coro, daemon=True)
 
         for listener in self.temporary_listeners.getall(event_name, []):
-            coro = self._listener_wrapper(listener, ctx, *args, **kwargs)
+            coro = self._listener_wrapper(event_name, listener, ctx, *args, **kwargs)
             await curio.spawn(coro, daemon=True)
 
 
