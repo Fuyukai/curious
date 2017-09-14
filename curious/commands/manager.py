@@ -109,6 +109,15 @@ class CommandsManager(object):
 
         self._module_plugins = defaultdict(lambda: [])
 
+    @classmethod
+    def with_client(cls, client: 'md_client.Client', **kwargs):
+        """
+        Creates a manager and automatically registers events.
+        """
+        obb = cls(client=client, **kwargs)
+        obb.register_events()
+        return obb
+
     def register_events(self) -> None:
         """
         Copies the events to the client specified on this manager.
