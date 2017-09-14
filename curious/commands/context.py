@@ -5,10 +5,8 @@ import inspect
 import types
 from typing import Any, List, Tuple, Union
 
-import curio
-
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
-from curious.commands.exc import CommandInvokeError, CommandsError
+from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailureError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
 from curious.dataclasses.channel import Channel
@@ -135,6 +133,32 @@ class Context(object):
             except CommandInvokeError as e2:
                 await self.manager._client.fire_event("command_error", self, e2)
 
+    async def can_run(self, cmd) -> Tuple[bool, list]:
+        """
+        Checks if a command can be ran.
+
+        :return: If it can be ran, and a list of conditions that failed.
+        """
+        conditions = getattr(cmd, "cmd_conditions", [])
+        failed = []
+        for condition in conditions:
+            try:
+                success = condition(self)
+                if inspect.isawaitable(success):
+                    success = await success
+            except CommandsError:
+                raise
+            except Exception:
+                failed.append(condition)
+            else:
+                if not success:
+                    failed.append(success)
+
+        if failed:
+            return False, failed
+
+        return True, []
+
     async def invoke(self, command) -> Any:
         """
         Invokes a command.
@@ -142,10 +166,6 @@ class Context(object):
 
         :param command: The command function to run.
         """
-        # this is probably a bound method
-        # so we can copy the plugin straight to us
-        self.plugin = command.__self__
-
         # try and do a group lookup
         # how this works:
         # 1) it checks for the current command's subcommands
@@ -161,6 +181,8 @@ class Context(object):
         self_ = None
         if hasattr(current_command, "__self__"):
             self_ = current_command.__self__
+
+        self.plugin = self_
 
         while True:
             if not current_command.cmd_subcommands:
@@ -186,13 +208,16 @@ class Context(object):
         if not hasattr(matched_command, "__self__") and self_ is not None:
             matched_command = types.MethodType(matched_command, self_)
 
+        # check if we can actually run it
+        can_run, conditions_failed = await self.can_run(matched_command)
+        if not can_run:
+            raise ConditionsFailureError(self, conditions_failed)
+
         # convert all the arguments into the command
         converted_args, converted_kwargs = await self._get_converted_args(matched_command)
 
-        # todo: safety wrapper
-        coro = matched_command(self, *converted_args, **converted_kwargs)
-        t = await curio.spawn(self._safety_wrapper(coro))
-        return t
+        # finally, spawn the new command task
+        return await matched_command(self, *converted_args, **converted_kwargs)
 
     async def try_invoke(self) -> Any:
         """
@@ -216,4 +241,7 @@ class Context(object):
                     break
 
         if to_invoke is not None:
-            return await self.invoke(to_invoke)
+            try:
+                return await self.invoke(to_invoke)
+            except CommandsError as e:
+                await self.manager._client.fire_event("command_error", e)

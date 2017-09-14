@@ -35,7 +35,24 @@ def command(*,
         func.cmd_aliases = aliases or []
         func.cmd_subcommand = False
         func.cmd_subcommands = []
+        func.cmd_conditions = getattr(func, "cmd_conditions", [])
         func.subcommand = _subcommand(func)
+        return func
+
+    return inner
+
+
+def condition(cbl):
+    """
+    Adds a condition to a command.
+
+    This will add the callable to ``cmd_conditions`` on the function.
+    """
+    def inner(func):
+        if not hasattr(func, "cmd_conditions"):
+            func.cmd_conditions = []
+
+        func.cmd_conditions.append(cbl)
         return func
 
     return inner

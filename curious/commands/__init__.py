@@ -8,11 +8,14 @@ Commands helpers.
 
     manager
     context
-    decorator
+    decorators
     plugin
     utils
+
+    exc
+    converters
 """
 from curious.commands.context import Context
-from curious.commands.decorators import command
+from curious.commands.decorators import command, condition
 from curious.commands.manager import CommandsManager
 from curious.commands.plugin import Plugin
