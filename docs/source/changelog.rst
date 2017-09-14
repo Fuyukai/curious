@@ -51,6 +51,8 @@ This document displays the differences between each release of curious.
 
     - Change temporary listeners to raising ListenerExit instead of returning a truthy/falsey value.
 
+ - Reboot shards properly when they disconnect, using a while True loop inside the TaskGroup.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 
