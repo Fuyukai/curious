@@ -4,7 +4,7 @@ An example bot that uses Curious' commands.
 
 # Required imports!
 # You have to import the Client (to create the bot) and the Plugin class (to create a plugin).
-from curious.commands import command
+from curious.commands import CommandsManager, command
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
 from curious.core.client import Client
@@ -17,11 +17,11 @@ class Core(Plugin):
     # To define a command, you decorate a regular function with a `command()` decorator.
     # This will mark the function as a command that can be ran inside Discord.
 
-    # The default name for the command will be the same as the function name. You can override this by passing
-    # `name=` as a keyword argument to the decorator.
+    # The default name for the command will be the same as the function name. You can override
+    # this by passing `name=` as a keyword argument to the decorator.
     @command()
-    # All commands take a single parameter by default, `ctx`. This is the context which contains useful attributes
-    # such as the channel or the guild the command was received on.
+    # All commands take a single parameter by default, `ctx`. This is the context which contains
+    # useful attributes such as the channel or the guild the command was received on.
     async def ping(self, ctx: Context):
         """
         Responds to a user with `Pong!`.
@@ -39,8 +39,8 @@ class Core(Plugin):
         """
         Says hello to somebody.
         """
-        # The `name` in our signature allows somebody to run `!hello world` and `name` will be automatically replaced
-        #  with the string `world`.
+        # The `name` in our signature allows somebody to run `!hello world` and `name` will be
+        # automatically replaced with the string `world`.
         await ctx.channel.send("Hello, {}!".format(name))
 
     # Commands can also provide aliases, by passing in a list.
@@ -51,7 +51,8 @@ class Core(Plugin):
         """
         await ctx.channel.send("It's a bit chilly.")
 
-    # You can also provide invokation checks - these prevent people from running it unless they meet specific criteria.
+    # You can also provide invokation checks - these prevent people from running it unless they
+    # meet specific criteria.
     @command(invokation_checks=[lambda ctx: "e" not in ctx.author.user.nickname])
     async def a(self, ctx: Context):
         """
@@ -60,16 +61,18 @@ class Core(Plugin):
         await ctx.channel.send("The letter `e` is for nerds!")
 
 
-# To tie this all together, a new CommandsBot instance needs to be created.
+# To tie this all together, a new client instance needs to be created, and a manager created.
 # The command_prefix argument tells us what prefix should be used to invoke commands.
-bot = Client(command_prefix="!")
+bot = Client()
+manager = CommandsManager(client=bot, command_prefix="!")
+manager.register_events()
 
 
 # Add the Core class as a plugin to the bot, inside the ready event.
 @bot.event("ready")
 async def ready(ctx: EventContext):
     print("Logged in as", bot.user.name)
-    await Core.setup(bot)
+    await manager.load_plugin(Core)
 
 
 # Run the bot with your token.

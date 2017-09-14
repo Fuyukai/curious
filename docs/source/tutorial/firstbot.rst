@@ -43,13 +43,8 @@ Next, you want to define your new bot object.
 
 .. code-block:: python3
 
-    botto = Client(enable_commands=False)
+    botto = Client()
 
-.. note::
-
-    ``enable_commands`` is passed as False, which disables command handling.
-
-    There's no benefit to enabling it for a basic echo bot.
 
 This object will be used to receive events from Discord, such as the messages.
 
