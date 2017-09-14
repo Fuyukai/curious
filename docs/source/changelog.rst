@@ -28,6 +28,29 @@ This document displays the differences between each release of curious.
 
  - Add support for channel categories in the API and the gateway.
 
+ - Reorganize commands code significantly:
+
+    - Move all of the commands code out of :class:`.Client`.
+
+    - Add new :class:`.CommandsManager`.
+
+    - Overhaul :class:`.Context` to do more, such as the actual processing.
+
+    - Remove :class:`.Command` in favour of annotated functions.
+
+ - Reorganize events code significantly:
+
+    - Move all the events code out of :class:`.Client`.
+
+    - Add new :class:`.EventManager`.
+
+    - Add event hooks, which are called with every event the bot receives.
+
+    - Overhaul :meth:`.EventManager.wait_for` so that it uses :class:`curio.Promise` rather than
+      terrible events.
+
+    - Change temporary listeners to raising ListenerExit instead of returning a truthy/falsey value.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 
