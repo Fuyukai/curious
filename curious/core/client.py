@@ -10,16 +10,16 @@ import collections
 import enum
 import inspect
 import logging
+import traceback
 import typing
 from types import MappingProxyType
 
 import curio
-import multidict
 from cuiows.exc import WebsocketClosedError
 from curio.monitor import MONITOR_HOST, MONITOR_PORT, Monitor
-from curio.task import Task, TaskGroup
+from curio.task import TaskGroup
 
-from curious.core.event import EventContext, event as ev_dec
+from curious.core.event import EventManager, event as ev_dec
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
@@ -119,13 +119,8 @@ class Client(object):
         if self.bot_type & BotType.BOT and self.bot_type & BotType.USERBOT:
             raise ValueError("Bot cannot be a bot and a userbot at the same time")
 
-        #: The current event storage.
-        self.events = multidict.MultiDict()
-
-        #: The current "temporary" listener storage.
-        #: Temporary listeners are events that listen, and if they return True the listener is
-        #: removed. They are used in the HTTP method by `wait=`, for example.
-        self._temporary_listeners = multidict.MultiDict()
+        #: The current :class:`.EventManager` for this bot.
+        self.events = EventManager()
 
         #: The :class:`~.HTTPClient` used for this bot.
         self.http = None  # type: HTTPClient
@@ -219,7 +214,7 @@ class Client(object):
         self._gw_url = await self.http.get_gateway_url()
         return self._gw_url
 
-    async def get_shard_count(self):
+    async def get_shard_count(self) -> int:
         """
         :return: The shard count recommended for this bot.
         """
@@ -236,53 +231,6 @@ class Client(object):
         :return: A list of :class:`Guild` that client can see on the specified shard.
         """
         return self.state.guilds_for_shard(shard_id)
-
-    # Events
-    def add_event(self, func, name: str = None):
-        """
-        Add an event to the internal registry of events.
-
-        :param name: The event name to register under.
-        :param func: The function to add.
-        """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("Event must be a coroutine function")
-
-        if name is None:
-            evs = func.events
-        else:
-            evs = [name]
-
-        for ev_name in evs:
-            logger.debug("Registered event `{}` handling `{}`".format(func, name))
-            self.events.add(ev_name, func)
-
-    def add_listener(self, name: str, func):
-        """
-        Adds a temporary listener.
-
-        :param name: The name of the event to listen under.
-        :param func: The callable to call.
-        """
-        if not inspect.iscoroutinefunction(func):
-            raise TypeError("Listener must be a coroutine function")
-
-        self._temporary_listeners.add(name, func)
-
-    def remove_event(self, name: str, func):
-        """
-        Removes a function event.
-
-        :param name: The name the event is registered under/.
-        :param func: The function to remove.
-        """
-        a = self.events.getall(name)
-        if func in a:
-            a.remove(func)
-
-        self.events.pop(name)
-        for item in a:
-            self.events.add(name, item)
 
     def event(self, name: str):
         """
@@ -301,7 +249,7 @@ class Client(object):
 
         def _inner(func):
             f = ev_dec(name)(func)
-            self.add_event(func=f)
+            self.events.add_event(func=f)
 
         return _inner
 
@@ -309,6 +257,7 @@ class Client(object):
         """
         Scans this class for functions marked with an event decorator.
         """
+
         def _pred(f):
             if not hasattr(f, "events"):
                 return False
@@ -320,92 +269,23 @@ class Client(object):
 
         for _, item in inspect.getmembers(self, predicate=_pred):
             logger.info("Registering event function {} for events {}".format(_, item.events))
-            self.add_event(item)
+            self.events.add_event(item)
 
-    async def _error_wrapper(self, func, *args, **kwargs):
-        try:
-            await func(*args, **kwargs)
-        except Exception as e:
-            logger.exception("Unhandled exception in {}!".format(func.__name__))
+    # rip in peace old fire_event
+    # 2016-2017
+    # broke my pycharm
+    async def fire_event(self, event_name: str, *args, **kwargs):
+        """
+        Fires an event.
 
-    async def _temporary_wrapper(self, event, listener, *args, **kwargs):
-        try:
-            result = await listener(*args, **kwargs)
-        except Exception as e:
-            logger.exception("Unhandled exception in {}!".format(listener.__name__))
-            return
-        if result is True:
-            # Complex removal bullshit
-            try:
-                items = self._temporary_listeners.getall(event)
-            except KeyError:
-                # early removal done already, ignore
+        This actually passes the arguments to :meth:`.EventManager.fire_event`.
+        """
+        gateway = kwargs.get("gateway")
+        if not self.state.is_ready(gateway.shard_id):
+            if event_name not in self.IGNORE_READY and not event_name.startswith("gateway_"):
                 return
 
-            try:
-                items.remove(listener)
-            except ValueError:
-                # race condition bullshit
-                return
-            # remove all keys
-            self._temporary_listeners.pop(event)
-
-            for i in items:
-                # re-add all new items
-                self._temporary_listeners.add(event, i)
-
-    def remove_listener_early(self, event, listener):
-        """
-        Removes a listener early.
-
-        :param event: The event to remove from.
-        :param listener: The listener to remove.
-        """
-        all = self._temporary_listeners.getall(event)
-        if listener in all:
-            all.remove(listener)
-
-        self._temporary_listeners.pop(event)
-        for i in all:
-            self._temporary_listeners.add(event, i)
-
-    async def fire_event(self, event_name: str, *args, **kwargs) -> typing.List[Task]:
-        """
-        Fires an event to run.
-
-        This will wrap the events in Tasks and return a list of them.
-
-        :param event_name: The event name to fire.
-        :return: A :class:`list` of :class:`curio.task.Task` representing the events.
-        """
-        gateway = kwargs.pop("gateway")
-
-        if not self.state.is_ready(gateway.shard_id).is_set():
-            if event_name not in self.IGNORE_READY or event_name.startswith("gateway_"):
-                return []
-
-        coros = self.events.getall(event_name, [])
-        temporary_listeners = self._temporary_listeners.getall(event_name, [])
-
-        if not coros and not temporary_listeners:
-            return []
-
-        if "ctx" not in kwargs:
-            ctx = EventContext(self, gateway.shard_id, event_name)
-        else:
-            ctx = kwargs.pop("ctx")
-
-        tasks = []
-        for event in coros.copy():
-            tasks.append(await curio.spawn(self._error_wrapper(event, ctx, *args, **kwargs),
-                                           daemon=True))
-
-        for listener in temporary_listeners:
-            tasks.append(await curio.spawn(self._temporary_wrapper(event_name, listener, ctx,
-                                                                   *args, **kwargs),
-                                           daemon=True))
-
-        return tasks
+        return await self.events.fire_event(event_name, *args, **kwargs, client=self)
 
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
@@ -426,86 +306,6 @@ class Client(object):
 
         gateway = self._gateways[shard_id]
         return await gateway.send_status(game, status, afk=afk)
-
-    async def wait_for(self, event_name: str, predicate=None):
-        """
-        Wait for an event to happen in the gateway.
-
-        You can specify a check to happen to check if this event is the one to return.
-        When the check returns True, the listener is removed and the event data is returned.
-        For example, to wait for a message with the content `Heck`:
-
-        .. code:: python
-
-            message = await client.wait_for("message_create", 
-                                            predicate=lambda m: m.content == "Heck")
-
-        You can pass any function to this predicate. If this function takes an error, it will 
-        remove the listener, then raise into your code.
-
-        .. code:: python
-
-            async def _closure(message):
-                if message.author.id != 66237334693085184:
-                    return False
-
-                if message.content == "sparkling water > tap water":
-                    return True
-
-                return False
-
-            wrong = await client.wait_for("message_create", predicate=_closure)
-
-        :param event_name: The name of the event to wait for.
-        :param predicate: An optional check function to return.
-        :return: The result of the event.
-        """
-        if predicate is None:
-            predicate = lambda *args, **kwargs: True
-
-        event = curio.Event()
-        result = None
-        _exc = None
-
-        async def __event_listener_inner(ctx: EventContext, *args, **kwargs):
-            try:
-                is_result = predicate(*args, **kwargs)
-                if inspect.isawaitable(is_result):
-                    is_result = await is_result
-            except Exception as e:
-                # It is NOT the result we want.
-                nonlocal _exc
-                _exc = e
-                await event.set()
-                # Return True so this listener dies.
-                return True
-            else:
-                if is_result:
-                    # It is the result we want, so set the event.
-                    await event.set()
-                    # Then we store the result.
-                    nonlocal result
-                    result = args  # TODO: Figure out keyword arguments
-                    return True
-
-                return False
-
-        self.add_listener(event_name, __event_listener_inner)
-        # Wait on the event to be set.
-        try:
-            await event.wait()
-        except curio.CancelledError:
-            # remove the listener
-            self.remove_listener_early(event_name, __event_listener_inner)
-            raise
-        # If it's an exception, raise the exception.
-        if _exc is not None:
-            raise _exc
-        # Otherwise, return the event result.
-        if isinstance(result, tuple) and len(result) == 1:
-            return result[0]
-
-        return result
 
     # HTTP Functions
     async def edit_profile(self, *,
@@ -830,26 +630,35 @@ class Client(object):
                 if shard_id < shards - 1:
                     await curio.sleep(5)
 
-            task = await g.next_done()  # type: curio.Task
-            if task is None:
-                return
+            while True:
+                task = await g.next_done()  # type: curio.Task
+                if task is None:
+                    break
 
-            try:
-                result = await task.join()
-            except Exception as e:
-                result = e
-                logger.exception("Shard {} crashed, not rebooting it."
-                                 .format(task.task_local_storage["shard_id"]["id"]))
-            else:
-                # reboot it
-                logger.warning("Rebooting shard {}.".format(task.id))
-                shard_id = task.task_local_storage["shard_id"]["id"]
-                t = await self.boot_shard(shard_id=shard_id)
-                t.task_local_storage["shard_id"] = {"id": shard_id}
-                # add the shard waiter task
-                g.add_task(t)
-            finally:
-                results.append(result)
+                try:
+                    result = await task.join()
+                except Exception as e:
+                    result = e
+                    # format custom exception
+                    exc = traceback.format_exception(None, e.__cause__, e.__cause__.__traceback__)
+                    exc = ''.join(exc)
+
+                    logger.error("Shard {} crashed, not rebooting it.\n{}"
+                                 .format(task.task_local_storage["shard_id"]["id"], exc))
+                else:
+                    # reboot it
+                    logger.warning("Rebooting shard {}.".format(task.id))
+                    shard_id = task.task_local_storage["shard_id"]["id"]
+                    t = await self.boot_shard(shard_id=shard_id)
+                    t.task_local_storage["shard_id"] = {"id": shard_id}
+                    # add the shard waiter task
+                    g.add_task(t)
+                finally:
+                    results.append(result)
+
+        # if we're still here, cancel a bunch of stuff
+        for gateway in self._gateways.values():
+            await gateway.close()
 
         return results
 
@@ -900,11 +709,10 @@ class Client(object):
             coro = self.start(shards=shards, **kwargs)
 
         try:
-            return kernel.run(coro)
+            return kernel.run(coro, shutdown=True)
         except (KeyboardInterrupt, EOFError):
-            # we have to cleanup
             kernel._crashed = False
-            return kernel.run(self._cleanup)
+            return kernel.run(self._cleanup())
 
     @classmethod
     def from_token(cls, token: str = None):

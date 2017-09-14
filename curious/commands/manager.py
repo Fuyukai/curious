@@ -7,6 +7,8 @@ import sys
 import typing
 from collections import defaultdict
 
+import curio
+
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
 from curious.commands.utils import prefix_check_factory
@@ -110,7 +112,8 @@ class CommandsManager(object):
         """
         Copies the events to the client specified on this manager.
         """
-        self.client.add_event(self.handle_message)
+        self.client.events.add_event(self.handle_message)
+        self.client.events.event_hooks.append(self.event_hook)
 
     async def load_plugin(self, klass: typing.Type[Plugin], *args,
                           module: str = None):
@@ -204,7 +207,7 @@ class CommandsManager(object):
             return True
 
         for plugin_name, plugin_class in inspect.getmembers(mod, predicate=predicate):
-            await self.load_plugin(plugin_class, mod=mod)
+            await self.load_plugin(plugin_class, module=mod)
 
     async def unload_plugins_from(self, import_path: str):
         """
@@ -219,6 +222,23 @@ class CommandsManager(object):
 
         del sys.modules[import_path]
         del self._module_plugins[import_path]
+
+    async def event_hook(self, ctx: EventContext, *args, **kwargs):
+        """
+        The event hook for the commands manager.
+        """
+        taskgroup = curio.TaskGroup()
+        for plugin in self.plugins.values():
+            body = inspect.getmembers(plugin, predicate=lambda v: hasattr(v, "is_event"))
+            for _, handler in body:
+                if ctx.event_name not in handler.events:
+                    continue
+
+                await taskgroup.spawn(self.client.events._safety_wrapper(
+                    handler, ctx, *args, **kwargs
+                ))
+
+        await taskgroup.join()
 
     async def handle_commands(self, ctx: EventContext, message: Message):
         """

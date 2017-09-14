@@ -8,7 +8,24 @@ import imghdr
 import inspect
 import typing
 
+from multidict import MultiDict
+
 NO_ITEM = object()
+
+
+def remove_from_multidict(d: MultiDict, key: str, item: typing.Any):
+    """
+    Removes an item from a multidict key.
+    """
+    # works by popping all, removing, then re-adding into
+    i = d.popall(key, [])
+    if item in i:
+        i.remove(item)
+
+    for n in i:
+        d.add(key, n)
+
+    return d
 
 
 class AsyncIteratorWrapper(collections.AsyncIterator):

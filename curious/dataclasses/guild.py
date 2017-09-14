@@ -231,23 +231,23 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         # we can safely assume this exists
         return self._channels[int(channel_data.get("id"))]
 
-    def edit(self, channel: 'channel.Channel', **kwargs):
+    async def edit(self, channel: 'channel.Channel', **kwargs):
         """
         Edits a channel.
         """
         if channel.id not in self._channels:
             raise CuriousError("This channel is not part of this guild")
 
-        return channel.edit(**kwargs)
+        return await channel.edit(**kwargs)
 
-    def delete(self, channel: 'channel.Channel'):
+    async def delete(self, channel: 'channel.Channel'):
         """
         Deletes a channel.
         """
         if channel.id not in self._channels:
             raise CuriousError("This channel is not part of this guild")
 
-        return channel.delete()
+        return await channel.delete()
 
 
 class GuildRoleWrapper(collections.Mapping, collections.Iterable):

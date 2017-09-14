@@ -1,12 +1,105 @@
 """
 Special helpers for events.
 """
+import inspect
+import logging
 import typing
 
+import curio
+from multidict import MultiDict
+
 from curious.core import client as md_client
+from curious.util import remove_from_multidict
+
+logger = logging.getLogger("curious.events")
 
 
-def event(name, scan: bool=True):
+class EventManager(object):
+    """
+    A manager for events.
+
+    This deals with firing of events and temporary listeners.
+    """
+
+    def __init__(self):
+        #: A list of event hooks.
+        self.event_hooks = []
+
+        #: A MultiDict of event listeners.
+        self.event_listeners = MultiDict()
+
+        #: A MultiDict of temporary listeners.
+        self.temporary_listeners = MultiDict()
+
+    # add or removal functions
+    # Events
+    def add_event(self, func, name: str = None):
+        """
+        Add an event to the internal registry of events.
+
+        :param name: The event name to register under.
+        :param func: The function to add.
+        """
+        if not inspect.iscoroutinefunction(func):
+            raise TypeError("Event must be a coroutine function")
+
+        if name is None:
+            evs = func.events
+        else:
+            evs = [name]
+
+        for ev_name in evs:
+            logger.debug("Registered event `{}` handling `{}`".format(func, name))
+            self.event_listeners.add(ev_name, func)
+
+    def remove_event(self, name: str, func):
+        """
+        Removes a function event.
+
+        :param name: The name the event is registered under/.
+        :param func: The function to remove.
+        """
+        self.event_listeners = remove_from_multidict(self.event_listeners, key=name, item=func)
+
+    # wrapper functions
+    async def _safety_wrapper(self, func, *args, **kwargs):
+        """
+        Ensures a coro's error is caught and doesn't balloon out.
+        """
+        try:
+            await func(*args, **kwargs)
+        except Exception as e:
+            logger.exception("Unhandled exception in {}!".format(func.__name__))
+
+    async def fire_event(self, event_name: str, *args, **kwargs):
+        """
+        Fires an event.
+
+        :param event_name: The name of the event to fire.
+        """
+        # gateway should always be provided
+        gateway = kwargs.pop("gateway")
+        client = kwargs.pop("client")
+
+        if "ctx" not in kwargs:
+            ctx = EventContext(client, gateway.shard_id, event_name)
+        else:
+            ctx = kwargs.pop("ctx")
+
+        # always ensure hooks are ran first
+        for hook in self.event_hooks:
+            await curio.spawn(hook(ctx, *args, **kwargs), daemon=True)
+
+        for handler in self.event_listeners.getall(event_name, []):
+            coro = self._safety_wrapper(handler, ctx, *args, **kwargs)
+            await curio.spawn(coro, daemon=True)
+
+        for listener in self.temporary_listeners.getall(event_name, []):
+            coro = self._listener_wrapper(listener, ctx, *args, **kwargs)
+            await curio.spawn(coro, daemon=True)
+
+
+def event(name, scan: bool = True):
     """
     Marks a function as an event.
 
@@ -18,6 +111,7 @@ def event(name, scan: bool=True):
         if not hasattr(f, "events"):
             f.events = set()
 
+        f.is_event = True
         f.events.add(name)
         f.scan = scan
         return f

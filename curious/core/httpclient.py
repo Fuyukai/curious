@@ -1051,6 +1051,11 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="channels:{}".format(channel_id), json=payload)
         return data
 
+    async def update_channel_positions(self, channels: typing.List[typing.Tuple[int, int]]):
+        """
+        Updates the positions of
+        """
+
     async def delete_channel(self, channel_id: int):
         """
         Deletes a channel.

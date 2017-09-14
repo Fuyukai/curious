@@ -151,7 +151,14 @@ class Member(Dataclass):
         if not self.guild:
             return None
 
-        return sorted([self.guild.roles[i] for i in self.role_ids])
+        roles = []
+        for id in self.role_ids:
+            try:
+                roles.append(self.guild.roles[id])
+            except (KeyError, AttributeError):
+                pass
+
+        return sorted(roles)
 
     @property
     def colour(self) -> int:
@@ -173,7 +180,10 @@ class Member(Dataclass):
         """
         :return: This member's top-most :class:`~.Role`.
         """
-        return next(iter(sorted(self.roles, reverse=True)), self.guild.default_role)
+        try:
+            return next(iter(sorted(self.roles, reverse=True)), self.guild.default_role)
+        except AttributeError:
+            return None
 
     @property
     def guild_permissions(self) -> Permissions:
