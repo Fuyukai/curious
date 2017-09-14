@@ -10,6 +10,7 @@ from collections import defaultdict
 import curio
 
 from curious.commands.context import Context
+from curious.commands.help import help_command
 from curious.commands.plugin import Plugin
 from curious.commands.utils import prefix_check_factory
 from curious.core import client as md_client
@@ -115,6 +116,9 @@ class CommandsManager(object):
         self.client.events.add_event(self.handle_message)
         self.client.events.event_hooks.append(self.event_hook)
 
+        from curious.commands.decorators import command
+        self.commands["help"] = command(name="help")(help_command)
+
     async def load_plugin(self, klass: typing.Type[Plugin], *args,
                           module: str = None):
         """
@@ -159,6 +163,46 @@ class CommandsManager(object):
             await p.unload()
 
         return p
+
+    def _lookup_command(self, name: str):
+        """
+        Does a lookup in plugin and standalone commands.
+        """
+        if name in self.commands:
+            return self.commands[name]
+
+        for plugin in self.plugins.values():
+            cmds = plugin._get_commands()
+
+            try:
+                return next(filter(lambda cmd: not cmd.cmd_subcommand and
+                                   (cmd.cmd_name == name or name in cmd.cmd_aliases), cmds))
+            except StopIteration:
+                continue
+
+    def get_command(self, command_name: str):
+        """
+        Gets a command from the internal command storage.
+        If provided a string separated by spaces, a subcommand lookup will be attempted.
+
+        :param command_name: The name of the command to lookup.
+        """
+        # do an immediate lookup for the first token
+        sp = command_name.split(" ")
+        command = self._lookup_command(sp[0])
+
+        if command is None:
+            return None
+
+        for token in sp[1:]:
+            try:
+                filtered = filter(lambda cmd: cmd.cmd_name == token or token in cmd.cmd_aliases,
+                                  command.cmd_subcommands)
+                command = next(filtered)
+            except StopIteration:
+                return None
+
+        return command
 
     async def add_command(self, command):
         """

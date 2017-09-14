@@ -14,6 +14,10 @@ class Plugin(object):
         #: The client for this plugin.
         self.client = client
 
+    @property
+    def name(self):
+        return self.__class__.__name__
+
     async def load(self) -> None:
         """
         Called when this plugin is loaded.

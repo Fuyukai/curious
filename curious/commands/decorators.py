@@ -35,6 +35,7 @@ def command(*,
         func.cmd_aliases = aliases or []
         func.cmd_subcommand = False
         func.cmd_subcommands = []
+        func.cmd_parent = None
         func.cmd_conditions = getattr(func, "cmd_conditions", [])
         func.subcommand = _subcommand(func)
         return func
@@ -67,6 +68,7 @@ def _subcommand(parent):
         def inner_2(func):
             cmd = command(**kwargs)(func)
             cmd.cmd_subcommand = True
+            cmd.cmd_parent = parent
             parent.cmd_subcommands.append(cmd)
             return cmd
 

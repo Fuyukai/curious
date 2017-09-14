@@ -12,6 +12,24 @@ from curious.dataclasses.message import Message
 from curious.util import replace_quotes
 
 
+def get_full_name(func) -> str:
+    """
+    Gets the full name of a command, taking into account it's parents.
+    """
+    name = []
+    # loop over and extract the name
+    # then set func to the parent
+    # and break if the parent is None
+    while True:
+        name.append(func.cmd_name)
+        if func.cmd_parent is None:
+            break
+
+        func = func.cmd_parent
+
+    return ' '.join(reversed(name))
+
+
 async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
     """
     Converts tokens passed from discord, using a signature.
@@ -106,6 +124,57 @@ def get_description(func) -> str:
     doc = inspect.cleandoc(func.__doc__)
     lines = doc.split("\n")
     return lines[0]
+
+
+def get_usage(func, invoked_as: str = None) -> str:
+    """
+    :return: The usage text for this command.
+    """
+    if invoked_as is not None:
+        final = [invoked_as]
+    else:
+        final = [func.cmd_name]
+
+    signature = inspect.signature(func)
+
+    for n, (name, param) in enumerate(signature.parameters.items()):
+        # always skip the first arg, as it's self/ctx
+        if n == 0:
+            continue
+
+        # check if we should skip the 2nd arg
+        # not always possible
+        from curious.commands.context import Context
+        if name in ["ctx", "context"] or param.annotation is Context:
+            continue
+
+        # switch based on kind (again...)
+        assert isinstance(param, inspect.Parameter)
+        if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                          inspect.Parameter.POSITIONAL_ONLY]:
+            if param.annotation is not inspect.Parameter.empty:
+                s = "<{}: {}>".format(param.name, param.annotation.__name__)
+            else:
+                s = "<{}>".format(param.name)
+
+        elif param.kind in [inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_POSITIONAL]:
+            if param.default is not inspect.Parameter.empty:
+                if param.annotation is not inspect.Parameter.empty:
+                    s = "[{}: {} (default: {})]".format(param.name, param.annotation.__name__,
+                                                        repr(param.default))
+                else:
+                    s = "[{} (default: {})]".format(param.name, repr(param.default))
+            else:
+                if param.annotation is not inspect.Parameter.empty:
+                    s = "<{}: {}>".format(param.name, param.annotation.__name__)
+                else:
+                    s = "<{}>".format(param.name)
+        else:
+            s = ""
+
+        final.append(s)
+
+    return " ".join(final)
 
 
 def split_message_content(content: str, delim: str = " ") -> List[str]:
