@@ -53,6 +53,8 @@ This document displays the differences between each release of curious.
 
  - Reboot shards properly when they disconnect, using a while True loop inside the TaskGroup.
 
+ - Add :attr:`.State.guilds_ordered`.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 

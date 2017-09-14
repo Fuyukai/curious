@@ -28,7 +28,6 @@ from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
 UserType = typing.TypeVar("U", bound=User)
-
 logger = logging.getLogger("curious.state")
 
 
@@ -170,9 +169,16 @@ class State(object):
     @property
     def guilds(self) -> typing.Mapping[int, Guild]:
         """
-        :return: A mapping of int -> :class:`~.Guild`. 
+        :return: A mapping of int -> :class:`.Guild`.
         """
         return self._guilds.view()
+
+    @property
+    def guilds_ordered(self) -> typing.Mapping[int, Guild]:
+        """
+        :return: An ordered mapping of int -> :class:`.Guild` by the user's guild ordering.
+        """
+        return self._guilds.with_order
 
     def have_all_chunks(self, shard_id: int):
         """
@@ -772,7 +778,7 @@ class State(object):
 
         guild.unavailable = event_data.get("unavailable", False)
         guild.name = event_data.get("name", guild.name)
-        guild.member_count = event_data.get("member_count", 0)
+        guild.member_count = event_data.get("member_count", guild.member_count)
         if not guild.member_count:
             guild.member_count = len(guild._members)
         guild._large = event_data.get("large", guild._large)
