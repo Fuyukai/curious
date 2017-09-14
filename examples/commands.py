@@ -4,7 +4,7 @@ An example bot that uses Curious' commands.
 
 # Required imports!
 # You have to import the Client (to create the bot) and the Plugin class (to create a plugin).
-from curious.commands import CommandsManager, command
+from curious.commands import CommandsManager, command, condition
 from curious.commands.context import Context
 from curious.commands.plugin import Plugin
 from curious.core.client import Client
@@ -53,7 +53,8 @@ class Core(Plugin):
 
     # You can also provide invokation checks - these prevent people from running it unless they
     # meet specific criteria.
-    @command(invokation_checks=[lambda ctx: "e" not in ctx.author.user.nickname])
+    @command()
+    @condition(lambda ctx: "e" not in ctx.author.user.nickname)
     async def a(self, ctx: Context):
         """
         Only users without an `e` in their nickname can run this command.
