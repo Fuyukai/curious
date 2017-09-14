@@ -287,6 +287,12 @@ class Client(object):
 
         return await self.events.fire_event(event_name, *args, **kwargs, client=self)
 
+    async def wait_for(self, *args, **kwargs):
+        """
+        Shortcut for :meth:`.EventManager.wait_for`.
+        """
+        return await self.events.wait_for(*args, **kwargs)
+
     # Gateway functions
     async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
                             afk: bool = False,
