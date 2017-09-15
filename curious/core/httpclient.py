@@ -250,7 +250,12 @@ class HTTPClient(object):
 
             for tries in range(0, 5):
                 # Make the request.
-                response = await self._make_request(*args, **kwargs)
+                try:
+                    response = await self._make_request(*args, **kwargs)
+                except OSError:
+                    # discord forcefully disconnected or similar
+                    continue
+
                 method = kwargs.get("method", "???")
                 path = kwargs.get("path", "???")
                 self.logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
