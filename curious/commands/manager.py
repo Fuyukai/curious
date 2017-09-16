@@ -3,19 +3,24 @@ Contains the class for the commands manager for a client.
 """
 import importlib
 import inspect
+import logging
 import sys
+import traceback
 import typing
 from collections import defaultdict
 
 import curio
 
 from curious.commands.context import Context
+from curious.commands.exc import CommandsError
 from curious.commands.help import help_command
 from curious.commands.plugin import Plugin
 from curious.commands.utils import prefix_check_factory
 from curious.core import client as md_client
 from curious.core.event import EventContext, event
 from curious.dataclasses.message import Message
+
+logger = logging.getLogger("curious.commands.manager")
 
 
 class CommandsManager(object):
@@ -123,6 +128,7 @@ class CommandsManager(object):
         Copies the events to the client specified on this manager.
         """
         self.client.events.add_event(self.handle_message)
+        self.client.events.add_event(self.default_command_error)
         self.client.events.event_hooks.append(self.event_hook)
 
         from curious.commands.decorators import command
@@ -319,6 +325,17 @@ class CommandsManager(object):
 
         # step 3, invoke the context to try and match the command and run it
         await ctx.try_invoke()
+
+    @event("command_error")
+    async def default_command_error(self, ctx: Context, err: CommandsError):
+        """
+        Handles command errors by default.
+        """
+        if len(self.client.events.event_listeners.getall("command_error")) > 1:
+            return
+
+        fmtted = ''.join(traceback.format_exception(type(err), err, err.__traceback__))
+        logger.error(f"Error in command!\n{fmtted}")
 
     @event("message_create")
     async def handle_message(self, ctx: EventContext, message: Message):
