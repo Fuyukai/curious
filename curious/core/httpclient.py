@@ -211,7 +211,7 @@ class HTTPClient(object):
         else:
             headers = self.headers.copy()
 
-        return await self.session.request(*args, headers=headers, **kwargs)
+        return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
         """

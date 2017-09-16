@@ -55,6 +55,8 @@ This document displays the differences between each release of curious.
 
  - Add :attr:`.State.guilds_ordered`.
 
+ - Add a 5 second timeout to each request made.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 
