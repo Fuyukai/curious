@@ -126,12 +126,12 @@ class Context(object):
         try:
             await coro
         except CommandsError as e:
-            await self.manager._client.fire_event("command_error", self, e)
+            await self.manager.client.fire_event("command_error", self, e)
         except Exception as e:
             try:
                 raise CommandInvokeError(self) from e
             except CommandInvokeError as e2:
-                await self.manager._client.fire_event("command_error", self, e2)
+                await self.manager.client.fire_event("command_error", self, e2)
 
     async def can_run(self, cmd) -> Tuple[bool, list]:
         """
@@ -244,4 +244,4 @@ class Context(object):
             try:
                 return await self.invoke(to_invoke)
             except CommandsError as e:
-                await self.manager._client.fire_event("command_error", e)
+                await self.manager.client.fire_event("command_error", e)
