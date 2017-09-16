@@ -3,7 +3,6 @@ Misc utilities used in commands related things.
 """
 import collections
 import inspect
-import re
 from typing import Callable, Iterable, List, Union
 
 from curious.commands.exc import MissingArgumentError
@@ -192,12 +191,25 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
     :return: A list of items split
     """
 
-    def replacer(m):
-        return m.group(0).replace(delim, "\x00")
+    # https://stackoverflow.com/a/43035638
+    tokens = []
+    cur = ''
+    in_quotes = False
 
-    parts = re.sub(r'".+?"', replacer, content).split()
-    parts = [p.replace("\x00", " ") for p in parts]
-    return parts
+    for char in content.strip():
+        if char == ' ' and not in_quotes:
+            tokens.append(cur)
+            cur = ''
+        elif char == '"' and not in_quotes:
+            in_quotes = True
+            cur += char
+        elif char == '"' and in_quotes:
+            in_quotes = False
+            cur += char
+        else:
+            cur += char
+    tokens.append(cur)
+    return tokens
 
 
 def prefix_check_factory(prefix: Union[str, Iterable[str], Callable[[Client, Message], str]]):
