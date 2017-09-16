@@ -7,7 +7,7 @@ class CommandsError(Exception):
     pass
 
 
-class ConditionsFailureError(CommandsError):
+class ConditionsFailedError(CommandsError):
     """
     Raised when conditions fail for a command.
     """
@@ -17,7 +17,7 @@ class ConditionsFailureError(CommandsError):
 
     def __repr__(self):
         if isinstance(self.conditions, list):
-            return "The conditions for `{.name}` failed.".format(self.ctx)
+            return f"The conditions for `{self.ctx.command_name}` failed."
 
         return f"The condition `{self.conditions.__name__}` for `{self.ctx.command_name}` failed." \
 

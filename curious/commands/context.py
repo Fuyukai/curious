@@ -6,7 +6,7 @@ import types
 from typing import Any, List, Tuple, Union
 
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
-from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailureError
+from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
 from curious.dataclasses.channel import Channel
@@ -212,7 +212,7 @@ class Context(object):
         # check if we can actually run it
         can_run, conditions_failed = await self.can_run(matched_command)
         if not can_run:
-            raise ConditionsFailureError(self, conditions_failed)
+            raise ConditionsFailedError(self, conditions_failed)
 
         # convert all the arguments into the command
         converted_args, converted_kwargs = await self._get_converted_args(matched_command)
