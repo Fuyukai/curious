@@ -175,11 +175,9 @@ class EventManager(object):
 
         :param event_name: The name of the event to fire.
         """
-        # gateway should always be provided
-        gateway = kwargs.pop("gateway")
-        client = kwargs.pop("client")
-
         if "ctx" not in kwargs:
+            gateway = kwargs.pop("gateway")
+            client = kwargs.pop("client")
             ctx = EventContext(client, gateway.shard_id, event_name)
         else:
             ctx = kwargs.pop("ctx")
