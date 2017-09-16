@@ -248,8 +248,11 @@ class CommandsManager(object):
 
         # define the predicate for the body scanner
         def predicate(item):
+            if not isinstance(item, type):
+                return False
+
             # only accept plugin subclasses
-            if isinstance(item, type) and not issubclass(item, Plugin):
+            if not issubclass(item, Plugin):
                 return False
 
             # ensure item is not actually Plugin
