@@ -280,7 +280,7 @@ class CommandsManager(object):
         """
         for plugin in self._module_plugins[import_path]:
             await plugin.unload()
-            self.plugins.pop(getattr(plugin, "name", "__name__"))
+            self.plugins.pop(getattr(plugin, "plugin_name", "__name__"))
 
         del sys.modules[import_path]
         del self._module_plugins[import_path]

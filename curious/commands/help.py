@@ -70,7 +70,8 @@ async def help_for_all(ctx: Context):
         # wrap the command names in backticks
         # and join it all up with some pipes
         names_joined = ' | '.join(f"`{c}`" for c in command_names)
-        rows.append(f"**{row_num}. {plugin.name}:** {names_joined}")
+        plugin_name = getattr(plugin, "plugin_name", plugin.__class__.__name__)
+        rows.append(f"**{row_num}. {plugin_name}:** {names_joined}")
 
     # add any uncategorized commands
     if ctx.manager.commands:
