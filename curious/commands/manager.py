@@ -147,7 +147,7 @@ class CommandsManager(object):
         :param module: The module name provided with this plugin. Only used interally.
         """
         # get the name and create the plugin object
-        plugin_name = getattr(klass, "name", klass.__name__)
+        plugin_name = getattr(klass, "plugin_name", klass.__name__)
         instance = klass(self.client, *args)
 
         # call load, of course
