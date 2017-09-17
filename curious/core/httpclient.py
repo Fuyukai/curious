@@ -14,6 +14,7 @@ from math import ceil
 import asks
 import curio
 import pytz
+from asks.errors import ConnectivityError
 from asks.response_objects import Response
 
 # try and load a C impl of LRU first
@@ -211,7 +212,12 @@ class HTTPClient(object):
         else:
             headers = self.headers.copy()
 
-        return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
+        try:
+            return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
+        except curio.TaskGroupError as e:
+            # timeout manager raised, and asks doesn't unwrap yet
+            actual_error = next(e.failed)
+            raise actual_error from None
 
     async def request(self, bucket: object, *args, **kwargs):
         """
@@ -254,6 +260,9 @@ class HTTPClient(object):
                     response = await self._make_request(*args, **kwargs)
                 except OSError:
                     # discord forcefully disconnected or similar
+                    continue
+                except ConnectivityError:
+                    # discord deadlocked for whatever reason
                     continue
 
                 method = kwargs.get("method", "???")
