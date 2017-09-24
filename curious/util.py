@@ -46,7 +46,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
     
     """
 
-    def __init__(self, coro: typing.Awaitable[typing.List]):
+    def __init__(self, coro: typing.Awaitable[typing.List[typing.Any]]):
         self.coro = coro
 
         self.items = collections.deque()

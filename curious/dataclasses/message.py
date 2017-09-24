@@ -10,13 +10,15 @@ import typing
 import curio
 
 from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, guild as dt_guild, \
-    member as dt_member, role as dt_role, user as dt_user, webhook as dt_webhook
+    invite as dt_invite, member as dt_member, role as dt_role, user as dt_user, \
+    webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.embed import Attachment, Embed
-from curious.exc import CuriousError, PermissionsError
-from curious.util import to_datetime
+from curious.exc import CuriousError, ErrorCode, HTTPException, PermissionsError
+from curious.util import AsyncIteratorWrapper, to_datetime
 
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
+INVITE_REGEX = re.compile(r"(?:discord\.gg/(\S+)|discordapp\.com/invites/(\S+))")
 
 
 class MessageType(enum.IntEnum):
@@ -169,6 +171,33 @@ class Message(Dataclass):
         """
         mentions = CHANNEL_REGEX.findall(self.content)
         return self._resolve_mentions(mentions, "channel")
+
+    async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
+        """
+        Gets a list of valid invites in this message.
+        """
+        invites = INVITE_REGEX.findall(self.content)
+        obbs = []
+        for match in invites:
+            if match[0]:
+                code = match[0]
+            else:
+                code = match[1]
+
+            try:
+                obbs.append(await self._bot.get_invite(code))
+            except HTTPException as e:
+                if e.error_code != ErrorCode.UNKNOWN_INVITE:
+                    raise
+
+        return obbs
+
+    @property
+    def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
+        """
+        Returns a list of :class:`.Invite` objects that are in this message (and valid).
+        """
+        return AsyncIteratorWrapper(self.get_invites)
 
     def _resolve_mentions(self,
                           mentions: typing.List[typing.Union[dict, str]],

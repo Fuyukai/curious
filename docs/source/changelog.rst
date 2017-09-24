@@ -57,6 +57,9 @@ This document displays the differences between each release of curious.
 
  - Add a 5 second timeout to each request made.
 
+ - Add :meth:`.Message.get_invites` and :attr:`.Message.invites` to get invites that are inside a
+   message object.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 
