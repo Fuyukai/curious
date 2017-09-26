@@ -71,7 +71,7 @@ async def help_for_all(ctx: Context):
             names = await _get_command_list(ctx, command)
             command_names.extend(names)
 
-        if command_names is None:
+        if not command_names:
             continue
 
         row_num += 1
