@@ -100,7 +100,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if isinstance(value, str) and len(value) == 0:
             raise ValueError("Value must not be empty")
 
-        self._fields.append(attrdict({"name": name, "value": value, "inline": inline}))
+        self._fields.append(attrdict({"name": str(name), "value": str(value), "inline": inline}))
         return self
 
     def set_author(self, *, name: str = None, url: str = None) -> 'Embed':
@@ -204,6 +204,6 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if self.author:
             payload["author"] = self.author
 
-        payload["fields"] = [(str(name), str(value)) for (name, value) in self._fields]
+        payload["fields"] = self._fields
 
         return payload
