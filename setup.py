@@ -2,7 +2,10 @@ from setuptools import setup
 
 setup(
     name='discord-curious',
-    version='0.6.0',
+    use_scm_version={
+        "version_scheme": "guess-next-dev",
+        "local_scheme": "dirty-tag"
+    },
     packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
               'curious.voice', 'curious.ext.loapi', 'curious.ext.paginator'],
     url='https://github.com/SunDwarf/curious',
@@ -10,6 +13,9 @@ setup(
     author='Laura Dickinson',
     author_email='l@veriny.tf',
     description='A curio library for the Discord API',
+    setup_requires=[
+        "setuptools_scm",
+    ],
     install_requires=[
         "cuiows>=0.1.10",
         "curio>=0.7.0,<=0.8.0",
