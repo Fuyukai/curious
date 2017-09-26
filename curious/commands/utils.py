@@ -56,7 +56,8 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             if param.default is inspect.Parameter.empty:
                 raise MissingArgumentError(ctx, param.name) from e
 
-            arg = param.default
+            # we continue immediately so that we dont try and do anything with defaults
+            continue
 
         # Begin the consumption!
         if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
