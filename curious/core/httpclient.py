@@ -128,13 +128,6 @@ class HTTPClient(object):
     :param bot: Is this client a bot?
     :param max_connections: The max connections for this HTTP client.
     """
-    BASE = "https://discordapp.com"
-    API_BASE = "/api/v7"
-    GUILD_BASE = "/guilds/{guild_id}"
-    CHANNEL_BASE = "/channels/{channel_id}"
-
-    USER_ME = "/users/@me"
-
     USER_AGENT = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}" \
                  "curio/{2}".format(curious.__version__, sys.version_info, curio.__version__)
 
@@ -150,7 +143,7 @@ class HTTPClient(object):
             "Authorization": "{}{}".format("Bot " if bot else "", self.token)
         }
 
-        self.session = asks.Session(base_location=self.BASE, endpoint=self.API_BASE,
+        self.session = asks.Session(base_location=Endpoints.BASE, endpoint=Endpoints.API_BASE,
                                     connections=max_connections)
         self.headers = headers
 
