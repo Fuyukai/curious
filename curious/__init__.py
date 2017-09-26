@@ -17,6 +17,14 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
     util
 """
 
+from pkg_resources import DistributionNotFound, get_distribution
+
+try:
+    __version__ = get_distribution("discord-curious")
+except DistributionNotFound:
+    __version__ = "0.0.0"
+
+
 from curious.core.client import AUTOSHARD, BotType, Client
 from curious.core.event import EventContext, event
 from curious.core.gateway import Gateway
