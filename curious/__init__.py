@@ -20,7 +20,7 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:
-    __version__ = get_distribution("discord-curious")
+    __version__ = get_distribution("discord-curious").version
 except DistributionNotFound:
     __version__ = "0.0.0"
 
