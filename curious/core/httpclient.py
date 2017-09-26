@@ -216,7 +216,7 @@ class HTTPClient(object):
             return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
         except curio.TaskGroupError as e:
             # timeout manager raised, and asks doesn't unwrap yet
-            actual_error = next(e.failed)
+            actual_error = next(iter(e.failed))
             raise actual_error from None
 
     async def request(self, bucket: object, *args, **kwargs):
