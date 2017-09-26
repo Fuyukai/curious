@@ -15,7 +15,7 @@ import typing
 from types import MappingProxyType
 
 import curio
-from cuiows.exc import WebsocketClosedError
+from asyncwebsockets import WebsocketClosed
 from curio.monitor import MONITOR_HOST, MONITOR_PORT, Monitor
 from curio.task import TaskGroup
 
@@ -556,7 +556,6 @@ class Client(object):
                                                             shard_id=shard_id,
                                                             shard_count=self.shard_count,
                                                             large_threshold=large_threshold)
-        await self._gateways[shard_id].websocket.wait_for_ready()
 
         return self
 
@@ -571,7 +570,7 @@ class Client(object):
         while True:
             try:
                 await gw.next_event()
-            except WebsocketClosedError as e:
+            except WebsocketClosed as e:
                 # Try and handle the close.
                 if e.reason == "Client closed connection":
                     # internal

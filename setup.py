@@ -17,7 +17,7 @@ setup(
         "setuptools_scm",
     ],
     install_requires=[
-        "cuiows>=0.1.10",
+        "asyncwebsockets>=0.1",
         "curio>=0.7.0,<=0.8.0",
         "pylru==1.0.9",
         "oauthlib==2.0.2",

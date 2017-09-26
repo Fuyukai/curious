@@ -12,6 +12,10 @@ import time
 import typing
 import zlib
 
+import curio
+from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
+from curio.thread import AWAIT, async_thread
+
 try:
     # Prefer ETF data.
     import earl
@@ -40,11 +44,6 @@ except ImportError:
 
     def _dumper(data: dict):
         return json.dumps(data)
-
-import curio
-from curio.thread import AWAIT, async_thread
-from cuiows.exc import WebsocketClosedError
-from cuiows import WSClient
 
 from curious.dataclasses.presence import Game, Status
 
@@ -136,7 +135,7 @@ class Gateway(object):
         self.token = token
 
         #: The current websocket connection.
-        self.websocket = None  # type: WSClient
+        self.websocket = None  # type: Websocket
 
         #: The current sequence number.
         self.sequence_num = 0
@@ -193,7 +192,7 @@ class Gateway(object):
         """
         self.logger.info("Opening connection to {}".format(url))
         try:
-            self.websocket = await curio.timeout_after(5, WSClient.connect(url))
+            self.websocket = await curio.timeout_after(5, connect_websocket(url))
         except curio.TaskTimeout as e:
             raise ReconnectWebsocket from e
         self.logger.info("Connected to gateway!")
@@ -226,7 +225,7 @@ class Gateway(object):
         :param reason: The close reason.
         """
         if not self.websocket.closed:
-            await self.websocket.close_now(code=code, reason=reason)
+            await self.websocket.close(code=code, reason=reason)
 
         self._open = False
         await self._stop_heartbeating.set()
@@ -244,9 +243,10 @@ class Gateway(object):
             raise ReconnectWebsocket
 
         try:
-            await self.websocket.send(data)
-        except WebsocketClosedError:
+            await self.websocket.send_message(data)
+        except WebsocketClosed as e:
             await self.close()
+            raise
 
     def _send_dict(self, payload: dict):
         """
@@ -429,7 +429,7 @@ class Gateway(object):
         obb.shard_id = shard_id
         obb.shard_count = shard_count
 
-        gateway_url += "?v={}&encoding={}".format(cls.GATEWAY_VERSION, _fmt)
+        gateway_url += "/?v={}&encoding={}".format(cls.GATEWAY_VERSION, _fmt)
         obb._cached_gateway_url = gateway_url
 
         await obb.connect(gateway_url)
@@ -453,7 +453,7 @@ class Gateway(object):
         self.hb_stats.heartbeat_acks = 0
 
         if not self.websocket.closed:
-            await self.websocket.close_now(code=1001, reason="Forcing a reconnect")
+            await self.websocket.close(code=1001, reason="Forcing a reconnect")
 
         self._open = False
 
@@ -493,26 +493,28 @@ class Gateway(object):
         Gets the next event, in decoded form.
         """
         if not self._open:
-            raise WebsocketClosedError(1006, reason="Connection lost")
+            raise WebsocketClosed(1006, reason="Connection lost")
 
         try:
-            event = await self.websocket.poll()
-        except WebsocketClosedError:
+            event = await self.websocket.next_message()
+        except WebsocketClosed:
             # Close ourselves.
             await self.close()
             raise
 
         await self.state.client.fire_event("gateway_message_received", event, gateway=self)
 
-        if isinstance(event, (bytes, bytearray)) and _fmt == "json":
+        if isinstance(event, WebsocketBytesMessage) and _fmt == "json":
             # decompress the message
-            event = zlib.decompress(event, 15, 10490000)
-            event = event.decode("utf-8")
+            data = zlib.decompress(event.data, 15, 10490000)
+            data = data.decode("utf-8")
+        else:
+            data = event.data
 
-        if event is None:
+        if data is None:
             return
 
-        event_data = _loader(event)
+        event_data = _loader(data)
         # self.logger.debug("Got event {}".format(event_data))
         await self.state.client.fire_event("gateway_event_received", event_data, gateway=self)
 
@@ -584,7 +586,6 @@ class Gateway(object):
                     self.logger.exception("Error decoding event {} with data "
                                           "{}".format(event, data))
                     await self.close(code=1006, reason="Client error")
-                    await self.websocket.close_now()
                     raise
             else:
                 self.logger.warning("Unhandled event: {}".format(event))
