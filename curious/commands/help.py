@@ -25,6 +25,10 @@ async def _get_command_list(ctx: Context, command):
         l = []
 
     for subcommand in command.cmd_subcommands:
+        # don't do hidden subcommands
+        if getattr(subcommand, "cmd_hidden", False) is True:
+            continue
+
         # only do subcommands that can be ran
         try:
             can_run, _ = await ctx.can_run(command)
@@ -55,6 +59,10 @@ async def help_for_all(ctx: Context):
         command_names = []
 
         for command in commands:
+            # check for hidden annotation
+            if getattr(command, "cmd_hidden", False) is True:
+                continue
+
             # don't add subcommands on their own
             # they are detected automatically by the command list loader
             if command.cmd_subcommand:
