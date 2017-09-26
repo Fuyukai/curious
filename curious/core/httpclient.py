@@ -6,7 +6,6 @@ import logging
 import sys
 import time
 import typing
-import warnings
 import weakref
 from email.utils import parsedate
 from math import ceil
@@ -16,25 +15,16 @@ import curio
 import pytz
 from asks.errors import ConnectivityError
 from asks.response_objects import Response
-
-# try and load a C impl of LRU first
+from h11 import RemoteProtocolError
 
 try:
+    # try and load a C impl of LRU first
     from lru import LRU as c_lru
-
-
-    def _make_lru_dict(size):
-        return c_lru(size)
-
+    lru = c_lru
 except ImportError:
     # fall back to a pure-python (the default) version
     from pylru import lrucache as py_lru
-
-    warnings.warn("Using pure-python `pylru` library over `lru-dict` faster C library!")
-
-
-    def _make_lru_dict(size):
-        return py_lru(size)
+    lru = py_lru
 
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
@@ -168,7 +158,7 @@ class HTTPClient(object):
         self._rate_limits = weakref.WeakValueDictionary()
 
         #: Ratelimit remaining times
-        self._ratelimit_remaining = _make_lru_dict(1024)
+        self._ratelimit_remaining = lru(1024)
 
         #: The global ratelimit lock.
         self.global_lock = curio.Lock()
@@ -216,7 +206,7 @@ class HTTPClient(object):
             return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
         except curio.TaskGroupError as e:
             # timeout manager raised, and asks doesn't unwrap yet
-            actual_error = next(iter(e.failed))
+            actual_error = next(iter(e.failed)).next_exc
             raise actual_error from None
 
     async def request(self, bucket: object, *args, **kwargs):
@@ -263,6 +253,9 @@ class HTTPClient(object):
                     continue
                 except ConnectivityError:
                     # discord deadlocked for whatever reason
+                    continue
+                except RemoteProtocolError:
+                    # discord broke
                     continue
 
                 method = kwargs.get("method", "???")

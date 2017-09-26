@@ -10,12 +10,12 @@ import sys
 import threading
 import time
 import typing
-import warnings
 import zlib
 
 try:
     # Prefer ETF data.
     import earl
+    _fmt = "etf"
 
 
     def _loader(data: bytes):
@@ -25,13 +25,13 @@ try:
     def _dumper(data: dict):
         return earl.pack(data)
 
-
-    _fmt = "etf"
 except ImportError:
     try:
         import ujson as json
     except ImportError:
         import json
+    finally:
+        _fmt = "json"
 
 
     def _loader(data: str):
@@ -40,10 +40,6 @@ except ImportError:
 
     def _dumper(data: dict):
         return json.dumps(data)
-
-
-    _fmt = "json"
-    warnings.warn("Using JSON parser for gateway - install `Earl-ETF` to use ETF!")
 
 import curio
 from curio.thread import AWAIT, async_thread
