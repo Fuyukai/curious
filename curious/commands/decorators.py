@@ -8,7 +8,7 @@ from curious.commands.utils import get_description
 
 def command(*,
             name: str = None, description: str = None,
-            aliases: List[str] = None):
+            aliases: List[str] = None, **kwargs):
     """
     Marks a function as a command. This annotates the command with some attributes that allow it
     to be invoked as a command.
@@ -25,6 +25,7 @@ def command(*,
     :param description: The description of the command. If this is not specified, it will use the \
         first line of the docstring.
     :param aliases: A list of aliases for this command.
+    :param kwargs: Anything to annotate the command with.
     """
 
     # wrapper function that actually marks the object
@@ -37,6 +38,12 @@ def command(*,
         func.cmd_subcommands = []
         func.cmd_parent = None
         func.cmd_conditions = getattr(func, "cmd_conditions", [])
+
+        # annotate command object with any extra
+        for ann_name, annotation in kwargs.items():
+            ann_name = "cmd_" + name
+            setattr(func, ann_name, annotation)
+
         func.subcommand = _subcommand(func)
         return func
 
