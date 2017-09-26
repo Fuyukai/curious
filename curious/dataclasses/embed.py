@@ -198,6 +198,6 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if self.author:
             payload["author"] = self.author
 
-        payload["fields"] = self._fields
+        payload["fields"] = [(str(name), str(value)) for (name, value) in self._fields]
 
         return payload
