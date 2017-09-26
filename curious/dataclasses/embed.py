@@ -38,6 +38,12 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
                  timestamp: str = None,
                  **kwargs):
 
+        def make_attrdict(key: str) -> attrdict:
+            if key not in kwargs:
+                return attrdict()
+
+            return attrdict(**kwargs["key"])
+
         #: The title of this embed.
         self.title = title
 
@@ -64,19 +70,19 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         self._fields = []
 
         #: The footer for this embed.
-        self.footer = attrdict(**kwargs.get("footer", {}))
+        self.footer = make_attrdict("footer")
 
         #: The author of this embed.
-        self.author = attrdict(**kwargs.get("author", {}))
+        self.author = make_attrdict("author")
 
         #: The image for this embed.
-        self.image = attrdict(**kwargs.get("image", {}))
+        self.image = make_attrdict("image")
 
         #: The video for this embed.
-        self.video = attrdict(**kwargs.get("video", {}))
+        self.video = make_attrdict("video")
 
         #: The thumbnail for this embed.
-        self.thumbnail = attrdict(**kwargs.get("thumbnail", {}))
+        self.thumbnail = make_attrdict("thumbnail")
 
     def add_field(self, *, name: str, value: str,
                   inline: bool = True) -> 'Embed':
