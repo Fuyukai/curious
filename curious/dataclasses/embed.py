@@ -42,7 +42,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
             if key not in kwargs:
                 return attrdict()
 
-            return attrdict(**kwargs["key"])
+            return attrdict(**kwargs[key])
 
         #: The title of this embed.
         self.title = title
