@@ -9,6 +9,7 @@ import typing
 import weakref
 from email.utils import parsedate
 from math import ceil
+from urllib.parse import quote
 
 import asks
 import curio
@@ -194,6 +195,11 @@ class HTTPClient(object):
             headers.update(self.headers.copy())
         else:
             headers = self.headers.copy()
+
+        # ensure path is escaped
+        path = kwargs["path"]
+        path = quote(path)
+        kwargs["path"] = path
 
         try:
             return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
