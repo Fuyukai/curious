@@ -46,11 +46,11 @@ class Emoji(Dataclass):
     def __repr__(self):
         return "<Emoji guild={} id={}>".format(self.guild, self.id)
 
-    async def modify(self, *,
-                     name: str = None,
-                     roles: 'typing.List[dt_role.Role]' = None) -> 'Emoji':
+    async def edit(self, *,
+                   name: str = None,
+                   roles: 'typing.List[dt_role.Role]' = None) -> 'Emoji':
         """
-        Modifies this emoji.
+        Edits this emoji.
 
         :param name: The new name of the emoji.
         :param roles: The new list of roles that can use this emoji.
