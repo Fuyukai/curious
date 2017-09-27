@@ -23,7 +23,6 @@ class FriendType(enum.IntEnum):
     """
     Represents the type of a friend.
     """
-
     #: Corresponds to a friend.
     FRIEND = 1
 
@@ -188,34 +187,6 @@ class User(Dataclass):
         channel_data = await self._bot.http.create_private_channel(self.id)
         channel = self._bot.state.make_private_channel(channel_data)
         return channel
-
-    async def block(self):
-        """
-        Blocks this user.
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot have blocks")
-
-        await self._bot.http.block_user(self.id)
-
-    async def send_friend_request(self):
-        """
-        Sends a friend request to this user.
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot have friends")
-
-        await self._bot.http.send_friend_request(self.id)
-
-    async def get_profile(self) -> UserProfile:
-        """
-        :return: A :class:`~.UserProfile` representing this user's profile.
-        """
-        if self._bot.user.bot:
-            raise CuriousError("Bots cannot get profiles")
-
-        profile = await self._bot.http.get_user_profile(self.id)
-        return UserProfile(user=self, kwargs=profile)
 
     async def send(self, content: str = None, *args, **kwargs) -> 'dt_message.Message':
         """

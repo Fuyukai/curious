@@ -533,7 +533,7 @@ class Guild(Dataclass):
             return None
 
     @property
-    def afk_channel(self) -> 'typing.Union[None, channel.Channel]':
+    def afk_channel(self) -> 'typing.Union[channel.Channel, None]':
         """
         :return: A :class:`~.Channel` representing the AFK channel for this guild.
         """
@@ -644,7 +644,7 @@ class Guild(Dataclass):
         return next(filtered, None)
 
     # creation methods
-    def start_chunking(self):
+    def start_chunking(self) -> None:
         """
         Marks a guild to start guild chunking.
         
@@ -653,7 +653,7 @@ class Guild(Dataclass):
         self._finished_chunking.clear()
         self._chunks_left = ceil(self.member_count / 1000)
 
-    async def wait_until_chunked(self):
+    async def wait_until_chunked(self) -> None:
         """
         Waits until the guild has finished chunking.
 
@@ -816,7 +816,7 @@ class Guild(Dataclass):
                                                                            self._splash_hash)
 
     # Guild methods.
-    async def leave(self):
+    async def leave(self) -> None:
         """
         Leaves the guild.
         """

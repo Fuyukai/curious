@@ -321,7 +321,7 @@ class Client(object):
         """
         Edits the profile of this bot.
 
-        The user is **not** edited in-place - instead, you must wait for the `USER_UPDATE` event to 
+        The user is **not** edited in-place - instead, you must wait for the `USER_UPDATE` event to
         be fired on the websocket.
 
         :param username: The new username of the bot.
@@ -430,6 +430,7 @@ class Client(object):
         """
         member_data = await self.http.get_guild_member(guild_id=guild_id, member_id=member_id)
         member = dt_member.Member(self, **member_data)
+        # this is enough to pick up the cache
         member.guild_id = guild_id
 
         # manual refcounts :ancap:
