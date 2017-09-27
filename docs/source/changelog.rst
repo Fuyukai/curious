@@ -60,6 +60,13 @@ This document displays the differences between each release of curious.
  - Add :meth:`.Message.get_invites` and :attr:`.Message.invites` to get invites that are inside a
    message object.
 
+ - Retry on h11 errors.
+
+ - Use :mod:`asyncwebsockets` instead of :mod:`cuiows`.
+
+ - :class:`.ReactionPaginator` can now have an optional title that is added as the content for
+   the message sent.
+
 0.5.1 (Released 2017-08-19)
 ---------------------------
 

@@ -4,11 +4,11 @@ A reactions-based paginator.
 import typing
 
 from curious.dataclasses.channel import Channel
-from curious.dataclasses.user import User
-from curious.dataclasses.member import Member
 from curious.dataclasses.embed import Embed
+from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.reaction import Reaction
+from curious.dataclasses.user import User
 
 
 class ReactionsPaginator(object):
@@ -20,17 +20,19 @@ class ReactionsPaginator(object):
     BUTTON_STOP      = "⏹"
 
     def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel,
-                 respond_to: typing.Union[Member, User],
-                 break_at: int=2000):
+                 respond_to: typing.Union[Member, User], *,
+                 break_at: int=2000, title: str = None):
         """
         :param content: The content to page through.
         :param channel: The channel to send the content to.
         :param respond_to: The member to respond
         :param break_at: The number of characters to break the message up into.
+        :param title: The title to put above the embed.
         """
         self._content = content
         self.channel = channel
         self.respond_to = respond_to
+        self.title = title
 
         self.bot = self.channel._bot  # hacky af
 
@@ -49,14 +51,14 @@ class ReactionsPaginator(object):
 
     @classmethod
     async def paginate_response(cls, content: str,
-                                responding_to: Message, break_at: int=2000) -> 'ReactionsPaginator':
+                                responding_to: Message, *args, **kwargs) -> 'ReactionsPaginator':
         """
         Paginates a response to a message.
 
         :param content: The content to paginate.
         :param responding_to: The message object that you are responding to.
         """
-        obb = cls(content, responding_to.channel, responding_to.author, break_at)
+        obb = cls(content, responding_to.channel, responding_to.author, *args, **kwargs)
         await obb.paginate()
         return obb
 
@@ -68,9 +70,15 @@ class ReactionsPaginator(object):
         embed.set_footer(text="Page {}/{}".format(self.page + 1, len(self._message_chunks)))
 
         if self._message is None:
-            self._message = await self.channel.send(embed=embed)
+            self._message = await self.channel.send(
+                content=self.title,
+                embed=embed
+            )
         else:
-            await self._message.edit(embed=embed)
+            await self._message.edit(
+                new_content=self.title,
+                embed=embed
+            )
 
     async def _add_initial_reactions(self):
         """
