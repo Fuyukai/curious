@@ -11,8 +11,7 @@ import typing
 import zlib
 
 import curio
-from cuiows.client import WSClient
-from cuiows.exc import WebsocketClosedError
+from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
 from curio.thread import AWAIT, async_thread
 
 from curious.core.gateway import Gateway, ReconnectWebsocket
@@ -64,8 +63,8 @@ class VoiceGateway(object):
     GATEWAY_VERSION = 3
 
     def __init__(self, session_id: str, token: str, endpoint: str, user_id: str, guild_id: str):
-        #: The current cuiows websocket object.
-        self.websocket = None  # type: WSClient
+        #: The current websocket object.
+        self.websocket = None  # type: Websocket
 
         self._open = False
 
@@ -99,7 +98,7 @@ class VoiceGateway(object):
         :param url: The URL to connect to.
         """
         logger.info("Opening connection to {}".format(url))
-        self.websocket = await WSClient.connect(url)
+        self.websocket = await connect_websocket(url)
         logger.info("Connected to gateway!")
         self._open = True
         return self.websocket
@@ -111,8 +110,8 @@ class VoiceGateway(object):
         This will actually send the data down the websocket, unlike `send` which only pretends to.
         """
         try:
-            await self.websocket.send(data)
-        except WebsocketClosedError:
+            await self.websocket.send_message(data)
+        except WebsocketClosed:
             await self._close()
 
     def get_heartbeat(self):
@@ -147,7 +146,7 @@ class VoiceGateway(object):
         """
         Enqueues some data to be sent down the websocket.
         """
-        await self.websocket.send(data)
+        await self.websocket.send_message(data)
 
     # Sending methods
     async def send_identify(self):
@@ -216,7 +215,7 @@ class VoiceGateway(object):
 
     async def _close(self):
         if not self.websocket.closed:
-            await self.websocket.close_now(code=1000, reason="Client disconnected")
+            await self.websocket.close(code=1000, reason="Client disconnected")
 
         self._open = False
         await self._stop_heartbeating.set()
@@ -259,24 +258,26 @@ class VoiceGateway(object):
         Gets the next event, in decoded form.
         """
         if not self._open:
-            raise WebsocketClosedError(1006, reason="Connection lost")
+            raise WebsocketClosed(1006, reason="Connection lost")
 
         try:
-            event = await self.websocket.poll()
-        except WebsocketClosedError:
+            event = await self.websocket.next_message()
+        except WebsocketClosed:
             # Close ourselves.
             await self._close()
             raise
 
-        if isinstance(event, (bytes, bytearray)):
+        if isinstance(event, WebsocketBytesMessage):
             # decompress the message
-            event = zlib.decompress(event, 15, 10490000)
-            event = event.decode("utf-8")
+            data = zlib.decompress(event.data, 15, 10490000)
+            data = data.decode("utf-8")
+        else:
+            data = event.data
 
-        if event is None:
+        if data is None:
             return
 
-        event = json.loads(event)
+        event = json.loads(data)
 
         op = event.get("op")
         data = event.get("d")
