@@ -42,6 +42,9 @@ class IDObject(object):
         return datetime.datetime.utcfromtimestamp(((int(self.id) >> 22) + DISCORD_EPOCH) / 1000)
 
     def __eq__(self, other):
+        if not hasattr(other, "id"):
+            return NotImplemented
+
         return other.id == self.id
 
     def __hash__(self):
