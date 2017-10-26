@@ -219,7 +219,7 @@ class CommandsManager(object):
 
         return command
 
-    async def add_command(self, command):
+    def add_command(self, command):
         """
         Adds a command.
 
@@ -231,7 +231,7 @@ class CommandsManager(object):
         self.commands[command.cmd_name] = command
         return command
 
-    async def remove_command(self, command):
+    def remove_command(self, command):
         """
         Removes a command.
 
