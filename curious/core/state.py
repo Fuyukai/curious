@@ -586,7 +586,16 @@ class State(object):
         guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
-        user_id = int(event_data["user"]["id"])
+        # awful payloads
+        user = event_data.get("user")
+        if not user:
+            return
+
+        # also awful payloads
+        try:
+            user_id = int(event_data.get("id"))
+        except (ValueError, TypeError):
+            return
 
         if not guild:
             # user presence update
@@ -597,9 +606,9 @@ class State(object):
                 return
 
             # re-create the user object
-            if "username" in event_data["user"]:
+            if "username" in user:
                 # full user object
-                self._friends[user_id] = self.make_user(event_data["user"],
+                self._friends[user_id] = self.make_user(user,
                                                         user_klass=RelationshipUser,
                                                         override_cache=True)
                 fr = self._friends[user_id]
@@ -1067,6 +1076,7 @@ class State(object):
         """
         Called when a guild member is updated.
         """
+        print(event_data)
         guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
