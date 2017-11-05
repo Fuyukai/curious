@@ -13,18 +13,12 @@ frame_size = samples_per_frame APPARENTLY
 
 
 """
-import collections
-import datetime
-import heapq
 import logging
 import socket
 import struct
-import time
-from io import BytesIO
-from typing import List, Tuple, Union
+from typing import Tuple
 
 import curio
-from curio.io import Socket
 from curio.socket import getaddrinfo
 
 try:
@@ -37,8 +31,6 @@ try:
 except Exception:
     has_opus = False
 
-from curious.dataclasses import member as dt_member, user as dt_user
-from curious.dataclasses.bases import Dataclass
 from curious.voice import voice_player as vp
 from curious.voice.voice_gateway import VoiceGateway
 
@@ -52,166 +44,6 @@ def simulate_overflow(value: int, bits: int, signed: bool):
     base = 1 << bits
     value %= base
     return value - base if signed and value.bit_length() == bits else value
-
-
-class VoiceMessage:
-    """
-    A container for a voice message.
-    """
-
-    def __init__(self):
-        #: A BytesIO containing PCM frames at 48k bitrate.
-        self.pcm = BytesIO()
-
-        #: The timestamp, in UTC, for when this message started.
-        self.start_time: datetime.datetime = None
-
-        #: The timestamp, in UTC, for when this message ended.
-        self.stop_time: datetime.datetime = None
-
-        #: The user ID of the person speaking for this message.
-        self.user_id: int = None
-
-
-class VoiceReceiver:
-    """
-    A class that allows arbitrary starting and stopping of recording voice.
-    """
-
-    def __init__(self, cl: 'VoiceClient'):
-        self.client = cl
-
-        # buffers for the packet heap
-        self._buffers = collections.defaultdict(lambda: [])
-
-        self._started: bool = False
-        self._task: curio.Task = None
-
-    async def _listen(self):
-        """
-        Listens to voice data, storing it in a buffer.
-        """
-        # wrap the socket so we dont spawn a billion threads
-        sock = Socket(self.client._sock)
-
-        # dict of dicts
-        # {buffer: [], last_packet: [], start_time: datetime, ssrc: int}
-        _temporary_buffers = {}
-
-        def _copy_buffer(tmp: dict) -> None:
-            """
-            Copies a temporary receive buffer into proper buffers.
-            """
-            # copy out the data into a VoiceMessage
-            ssrc = tmp["ssrc"]
-
-            msg = VoiceMessage()
-            for frame in sorted(tmp["buffer"], key=lambda i: i[1]):
-                msg.pcm.write(frame[2])
-
-            msg.pcm.seek(0)
-            msg.start_time = tmp["start_time"]
-            msg.stop_time = datetime.datetime.utcnow()
-            msg.user_id = self.client.vs_ws.ssrc_mapping[ssrc]
-            self._buffers[ssrc].append(msg)
-
-        def _check_buffers() -> None:
-            _mark = []
-            # pass 1, copy out any finished messages
-            for subdict in _temporary_buffers.values():
-                # stopped talking for 1000ms
-                if (time.monotonic() - subdict["last_packet"]) >= 1:
-                    _copy_buffer(subdict)
-                    # mark it for deletion next time around
-                    _mark.append(ssrc)
-
-            # pass 2, delete any old temporary buffers
-            for marked in _mark:
-                _temporary_buffers.pop(marked)
-
-        while self._started:
-            _check_buffers()
-
-            try:
-                # timeout after half a second so we can re-check our buffers
-                data = await curio.timeout_after(0.5, sock.recv(8192))
-            except curio.TaskTimeout:
-                # we timed out, continue to check the
-                continue
-            except curio.TaskCancelled:
-                # copy out all data into buffers
-                for buf in _temporary_buffers.values():
-                    _copy_buffer(buf)
-                return
-
-            ssrc, sequence, timestamp, data = self.client.unpack_packet(data)
-            if ssrc not in _temporary_buffers:
-                d = {
-                    "buffer": [],
-                    "last_packet": time.monotonic(),
-                    "start_time": datetime.datetime.utcnow(),
-                    "ssrc": ssrc
-                }
-                _temporary_buffers[ssrc] = d
-            else:
-                d = _temporary_buffers[ssrc]
-
-            # push the new voice packet onto the temporary buffer
-            item = (sequence, timestamp, data)
-            heapq.heappush(d["buffer"], item)
-            # set the new time value so we know when to remove old packets
-            d["last_packet"] = time.monotonic()
-
-    async def start(self):
-        """
-        Starts receiving voice.
-        """
-        if self._started:
-            return
-
-        self._started = True
-        # empty out our buffers
-        self._buffers.clear()
-        self._task = await curio.spawn(self._listen)
-
-    async def stop(self):
-        """
-        Stops receiving voice.
-        """
-        if not self._started:
-            return
-
-        await self._task.cancel(blocking=False)
-
-    def get_data(self, user: 'Union[int, dt_user.User, dt_member.Member, None]' = None) \
-            -> 'List[VoiceMessage]':
-        """
-        Gets the data for a user in the buffers.
-
-        .. note::
-
-            If the user is not in voice, or has not sent anything, this will return an empty
-            BytesIO.
-
-        :param user: The :class:`.User`, :class:`.Member` or int ssrc to get the data of.
-        :return: A :class:`BytesIO` containing the PCM data for the user.
-        """
-        if isinstance(user, Dataclass):
-            user_id = user.id
-            ssrc = next(filter(lambda i: i[1] == user_id, self.client.vs_ws.ssrc_mapping.items()),
-                        None)
-
-            # return empty
-            if ssrc is None:
-                return []
-            ssrc = ssrc[0]
-        elif isinstance(user, int):
-            ssrc = user
-        else:
-            raise ValueError("Must pass a User/Member or ssrc")
-
-        msgs = self._buffers.get(ssrc, [])
-        return msgs
 
 
 class VoiceClient(object):
@@ -473,18 +305,6 @@ class VoiceClient(object):
         self._sock.setblocking(False)
 
         # We are DONW!
-
-    def get_receiver(self) -> 'VoiceReceiver':
-        """
-        Get a voice receiver that can be used to receive voice.
-        """
-        if not self.open:
-            raise RuntimeError("Voice client must be open")
-
-        if self._sock is None:
-            raise RuntimeError("Voice client must be connected to UDP")
-
-        return VoiceReceiver(self)
 
     @classmethod
     async def create(cls, main_client,

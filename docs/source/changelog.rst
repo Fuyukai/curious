@@ -3,8 +3,8 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.6.0
------
+0.6.0 (Released 2017-11-05)
+---------------------------
 
  - Bring voice code inline with the standard of the rest of the code.
 
@@ -12,8 +12,6 @@ This document displays the differences between each release of curious.
 
     - Document and make public :meth:`.VoiceClient.get_packet_header`,
       :meth:`.VoiceClient.get_voice_packet` and :meth:`.VoiceClient.get_ip_discovery_packet`.
-
- - Add voice receive API.
 
  - Make :class:`.AppInfo` a subclass of :class:`.Dataclass`.
 
