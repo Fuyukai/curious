@@ -39,6 +39,9 @@ class InviteGuild(IDObject):
         #: The icon hash of this guild.
         self._icon_hash = kwargs.get("icon")  # type: str
 
+        #: A list of features for this guild.
+        self.features = kwargs.get("features")  # type: typing.List[str]
+
         #: The approximate member count for this guild.
         self.member_count = kwargs.get("approximate_member_count")
 
