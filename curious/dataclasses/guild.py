@@ -3,6 +3,7 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
+import abc
 import collections
 import copy
 import datetime
@@ -14,7 +15,8 @@ from types import MappingProxyType
 import curio
 
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
-    member as dt_member, permissions as dt_permissions, role, search as dt_search, user as dt_user, \
+    member as dt_member, permissions as dt_permissions, role, search as dt_search, \
+    user as dt_user, \
     voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Presence, Status
@@ -25,6 +27,8 @@ try:
     from curious.voice import voice_client
 except ImportError:
     voice_client = None
+
+default_var = typing.TypeVar("T")
 
 
 class MFALevel(enum.IntEnum):
@@ -125,7 +129,25 @@ class ContentFilterLevel(enum.IntEnum):
     SCAN_ALL = 2
 
 
-class GuildChannelWrapper(collections.Mapping, collections.Iterable):
+class _WrapperBase(collections.Mapping, collections.Iterable):
+    """
+    Represents the base class for a wrapper object.
+    """
+    @property
+    @abc.abstractmethod
+    def view(self) -> 'typing.Mapping[int, Dataclass]':
+        """
+        Represents a read-only view for this wrapper.
+        """
+
+    def __iter__(self) -> typing.Iterable[int]:
+        return iter(self.view.keys())
+
+    def __repr__(self) -> str:
+        return "<{} items='{}'>".format(type(self).__name__, self.view)
+
+
+class GuildChannelWrapper(_WrapperBase):
     """
     A wrapper for channels on a guild. This provides some convenience methods which make channel
     management more fluent.
@@ -147,17 +169,51 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         """
         return MappingProxyType(self._channels)
 
-    def __iter__(self):
-        return iter(self.view.keys())
+    def __getitem__(self, key) -> 'channel.Channel':
+        default = object()
+        got = self.get(key, default=default)
+        if got is default:
+            raise KeyError(key)
 
-    def __getitem__(self, key):
-        return self._channels[key]
+        return got
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._channels)
 
-    def __repr__(self):
-        return "<GuildChannelWrapper channels={}>".format(self._channels)
+    # overwritten methods from the abc
+    def get(self, key: typing.Union[str, int], default: default_var=None) \
+            -> 'typing.Union[channel.Channel, default_var]':
+        """
+        Gets a channel by name or ID.
+
+        :param key: The key to use. This can be the ID of the channel, or the name of the channel.
+        :param default: The default value to use, if the channel cannot be found.
+        :return: A :class:`.Channel`, if it was found.
+        """
+        if isinstance(key, int):
+            return self._channels.get(key, default)
+        else:
+            return self._get_by_name(key, default=default)
+
+    def _get_by_name(self, name: str, default: default_var=None) \
+            -> 'typing.Union[channel.Channel, default_var]':
+        """
+        Gets a channel by name.
+
+        .. warning::
+
+            This will return the first channel in the channel list. If you want to get a channel
+            in a specific category, use :meth:`.Channel.get_by_name`
+
+        :param name: The name of the channel to get.
+        :param default: The default value to get, if the channel cannot be found.
+        :return: A :class:`.Channel` if it can be found.
+        """
+        s = sorted(self._channels.values(), key=lambda c: c.position)
+        try:
+            return next(filter(lambda ch: ch.name == name, s))
+        except StopIteration:
+            return default
 
     async def create(self, name: str, type_: 'channel.ChannelType' = None,
                      permission_overwrites: 'typing.List[dt_permissions.Overwrite]' = None,
@@ -178,7 +234,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
 
         For voice channels:
 
-        :param bitrate: The bitrate of the channel, if it is a voice channel.
+        :param bitrate: The bitrate of the channel, if it is a voice channel, in kbit/s.
         :param user_limit: The maximum number of users that can be in the channel.
 
         For text channels:
@@ -250,7 +306,7 @@ class GuildChannelWrapper(collections.Mapping, collections.Iterable):
         return await channel.delete()
 
 
-class GuildRoleWrapper(collections.Mapping, collections.Iterable):
+class GuildRoleWrapper(_WrapperBase):
     """
     A wrapper for roles on a guild. Contains some convenience methods that make role management
     more fluent.
@@ -272,17 +328,18 @@ class GuildRoleWrapper(collections.Mapping, collections.Iterable):
         """
         return MappingProxyType(self._roles)
 
-    def __iter__(self):
-        return iter(self.view.keys())
-
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> 'role.Role':
         return self._roles[key]
 
-    def __len__(self):
-        return len(self._roles)
+        default = object()
+        got = self.get(key, default=default)
+        if got is default:
+            raise KeyError(key)
 
-    def __repr__(self):
-        return "<GuildRoleWrapper roles={}>".format(self._roles)
+        return got
+
+    def __len__(self) -> int:
+        return len(self._roles)
 
     async def create(self, **kwargs) -> 'role.Role':
         """
@@ -318,7 +375,7 @@ class GuildRoleWrapper(collections.Mapping, collections.Iterable):
         return role.delete()
 
 
-class GuildEmojiWrapper(collections.Mapping, collections.Iterable):
+class GuildEmojiWrapper(_WrapperBase):
     """
     Wrapper for emoji objects for a guild.
     """
@@ -339,17 +396,11 @@ class GuildEmojiWrapper(collections.Mapping, collections.Iterable):
         """
         return MappingProxyType(self._emojis)
 
-    def __iter__(self):
-        return iter(self._emojis.keys())
-
     def __getitem__(self, key):
         return self._emojis[key]
 
     def __len__(self):
         return len(self._emojis)
-
-    def __repr__(self):
-        return "<GuildEmojiWrapper emojis={}>".format(self._emojis)
 
     async def create(self, *,
                      name: str, image_data: typing.Union[str, bytes],
@@ -434,7 +485,7 @@ class Guild(Dataclass):
         #: The MFA level of this guild.
         self.mfa_level = MFALevel.DISABLED  # type: MFALevel
         #: The verification level of this guild.
-        self.verification_level = VerificationLevel.NONE  # type: int
+        self.verification_level = VerificationLevel.NONE
         #: The notification level of this guild.
         self.notification_level = NotificationLevel.ALL_MESSAGES
         #: The content filter level of this guild.
