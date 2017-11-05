@@ -15,8 +15,9 @@ from curious.util import base64ify
 class Webhook(Dataclass):
     """
     Represents a webhook on the guild.
-    Messages in a guild can be sent by either a Member or a Webhook object - curious makes a key distinction between 
-    them. These classes are *mostly* compatible and don't require much effort to use them generically.
+    Messages in a guild can be sent by either a Member or a Webhook object - curious makes a key
+    distinction between them. These classes are *mostly* compatible and don't require much
+    effort to use them generically.
     
     .. code-block:: python3
     
@@ -141,7 +142,8 @@ class Webhook(Dataclass):
         """
         Deletes the webhook.
 
-        You must either be the owner of this webhook, or the webhook must have a token associated to delete it.
+        You must either be the owner of this webhook, or the webhook must have a token associated
+        to delete it.
         """
         if self.token is not None:
             return await self._bot.http.delete_webhook_with_token(self.id, self.token)
