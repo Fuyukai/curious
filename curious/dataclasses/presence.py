@@ -38,6 +38,23 @@ class Status(enum.Enum):
 strengths = [Status.OFFLINE, Status.INVISIBLE, Status.IDLE, Status.DND, Status.ONLINE]
 
 
+class GameType(enum.IntEnum):
+    """
+    Represents a game's type.
+    """
+    #: Shows the ``Playing`` text.
+    PLAYING = 0
+
+    #: Shows the ``Streaming`` text.
+    STREAMING = 1
+
+    #: Shows the ``Listening to`` text.
+    LISTENING_TO = 2
+
+    #: Shows the ``Watching`` text.
+    WATCHING = 3
+
+
 class Game(object):
     """
     Represents a game object.
@@ -46,12 +63,17 @@ class Game(object):
     __slots__ = "type", "url", "name"
 
     def __init__(self, **kwargs):
+        """
+        :param name: The name for the game. 100 characters max.
+        :param url: The URL for the game, if streaming.
+        :param type: A :class:`.GameType` for this game.
+        """
         #: The type of game this is.
-        self.type = kwargs.get("type", 0)
+        self.type: GameType = GameType(kwargs.get("type", 0))
         #: The stream URL this game is for.
-        self.url = kwargs.get("url", None)
+        self.url: str = kwargs.get("url", None)
         #: The name of the game being played.
-        self.name = kwargs.get("name", None)
+        self.name: str = kwargs.get("name", None)
 
     def to_dict(self) -> dict:
         """
