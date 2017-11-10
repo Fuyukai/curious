@@ -18,6 +18,9 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 #  import sphinx_bootstrap_theme
+import os
+import sys
+
 import guzzle_sphinx_theme
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -29,6 +32,12 @@ except DistributionNotFound:
 else:
     version = '.'.join(_release.version.split(".")[:3])
     release = _release.version
+
+
+try:
+    import curious
+except ImportError:
+    sys.path.insert(0, os.path.abspath("../.."))
 
 
 # -- General configuration ------------------------------------------------
