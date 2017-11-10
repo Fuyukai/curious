@@ -3,6 +3,15 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.0
+-----
+
+ - Add get-by-name to :class:`.GuildChannelWrapper`, and :class:`.GuildRoleWrapper`.
+
+ - Add :attr:`.Invite.features`.
+
+ - Add :class:`.GameType` for game types.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 
