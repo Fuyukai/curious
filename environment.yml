@@ -19,7 +19,6 @@ dependencies:
     - sphinx-autodoc-typehints
     - sphinxcontrib-asyncio
     - guzzle_sphinx_theme
-    - cuiows
     - curio
     - pylru
     - asks
@@ -29,3 +28,4 @@ dependencies:
     - yarl
     - wsproto
     - multio
+    - asyncwebsockets
