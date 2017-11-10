@@ -329,8 +329,6 @@ class GuildRoleWrapper(_WrapperBase):
         return MappingProxyType(self._roles)
 
     def __getitem__(self, key) -> 'role.Role':
-        return self._roles[key]
-
         default = object()
         got = self.get(key, default=default)
         if got is default:
@@ -341,11 +339,41 @@ class GuildRoleWrapper(_WrapperBase):
     def __len__(self) -> int:
         return len(self._roles)
 
+    # overwritten methods from the abc
+    def get(self, key: typing.Union[str, int], default: default_var=None) \
+            -> 'typing.Union[role.Role, default_var]':
+        """
+        Gets a role by name or ID.
+
+        :param key: The key to use. This can be the ID of the role, or the name of the role.
+        :param default: The default value to use, if the role cannot be found.
+        :return: A :class:`.Role`, if it was found.
+        """
+        if isinstance(key, int):
+            return self._roles.get(key, default)
+        else:
+            return self._get_by_name(key, default=default)
+
+    def _get_by_name(self, name: str, default: default_var=None) \
+            -> 'typing.Union[role.Role, default_var]':
+        """
+        Gets a role by name.
+
+        :param name: The name of the channel to get.
+        :param default: The default value to get, if the role cannot be found.
+        :return: A :class:`.Role` if it can be found.
+        """
+        s = sorted(self._roles.values(), key=lambda c: c.position)
+        try:
+            return next(filter(lambda r: r.name == name, s))
+        except StopIteration:
+            return default
+
     async def create(self, **kwargs) -> 'role.Role':
         """
         Creates a new role in this guild.
 
-        :return: A new :class:`~.Role`.
+        :return: A new :class:`.Role`.
         """
         if not self._guild.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
