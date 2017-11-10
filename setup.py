@@ -23,7 +23,8 @@ setup(
         "oauthlib==2.0.2",
         "pytz",
         "asks>=1.2.2",
-        "multidict>=2.1.6"
+        "multidict>=2.1.6",
+        "multio"
     ],
     extras_require={
         "voice": ["opuslib==1.1.0",

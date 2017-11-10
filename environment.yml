@@ -28,3 +28,4 @@ dependencies:
     - multidict
     - yarl
     - wsproto
+    - multio
