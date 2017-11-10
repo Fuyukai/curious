@@ -306,6 +306,19 @@ class CommandsManager(object):
         """
         Handles commands for a message.
         """
+        # check bot type
+        if message.author.user.bot and self.client.bot_type & 8:
+            return
+
+        if message.author.user != self.client.user and self.client.bot_type & 64:
+            return
+
+        if message.guild_id is not None and self.client.bot_type & 32:
+            return
+
+        if message.guild_id is None and self.client.bot_type & 16:
+            return
+
         # step 1, match the messages
         matched = self.message_check(self.client, message)
         if inspect.isawaitable(matched):
