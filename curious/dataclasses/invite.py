@@ -17,7 +17,8 @@ if the data for each  is not cached by curious. Otherwise, full :class:`~.Guild`
 import typing
 
 from curious import util
-from curious.dataclasses import channel as dt_channel, guild as dt_guild, user as dt_user
+from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
+    user as dt_user
 from curious.dataclasses.bases import IDObject
 from curious.exc import PermissionsError
 
@@ -127,9 +128,6 @@ class Invite(object):
     Represents an invite object.
     """
 
-    __slots__ = ("_bot", "code", "guild_id", "channel_id",
-                 "_invite_guild", "_invite_channel", "_invite_metadata", "inviter")
-
     def __init__(self, client, **kwargs):
         self._bot = client
 
@@ -144,18 +142,21 @@ class Invite(object):
 
         #: The invite guild this is attached to.
         #: The actual guild object can be more easily fetched with `.guild`.
-        self._invite_guild = InviteGuild(**kwargs.get("guild"))
+        self._invite_guild = \
+            InviteGuild(**kwargs.get("guild"))  # type: typing.Union[InviteGuild, dt_guild.Guild]
 
         #: The invite channel this is attached to.
         #: The actual channel object can be more easily fetched with `.channel`.
-        self._invite_channel = InviteChannel(**kwargs.get("channel"))
+        self._invite_channel = \
+            InviteChannel(**kwargs.get("channel"))  # type: typing.Union[InviteChannel, dt_channel.Channel]
 
-        #: The user that created this invite.
+        #: The ID of the user that created this invite.
         #: This can be None for partnered invites.
-        self.inviter = None  # type: dt_user.User
+        self.inviter_id = None  # type: int
 
         if "inviter" in kwargs:
-            self.inviter = self._bot.state.make_user(kwargs.get("inviter"))
+            self._inviter_data = kwargs["inviter"]
+            self.inviter_id = int(self._inviter_data.get("id", 0))
 
         #: The invite metadata object associated with this invite.
         #: This can be None if the invite has no metadata.
@@ -169,7 +170,21 @@ class Invite(object):
 
     def __del__(self) -> None:
         if self.inviter:
-            self._bot.state._check_decache_user(self.inviter.id)
+            self._bot.state._check_decache_user(self.inviter_id)
+
+    @property
+    def inviter(self) -> 'typing.Union[dt_member.Member, dt_user.User]':
+        """
+        :return: The :class:`.Member` or :class:`.User` that made this invite.
+        """
+        if isinstance(self._invite_guild, InviteGuild):
+            return self._bot.state.make_user(self._inviter_data)
+
+        u = self._invite_guild.members.get(self.inviter_id)
+        if not u:
+            return self._bot.state.make_user(self._inviter_data)
+
+        return u
 
     @property
     def guild(self) -> 'typing.Union[dt_guild.Guild, InviteGuild]':

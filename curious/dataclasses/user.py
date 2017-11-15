@@ -98,6 +98,10 @@ class User(Dataclass):
         #: If this user is a bot.
         self.bot = kwargs.get("bot", False)
 
+    @property
+    def user(self) -> 'User':
+        return self
+
     def _copy(self):
         new_object = object.__new__(self.__class__)
         new_object.id = self.id
