@@ -12,6 +12,8 @@ This document displays the differences between each release of curious.
 
  - Add :class:`.GameType` for game types.
 
+ - Make :attr:`.Invite.inviter` a property that returns a :class:`.Member` if one can be found.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 
