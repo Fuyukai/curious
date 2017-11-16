@@ -8,7 +8,7 @@ from curious.commands.exc import CommandsError
 from curious.commands.utils import get_full_name, get_usage
 
 
-async def _get_command_list(ctx: Context, command):
+async def _get_command_list(ctx: Context, command, *, include_root: bool = True):
     """
     Recursively produces a command list for the command, using subcommands.
     """
@@ -19,7 +19,7 @@ async def _get_command_list(ctx: Context, command):
         return []
 
     # XXX: Don't add command names if they're subcommands.
-    if not command.cmd_subcommand:
+    if not command.cmd_subcommand and include_root:
         l = [command.cmd_name]
     else:
         l = []
@@ -38,7 +38,10 @@ async def _get_command_list(ctx: Context, command):
         if not can_run:
             continue
 
-        l.append(get_full_name(subcommand))
+        if include_root:
+            l.append(get_full_name(subcommand))
+        else:
+            l.append(subcommand.cmd_name)
         l.extend(await _get_command_list(ctx, subcommand))
 
     return l
@@ -114,14 +117,21 @@ async def help_for_one(ctx: Context, command):
     # get the command from the manager
     cfunc = ctx.manager.get_command(command)
     if cfunc is None:
-        return "**No such command.**"
+        return f"No such command: **`{command}`**"
 
     usage = get_usage(cfunc, invoked_as=command)
+
+    subcommands = await _get_command_list(ctx, cfunc, include_root=False)
+    subcommands_fmtted = " | ".join(f"`{x}`" for x in subcommands)
+
     description = inspect.getdoc(cfunc)
     if description is None:
-        return f"`{usage}`"
+        description = "No description."
 
-    return f"`{usage}`\n\n{description}"
+    if subcommands:
+        return f"`{usage}`\n\n{description}\n\n**Subcommands:** {subcommands_fmtted}"
+    else:
+        return f"`{usage}`\n\n{description}"
 
 
 async def help_command(ctx: Context, *, command: str = None):
