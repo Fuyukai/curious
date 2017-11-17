@@ -8,6 +8,7 @@ This contains a definition for :class:`.Client` which is used to interface prima
 
 import collections
 import enum
+import functools
 import inspect
 import logging
 import traceback
@@ -105,6 +106,10 @@ class Client(object):
 
         #: The token for the bot.
         self._token = token
+
+        #: If this client is disconnected.
+        #: Set to true by :meth:`.Client.disconnect`.
+        self.disconnected = False
 
         if state_klass is None:
             from curious.core.state import State
@@ -560,6 +565,15 @@ class Client(object):
 
         return self
 
+    async def disconnect(self, shard_id: int = 1):
+        """
+        Disconnects a shard.
+
+        :param shard_id: The shard ID to disconnect.
+        """
+        gw = self._gateways[shard_id]
+        await gw.close(1000, "Client closed connection")
+
     async def poll(self, shard_id: int):
         """
         Polls the gateway for the next event.
@@ -568,9 +582,14 @@ class Client(object):
         """
         from curious.core.gateway import ReconnectWebsocket
         gw = self._gateways[shard_id]
+
+        coro_queue = curio.Queue()
+        await coro_queue.put(gw.next_event)
+
         while True:
             try:
-                await gw.next_event()
+                cofunc = await coro_queue.get()
+                await cofunc()
             except WebsocketClosed as e:
                 # Try and handle the close.
                 if e.reason == "Client closed connection":
@@ -581,17 +600,24 @@ class Client(object):
                     logger.info("Shard {} disconnected with code {}, "
                                 "creating new session".format(shard_id, e.code))
                     self.state._reset(gw.shard_id)
-                    await gw.reconnect(resume=False)
+
+                    partial = functools.partial(gw.reconnect, resume=False)
+                    await coro_queue.put(partial)
                 elif e.code not in (4004, 4011):
                     # Try and RESUME.
                     logger.info("Shard {} disconnected with close code {}, reason {}, "
                                 "attempting a reconnect.".format(shard_id, e.code, e.reason))
-                    await gw.reconnect(resume=True)
+
+                    partial = functools.partial(gw.reconnect, resume=True)
+                    await coro_queue.put(partial)
                 else:
                     raise
             except ReconnectWebsocket:
                 # We've been told to reconnect, try and RESUME.
-                await gw.reconnect(resume=True)
+                partial = functools.partial(gw.reconnect, resume=True)
+                await coro_queue.put(partial)
+            else:
+                await coro_queue.put(gw.next_event)
 
     async def boot_shard(self, shard_id: int, shard_count: int = None,
                          **kwargs) -> curio.Task:

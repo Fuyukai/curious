@@ -174,6 +174,8 @@ class Gateway(object):
         self._logger = None
         self._cached_gateway_url = None  # type: str
         self._open = False
+        self._close_code = None
+        self._close_reason = None
 
     @property
     def logger(self):
@@ -228,6 +230,8 @@ class Gateway(object):
             await self.websocket.close(code=code, reason=reason)
 
         self._open = False
+        self._close_code = code
+        self._close_reason = reason
         await self._stop_heartbeating.set()
 
     async def _send(self, data):
@@ -497,10 +501,13 @@ class Gateway(object):
 
         try:
             event = await self.websocket.next_message()
-        except WebsocketClosed:
+        except WebsocketClosed as e:
             # Close ourselves.
-            await self.close()
+            await self.close(e.code, e.reason)
             raise
+        except RuntimeError:
+            # usually a manual close
+            raise WebsocketClosed(self._close_code, reason=self._close_reason)
 
         await self.state.client.fire_event("gateway_message_received", event, gateway=self)
 
