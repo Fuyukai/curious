@@ -107,10 +107,6 @@ class Client(object):
         #: The token for the bot.
         self._token = token
 
-        #: If this client is disconnected.
-        #: Set to true by :meth:`.Client.disconnect`.
-        self.disconnected = False
-
         if state_klass is None:
             from curious.core.state import State
             state_klass = State
@@ -564,15 +560,6 @@ class Client(object):
                                                             large_threshold=large_threshold)
 
         return self
-
-    async def disconnect(self, shard_id: int = 1):
-        """
-        Disconnects a shard.
-
-        :param shard_id: The shard ID to disconnect.
-        """
-        gw = self._gateways[shard_id]
-        await gw.close(1000, "Client closed connection")
 
     async def poll(self, shard_id: int):
         """

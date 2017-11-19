@@ -14,6 +14,7 @@ import zlib
 
 import curio
 from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
+from asyncwebsockets.common import WebsocketUnusable
 from curio.thread import AWAIT, async_thread
 
 try:
@@ -505,7 +506,7 @@ class Gateway(object):
             # Close ourselves.
             await self.close(e.code, e.reason)
             raise
-        except RuntimeError:
+        except WebsocketUnusable:
             # usually a manual close
             raise WebsocketClosed(self._close_code, reason=self._close_reason)
 
