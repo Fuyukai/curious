@@ -5,6 +5,7 @@ Wrappers for Status objects.
 """
 
 import enum
+from typing import List
 
 
 class Status(enum.Enum):
@@ -161,3 +162,95 @@ class Presence(object):
         :return: The strength for this status.
         """
         return self.status.strength
+
+
+def _make_property(field: str, doc: str = None, max_size: int = None) -> property:
+    def _getter(self):
+        return self._rich_fields.get(field)
+
+    def _setter(self, value: str):
+        if max_size is not None and len(value) > max_size:
+            raise ValueError("Field '{}' cannot be longer than {} characters"
+                             .format(field, max_size))
+
+        self._rich_fields[field] = value
+
+    prop = property(_getter, _setter, doc=doc)
+    return prop
+
+
+class RichPresence(object):
+    """
+    Represents a Rich Presence. This class can be created safely for usage with :class:`.IPCClient`.
+    """
+
+    # typedef struct DiscordRichPresence {
+    #     const char* state; /* max 128 bytes */
+    #     const char* details; /* max 128 bytes */
+    #     int64_t startTimestamp;
+    #     int64_t endTimestamp;
+    #     const char* largeImageKey; /* max 32 bytes */
+    #     const char* largeImageText; /* max 128 bytes */
+    #     const char* smallImageKey; /* max 32 bytes */
+    #     const char* smallImageText; /* max 128 bytes */
+    #     const char* partyId; /* max 128 bytes */
+    #     int partySize;
+    #     int partyMax;
+    #     const char* matchSecret; /* max 128 bytes */
+    #     const char* joinSecret; /* max 128 bytes */
+    #     const char* spectateSecret; /* max 128 bytes */
+    #     int8_t instance;
+    # } DiscordRichPresence;
+    def __init__(self, **fields):
+        """
+        :param fields: The rich presence fields.
+        """
+        self._rich_fields = fields
+
+    state = _make_property("state", "The state for this presence.", 128)
+    details = _make_property("details", "The details for this presence.", 128)
+
+    @property
+    def assets(self) -> dict:
+        """
+        The assets for this rich presence. Returns a dict of
+        (large_image, large_text, small_image, small_text).
+        """
+        return self._rich_fields.get("assets", {})
+
+    @assets.setter
+    def assets(self, value: dict):
+        for key in value.keys():
+            if key not in ('large_image', 'large_text', 'small_image', 'small_text'):
+                raise ValueError("Bad asset key: {}".format(key))
+
+        self._rich_fields["assets"] = value
+
+    @property
+    def party_id(self) -> str:
+        """
+        The party ID for this rich presence.
+        """
+        return self._rich_fields.get("party", {}).get("id")
+
+    @party_id.setter
+    def party_id(self, value):
+        if "party" not in self._rich_fields:
+            self._rich_fields["party"] = {"id": value}
+        else:
+            self._rich_fields["party"]["id"] = value
+
+    @property
+    def party_size(self) -> List[int]:
+        """
+        The size of the party for this rich presence. An array of [size, max].
+        """
+        return self._rich_fields.get("party", {}).get("size")
+
+    @party_size.setter
+    def party_size(self, size: List[int]):
+        if "party" not in self._rich_fields:
+            self._rich_fields["party"] = {"size": size}
+        else:
+            self._rich_fields["party"]["size"] = size
+
