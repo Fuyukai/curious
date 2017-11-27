@@ -183,11 +183,11 @@ presence_count: int)
 
         This is a **user-account only** event.
 
-.. py:cofunction:: member_join(ctx: EventContext, member: Member)
+.. py:cofunction:: member_add(ctx: EventContext, member: Member)
 
     Called when a member is added to a guild.
 
-.. py:cofunction:: member_leave(ctx: EventContext, member: Member)
+.. py:cofunction:: member_remove(ctx: EventContext, member: Member)
 
     Called when a member is removed from a guild.
 

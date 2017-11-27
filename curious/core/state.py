@@ -1052,7 +1052,7 @@ class State(object):
 
         guild._members[member.id] = member
         guild.member_count += 1
-        await self.client.fire_event("member_join", member, gateway=gw)
+        await self.client.fire_event("member_add", member, gateway=gw)
 
     async def handle_guild_member_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1070,13 +1070,12 @@ class State(object):
             # We can't see the member, so don't fire an event for it.
             return
 
-        await self.client.fire_event("member_leave", member, gateway=gw)
+        await self.client.fire_event("member_remove", member, gateway=gw)
 
     async def handle_guild_member_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when a guild member is updated.
         """
-        print(event_data)
         guild_id = int(event_data.get("guild_id", 0))
         guild = self._guilds.get(guild_id)
 
@@ -1100,7 +1099,7 @@ class State(object):
             member.role_ids = [int(i) for i in event_data.get("roles", [])]
 
         guild._members[member.id] = member
-        member.nickname = event_data.get("nickname", member.nickname)
+        member.nickname = event_data.get("nick", member.nickname)
 
         await self.client.fire_event("member_update", old_member, member, gateway=gw)
 

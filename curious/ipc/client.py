@@ -98,8 +98,8 @@ class IPCClient(object):
         data = packet.serialize()
         await self._sock.sendall(data)
 
-    def _write_json(self, opcode: IPCOpcode, data: dict):
-        """\\?\pipe\discord-ipc-0
+    def _write_json(self, opcode: IPCOpcode, data: dict) -> Coroutine[None, None, None]:
+        """
         Writes JSON to the IPC socket.
         """
         return self._write_packet(IPCPacket(opcode, data))
