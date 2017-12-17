@@ -5,6 +5,7 @@ Websocket gateway code.
 """
 import collections
 import enum
+import inspect
 import logging
 import sys
 import threading
@@ -379,8 +380,6 @@ class Gateway(object):
         self.hb_stats.heartbeats += 1
         self.hb_stats.last_heartbeat = time.monotonic()
 
-        await self.state.client.fire_event("gateway_heartbeated", self.hb_stats, gateway=self)
-
         await self._send_dict(hb)
         return self.hb_stats.heartbeats
 
@@ -493,113 +492,128 @@ class Gateway(object):
             "d": self.sequence_num
         }
 
-    async def next_event(self):
+    async def events(self) -> typing.AsyncGenerator[tuple, None]:
         """
-        Gets the next event, in decoded form.
+        Creates an async generator that yields new events to be dispatched.
         """
         if not self._open:
             raise WebsocketClosed(1006, reason="Connection lost")
 
-        try:
-            event = await self.websocket.next_message()
-        except WebsocketClosed as e:
-            # Close ourselves.
-            await self.close(e.code, e.reason)
-            raise
-        except WebsocketUnusable:
-            # usually a manual close
-            raise WebsocketClosed(self._close_code, reason=self._close_reason)
-
-        await self.state.client.fire_event("gateway_message_received", event, gateway=self)
-
-        if isinstance(event, WebsocketBytesMessage) and _fmt == "json":
-            # decompress the message
-            data = zlib.decompress(event.data, 15, 10490000)
-            data = data.decode("utf-8")
-        else:
-            data = event.data
-
-        if data is None:
-            return
-
-        event_data = _loader(data)
-        # self.logger.debug("Got event {}".format(event_data))
-        await self.state.client.fire_event("gateway_event_received", event_data, gateway=self)
-
-        op = event_data.get('op')
-        data = event_data.get('d')
-        seq = event_data.get('s')
-
-        if seq is not None:
-            # next sequence
-            self.sequence_num = seq
-
-        # Switch based on op.
-        if op == GatewayOp.HELLO:
-            # Start heartbeating, with the specified heartbeat duration.
-            await self.state.client.fire_event("gateway_hello", data['_trace'], gateway=self)
-            heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
-            self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
-            await self._start_heartbeating(heartbeat_interval)
-            self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
-
-        elif op == GatewayOp.HEARTBEAT_ACK:
-            await self.state.client.fire_event("gateway_heartbeat_ack", gateway=self)
-            self.hb_stats.heartbeat_acks += 1
-            self.hb_stats.last_ack = time.monotonic()
-
-        elif op == GatewayOp.HEARTBEAT:
-            # Send a heartbeat back.
-            await self.state.client.fire_event("gateway_heartbeat_received", gateway=self)
-            await self.send_heartbeat()
-
-        elif op == GatewayOp.INVALIDATE_SESSION:
-            # Clean up our session.
-            should_resume = data
-            await self.state.client.fire_event("gateway_invalidate_session", should_resume,
-                                               gateway=self)
-            if should_resume is True:
-                self.logger.debug("Sending RESUME again")
-                await self.send_resume()
-            else:
-                self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
-                self.sequence_num = 0
-                self.state._reset(self.shard_id)
-                await self.send_identify()
-
-        elif op == GatewayOp.RECONNECT:
-            # Try and reconnect to the gateway.
-            await self.state.client.fire_event("gateway_reconnect_received", gateway=self)
-            self.close()
-            raise ReconnectWebsocket()
-
-        elif op == GatewayOp.DISPATCH:
-            # Handle the dispatch.
-            event = event_data.get("t")
-            handler = getattr(self.state, "handle_{}".format(event.lower()), None)
-
-            if handler:
-                self.logger.debug("Parsing event {}.".format(event))
-                self._dispatches_handled[event] += 1
-                await self.state.client.fire_event("gateway_dispatch_received", data, gateway=self)
-                # Invoke the handler, which will parse the data and update the cache internally.
-                # Yes, handlers are async.
-                # This is because curio requires `spawn()` to be async.
-                try:
-                    await handler(self, data)
-                except ChunkGuilds as e:
-                    # We need to download all member chunks from this guild.
-                    await self._get_chunks()
-                except Exception:
-                    self.logger.exception("Error decoding event {} with data "
-                                          "{}".format(event, data))
-                    await self.close(code=1006, reason="Client error")
-                    raise
-            else:
-                self.logger.warning("Unhandled event: {}".format(event))
-
-        else:
+        # Enter into the yield loop
+        while self._open:
             try:
-                self.logger.warning("Unhandled opcode: {} ({})".format(op, GatewayOp(op)))
-            except ValueError:
-                self.logger.warning("Unknown opcode: {}".format(op))
+                event = await self.websocket.next_message()
+            except WebsocketClosed as e:
+                # Close ourselves.
+                await self.close(e.code, e.reason)
+                raise
+            except WebsocketUnusable:
+                # usually a manual close
+                raise WebsocketClosed(self._close_code, reason=self._close_reason)
+
+            yield ("gateway_message_received", event)
+
+            # decompress the data, if needed
+            if isinstance(event, WebsocketBytesMessage) and _fmt == "json":
+                data = zlib.decompress(event.data, 15, 10490000)
+                data = data.decode("utf-8")
+            else:
+                data = event.data
+
+            # skip empty payloads
+            if not data:
+                continue
+
+            # load the event data with our loader
+            event_data = _loader(data)
+            yield ("gateway_event_received", event_data)
+
+            op = event_data.get('op')
+            data = event_data.get('d')
+            seq = event_data.get('s')
+
+            if seq is not None:
+                # next sequence
+                self.sequence_num = seq
+
+            # Handle internal operations, as well as dispatches.
+            if op == GatewayOp.HELLO:
+                # Start heartbeating, with the specified heartbeat duration.
+                yield ("gateway_hello", data['_trace'])
+
+                heartbeat_interval = data.get("heartbeat_interval", 45000) / 1000.0
+
+                self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
+                await self._start_heartbeating(heartbeat_interval)
+                self.logger.info("Connected to Discord servers {}".format(",".join(data["_trace"])))
+
+            elif op == GatewayOp.HEARTBEAT_ACK:
+                yield "gateway_heartbeat_ack",
+                self.hb_stats.heartbeat_acks += 1
+                self.hb_stats.last_ack = time.monotonic()
+
+            elif op == GatewayOp.HEARTBEAT:
+                # Send a heartbeat back.
+                yield "gateway_heartbeat_received",
+                await self.send_heartbeat()
+
+            elif op == GatewayOp.INVALIDATE_SESSION:
+                # the data sent is if we should resume
+                # if it's non-existent, we assume it's False.
+                should_resume = data or False
+
+                yield ("gateway_invalidate_session", should_resume,)
+                if should_resume is True:
+                    self.logger.debug("Sending RESUME again")
+                    await self.send_resume()
+                else:
+                    self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
+                    self.sequence_num = 0
+                    self.state._reset(self.shard_id)
+                    await self.send_identify()
+
+            elif op == GatewayOp.RECONNECT:
+                # Try and reconnect to the gateway.
+                yield ("gateway_reconnect_received",)
+                self.close()
+                raise ReconnectWebsocket()
+
+            elif op == GatewayOp.DISPATCH:
+                # Handle the dispatch.
+                event = event_data.get("t")
+                handler = getattr(self.state, "handle_{}".format(event.lower()), None)
+
+                if handler:
+                    self.logger.debug("Parsing event {}.".format(event))
+                    self._dispatches_handled[event] += 1
+                    yield ("gateway_dispatch_received", data,)
+
+                    try:
+                        coro = handler(self, data)
+                        if inspect.isawaitable(coro):
+                            result = await coro
+                        else:
+                            result = coro
+
+                        # coerce into tuples
+                        if not isinstance(result, tuple):
+                            yield result,
+                        else:
+                            yield result
+
+                    except ChunkGuilds as e:
+                        # We need to download all member chunks from this guild.
+                        await self._get_chunks()
+                    except Exception:
+                        self.logger.exception("Error decoding event {} with data "
+                                              "{}".format(event, data))
+                        await self.close(code=1006, reason="Client error")
+                        raise
+                else:
+                    self.logger.warning("Unhandled event: {}".format(event))
+
+            else:
+                try:
+                    self.logger.warning("Unhandled opcode: {} ({})".format(op, GatewayOp(op)))
+                except ValueError:
+                    self.logger.warning("Unknown opcode: {}".format(op))
