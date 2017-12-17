@@ -14,6 +14,11 @@ This document displays the differences between each release of curious.
 
  - Make :attr:`.Invite.inviter` a property that returns a :class:`.Member` if one can be found.
 
+ - Reorganize gateway event handling into an async generator.
+
+ - Remove :meth:`.Client.boot_shard` amongst others, and create :meth:`.Client.handle_shard` to
+   do all gateway-related handling functions.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 
