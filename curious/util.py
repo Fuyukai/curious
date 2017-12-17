@@ -8,6 +8,7 @@ import imghdr
 import inspect
 import typing
 
+import curio
 from multidict import MultiDict
 
 NO_ITEM = object()
@@ -134,7 +135,8 @@ def replace_quotes(item: str) -> str:
     .. code-block:: python3
     
         some_weird_string = r'"this is quoted and removed" but \" that was kept and this isn't \\"'
-        replace_quotes(some_weird_string)  # 'this is quoted and removed but " that was kept but this isnt \\'
+        replace_quotes(some_weird_string)  # 'this is quoted and removed but " that was kept but
+        this isnt \\'
 
     :param item: The string to scan.
     :return: The string, with quotes replaced.
@@ -196,6 +198,15 @@ def _traverse_stack_for(t: type):
         finally:
             # prevent reference cycles
             del fr
+
+
+async def coerce_agen(gen):
+    results = []
+    async with curio.meta.finalize(gen) as agen:
+        async for i in agen:
+            results.append(i)
+
+    return results
 
 
 def _ad_getattr(self, key: str):
