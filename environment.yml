@@ -29,4 +29,3 @@ dependencies:
     - wsproto
     - multio
     - asyncwebsockets
-    - .
