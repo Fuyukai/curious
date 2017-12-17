@@ -1366,7 +1366,7 @@ class State(object):
             new_voice_state.guild_id = guild.id
 
         # copy the voice states
-        old_voice_state = guild._voice_states.pop(user_id)
+        old_voice_state = guild._voice_states.pop(user_id, None)
         if new_voice_state is not None:
             guild._voice_states[new_voice_state.user_id] = new_voice_state
 
