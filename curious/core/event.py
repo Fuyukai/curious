@@ -62,7 +62,7 @@ class EventManager(object):
             evs = [name]
 
         for ev_name in evs:
-            logger.debug("Registered event `{}` handling `{}`".format(func, name))
+            logger.debug("Registered event `{}` handling `{}`".format(func, ev_name))
             self.event_listeners.add(ev_name, func)
 
     def remove_event(self, name: str, func):
