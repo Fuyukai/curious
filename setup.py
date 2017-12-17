@@ -18,7 +18,7 @@ setup(
     ],
     install_requires=[
         "asyncwebsockets>=0.1.1",
-        "curio>=0.7.0,<=0.8.0",
+        "curio>=0.8.0,<0.9.0",
         "pylru==1.0.9",
         "oauthlib==2.0.2",
         "pytz",

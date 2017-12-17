@@ -6,7 +6,6 @@ Wrappers for Channel objects.
 import collections
 import enum
 import pathlib
-import sys
 import time
 import typing as _typing
 from math import floor
@@ -22,8 +21,6 @@ from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, Forbidden, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify
-
-PY36 = sys.version_info[0:2] >= (3, 6)
 
 
 class ChannelType(enum.IntEnum):
@@ -839,11 +836,6 @@ class Channel(Dataclass):
             # assume it's pathlike
             path = pathlib.Path(filename)
             name = path.parts[-1]
-
-            if not PY36:
-                # open() on python 3.6+ supports pathlike objects, so no need to stringify the path.
-                # however, we're on 3.5, so stringify it now.
-                path = str(path)
 
             with open(path, mode='rb') as f:
                 file_data = f.read()

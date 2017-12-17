@@ -123,7 +123,7 @@ class Client(object):
         self.events = EventManager()
 
         #: The :class:`~.HTTPClient` used for this bot.
-        self.http = None  # type: HTTPClient
+        self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
 
         #: The cached gateway URL.
         self._gw_url = None  # type: str
@@ -133,15 +133,6 @@ class Client(object):
         self.application_info = None  # type: AppInfo
 
         self.scan_events()
-
-    def create_http(self):
-        """
-        Creates the :class:`~.HTTPClient` for this bot.
-        
-        This requires that the token is set on ``self.token``.
-        """
-        if not self.http:
-            self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
 
     @property
     def user(self) -> BotUser:
@@ -622,8 +613,6 @@ class Client(object):
         :param autoshard: If the bot should be autosharded.
         :return:
         """
-        self.create_http()
-
         if autoshard:
             shard_count = await self.get_shard_count()
 
