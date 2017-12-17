@@ -9,7 +9,7 @@ setup(
         "local_scheme": "dirty-tag"
     },
     packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
-              'curious.voice', 'curious.ext.loapi', 'curious.ext.paginator', 'curious.ipc'],
+              'curious.voice', 'curious.ext.builders', 'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
     license='MIT',
     author='Laura Dickinson',
