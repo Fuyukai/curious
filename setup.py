@@ -7,7 +7,7 @@ setup(
         "local_scheme": "dirty-tag"
     },
     packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
-              'curious.voice', 'curious.ext.loapi', 'curious.ext.paginator'],
+              'curious.voice', 'curious.ext.loapi', 'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
     license='MIT',
     author='Laura Dickinson',
@@ -17,7 +17,7 @@ setup(
         "setuptools_scm",
     ],
     install_requires=[
-        "asyncwebsockets>=0.1",
+        "asyncwebsockets>=0.1.1",
         "curio>=0.7.0,<=0.8.0",
         "pylru==1.0.9",
         "oauthlib==2.0.2",
@@ -25,7 +25,6 @@ setup(
         "asks>=1.2.2",
         "multidict>=2.1.6",
         "multio",
-        "async_generator"
     ],
     extras_require={
         "voice": ["opuslib==1.1.0",

@@ -11,16 +11,16 @@ import enum
 import functools
 import inspect
 import logging
-import traceback
 import typing
 from types import MappingProxyType
 
 import curio
+import multio
 from asyncwebsockets import WebsocketClosed
-from curio.monitor import MONITOR_HOST, MONITOR_PORT, Monitor
-from curio.task import TaskGroup
+from asyncwebsockets.common import WebsocketUnusable
 
 from curious.core.event import EventManager, event as ev_dec
+from curious.core.gateway import Gateway, ReconnectWebsocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
@@ -29,7 +29,6 @@ from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
-from curious.exc import CuriousError
 from curious.util import base64ify
 
 #: A sentinel value to indicate that the client should automatically shard.
@@ -129,8 +128,7 @@ class Client(object):
         #: The cached gateway URL.
         self._gw_url = None  # type: str
 
-        #: The application info for this bot.
-        #: Instance of :class:`~.AppInfo`.
+        #: The application info for this bot. Instance of :class:`~.AppInfo`.
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
 
@@ -535,203 +533,115 @@ class Client(object):
 
         return guild
 
-    # Utility functions
-    async def connect(self, token: str = None, shard_id: int = 1,
-                      *, large_threshold: int = 250, **kwargs):
+    async def handle_shard(self, shard_id: int, shard_count: int):
         """
-        Connects the bot to the gateway.
+        Handles a shard.
 
-        This will NOT poll for events - only open a websocket connection!
+        :param shard_id: The shard ID to boot and handle.
+        :param shard_count: The shard count to send in the identify packet.
         """
-        from curious.core.gateway import Gateway
 
-        if token:
-            self._token = token
+        total_tries = 0
+        while True:
+            # keep retrying connecting
+            if total_tries == 10:
+                raise RuntimeError(f"Gave up reconnecting shard id {shard_id}")
 
-        self.create_http()
+            try:
+                gw = await Gateway.from_token(self._token, self.state,
+                                              await self.get_gateway_url(),
+                                              shard_id=shard_id, shard_count=shard_count)
+            except Exception:
+                # give up
+                total_tries += 1
+                continue
+            else:
+                # reset total tries, we made it
+                total_tries = 0
+                self._gateways[shard_id] = gw
 
-        if not self.application_info and self.bot_type & BotType.BOT:
+            try:
+                try:
+                    # consume events
+                    async with curio.meta.finalize(gw.events()) as agen:
+                        async for event in agen:
+                            await self.events.fire_event(event[0], *event[1:], gateway=gw,
+                                                         client=self)
+
+                except WebsocketClosed as e:
+                    # Try and handle the close.
+                    if e.reason == "Client closed connection":
+                        # internal
+                        return
+
+                    if e.code in [1000, 4007] or gw.session_id is None:
+                        logger.info("Shard {} disconnected with code {}, "
+                                    "creating new session".format(shard_id, e.code))
+
+                        self.state._reset(gw.shard_id)
+                        await gw.reconnect(resume=False)
+                    elif e.code not in (4004, 4011):
+                        # Try and RESUME.
+                        logger.info("Shard {} disconnected with close code {}, reason {}, "
+                                    "attempting a reconnect.".format(shard_id, e.code,
+                                                                     e.reason))
+
+                        await gw.reconnect(resume=True)
+                    else:
+                        raise
+                except ReconnectWebsocket:
+                    # We've been told to reconnect, try and RESUME.
+                    await gw.reconnect(resume=True)
+            except (WebsocketClosed, WebsocketUnusable):
+                # give up and retry.
+                total_tries += 1
+                continue
+
+    async def start(self, shard_count: int):
+        """
+        Starts the bot.
+
+        :param shard_count: The number of shards to boot.
+        """
+        if self.bot_type & BotType.BOT:
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
 
-        gateway_url = await self.get_gateway_url()
-        self._gateways[shard_id] = await Gateway.from_token(self._token, self.state, gateway_url,
-                                                            shard_id=shard_id,
-                                                            shard_count=self.shard_count,
-                                                            large_threshold=large_threshold)
+        async with multio.asynclib.task_manager() as tg:
+            assert isinstance(tg, curio.TaskGroup)
 
-        return self
+            for shard_id in range(0, shard_count):
+                await tg.spawn(self.handle_shard(shard_id, shard_count))
 
-    async def poll(self, shard_id: int):
+            await tg.join(wait=all)
+
+    async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
-        Polls the gateway for the next event.
+        Runs the client asynchronously.
 
-        :param shard_id: The shard ID of the gateway to shard.
+        :param shard_count: The number of shards to boot.
+        :param autoshard: If the bot should be autosharded.
+        :return:
         """
-        from curious.core.gateway import ReconnectWebsocket
-        gw = self._gateways[shard_id]
-
-        coro_queue = curio.Queue()
-        await coro_queue.put(gw.next_event)
-
-        while True:
-            try:
-                cofunc = await coro_queue.get()
-                await cofunc()
-            except WebsocketClosed as e:
-                # Try and handle the close.
-                if e.reason == "Client closed connection":
-                    # internal
-                    return
-
-                if e.code in [1000, 4007] or gw.session_id is None:
-                    logger.info("Shard {} disconnected with code {}, "
-                                "creating new session".format(shard_id, e.code))
-                    self.state._reset(gw.shard_id)
-
-                    partial = functools.partial(gw.reconnect, resume=False)
-                    await coro_queue.put(partial)
-                elif e.code not in (4004, 4011):
-                    # Try and RESUME.
-                    logger.info("Shard {} disconnected with close code {}, reason {}, "
-                                "attempting a reconnect.".format(shard_id, e.code, e.reason))
-
-                    partial = functools.partial(gw.reconnect, resume=True)
-                    await coro_queue.put(partial)
-                else:
-                    raise
-            except ReconnectWebsocket:
-                # We've been told to reconnect, try and RESUME.
-                partial = functools.partial(gw.reconnect, resume=True)
-                await coro_queue.put(partial)
-            else:
-                await coro_queue.put(gw.next_event)
-
-    async def boot_shard(self, shard_id: int, shard_count: int = None,
-                         **kwargs) -> curio.Task:
-        """
-        Boots a single gateway shard.
-        
-        This can be used to run multiple clients instead of having a single client shard.
-        
-        :param shard_id: The shard ID to boot. 
-        :param shard_count: The number of shards being created.
-        :return: The :class:`curio.Task` that represents the polling loop.
-        """
-        if shard_count:
-            self.shard_count = shard_count
-
-        logger.info(f"Spawning shard {shard_id}")
-        await self.connect(token=self._token, shard_id=shard_id, **kwargs)
-        if "task_group" in kwargs:
-            spawn = kwargs["task_group"].spawn
-        else:
-            spawn = curio.spawn
-
-        t = await spawn(self.poll(shard_id))
-        t.task_local_storage["shard_id"] = {"id": shard_id}
-        return t
-
-    async def start(self, shards: int = 1, **kwargs):
-        """
-        Starts the gateway polling loop.
-
-        This is a convenience method that polls on all the shards at once.
-        This will **only reboot safely returned shards.** Erroring shards won't be rebooted.
-        """
-        logger.info("Starting bot with {} shards.".format(shards))
-        self.shard_count = shards
-        results = []
-
-        async with TaskGroup(name="shard waiter") as g:
-            for shard_id in range(0, shards):
-                shard_listener = await self.boot_shard(shard_id, task_group=g, **kwargs)
-                logger.info("Sleeping for 5 seconds between shard creation.")
-                if shard_id < shards - 1:
-                    await curio.sleep(5)
-
-            while True:
-                task = await g.next_done()  # type: curio.Task
-                if task is None:
-                    break
-
-                try:
-                    result = await task.join()
-                except Exception as e:
-                    result = e
-                    # format custom exception
-                    exc = traceback.format_exception(None, e.__cause__, e.__cause__.__traceback__)
-                    exc = ''.join(exc)
-
-                    logger.error("Shard {} crashed, not rebooting it.\n{}"
-                                 .format(task.task_local_storage["shard_id"]["id"], exc))
-                else:
-                    # reboot it
-                    logger.warning("Rebooting shard {}.".format(task.id))
-                    shard_id = task.task_local_storage["shard_id"]["id"]
-                    t = await self.boot_shard(shard_id=shard_id)
-                    t.task_local_storage["shard_id"] = {"id": shard_id}
-                    # add the shard waiter task
-                    g.add_task(t)
-                finally:
-                    results.append(result)
-
-        # if we're still here, cancel a bunch of stuff
-        for gateway in self._gateways.values():
-            await gateway.close()
-
-        return results
-
-    async def start_autosharded(self, token: str = None, **kwargs):
-        """
-        Starts the bot with an automatically set number of shards.
-        """
-        if token:
-            self._token = token
-
         self.create_http()
 
-        shards = await self.get_shard_count()
-        self.shard_count = shards
-        await self.start(shards=shards, **kwargs)
+        if autoshard:
+            shard_count = await self.get_shard_count()
 
-    async def _cleanup(self):
+        return await self.start(shard_count)
+
+    def run(self, *, shard_count: int = 1, autoshard: bool = True):
         """
-        Performs cleanup.
+        Convenience method to run the bot with a multio handler.
+
+        :param shard_count: The number of shards to use. Ignored if autoshard is True.
+        :param autoshard: If the bot should be autosharded.
         """
-        for gateway in self._gateways.values():
-            await gateway.close()
-
-    def run(self, token: str = None, shards: typing.Union[int, object] = 1, *,
-            monitor_host: str = MONITOR_HOST, monitor_port: int = MONITOR_PORT,
-            **kwargs):
-        """
-        Runs your bot with Curio with the monitor enabled.
-
-        :param token: The token to run with.
-        :param shards: The number of shards to run.
-            If this is None, the bot will autoshard.
-            
-        :param monitor_host: The host of the Curio monitor to use.
-        :param monitor_port: The port of the Curio monitor to use.
-        """
-        if token is not None:
-            self._token = token
-
-        if not self.bot_type & BotType.BOT and shards != 1:
-            raise CuriousError("Cannot start user bots in sharded mode")
-
-        kernel = curio.Kernel()
-        monitor = Monitor(kernel, monitor_host, monitor_port)
-        if shards == AUTOSHARD or shards is None:
-            coro = self.start_autosharded(token, **kwargs)
-        else:
-            coro = self.start(shards=shards, **kwargs)
 
         try:
-            return kernel.run(coro, shutdown=True)
+            p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
+            multio.run(p)
         except (KeyboardInterrupt, EOFError):
-            kernel._crashed = False
-            return kernel.run(self._cleanup())
+            pass
 
     @classmethod
     def from_token(cls, token: str = None):

@@ -14,7 +14,6 @@ import typing
 import zlib
 
 import curio
-from async_generator import yield_from_
 from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
 from asyncwebsockets.common import WebsocketUnusable
 from curio.thread import AWAIT, async_thread
@@ -269,7 +268,7 @@ class Gateway(object):
     async def send(self, data: typing.Any):
         """
         Sends a variable type of data down the gateway.
-    """
+        """
         if isinstance(data, dict):
             await self._send_dict(data)
         else:
@@ -595,7 +594,10 @@ class Gateway(object):
                             result = await coro
                         elif inspect.isasyncgen(coro):
                             # for event handlers with multiple yields
-                            await yield_from_(coro)
+                            async with curio.meta.finalize(coro) as gen:
+                                async for i in gen:
+                                    yield i
+
                             continue
                         else:
                             result = coro

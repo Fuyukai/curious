@@ -26,6 +26,7 @@ from curious.dataclasses.role import Role
 from curious.dataclasses.user import BotUser, FriendType, RelationshipUser, User, UserSettings
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
+from curious.util import coerce_agen
 
 UserType = typing.TypeVar("U", bound=User)
 logger = logging.getLogger("curious.state")
@@ -74,19 +75,19 @@ class GuildStore(collections.MutableMapping):
         return MappingProxyType(o)
 
     # abc methods
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         return self.guilds.__setitem__(key, value)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> Guild:
         return self.guilds.__getitem__(key)
 
-    def __delitem__(self, key):
+    def __delitem__(self, key) -> None:
         return self.guilds.__delitem__(key)
 
-    def __iter__(self):
+    def __iter__(self) -> typing.Iterator[Guild]:
         return self.guilds.__iter__()
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.guilds.__len__()
 
 
@@ -94,7 +95,7 @@ class State(object):
     """
     This represents the state of the Client - in other libraries, the cache.
 
-    It is also used to parse objects into their representations.
+    The other main purpose for this class is to parse events from the Discord websocket.
     """
 
     def __init__(self, client, max_messages: int = 500):
@@ -213,7 +214,8 @@ class State(object):
                 "All guilds fully chunked on shard {}, dispatching READY.".format(gw.shard_id)
             )
             await self.is_ready(gw.shard_id).set()
-            await self.client.fire_event("ready", gateway=gw)
+            # yield the ready event
+            yield "ready",
 
             # check for userbots
             if not self._user.bot:
@@ -462,8 +464,10 @@ class State(object):
 
         return state
 
+    # ==============================================================================================
     # Event handlers.
     # These parse the events and deconstruct them.
+
     async def handle_ready(self, gw: 'gateway.Gateway', event_data: dict):
         """
         Called when READY is dispatched.
@@ -530,7 +534,9 @@ class State(object):
             if not self._user.bot and len(event_data.get("guilds")) <= 100:
                 # this might as well be a GUILD_CREATE, so treat it as one
                 new_guild.start_chunking()
-                await self.handle_guild_create(gw, guild)
+                for i in await coerce_agen(self.handle_guild_create(gw, guild)):
+                    yield i
+
                 gw._dispatches_handled["GUILD_CREATE"] += 1
 
         if not self._user.bot and len(event_data.get("guilds")) <= 100:
@@ -542,7 +548,7 @@ class State(object):
                     .format(gw.shard_id))
 
         # Don't fire `_ready` here, because we don't have all guilds.
-        await self.client.fire_event("connect", gateway=gw)
+        yield "connect",
 
         # event_data.pop("guilds")
         # pprint.pprint(event_data)
@@ -552,7 +558,7 @@ class State(object):
             await self.is_ready(gw.shard_id).set()
             logger.info("No more guilds to get for shard {}, or client is user. "
                         "Dispatching READY.".format(gw.shard_id))
-            await self.client.fire_event("ready", gateway=gw)
+            yield "ready",
 
     async def handle_resumed(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -564,7 +570,7 @@ class State(object):
 
         logger.info("Successfully resumed session on shard ID {}, replayed"
                     "{} new events.".format(gw.shard_id, new_events))
-        await self.client.fire_event("resumed", new_events, gateway=gw)
+        yield ("resumed", new_events)
 
     async def handle_user_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -577,7 +583,7 @@ class State(object):
         self._user.discriminator = event_data.get("discriminator", self._user.discriminator)
         self._user.avatar_hash = event_data.get("avatar", self._user.avatar_hash)
 
-        await self.client.fire_event("user_update", gateway=gw)
+        yield "user_update",
 
     async def handle_presence_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -617,7 +623,7 @@ class State(object):
             game = event_data.get("game")
             fr.presence.game = game
 
-            await self.client.fire_event("friend_update", fr, gateway=gw)
+            yield "friend_update", fr
             return
 
         # try and create a new member from the presence update
@@ -649,7 +655,7 @@ class State(object):
             if "username" in event_data["user"]:
                 self.make_user(event_data["user"], override_cache=True)
 
-        await self.client.fire_event("member_update", old_member, member, gateway=gw)
+        yield "member_update", old_member, member,
 
     async def handle_presences_replace(self, gw: 'gateway.Gateway', event_data: dict):
         # TODO
@@ -671,15 +677,16 @@ class State(object):
                     "on shard {}".format(len(members), guild.name or guild.id, guild.shard_id))
 
         guild._handle_member_chunk(event_data.get("members"))
-        await self.client.fire_event("guild_chunk", guild, len(members), gateway=gw)
+        yield "guild_chunk", guild, len(members),
 
         if guild._chunks_left <= 0:
             # Set the finished chunking event.
             await guild._finished_chunking.set()
-            await self.client.fire_event("guild_available", guild, gateway=gw)
+            yield "guild_available", guild,
 
         # Check if we have all chunks.
-        await self._check_ready(gw, guild)
+        for i in await coerce_agen(self._check_ready(gw, guild)):
+            yield i
 
     async def handle_guild_sync(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -715,8 +722,7 @@ class State(object):
         logger.info("Processed a guild sync for guild {} with "
                     "{} members and {} presences.".format(guild.name, len(members), len(presences)))
 
-        await self.client.fire_event("guild_sync", guild, len(members),
-                                     len(presences), gateway=gw)
+        yield "guild_sync", guild, len(members), len(presences),
 
     async def handle_guild_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -744,13 +750,13 @@ class State(object):
         # Dispatch the event if we're ready (i.e not streaming)
         if self.is_ready(gw.shard_id).is_set():
             if had_guild:
-                await self.client.fire_event("guild_available", guild, gateway=gw)
+                yield "guild_available", guild,
             else:
                 # We didn't have it before, so we just joined it.
                 # Hence, we fire a `guild_join` event.
                 # Parse the guild.
                 guild.from_guild_create(**event_data)
-                await self.client.fire_event("guild_join", guild, gateway=gw)
+                yield "guild_join", guild,
 
                 logger.info("Joined guild {} ({}), requesting members if applicable"
                             .format(guild.name, guild.id))
@@ -761,7 +767,7 @@ class State(object):
 
         else:
             logger.debug("Streamed guild: {} ({})".format(guild.name, guild.id))
-            await self.client.fire_event("guild_streamed", guild, gateway=gw)
+            yield "guild_streamed", guild,
 
         if self._user.bot:
             if not guild.unavailable and guild.large:
@@ -771,7 +777,8 @@ class State(object):
                 # set finished_chunking now
                 await guild._finished_chunking.set()
 
-        await self._check_ready(gw, guild)
+        for i in await coerce_agen(self._check_ready(gw, guild)):
+            yield i
 
     async def handle_guild_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -813,7 +820,7 @@ class State(object):
         guild.afk_timeout = event_data.get("afk_timeout", guild.afk_timeout)
         guild.owner_id = int_or_none(event_data.get("owner_id"), guild.owner_id)
 
-        await self.client.fire_event("guild_update", old_guild, guild, gateway=gw)
+        yield "guild_update", old_guild, guild,
 
     async def handle_guild_delete(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -828,13 +835,13 @@ class State(object):
             guild = self._guilds.get(guild_id)
             if guild:
                 guild.unavailable = True
-                await self.client.fire_event("guild_unavailable", guild, gateway=gw)
+                yield "guild_unavailable", guild,
 
         else:
             # We've left this guild - clear it from our dictionary of guilds.
             guild = self._guilds.pop(guild_id, None)
             if guild:
-                await self.client.fire_event("guild_leave", guild, gateway=gw)
+                yield "guild_leave", guild,
                 for member in guild._members.values():
                     # use member.id to avoid user lookup
                     self._check_decache_user(member.id)
@@ -853,7 +860,7 @@ class State(object):
         emojis = event_data.get("emojis", [])
         guild._handle_emojis(emojis)
 
-        await self.client.fire_event("guild_emojis_update", old_guild, guild, gateway=gw)
+        yield "guild_emojis_update", old_guild, guild,
 
     async def handle_message_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -867,9 +874,9 @@ class State(object):
         message.channel._last_message_id = message.id
 
         if self._user in message.mentions:
-            await self.client.fire_event("message_mentioned", message, gateway=gw)
+            yield "message_mentioned", message,
 
-        await self.client.fire_event("message_create", message, gateway=gw)
+        yield "message_create", message,
 
     async def handle_message_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -889,9 +896,9 @@ class State(object):
 
         if old_message.content != new_message.content:
             # Fire a message_edit, as well as a message_update, because the content differs.
-            await self.client.fire_event("message_edit", old_message, new_message, gateway=gw)
+            yield "message_edit", old_message, new_message,
 
-        await self.client.fire_event("message_update", old_message, new_message, gateway=gw)
+        yield "message_update", old_message, new_message,
 
     async def handle_message_delete(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -903,7 +910,7 @@ class State(object):
         if not message:
             return
 
-        await self.client.fire_event("message_delete", message, gateway=gw)
+        yield "message_delete", message,
 
     async def handle_message_delete_bulk(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -917,7 +924,7 @@ class State(object):
 
             messages.append(message)
 
-        await self.client.fire_event("message_delete_bulk", messages, gateway=gw)
+        yield "message_delete_bulk", messages,
 
     def _find_emoji(self, emoji_data: dict):
         if emoji_data.get("id", None) is None:
@@ -986,7 +993,7 @@ class State(object):
         else:
             author = channel.user
 
-        await self.client.fire_event("message_reaction_add", message, author, reaction, gateway=gw)
+        yield "message_reaction_add", message, author, reaction,
 
     async def handle_message_reaction_remove_all(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -998,7 +1005,7 @@ class State(object):
 
         reactions = message.reactions.copy()
         message.reactions = []
-        await self.client.fire_event("message_reaction_remove_all", message, reactions, gateway=gw)
+        yield "message_reaction_remove_all", message, reactions,
 
     async def handle_message_reaction_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1035,7 +1042,7 @@ class State(object):
         if reaction.count == 0:
             message.reactions.remove(reaction)
 
-        await self.client.fire_event("message_reaction_remove", message, reaction, gateway=gw)
+        yield "message_reaction_remove", message, reaction,
 
     async def handle_guild_member_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1052,7 +1059,7 @@ class State(object):
 
         guild._members[member.id] = member
         guild.member_count += 1
-        await self.client.fire_event("member_add", member, gateway=gw)
+        yield "member_add", member,
 
     async def handle_guild_member_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1070,7 +1077,7 @@ class State(object):
             # We can't see the member, so don't fire an event for it.
             return
 
-        await self.client.fire_event("member_remove", member, gateway=gw)
+        yield "member_remove", member,
 
     async def handle_guild_member_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1101,7 +1108,7 @@ class State(object):
         guild._members[member.id] = member
         member.nickname = event_data.get("nick", member.nickname)
 
-        await self.client.fire_event("member_update", old_member, member, gateway=gw)
+        yield "member_update", old_member, member,
 
     async def handle_guild_ban_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1119,10 +1126,10 @@ class State(object):
         if not member:
             # Dispatch to `user_ban` instead of `member_ban`.
             user = self.make_user(event_data["user"])
-            await self.client.fire_event("user_ban", guild, user, gateway=gw)
+            yield "user_ban", guild, user,
             return
 
-        await self.client.fire_event("member_ban", member, gateway=gw)
+        yield "member_ban", member,
 
     async def handle_guild_ban_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1135,7 +1142,7 @@ class State(object):
             return
 
         user = self.make_user(event_data["user"])
-        await self.client.fire_event("user_unban", guild, user, gateway=gw)
+        yield "user_unban", guild, user,
 
     async def handle_channel_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1155,7 +1162,7 @@ class State(object):
             else:
                 channel = guild._channels[channel.id]
 
-        await self.client.fire_event("channel_create", channel, gateway=gw)
+        yield "channel_create", channel,
 
     async def handle_channel_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1178,7 +1185,7 @@ class State(object):
         channel.parent_id = int_or_none(event_data.get("parent_id"), channel.parent_id)
 
         channel._update_overwrites(event_data.get("permission_overwrites", []))
-        await self.client.fire_event("channel_update", old_channel, channel, gateway=gw)
+        yield "channel_update", old_channel, channel,
 
     async def handle_channel_delete(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1195,7 +1202,7 @@ class State(object):
         else:
             del channel.guild._channels[channel.id]
 
-        await self.client.fire_event("channel_delete", channel, gateway=gw)
+        yield "channel_delete", channel,
 
     async def handle_guild_role_create(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1223,7 +1230,7 @@ class State(object):
             # thinking
             role = guild._roles[role_id]
 
-        await self.client.fire_event("role_create", role, gateway=gw)
+        yield "role_create", role
 
     async def handle_guild_role_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1259,7 +1266,7 @@ class State(object):
         role.managed = event_data.get("managed")
         role.permissions = Permissions(event_data.get("permissions", 0))
 
-        await self.client.fire_event("role_update", old_role, role, gateway=gw)
+        yield "role_update", old_role, role,
 
     async def handle_guild_role_delete(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1282,7 +1289,7 @@ class State(object):
             except ValueError:
                 continue
 
-        await self.client.fire_event("role_delete", role, gateway=gw)
+        yield "role_delete", role,
 
     async def handle_typing_start(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1299,13 +1306,13 @@ class State(object):
             member = channel.guild.members.get(user_id)
             if not member:
                 return
-            await self.client.fire_event("member_typing", channel, member, gateway=gw)
+            yield "member_typing", channel, member,
         else:
             user = channel.recipients.get(user_id)
             if user is None:
                 return
 
-            await self.client.fire_event("user_typing", channel, user, gateway=gw)
+            yield "user_typing", channel, user,
 
     # Voice bullshit
     async def handle_voice_server_update(self, gw: 'gateway.Gateway', event_data: dict):
@@ -1370,8 +1377,7 @@ class State(object):
         if new_voice_state is not None:
             guild._voice_states[new_voice_state.user_id] = new_voice_state
 
-        await self.client.fire_event("voice_state_update", member, old_voice_state,
-                                     new_voice_state, gateway=gw)
+        yield "voice_state_update", member, old_voice_state, new_voice_state,
 
     async def handle_webhooks_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1406,8 +1412,7 @@ class State(object):
             if new_status.strength > guild.me.status.strength:
                 guild.me.status = new_status
 
-        await self.client.fire_event("user_settings_update", old_settings, self._user.settings,
-                                     gateway=gw)
+        yield "user_settings_update", old_settings, self._user.settings,
 
     async def handle_message_ack(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1426,7 +1431,7 @@ class State(object):
         if message is None:
             return
 
-        await self.client.fire_event("message_ack", channel, message, gateway=gw)
+        yield "message_ack", channel, message,
 
     async def handle_relationship_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1448,7 +1453,7 @@ class State(object):
 
         self._users[u.id] = u
 
-        await self.client.fire_event("relationship_add", u, gateway=gw)
+        yield "relationship_add", u,
 
     async def handle_relationship_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1481,7 +1486,7 @@ class State(object):
         # maybe decache it anyway
         self._check_decache_user(u_id)
 
-        await self.client.fire_event("relationship_remove", u, gateway=gw)
+        yield "relationship_remove", u,
 
     async def handle_channel_recipient_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1498,7 +1503,7 @@ class State(object):
 
         channel._recipients[user.id] = user
 
-        await self.client.fire_event("group_user_add", channel, user, gateway=gw)
+        yield "group_user_add", channel, user,
 
     async def handle_channel_recipient_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1514,4 +1519,4 @@ class State(object):
 
         if user in channel.recipients.values():
             channel._recipients.pop(user.id, None)
-            await self.client.fire_event("group_user_remove", channel, user, gateway=gw)
+            yield "group_user_remove", channel, user,
