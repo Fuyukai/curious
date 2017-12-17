@@ -19,6 +19,8 @@ This document displays the differences between each release of curious.
  - Remove :meth:`.Client.boot_shard` amongst others, and create :meth:`.Client.handle_shard` to
    do all gateway-related handling functions.
 
+ - Add :attr:`.Channel.overwrites` for a key-value mapping of overwrites.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 

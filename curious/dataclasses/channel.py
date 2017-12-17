@@ -379,6 +379,13 @@ class Channel(Dataclass):
             filter(lambda member: member.voice.channel == self, self.guild.members.values())
         )
 
+    @property
+    def overwrites(self) -> '_typing.Mapping[int, dt_permissions.Overwrite]':
+        """
+        :return: A mapping of target_id -> :class:`.Overwrite` for this channel.
+        """
+        return MappingProxyType(self._overwrites)
+
     def permissions(self, obb: '_typing.Union[dt_member.Member, dt_role.Role]') -> \
             'dt_permissions.Overwrite':
         """
