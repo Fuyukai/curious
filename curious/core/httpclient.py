@@ -21,10 +21,12 @@ from h11 import RemoteProtocolError
 try:
     # try and load a C impl of LRU first
     from lru import LRU as c_lru
+
     lru = c_lru
 except ImportError:
     # fall back to a pure-python (the default) version
     from pylru import lrucache as py_lru
+
     lru = py_lru
 
 import curious
@@ -875,6 +877,45 @@ class HTTPClient(object):
         url = Endpoints.GUILD_BAN_USER.format(guild_id=guild_id, user_id=user_id)
 
         data = await self.delete(url, bucket="bans:{}".format(guild_id))
+        return data
+
+    async def create_guild(self, name: str, region: str = None, icon: str = None,
+                           verification_level: int = None,
+                           default_message_notifications: int = None,
+                           roles: typing.List[dict] = None, channels: typing.List[dict] = None):
+        """
+        Creates a new guild.
+
+        :param name: The name of the new guild.
+        :param region: The region of the new guild.
+        :param icon: The base64 icon of the new guild.
+        :param verification_level: The verification level of the new guild.
+        :param default_message_notifications: The default notification level of the new guild.
+        :param roles: A dict of role objects.
+        :param channels: A dict of channel objects.
+        """
+        url = Endpoints.GUILD_BASE
+        payload = {"name": name}
+
+        if icon:
+            payload["icon"] = icon
+
+        if region:
+            payload["region"] = region
+
+        if verification_level is not None:
+            payload["verification_level"] = str(verification_level)
+
+        if default_message_notifications is not None:
+            payload["default_message_notifications"] = str(default_message_notifications)
+
+        if roles:
+            payload["roles"] = roles
+
+        if channels:
+            payload["channels"] = channels
+
+        data = await self.post(url, "guild:create", json=payload)
         return data
 
     async def edit_guild(self, guild_id: int, *,
