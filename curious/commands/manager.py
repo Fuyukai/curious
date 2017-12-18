@@ -9,7 +9,7 @@ import traceback
 import typing
 from collections import defaultdict
 
-import curio
+import multio
 
 from curious.commands.context import Context
 from curious.commands.exc import CommandsError
@@ -289,18 +289,16 @@ class CommandsManager(object):
         """
         The event hook for the commands manager.
         """
-        taskgroup = curio.TaskGroup()
-        for plugin in self.plugins.values():
-            body = inspect.getmembers(plugin, predicate=lambda v: hasattr(v, "is_event"))
-            for _, handler in body:
-                if ctx.event_name not in handler.events:
-                    continue
+        async with multio.asynclib.task_manager() as tg:
+            for plugin in self.plugins.values():
+                body = inspect.getmembers(plugin, predicate=lambda v: hasattr(v, "is_event"))
+                for _, handler in body:
+                    if ctx.event_name not in handler.events:
+                        continue
 
-                await taskgroup.spawn(self.client.events._safety_wrapper(
-                    handler, ctx, *args, **kwargs
-                ))
-
-        await taskgroup.join()
+                    await tg.spawn(self.client.events._safety_wrapper(
+                        handler, ctx, *args, **kwargs
+                    ))
 
     async def handle_commands(self, ctx: EventContext, message: Message):
         """
