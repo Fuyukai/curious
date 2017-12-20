@@ -3,8 +3,9 @@ Wrappers for Member objects (Users with guilds).
 
 .. currentmodule:: curious.dataclasses.member
 """
-
+import collections
 import typing
+from typing import List
 
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
     voice_state as dt_vs
@@ -67,12 +68,122 @@ class _Nickname(str):
         return self.set(None)
 
 
+class _MemberRoleContainer(collections.Sequence):
+    """
+    Represents the roles of a :class:`.Member`.
+    """
+
+    def __init__(self, member: 'Member'):
+        self._member = member
+
+    def _sorted_roles(self) -> 'List[dt_role.Role]':
+        if not self._member.guild:
+            return []
+
+        roles = []
+        for id in self._member.role_ids:
+            try:
+                roles.append(self._member.guild.roles[id])
+            except (KeyError, AttributeError):
+                pass
+
+        return sorted(roles)
+
+    # opt: the default Sequence makes us re-create the sorted role list constantly
+    # we don't wanna cache it, without introducing invalidation hell
+    # so we just put `__iter__` on `_sorted_roles`
+    def __iter__(self) -> type(iter([])):
+        return iter(self._sorted_roles())
+
+    def __len__(self) -> int:
+        return len(self._member.role_ids)
+
+    def __getitem__(self, item: int):
+        return self._sorted_roles()[item]
+
+    @property
+    def top_role(self) -> 'dt_role.Role':
+        """
+        :return: The top :class:`.Role` for this member.
+        """
+        roles = self._sorted_roles()
+        if len(roles) <= 0:
+            return self._member.guild.default_role
+
+        return self[0]
+
+    async def add(self, *roles: 'dt_role.Role'):
+        """
+        Adds roles to this member.
+
+        :param roles: The :class:`.Role` objects to add to this member's role list.
+        """
+
+        if not self._member.guild.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        # Ensure we can add all of these roles.
+        for _r in roles:
+            if _r >= self._member.guild.me.top_role:
+                msg = "Cannot add role {} - it has a higher or equal position to our top role" \
+                    .format(_r.name)
+                raise HierarchyError(msg)
+
+        async def _listener(before, after: Member):
+            if after.id != self._member.id:
+                return False
+
+            if not all(role in after.roles for role in roles):
+                return False
+
+            return True
+
+        async with self._member._bot.events.wait_for_manager("member_update", _listener):
+            role_ids = set([_r.id for _r in self._member.roles] + [_r.id for _r in roles])
+            await self._member._bot.http.edit_member_roles(
+                self._member.guild_id, self._member.id, role_ids
+            )
+
+    async def remove(self, *roles: 'dt_role.Role'):
+        """
+        Removes roles from this member.
+
+        :param roles: The roles to remove.
+        """
+        if not self._member.guild.me.guild_permissions.manage_roles:
+            raise PermissionsError("manage_roles")
+
+        for _r in roles:
+            if _r >= self._member.guild.me.top_role:
+                msg = "Cannot remove role {} - it has a higher or equal position to our top role" \
+                    .format(_r.name)
+                raise HierarchyError(msg)
+
+        async def _listener(before, after: Member):
+            if after.id != self._member.id:
+                return False
+
+            if not all(role not in after.roles for role in roles):
+                return False
+
+            return True
+
+        # Calculate the roles to keep.
+        to_keep = set(self._member.roles) - set(roles)
+
+        async with self._member._bot.events.wait_for_manager("member_update", _listener):
+            role_ids = set([_r.id for _r in to_keep])
+            await self._member._bot.http.edit_member_roles(self._member.guild_id, self._member.id,
+                                                           role_ids)
+
+
 class Member(Dataclass):
     """
     A member represents somebody who is inside a guild.
     """
 
-    __slots__ = ("_user_data", "role_ids", "joined_at", "_nickname", "guild_id", "presence")
+    __slots__ = ("_user_data", "role_ids", "joined_at", "_nickname", "guild_id", "presence",
+                 "roles")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -83,6 +194,9 @@ class Member(Dataclass):
 
         #: An iterable of role IDs this member has.
         self.role_ids = [int(rid) for rid in kwargs.get("roles", [])]
+
+        #: A :class:`._MemberRoleContainer` that represents the roles of this member.
+        self.roles = _MemberRoleContainer(self)
 
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))
@@ -210,28 +324,12 @@ class Member(Dataclass):
         return self.presence.game
 
     @property
-    def roles(self) -> 'typing.Iterable[dt_role.Role]':
-        """
-        :return: A list of :class:`~.Role` that this member has. 
-        """
-        if not self.guild:
-            return None
-
-        roles = []
-        for id in self.role_ids:
-            try:
-                roles.append(self.guild.roles[id])
-            except (KeyError, AttributeError):
-                pass
-
-        return sorted(roles)
-
-    @property
     def colour(self) -> int:
         """
         :return: The computed colour of this user.
         """
         roles = sorted(self.roles, reverse=True)
+
         # NB: you can abuse discord and edit the defualt role's colour
         # so explicitly check that it isn't the default role, and make sure it has a colour
         # in order to get the correct calculated colour
@@ -246,10 +344,7 @@ class Member(Dataclass):
         """
         :return: This member's top-most :class:`~.Role`.
         """
-        try:
-            return next(iter(sorted(self.roles, reverse=True)), self.guild.default_role)
-        except AttributeError:
-            return None
+        return self.roles.top_role
 
     @property
     def guild_permissions(self) -> Permissions:
@@ -293,31 +388,3 @@ class Member(Dataclass):
         Kicks this member from the guild.
         """
         return await self.guild.kick(self)
-
-    async def add_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
-        """
-        Adds roles to this member.
-
-        For more documentation, see :meth:`~.Guild.add_roles`.
-
-        :param roles: The list of roles to add.
-        """
-        return await self.guild.add_roles(self, *roles)
-
-    async def remove_roles(self, *roles: 'typing.Iterable[dt_role.Role]'):
-        """
-        Removes roles from this member.
-
-        For more documentation, see :meth:`~.Guild.remove_roles`.
-
-        :param roles: The list of roles to remove.
-        """
-        return await self.guild.remove_roles(self, *roles)
-
-    async def change_nickname(self, new_nickname: typing.Union[str, None]):
-        """
-        Changes the nickname of this member.
-
-        :param new_nickname: The nickname to change to, None to remove the nickname.
-        """
-        return await self.guild.change_nickname(self, new_nickname)

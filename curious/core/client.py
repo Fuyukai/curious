@@ -544,6 +544,7 @@ class Client(object):
                                               shard_id=shard_id, shard_count=shard_count)
             except Exception:
                 # give up
+                logger.exception("Failed to reconnect to the database...")
                 total_tries += 1
                 continue
             else:
