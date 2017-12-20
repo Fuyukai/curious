@@ -4,6 +4,7 @@ Misc utilities shared throughout the library.
 import base64
 import collections
 import datetime
+import functools
 import imghdr
 import inspect
 import typing
@@ -201,12 +202,68 @@ def _traverse_stack_for(t: type):
 
 
 async def coerce_agen(gen):
+    """
+    Coerces an async generator into a list.
+    """
     results = []
     async with curio.meta.finalize(gen) as agen:
         async for i in agen:
             results.append(i)
 
     return results
+
+
+def subclass_builtin(original: type):
+    """
+    Subclasses an immutable builtin, providing method wrappers that return the subclass instead
+    of the original.
+    """
+    def get_wrapper(subclass, func):
+
+        @functools.wraps(func)
+        def __inner_wrapper(self, *args, **kwargs):
+            result = func(self, *args, **kwargs)
+            new = subclass(result)
+
+            # copy the parent dataclass if we need to
+            if 'parent' in self.__dict__:
+                new.__dict__['parent'] = self.__dict__['parent']
+
+            return new
+
+        return __inner_wrapper
+
+    def wrapper(subclass):
+        if hasattr(subclass, "__slots__"):
+            raise RuntimeError("Cannot fix a slotted class")
+
+        # get all of the methods on the original andparse the docstring; these are in a
+        # well-defined format for builtins
+        for meth_name in dir(original):
+            func = getattr(subclass, meth_name)
+
+            # only overwrite doc'd functions
+            if not func.__doc__:
+                continue
+
+            sig = func.__doc__.split("\n")[0]
+
+            try:
+                rtype: str = sig.split("->")[1]
+            except IndexError:
+                continue
+
+            # check if it matches our real method
+            rtype = rtype.lstrip().rstrip()
+            if rtype == original.__name__:
+                # make a new function wrapper, which returns the appropriate type
+                # then add it to our subclass
+                wrapper = get_wrapper(subclass, func)
+                setattr(subclass, meth_name, wrapper)
+
+        return subclass
+
+    return wrapper
 
 
 def _ad_getattr(self, key: str):
