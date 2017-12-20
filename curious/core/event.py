@@ -1,6 +1,7 @@
 """
 Special helpers for events.
 """
+import functools
 import inspect
 import logging
 import typing
@@ -25,6 +26,35 @@ class ListenerExit(Exception):
                 raise ListenerExit
 
     """
+
+
+class _WithWaitFor:
+    """
+    Helper class for managing a wait_for.
+    """
+    def __init__(self, manager, task_group, event_name: str, predicate):
+        self.manager = manager
+        self.task_group: curio.TaskGroup = task_group
+        self._task: curio.Task = None
+
+        self._evt = event_name
+        self._pred = predicate
+
+    async def __aenter__(self):
+        # spawn the wait_for handler
+        partial = functools.partial(self.manager.wait_for, self._evt, self._pred)
+        self._task = await self.task_group.spawn(partial)
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            await self._task.cancel()
+
+        try:
+            await self._task.join()
+        except curio.TaskCancelled:
+            pass
+
+        return False
 
 
 class EventManager(object):
@@ -119,7 +149,7 @@ class EventManager(object):
                              exc_info=True)
             self.temporary_listeners = remove_from_multidict(self.temporary_listeners, key, func)
 
-    async def wait_for(self, event_name: str, predicate = None):
+    async def wait_for(self, event_name: str, predicate=None):
         """
         Waits for an event.
 
@@ -168,6 +198,20 @@ class EventManager(object):
         if len(output) == 1:
             return output[0]
         return output
+
+    def wait_for_manager(self, event_name: str, predicate) -> '_WithWaitFor':
+        """
+        Returns a context manager that can be used to run some steps whilst waiting for a
+        temporary listener.
+
+        .. code-block:: python
+
+            async with client.events.wait_for_manager("member_update", predicate=...):
+                await member.nickname.set("Test")
+
+        This probably won't be needed outside of internal library functions.
+        """
+        return _WithWaitFor(self, curio.TaskGroup(), event_name, predicate)
 
     async def fire_event(self, event_name: str, *args, **kwargs):
         """
