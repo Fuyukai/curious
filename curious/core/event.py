@@ -7,6 +7,7 @@ import logging
 import typing
 
 import curio
+import multio
 from multidict import MultiDict
 
 from curious.core import client as md_client
@@ -65,6 +66,9 @@ class EventManager(object):
     """
 
     def __init__(self):
+        #: The task manager used to spawn events.
+        self.task_manager = None
+
         #: A list of event hooks.
         self.event_hooks = []
 
@@ -158,7 +162,7 @@ class EventManager(object):
         :param event_name: The name of the event.
         :param predicate: The predicate to use to check for the event.
         """
-        p = curio.Promise()
+        p = multio.Promise()
         errored = False
 
         async def listener(ctx, *args):
@@ -190,7 +194,7 @@ class EventManager(object):
                     raise ListenerExit
 
         self.add_temporary_listener(name=event_name, listener=listener)
-        output = await p.get()
+        output = await p.wait()
         if errored:
             raise output
 
@@ -213,6 +217,15 @@ class EventManager(object):
         """
         return _WithWaitFor(self, curio.TaskGroup(), event_name, predicate)
 
+    async def spawn(self, cofunc, *args) -> typing.Any:
+        """
+        Spawns a new coroutine function using our task manager.
+
+        :param cofunc: The coroutine function to spawn.
+        :param args: Args to provide to the coroutine function.
+        """
+        return await multio.asynclib.spawn(self.task_manager, cofunc, *args)
+
     async def fire_event(self, event_name: str, *args, **kwargs):
         """
         Fires an event.
@@ -228,15 +241,17 @@ class EventManager(object):
 
         # always ensure hooks are ran first
         for hook in self.event_hooks:
-            await curio.spawn(hook(ctx, *args, **kwargs), daemon=True)
+            await self.spawn(hook(ctx, *args, **kwargs))
 
         for handler in self.event_listeners.getall(event_name, []):
-            coro = self._safety_wrapper(handler, ctx, *args, **kwargs)
-            await curio.spawn(coro, daemon=True)
+            coro = functools.partial(handler, ctx, *args, **kwargs)
+            coro.__name__ = handler.__name__
+            await self.spawn(self._safety_wrapper, coro)
 
         for listener in self.temporary_listeners.getall(event_name, []):
-            coro = self._listener_wrapper(event_name, listener, ctx, *args, **kwargs)
-            await curio.spawn(coro, daemon=True)
+            coro = functools.partial(self._listener_wrapper, event_name, listener, ctx,
+                                     *args, **kwargs)
+            await self.spawn(coro)
 
 
 def event(name, scan: bool = True):

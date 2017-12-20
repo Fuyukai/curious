@@ -599,10 +599,10 @@ class Client(object):
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
 
         async with multio.asynclib.task_manager() as tg:
+            self.events.task_manager = tg
+
             for shard_id in range(0, shard_count):
                 await tg.spawn(self.handle_shard(shard_id, shard_count))
-
-            await tg.join(wait=all)
 
     async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
