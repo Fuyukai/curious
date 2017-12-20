@@ -247,7 +247,10 @@ class HTTPClient(object):
                     await curio.sleep(sleep_time)
 
             for tries in range(0, 5):
-                # Make the request.
+                method = kwargs.get("method", "???")
+                path = kwargs.get("path", "???")
+                self.logger.debug(f"{method} {path} => (pending) (try {tries + 1})")
+
                 try:
                     response = await self._make_request(*args, **kwargs)
                 except OSError:
@@ -260,8 +263,6 @@ class HTTPClient(object):
                     # discord broke
                     continue
 
-                method = kwargs.get("method", "???")
-                path = kwargs.get("path", "???")
                 self.logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
 
                 if response.status_code in range(500, 600):
