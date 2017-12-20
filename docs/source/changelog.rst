@@ -3,8 +3,8 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.7.0
------
+0.7.0 (Container Rewrite)
+-------------------------
 
  - Add get-by-name to :class:`.GuildChannelWrapper`, and :class:`.GuildRoleWrapper`.
 

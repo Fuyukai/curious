@@ -598,8 +598,6 @@ class Client(object):
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
 
         async with multio.asynclib.task_manager() as tg:
-            assert isinstance(tg, curio.TaskGroup)
-
             for shard_id in range(0, shard_count):
                 await tg.spawn(self.handle_shard(shard_id, shard_count))
 
