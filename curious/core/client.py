@@ -69,12 +69,14 @@ class Client(object):
     The main client class. This is used to interact with Discord.
 
     To start, you can create an instance of the client by passing it the token you want to use:
+
     .. code-block:: python3
 
         cl = Client("my.token.string")
 
     Registering events can be done with the :meth:`.Client.event` decorator, or alternatively
     manual usage of the :class:`.EventHandler` on :attr:`.Client.events`.
+
     .. code-block:: python3
 
         @cl.event("ready")

@@ -180,7 +180,7 @@ def replace_quotes(item: str) -> str:
 
 def _traverse_stack_for(t: type):
     """
-    Traverses the stack for an object of type `t`.
+    Traverses the stack for an object of type ``t``.
 
     :param t: The type of the object.
     :return: The object, if found.

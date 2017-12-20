@@ -28,6 +28,7 @@ class CommandsManager(object):
     A manager that handles commands for a client.
 
     First, you need to create the manager and attach it to a client:
+
     .. code-block:: python3
 
         # form 1, automatically register with the client
@@ -42,6 +43,7 @@ class CommandsManager(object):
     Next, you need to register a message check handler. This is a callable that is called for
     every message to try and extract the command from a message, if it matches.
     By default, the manager provides an easy way to use a simple command prefix:
+
     .. code-block:: python3
 
         # at creation time
@@ -54,6 +56,7 @@ class CommandsManager(object):
     :attr:`.Manager.command_prefix` or :attr:`.Manager.message_check.prefix`.
 
     If you need more complex message checking, you can use ``message_check``:
+
     .. code-block:: python3
 
         manager = CommandsManager(bot, message_check=my_message_checker)
@@ -61,6 +64,7 @@ class CommandsManager(object):
         manager.message_check = my_message_checker
 
     Finally, you can register plugins or modules containing plugins with the manager:
+
     .. code-block:: python3
 
         @bot.event("ready")
@@ -72,6 +76,7 @@ class CommandsManager(object):
 
     You can also add free-standing commands that aren't bound to a plugin with
     :meth:`.CommandsManager.add_command`:
+
     .. code-block:: python3
 
         @command()

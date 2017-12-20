@@ -9,7 +9,6 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
     core
     commands
     dataclasses
-    ext.loapi
     ext.paginator
     voice
     

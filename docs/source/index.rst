@@ -34,7 +34,7 @@ https://github.com/SunDwarf/curious/tree/master/examples.
 
 
 Documentation
-~~~~~~~~~~~~~
+-------------
 
 .. toctree::
    :maxdepth: 2
@@ -49,7 +49,7 @@ Documentation
    changelog
 
 API Documentation
-~~~~~~~~~~~~~~~~~
+-----------------
 
 The documentation below is automatically generated from the docstrings.
 

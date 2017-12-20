@@ -28,6 +28,7 @@ This is required to add the handler events to the client.
 Next, you need to register a message check handler. This is a callable that is called for every
 message to try and extract the command from a message, if it matches. By default, the manager
 provides an easy way to use a simple command prefix:
+
 .. code-block:: python3
 
     # at creation time
@@ -40,6 +41,7 @@ At this point, the command prefix will be available on the manager with either
 :attr:`.Manager.command_prefix` or :attr:`.Manager.message_check.prefix`.
 
 If you need more complex message checking, you can use ``message_check``:
+
 .. code-block:: python3
 
     manager = CommandsManager(bot, message_check=my_message_checker)
@@ -51,6 +53,7 @@ Plugins
 
 Plugins are a simple way of extending your bot. They come in the form of classes containing
 commands. All plugins are derived from :class:`.Plugin`.
+
 .. code-block:: python3
 
     from curious.commands.plugin import Plugin
@@ -59,6 +62,7 @@ commands. All plugins are derived from :class:`.Plugin`.
         ...
 
 Commands can be created with the usage of the :meth:`.command` decorator:
+
 .. code-block:: python3
 
     from curious.commands.decorators import command
@@ -73,6 +77,7 @@ All commands inside a plugin take a :class:`.Context` as their first argument, w
 data about the message used to trigger the command; similar to the Click library's context.
 
 You can register plugins or modules containing plugins with the manager:
+
 .. code-block:: python3
 
     @bot.event("ready")
@@ -87,6 +92,7 @@ Conditions
 
 Conditions are a way to ensure that a command only runs under certain circumstances. A condition
 can be added to a command with the usage of the :meth:`.condition` decorator:
+
 .. code-block:: python3
 
     @command()
@@ -128,6 +134,7 @@ Free-standing commands
 
 You can also add free-standing commands that aren't bound to a plugin with
 :meth:`.CommandsManager.add_command`:
+
 .. code-block:: python3
 
     @command()

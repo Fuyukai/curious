@@ -14,6 +14,7 @@ def command(*,
     to be invoked as a command.
 
     This decorator can be invoked like this:
+
     .. code-block:: python3
 
         @command()
