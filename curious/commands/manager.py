@@ -74,7 +74,7 @@ class CommandsManager(object):
     :meth:`.CommandsManager.add_command`:
     .. code-block:: python3
 
-        @command
+        @command()
         async def ping(ctx: CommandsContext):
             await ctx.channel.send(content="Pong!")
 

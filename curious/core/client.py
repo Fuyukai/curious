@@ -68,13 +68,18 @@ class Client(object):
     """
     The main client class. This is used to interact with Discord.
 
-    When creating a client object, you can either pass a token explicitly, or pass in in the 
-    :meth:`start` call or similar.
+    To start, you can create an instance of the client by passing it the token you want to use:
+    .. code-block:: python3
 
-    .. code:: python
+        cl = Client("my.token.string")
 
-        bot = Client("'a'")  # pass explicitly
-        bot.run("'b'")  # or pass to the run call.
+    Registering events can be done with the :meth:`.Client.event` decorator, or alternatively
+    manual usage of the :class:`.EventHandler` on :attr:`.Client.events`.
+    .. code-block:: python3
+
+        @cl.event("ready")
+        async def loaded(ctx: EventContext):
+            print("Bot logged in.")
 
     """
     #: A list of events to ignore the READY status.
@@ -86,15 +91,12 @@ class Client(object):
         "guild_sync"
     ]
 
-    def __init__(self, token: str = None, *,
+    def __init__(self, token: str, *,
                  state_klass: type = None,
                  bot_type: int = (BotType.BOT | BotType.ONLY_USER)):
         """
-        :param token: The current token for this bot.  
-            This can be passed as None and can be initialized later.
-            
+        :param token: The current token for this bot.
         :param state_klass: The class to construct the connection state from.
-        
         :param bot_type: A union of :class:`~.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.

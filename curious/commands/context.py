@@ -3,7 +3,7 @@ Class for the commands context.
 """
 import inspect
 import types
-from typing import Any, List, Tuple, Union
+from typing import Any, Callable, List, Tuple, Type, Union
 
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
 from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
@@ -56,6 +56,16 @@ class Context(object):
 
         #: The :class:`.Client` for this context.
         self.bot = event_context.bot
+
+    @classmethod
+    def add_converter(cls, type_: Type[Any], converter: 'Callable[[Context, str], Any]'):
+        """
+        Adds a converter to the mapping of converters.
+
+        :param type_: The type to convert to.
+        :param converter: The converter callable.
+        """
+        cls._converters[type_] = converter
 
     @property
     def guild(self) -> Guild:

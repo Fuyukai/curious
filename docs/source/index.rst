@@ -42,6 +42,7 @@ Documentation
 
    tutorial/gettingstarted
    tutorial/firstbot
+   tutorial/commands
 
    events
 
