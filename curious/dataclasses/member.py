@@ -6,8 +6,6 @@ Wrappers for Member objects (Users with guilds).
 
 import typing
 
-import curio
-
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
     voice_state as dt_vs
 from curious.dataclasses.bases import Dataclass
@@ -52,23 +50,15 @@ class _Nickname(str):
         if new_nickname is not None and len(new_nickname) > 32:
             raise ValueError("Nicknames cannot be longer than 32 characters")
 
-        coro = parent._bot.http.change_nickname(guild.id, new_nickname,
-                                                member_id=parent.id, me=me)
-
         async def _listener(before, after):
             return after.guild == guild and after.id == parent.id
 
-        listen_coro = parent._bot.wait_for("member_update", _listener)
-        listener = await curio.spawn(listen_coro)  # type: curio.Task
+        async with parent._bot.events.wait_for_manager("member_update", _listener):
+            await parent._bot.http.change_nickname(guild.id, new_nickname,
+                                                   member_id=parent.id, me=me)
 
-        try:
-            await coro
-        except:
-            await listener.cancel()
-            raise
-        await listener.join()
-
-        return self
+        # the wait_for means at this point the nickname has been changed
+        return parent.nickname
 
     def reset(self) -> typing.Coroutine[None, None, '_Nickname']:
         """
