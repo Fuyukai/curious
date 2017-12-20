@@ -6,12 +6,75 @@ Wrappers for Member objects (Users with guilds).
 
 import typing
 
+import curio
+
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
     voice_state as dt_vs
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.presence import Game, Presence, Status
-from curious.util import to_datetime
+from curious.exc import HierarchyError, PermissionsError
+from curious.util import subclass_builtin, to_datetime
+
+
+@subclass_builtin(str)
+class _Nickname(str):
+    """
+    Represents the nickname of a :class:`.Member`.
+    """
+
+    async def set(self, new_nickname: str) -> '_Nickname':
+        """
+        Sets the nickname of the username.
+
+        :param new_nickname: The new nickname of this user. If None, will reset the nickname.
+        """
+        parent: Member = self.__dict__['parent']
+
+        # Ensure we don't try and set a bad nickname, which makes an empty listener.
+        if new_nickname == self:
+            return self
+
+        guild: dt_guild.Guild = parent.guild
+
+        me = False
+        if parent == parent.guild.me:
+            me = True
+            if not guild.me.guild_permissions.change_nickname:
+                raise PermissionsError("change_nickname")
+        else:
+            if not guild.me.guild_permissions.manage_nicknames:
+                raise PermissionsError("manage_nicknames")
+
+        if parent.top_role >= guild.me.top_role and parent != guild.me:
+            raise HierarchyError("Top role is equal to or lower than victim's top role")
+
+        if new_nickname is not None and len(new_nickname) > 32:
+            raise ValueError("Nicknames cannot be longer than 32 characters")
+
+        coro = parent._bot.http.change_nickname(guild.id, new_nickname,
+                                                member_id=parent.id, me=me)
+
+        async def _listener(before, after):
+            return after.guild == guild and after.id == parent.id
+
+        listen_coro = parent._bot.wait_for("member_update", _listener)
+        listener = await curio.spawn(listen_coro)  # type: curio.Task
+
+        try:
+            await coro
+        except:
+            await listener.cancel()
+            raise
+        await listener.join()
+
+        return self
+
+    def reset(self) -> typing.Coroutine[None, None, '_Nickname']:
+        """
+        Resets a member's nickname.
+        """
+        return self.set(None)
 
 
 class Member(Dataclass):
@@ -19,7 +82,7 @@ class Member(Dataclass):
     A member represents somebody who is inside a guild.
     """
 
-    __slots__ = ("_user_data", "role_ids", "joined_at", "nickname", "guild_id", "presence")
+    __slots__ = ("_user_data", "role_ids", "joined_at", "_nickname", "guild_id", "presence")
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -34,8 +97,8 @@ class Member(Dataclass):
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))
 
-        #: The member's current nickname.
-        self.nickname = kwargs.get("nick", None)
+        #: The member's current :class:`._Nickname`.
+        self._nickname = _Nickname(kwargs.get("nick", None))
 
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int
@@ -60,6 +123,21 @@ class Member(Dataclass):
             return self.guild._voice_states[self.id]
         except (AttributeError, KeyError):
             return None
+
+    @property
+    def nickname(self) -> _Nickname:
+        """
+        Represents a member's nickname.
+
+        :getter: A :class:`._Nickname` for this member.
+        :setter: Coerces a string nickname into a :class:`._Nickname`. Do not use.
+        """
+        return self._nickname
+
+    @nickname.setter
+    def nickname(self, value: str):
+        self._nickname = _Nickname(value)
+        self._nickname.__dict__['parent'] = self
 
     def __hash__(self) -> int:
         return hash(self.guild_id) + hash(self.user.id)
