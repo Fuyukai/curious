@@ -470,6 +470,8 @@ class Guild(Dataclass):
         "channels", "roles", "emojis"
     )
 
+    valid_embed_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
+
     def __init__(self, bot, **kwargs):
         """
         Creates a new Guild object.
@@ -692,9 +694,8 @@ class Guild(Dataclass):
         :param style: The style to get. 
         :return: The embed URL for this guild.
         """
-        valid_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
-        if style not in valid_styles:
-            raise ValueError("Style must be in {}".format(valid_styles))
+        if style not in self.valid_embed_styles:
+            raise ValueError("Style must be in {}".format(self.valid_embed_styles))
 
         return self.embed_url + "?style={}".format(style)
 
