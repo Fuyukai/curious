@@ -25,6 +25,8 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.EventManager.wait_for_manager`.
 
+ - Rename ``MEMBER_`` events to ``GUILD_MEMBER_`` events.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 

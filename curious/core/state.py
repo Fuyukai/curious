@@ -1059,7 +1059,7 @@ class State(object):
 
         guild._members[member.id] = member
         guild.member_count += 1
-        yield "member_add", member,
+        yield "guild_member_add", member,
 
     async def handle_guild_member_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1077,7 +1077,7 @@ class State(object):
             # We can't see the member, so don't fire an event for it.
             return
 
-        yield "member_remove", member,
+        yield "guild_member_remove", member,
 
     async def handle_guild_member_update(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1108,7 +1108,7 @@ class State(object):
         guild._members[member.id] = member
         member.nickname = event_data.get("nick", member.nickname)
 
-        yield "member_update", old_member, member,
+        yield "guild_member_update", old_member, member,
 
     async def handle_guild_ban_add(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1129,7 +1129,7 @@ class State(object):
             yield "user_ban", guild, user,
             return
 
-        yield "member_ban", member,
+        yield "guild_member_ban", member,
 
     async def handle_guild_ban_remove(self, gw: 'gateway.Gateway', event_data: dict):
         """
@@ -1306,7 +1306,7 @@ class State(object):
             member = channel.guild.members.get(user_id)
             if not member:
                 return
-            yield "member_typing", channel, member,
+            yield "guild_member_typing", channel, member,
         else:
             user = channel.recipients.get(user_id)
             if user is None:

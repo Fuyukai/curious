@@ -54,7 +54,7 @@ class _Nickname(str):
         async def _listener(before, after):
             return after.guild == guild and after.id == parent.id
 
-        async with parent._bot.events.wait_for_manager("member_update", _listener):
+        async with parent._bot.events.wait_for_manager("guild_member_update", _listener):
             await parent._bot.http.change_nickname(guild.id, new_nickname,
                                                    member_id=parent.id, me=me)
 
@@ -138,7 +138,7 @@ class _MemberRoleContainer(collections.Sequence):
 
             return True
 
-        async with self._member._bot.events.wait_for_manager("member_update", _listener):
+        async with self._member._bot.events.wait_for_manager("guild_member_update", _listener):
             role_ids = set([_r.id for _r in self._member.roles] + [_r.id for _r in roles])
             await self._member._bot.http.edit_member_roles(
                 self._member.guild_id, self._member.id, role_ids
@@ -171,7 +171,7 @@ class _MemberRoleContainer(collections.Sequence):
         # Calculate the roles to keep.
         to_keep = set(self._member.roles) - set(roles)
 
-        async with self._member._bot.events.wait_for_manager("member_update", _listener):
+        async with self._member._bot.events.wait_for_manager("guild_member_update", _listener):
             role_ids = set([_r.id for _r in to_keep])
             await self._member._bot.http.edit_member_roles(self._member.guild_id, self._member.id,
                                                            role_ids)
@@ -328,7 +328,7 @@ class Member(Dataclass):
         """
         :return: The computed colour of this user.
         """
-        roles = sorted(self.roles, reverse=True)
+        roles = reversed(self.roles)
 
         # NB: you can abuse discord and edit the defualt role's colour
         # so explicitly check that it isn't the default role, and make sure it has a colour

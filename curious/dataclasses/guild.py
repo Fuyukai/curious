@@ -272,7 +272,7 @@ class GuildChannelWrapper(_WrapperBase):
 
             return False
 
-        listener = await curio.spawn(self._guild._bot.wait_for("member_update", _listener))
+        listener = await curio.spawn(self._guild._bot.wait_for("channel_update", _listener))
         try:
             channel_data = await self._guild._bot.http.create_channel(self._guild.id, **kwargs)
             # if it's a text channel and the topic was provided, automatically add it

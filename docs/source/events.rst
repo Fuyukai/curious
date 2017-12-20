@@ -97,7 +97,7 @@ presence_count: int)
 
     Called when a relationship is removed.
 
-.. py:cofunction:: member_update(ctx: EventContext, old_member: Member, \
+.. py:cofunction:: guild_member_update(ctx: EventContext, old_member: Member, \
     new_member: Member)
 
     Called when a guild member updates. This could be from typing, roles/nick
@@ -183,11 +183,11 @@ presence_count: int)
 
         This is a **user-account only** event.
 
-.. py:cofunction:: member_add(ctx: EventContext, member: Member)
+.. py:cofunction:: guild_member_add(ctx: EventContext, member: Member)
 
     Called when a member is added to a guild.
 
-.. py:cofunction:: member_remove(ctx: EventContext, member: Member)
+.. py:cofunction:: guild_member_remove(ctx: EventContext, member: Member)
 
     Called when a member is removed from a guild.
 
@@ -195,7 +195,7 @@ presence_count: int)
 
     Called when a **user** is banned from a guild.
 
-.. py:cofunction:: member_ban(ctx: EventContext, member: Member)
+.. py:cofunction:: guild_member_ban(ctx: EventContext, member: Member)
 
     Called when a **member** is banned from a guild.
 
@@ -205,7 +205,7 @@ presence_count: int)
 
     .. note::
 
-        There is no member_unban event as members cannot be unbanned.
+        There is no guild_member_unban event as members cannot be unbanned.
 
 .. py:cofunction:: channel_create(ctx: EventContext, channel: Channel)
 
