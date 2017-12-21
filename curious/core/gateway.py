@@ -276,22 +276,28 @@ class Gateway(object):
             await self._send(data)
 
     # Sending events.
-    async def send_identify(self):
+    async def send_identify(self, os: str = sys.platform, browser: str = "curious",
+                            device: str = "curious", compress: bool = True) -> None:
         """
         Sends an IDENTIFY packet.
+
+        :param os: The ``$os`` property to send when identifying. Defaults to sys.platform.
+        :param browser: The ``$browser`` property to send when identifying. Defaults to ``curious``.
+        :param device: The ``$device`` property to send when identifying. Defaults to ``curious``.
+        :param compress: Should the connection be compressed? Defaults to True.
         """
         payload = {
             "op": GatewayOp.IDENTIFY,
             "d": {
                 "token": self.token,
                 "properties": {
-                    "$os": sys.platform,
-                    "$browser": "curious",
-                    "$device": "curious",
+                    "$os": os,
+                    "$browser": browser,
+                    "$device": device,
                     "$referrer": "",
                     "$referring_domain": ""
                 },
-                "compress": True,
+                "compress": compress,
                 "large_threshold": self.large_threshold,
                 "v": self.GATEWAY_VERSION,
                 "shard": [self.shard_id, self.shard_count]
@@ -300,7 +306,7 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def send_resume(self):
+    async def send_resume(self) -> None:
         """
         Sends a RESUME packet.
         """
@@ -316,7 +322,7 @@ class Gateway(object):
         await self._send_dict(payload)
 
     async def send_status(self, game: Game, status: Status, *,
-                          afk: bool=False):
+                          afk: bool=False) -> None:
         """
         Sends a PRESENCE_UPDATE packet.
 
@@ -412,7 +418,7 @@ class Gateway(object):
             }
         }
 
-        await self._send_dict(payload)
+        return await self._send_dict(payload)
 
     @classmethod
     async def from_token(cls, token: str, state, gateway_url: str,
