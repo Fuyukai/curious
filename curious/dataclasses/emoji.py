@@ -44,7 +44,7 @@ class Emoji(Dataclass):
         return self.id == other.id
 
     def __str__(self):
-        return "<:{}:{}>".format(self.name, self.id)
+        return "<{}:{}:{}>".format('a' if self.animated else '', self.name, self.id)
 
     def __repr__(self):
         return "<Emoji guild={} id={}>".format(self.guild, self.id)
