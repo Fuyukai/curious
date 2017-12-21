@@ -6,7 +6,6 @@ import inspect
 import logging
 import typing
 
-import curio
 import multio
 from multidict import MultiDict
 
@@ -35,8 +34,8 @@ class _WithWaitFor:
     """
     def __init__(self, manager, task_group, event_name: str, predicate):
         self.manager = manager
-        self.task_group: curio.TaskGroup = task_group
-        self._task: curio.Task = None
+        self.task_group = task_group
+        self._task = None
 
         self._evt = event_name
         self._pred = predicate
@@ -52,7 +51,7 @@ class _WithWaitFor:
 
         try:
             await self._task.join()
-        except curio.TaskCancelled:
+        except multio.asynclib.Cancelled:
             pass
 
         return False
@@ -215,7 +214,7 @@ class EventManager(object):
 
         This probably won't be needed outside of internal library functions.
         """
-        return _WithWaitFor(self, curio.TaskGroup(), event_name, predicate)
+        return _WithWaitFor(self, self.task_manager, event_name, predicate)
 
     async def spawn(self, cofunc, *args) -> typing.Any:
         """
