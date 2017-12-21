@@ -14,7 +14,7 @@ class Emoji(Dataclass):
     """
     Represents a custom emoji uploaded to a guild.
     """
-    __slots__ = ("id", "name", "role_ids", "require_colons", "managed", "guild_id")
+    __slots__ = ("id", "name", "role_ids", "require_colons", "managed", "guild_id", "animated")
 
     def __init__(self, **kwargs):
         super().__init__(int(kwargs.get("id")), kwargs.get("client"))
@@ -94,4 +94,7 @@ class Emoji(Dataclass):
         """
         :return: The URL to this emoji.
         """
-        return "https://cdn.discordapp.com/emojis/{}.png".format(self.id)
+        if not self.animated:
+            return "https://cdn.discordapp.com/emojis/{}.png".format(self.id)
+
+        return f"https://cdn.discordapp.com/emojis/{self.id}.gif"
