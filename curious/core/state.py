@@ -10,7 +10,7 @@ import logging
 import typing
 from types import MappingProxyType
 
-import curio
+import multio
 
 from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
@@ -128,17 +128,17 @@ class State(object):
         #: This is bounded to prevent the message cache from growing infinitely.
         self._messages = collections.deque(maxlen=max_messages)
 
-        self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: curio.Event())
+        self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: multio.Event())
         self.__voice_state_crap = collections.defaultdict(
-            lambda *args, **kwargs: ((curio.Event(), curio.Event()), {})
+            lambda *args, **kwargs: ((multio.Event(), multio.Event()), {})
         )
 
-    def is_ready(self, shard_id: int) -> curio.Event:
+    def is_ready(self, shard_id: int) -> multio.Event:
         """
         Checks if a shard is ready.
         
         :param shard_id: The shard ID to check.
-        :return: A :class:`curio.Event` signifying if this shard is ready or not.
+        :return: A :class:`multio.Event` signifying if this shard is ready or not.
         """
         return self.__shards_is_ready[shard_id]
 

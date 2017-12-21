@@ -14,7 +14,6 @@ import logging
 import typing
 from types import MappingProxyType
 
-import curio
 import multio
 from asyncwebsockets import WebsocketClosed
 from asyncwebsockets.common import WebsocketUnusable
@@ -559,7 +558,7 @@ class Client(object):
             try:
                 try:
                     # consume events
-                    async with curio.meta.finalize(gw.events()) as agen:
+                    async with multio.finalize_agen(gw.events()) as agen:
                         async for event in agen:
                             await self.events.fire_event(event[0], *event[1:], gateway=gw,
                                                          client=self)

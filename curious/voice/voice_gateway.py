@@ -4,19 +4,21 @@ A special gateway client for Voice.
 import enum
 import json
 import logging
-import socket
 import threading
 import time
 import typing
 import zlib
 
 import curio
+import multio
 from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
+from curio.socket import gethostbyname
 from curio.thread import AWAIT, async_thread
 
 from curious.core.gateway import Gateway, ReconnectWebsocket
 
 logger = logging.getLogger("curious.voice")
+
 
 class VGatewayOp(enum.IntEnum):
     IDENTIFY = 0
@@ -79,7 +81,7 @@ class VoiceGateway(object):
         self.main_gateway = None  # type: Gateway
 
         #: The current threading event used to signal if we need to stop heartbeating.
-        self._stop_heartbeating = curio.Event()
+        self._stop_heartbeating = multio.Event()
 
         #: Voice server stuff
         self.endpoint = endpoint
@@ -87,8 +89,8 @@ class VoiceGateway(object):
         self.ssrc = None  # type: int
         self.secret_key = b""
 
-        self._ready = curio.Event()
-        self._got_secret_key = curio.Event()
+        self._ready = multio.Event()
+        self._got_secret_key = multio.Event()
 
     async def connect(self, url: str):
         """
@@ -206,7 +208,7 @@ class VoiceGateway(object):
             await self._stop_heartbeating.set()
             del self._stop_heartbeating
 
-        self._stop_heartbeating = curio.Event()
+        self._stop_heartbeating = multio.Event()
 
         # dont reference the task - it'll die by itself
         task = await curio.spawn(_heartbeat_loop(self, heartbeat_interval), daemon=True)
@@ -237,7 +239,7 @@ class VoiceGateway(object):
         # Look up the gateway's IP address.
         endpoint = state["endpoint"]
         endpoint, port = endpoint.split(":")
-        endpoint = await curio.abide(socket.gethostbyname, endpoint)
+        endpoint = await gethostbyname(endpoint)
 
         obb = cls(token=state["token"], session_id=state["session_id"],
                   endpoint=endpoint,

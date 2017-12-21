@@ -14,7 +14,8 @@ from math import ceil
 from urllib.parse import quote
 
 import asks
-import curio
+import multio
+import pkg_resources
 import pytz
 from asks.errors import ConnectivityError
 from asks.response_objects import Response
@@ -36,6 +37,8 @@ from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 
 # by default
 asks.init("curio")
+
+logger = logging.getLogger("curious.http")
 
 
 def parse_date_header(header: str) -> datetime.datetime:
@@ -134,8 +137,10 @@ class HTTPClient(object):
     :param bot: Is this client a bot?
     :param max_connections: The max connections for this HTTP client.
     """
-    USER_AGENT = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}" \
-                 "curio/{2}".format(curious.__version__, sys.version_info, curio.__version__)
+    USER_AGENT = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]} " \
+                 "{2}/{3}".format(curious.__version__, sys.version_info,
+                                  multio.asynclib.lib_name,
+                                  pkg_resources.get_distribution(multio.asynclib.lib_name).version)
 
     def __init__(self, token: str, *,
                  bot: bool = True,
@@ -153,18 +158,12 @@ class HTTPClient(object):
                                     connections=max_connections)
         self.headers = headers
 
-        #: Ratelimit buckets.
-        self._rate_limits = weakref.WeakValueDictionary()
-
-        #: Ratelimit remaining times
-        self._ratelimit_remaining = lru(1024)
-
         #: The global ratelimit lock.
-        self.global_lock = curio.Lock()
+        self.global_lock = multio.Lock()
 
+        self._rate_limits = weakref.WeakValueDictionary()
+        self._ratelimit_remaining = lru(1024)
         self._is_bot = bot
-
-        self.logger = logging.getLogger("curious.http")
 
     def get_ratelimit_lock(self, bucket: object):
         """
@@ -173,7 +172,7 @@ class HTTPClient(object):
         try:
             return self._rate_limits[bucket]
         except KeyError:
-            lock = curio.Lock()
+            lock = multio.Lock()
             self._rate_limits[bucket] = lock
             return lock
 
@@ -206,12 +205,7 @@ class HTTPClient(object):
         path = quote(path)
         kwargs["path"] = path
 
-        try:
-            return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
-        except curio.TaskGroupError as e:
-            # timeout manager raised, and asks doesn't unwrap yet
-            actual_error = next(iter(e.failed)).next_exc
-            raise actual_error from None
+        return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
         """
@@ -245,13 +239,13 @@ class HTTPClient(object):
                 if tries <= 0:
                     # We need to sleep for a bit before we can start making another request.
                     sleep_time = ceil(reset_time - time.time())
-                    self.logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
-                    await curio.sleep(sleep_time)
+                    logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
+                    await multio.asynclib.sleep(sleep_time)
 
             for tries in range(0, 5):
                 method = kwargs.get("method", "???")
                 path = kwargs.get("path", "???")
-                self.logger.debug(f"{method} {path} => (pending) (try {tries + 1})")
+                logger.debug(f"{method} {path} => (pending) (try {tries + 1})")
 
                 try:
                     response = await self._make_request(*args, **kwargs)
@@ -265,21 +259,21 @@ class HTTPClient(object):
                     # discord broke
                     continue
 
-                self.logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
+                logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
 
                 if response.status_code in range(500, 600):
                     # 502 means that we can retry without worrying about ratelimits.
                     # Perform exponential backoff to prevent spamming discord.
                     sleep_time = 1 + (tries * 2)
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     continue
 
                 if response.status_code == 429:
                     # This is bad!
                     # But it's okay, we can handle it.
-                    self.logger.warning("Hit a 429 in bucket {}. Check your clock!".format(bucket))
+                    logger.warning("Hit a 429 in bucket {}. Check your clock!".format(bucket))
                     sleep_time = ceil(int(response.headers["Retry-After"]) / 1000)
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     continue
 
                 # Extract ratelimit headers.
@@ -307,15 +301,15 @@ class HTTPClient(object):
                         sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
 
                     if is_global:
-                        self.logger.debug("Reached the global ratelimit, acquiring global lock.")
+                        logger.debug("Reached the global ratelimit, acquiring global lock.")
                         await self.global_lock.acquire()
                     else:
-                        self.logger.debug(
+                        logger.debug(
                             "Being ratelimited under bucket {}, waking in {} seconds"
                                 .format(bucket, sleep_time)
                         )
                     # Sleep that amount of time.
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
                     if is_global:
                         await self.global_lock.release()

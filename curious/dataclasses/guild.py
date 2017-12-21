@@ -13,6 +13,7 @@ from math import ceil
 from types import MappingProxyType
 
 import curio
+import multio
 
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
     member as dt_member, permissions as dt_permissions, role, search as dt_search, \
@@ -543,7 +544,7 @@ class Guild(Dataclass):
         self._large = None  # type: bool
 
         #: Has this guild finished chunking?
-        self._finished_chunking = curio.Event()
+        self._finished_chunking = multio.Event()
         self._chunks_left = 0
 
         #: The current voice client associated with this guild.

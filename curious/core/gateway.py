@@ -14,6 +14,7 @@ import typing
 import zlib
 
 import curio
+import multio
 from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
 from asyncwebsockets.common import WebsocketUnusable
 from curio.thread import AWAIT, async_thread
@@ -172,7 +173,7 @@ class Gateway(object):
         self._prev_seq = 0
         self._dispatches_handled = collections.Counter()
         self._enqueued_guilds = []
-        self._stop_heartbeating = curio.Event()
+        self._stop_heartbeating = multio.Event()
         self._logger = None
         self._cached_gateway_url = None  # type: str
         self._open = False
@@ -197,7 +198,7 @@ class Gateway(object):
         self.logger.info("Opening connection to {}".format(url))
         try:
             self.websocket = await curio.timeout_after(5, connect_websocket(url))
-        except curio.TaskTimeout as e:
+        except multio.asynclib.TaskTimeout as e:
             raise ReconnectWebsocket from e
         self.logger.info("Connected to gateway!")
         self._open = True
@@ -213,7 +214,7 @@ class Gateway(object):
             await self._stop_heartbeating.set()
             del self._stop_heartbeating
 
-        self._stop_heartbeating = curio.Event()
+        self._stop_heartbeating = multio.Event()
 
         # dont reference the task - it'll die by itself
         task = await curio.spawn(_heartbeat_loop(self, heartbeat_interval), daemon=True)
@@ -594,7 +595,7 @@ class Gateway(object):
                             result = await coro
                         elif inspect.isasyncgen(coro):
                             # for event handlers with multiple yields
-                            async with curio.meta.finalize(coro) as gen:
+                            async with multio.finalize_agen(coro) as gen:
                                 async for i in gen:
                                     yield i
 

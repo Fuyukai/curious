@@ -11,7 +11,7 @@ import imghdr
 import inspect
 import typing
 
-import curio
+import multio
 from multidict import MultiDict
 
 NO_ITEM = object()
@@ -208,7 +208,7 @@ async def coerce_agen(gen):
     Coerces an async generator into a list.
     """
     results = []
-    async with curio.meta.finalize(gen) as agen:
+    async with multio.finalize_agen(gen) as agen:
         async for i in agen:
             results.append(i)
 

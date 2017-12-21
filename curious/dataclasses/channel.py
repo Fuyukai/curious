@@ -12,6 +12,7 @@ from math import floor
 from types import MappingProxyType
 
 import curio
+import multio
 
 from curious.core import client as dt_client
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
@@ -74,7 +75,7 @@ class _TypingCtxManager:
     async def _type(self):
         while True:
             await self._channel.send_typing()
-            await curio.sleep(5)
+            await multio.asynclib.sleep(5)
 
 
 class HistoryIterator(collections.AsyncIterator):

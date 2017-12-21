@@ -38,7 +38,6 @@ Documentation
 
 .. toctree::
    :maxdepth: 2
-   :caption: Curious
 
    tutorial/gettingstarted
    tutorial/firstbot
