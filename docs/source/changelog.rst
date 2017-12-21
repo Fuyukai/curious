@@ -27,6 +27,8 @@ This document displays the differences between each release of curious.
 
  - Rename ``MEMBER_`` events to ``GUILD_MEMBER_`` events.
 
+ - Add :class:`._MemberRoleContainer`, and make :attr:`.Member.roles` an instance of this.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 
