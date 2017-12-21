@@ -560,8 +560,7 @@ class Client(object):
                     # consume events
                     async with multio.finalize_agen(gw.events()) as agen:
                         async for event in agen:
-                            await self.events.fire_event(event[0], *event[1:], gateway=gw,
-                                                         client=self)
+                            await self.fire_event(event[0], *event[1:], gateway=gw, client=self)
 
                 except WebsocketClosed as e:
                     # Try and handle the close.
@@ -618,6 +617,7 @@ class Client(object):
         if autoshard:
             shard_count = await self.get_shard_count()
 
+        self.shard_count = shard_count
         return await self.start(shard_count)
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True):
