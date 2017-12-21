@@ -1,5 +1,7 @@
 """
 Represents a Discord IPC packet.
+
+.. currentmodule:: curious.client.packet
 """
 import enum
 import json

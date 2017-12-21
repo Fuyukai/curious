@@ -1,5 +1,7 @@
 """
 Exceptions raised from within the library.
+
+.. currentmodule:: curious.exc
 """
 import enum
 import warnings

@@ -1,5 +1,7 @@
 """
 Contains the class for the commands manager for a client.
+
+.. currentmodule:: curious.commands.manager
 """
 import importlib
 import inspect

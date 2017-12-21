@@ -1,5 +1,7 @@
 """
 The main Discord HTTP interface.
+
+.. currentmodule:: curious.core.httpclient
 """
 import datetime
 import logging

@@ -1,5 +1,7 @@
 """
 Misc utilities shared throughout the library.
+
+.. currentmodule:: curious.util
 """
 import base64
 import collections

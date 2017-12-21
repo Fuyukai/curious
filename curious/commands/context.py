@@ -1,5 +1,7 @@
 """
 Class for the commands context.
+
+.. currentmodule:: curious.commands.context
 """
 import inspect
 import types

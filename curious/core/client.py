@@ -281,7 +281,7 @@ class Client(object):
 
         return await self.events.fire_event(event_name, *args, **kwargs, client=self)
 
-    async def wait_for(self, *args, **kwargs):
+    async def wait_for(self, *args, **kwargs) -> typing.Any:
         """
         Shortcut for :meth:`.EventManager.wait_for`.
         """

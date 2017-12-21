@@ -1,5 +1,7 @@
 """
 Converter methods.
+
+.. currentmodule:: curious.commands.converters
 """
 from curious.commands.exc import ConversionFailedError
 from curious.dataclasses.channel import Channel

@@ -18,7 +18,7 @@ dependencies:
     - sphinx
     - sphinx-autodoc-typehints
     - sphinxcontrib-asyncio
-    - guzzle_sphinx_theme
+    - sphinx_py3doc_enhanced_theme
     - curio
     - pylru
     - asks

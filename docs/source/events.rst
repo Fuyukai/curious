@@ -1,8 +1,12 @@
+.. _events:
+
 Event reference
-~~~~~~~~~~~~~~~
+===============
 
 Event names mostly correspond with the event names that are returned from a
 dispatch by Discord.
+
+For more information about handling events, see :ref:`better_event_handling`.
 
 State events
 ------------
@@ -43,7 +47,7 @@ State events
     Called when a guild receives a Guild Member Chunk.
 
 .. py:cofunction:: guild_sync(ctx: EventContext, guild: Guild, member_count: int, \
-presence_count: int)
+    presence_count: int)
 
     Called when a guild receives a Guild Sync.
 

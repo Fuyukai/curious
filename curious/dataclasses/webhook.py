@@ -24,8 +24,6 @@ class Webhook(Dataclass):
         @event("message_create")
         async def handle_messages(ctx, message: Message):
             author = message.author  # can be Webhook or Member
-
-    :ivar id: The ID of the webhook.
     """
 
     __slots__ = "user", "guild_id", "channel_id", "token", "owner", \

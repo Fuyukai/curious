@@ -1,5 +1,7 @@
 """
 The client for an IPC connection.
+
+.. currentmodule:: curious.ipc.client
 """
 import os
 import platform

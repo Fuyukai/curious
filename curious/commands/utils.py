@@ -1,5 +1,7 @@
 """
 Misc utilities used in commands related things.
+
+.. currentmodule:: curious.commands.utils
 """
 import collections
 import inspect

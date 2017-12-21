@@ -4,7 +4,7 @@ Commands helpers.
 .. currentmodule:: curious.commands
 
 .. autosummary::
-    :toctree: Commands
+    :toctree: commands
 
     manager
     context

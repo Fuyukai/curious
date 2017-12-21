@@ -43,6 +43,7 @@ Documentation
    tutorial/gettingstarted
    tutorial/firstbot
    tutorial/commands
+   tutorial/better_event_handling
 
    events
 

@@ -1,5 +1,7 @@
 """
 Home of the default help command.
+
+.. currentmodule:: curious.commands.help
 """
 import inspect
 

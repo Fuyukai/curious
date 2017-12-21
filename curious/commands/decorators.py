@@ -1,5 +1,7 @@
 """
 Decorators to annotate function objects.
+
+.. currentmodule:: curious.commands.decorators
 """
 from typing import List
 

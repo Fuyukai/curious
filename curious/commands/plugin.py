@@ -1,5 +1,7 @@
 """
 Classes for plugin objects.
+
+.. currentmodule:: curious.commands.plugin
 """
 import inspect
 

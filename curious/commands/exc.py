@@ -1,5 +1,7 @@
 """
 Defines commands-specific exceptions.
+
+.. currentmodule:: curious.commands.exc
 """
 
 

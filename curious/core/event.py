@@ -1,5 +1,7 @@
 """
 Special helpers for events.
+
+.. currentmodule: curious.core.events
 """
 import functools
 import inspect

@@ -1,5 +1,5 @@
 """
-Defines :class:`~.State`.
+Defines :class:`.State`.
 
 .. currentmodule:: curious.core.state
 """

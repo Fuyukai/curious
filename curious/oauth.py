@@ -1,5 +1,7 @@
 """
 A module that assists with implementing the Discord OAuth2 flow.
+
+.. currentmodule:: curious.oauth
 """
 import collections
 import datetime
