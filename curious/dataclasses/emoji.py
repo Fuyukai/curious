@@ -29,10 +29,13 @@ class Emoji(Dataclass):
         self.require_colons: bool = kwargs.get("require_colons", False)
 
         #: If this emoji is managed or not.
-        self.managed: bool = False
+        self.managed: bool = kwargs.get("managed", False)
 
         #: The ID of the guild this emoji is associated with.
         self.guild_id: int = None
+
+        #: If this emoji is animated or not.
+        self.animated: bool = kwargs.get("animated", False)
 
     def __eq__(self, other):
         if isinstance(other, str):
