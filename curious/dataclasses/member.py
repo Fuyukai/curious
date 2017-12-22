@@ -25,7 +25,7 @@ class _Nickname(str):
         if value is None:
             return None
 
-        return super().__new__(value)
+        return super().__new__(cls, value)
 
     async def set(self, new_nickname: str) -> '_Nickname':
         """
