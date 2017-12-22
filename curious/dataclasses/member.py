@@ -21,6 +21,11 @@ class _Nickname(str):
     """
     Represents the nickname of a :class:`.Member`.
     """
+    def __new__(cls, value: str):
+        if value is None:
+            return None
+
+        return super().__new__(value)
 
     async def set(self, new_nickname: str) -> '_Nickname':
         """
