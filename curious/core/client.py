@@ -560,7 +560,7 @@ class Client(object):
                     # consume events
                     async with multio.finalize_agen(gw.events()) as agen:
                         async for event in agen:
-                            await self.fire_event(event[0], *event[1:], gateway=gw, client=self)
+                            await self.fire_event(event[0], *event[1:], gateway=gw)
 
                 except WebsocketClosed as e:
                     # Try and handle the close.

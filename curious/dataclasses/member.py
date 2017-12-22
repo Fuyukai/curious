@@ -201,8 +201,9 @@ class Member(Dataclass):
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))
 
+        nick = kwargs.get("nick")
         #: The member's current :class:`._Nickname`.
-        self._nickname = _Nickname(kwargs.get("nick", None))
+        self._nickname: _Nickname = _Nickname(nick) if nick else None
 
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int
@@ -240,6 +241,10 @@ class Member(Dataclass):
 
     @nickname.setter
     def nickname(self, value: str):
+        if not value:
+            self._nickname = None
+            return
+
         self._nickname = _Nickname(value)
         self._nickname.__dict__['parent'] = self
 
@@ -291,7 +296,7 @@ class Member(Dataclass):
         """
         :return: The computed display name of this user.
         """
-        return self.nickname if self.nickname else self.user.username
+        return self.nickname if self.nickname != "" else self.user.username
 
     @property
     def mention(self) -> str:
