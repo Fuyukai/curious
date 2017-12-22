@@ -23,7 +23,7 @@ setup(
         "asyncwebsockets>=0.1.1",
         "curio>=0.8.0,<0.9.0",
         "pylru==1.0.9",
-        "oauthlib=>2.0.2,<2.1.0",
+        "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",
         "asks>=1.3.0,<1.4.0",
         "multidict>=2.1.6",
