@@ -121,12 +121,9 @@ class State(object):
         #: The current user cache.
         self._users = {}
 
-        #: The state logger.
-        logger = logging.getLogger("curious.state")
-
         #: The deque of messages.
         #: This is bounded to prevent the message cache from growing infinitely.
-        self._messages = collections.deque(maxlen=max_messages)
+        self.messages = collections.deque(maxlen=max_messages)
 
         self.__shards_is_ready = collections.defaultdict(lambda *args, **kwargs: multio.Event())
         self.__voice_state_crap = collections.defaultdict(
@@ -279,7 +276,7 @@ class State(object):
                 return guild._channels[channel_id]
 
     def _find_message(self, message_id: int) -> Message:
-        for message in reversed(self._messages):
+        for message in reversed(self.messages):
             if message.id == message_id:
                 return message
 
@@ -402,10 +399,10 @@ class State(object):
         """
         message = Message(self.client, **event_data)
 
-        if message in self._messages:
+        if message in self.messages:
             # don't bother re-caching
-            i = self._messages.index(message)
-            return self._messages[i]
+            i = self.messages.index(message)
+            return self.messages[i]
 
         # discord won't give us the Guild id
         # so we have to search it from the channels
@@ -445,8 +442,8 @@ class State(object):
             reaction.emoji = emoji_obb
             message.reactions.append(reaction)
 
-        if cache and message not in self._messages:
-            self._messages.append(message)
+        if cache and message not in self.messages:
+            self.messages.append(message)
 
         return message
 
@@ -891,8 +888,8 @@ class State(object):
         if not old_message:
             return
 
-        self._messages.remove(old_message)
-        self._messages.append(new_message)
+        self.messages.remove(old_message)
+        self.messages.append(new_message)
 
         if old_message.content != new_message.content:
             # Fire a message_edit, as well as a message_update, because the content differs.
