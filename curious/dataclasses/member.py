@@ -17,17 +17,35 @@ from curious.util import subclass_builtin, to_datetime
 
 
 @subclass_builtin(str)
-class _Nickname(str):
+class Nickname(str):
     """
     Represents the nickname of a :class:`.Member`.
+
+    :cvar NONE: A singleton :class:`.Nickname` representing an empty nickname. Equal to the empty \
+        string.
     """
+    NONE: 'Nickname'
+
     def __new__(cls, value: str):
-        if value is None:
-            return None
+        if value is None or value == "":
+            try:
+                return cls.NONE
+            except AttributeError:
+                cls.NONE = super().__new__(cls, "")
+                return cls.NONE
 
         return super().__new__(cls, value)
 
-    async def set(self, new_nickname: str) -> '_Nickname':
+    def __eq__(self, other):
+        if other is None and self == self.NONE:
+            return True
+
+        return super().__eq__(other)
+
+    def __repr__(self) -> str:
+        return f"<Nickname value={super().__repr__()}>"
+
+    async def set(self, new_nickname: str) -> 'Nickname':
         """
         Sets the nickname of the username.
 
@@ -66,11 +84,11 @@ class _Nickname(str):
         # the wait_for means at this point the nickname has been changed
         return parent.nickname
 
-    def reset(self) -> typing.Coroutine[None, None, '_Nickname']:
+    def reset(self) -> typing.Coroutine[None, None, 'Nickname']:
         """
         Resets a member's nickname.
         """
-        return self.set(None)
+        return self.set(self.NONE)
 
 
 class _MemberRoleContainer(collections.Sequence):
@@ -208,7 +226,7 @@ class Member(Dataclass):
 
         nick = kwargs.get("nick")
         #: The member's current :class:`._Nickname`.
-        self._nickname: _Nickname = _Nickname(nick) if nick else None
+        self._nickname: Nickname = Nickname(nick) if nick else Nickname.NONE
 
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int
@@ -235,7 +253,7 @@ class Member(Dataclass):
             return None
 
     @property
-    def nickname(self) -> _Nickname:
+    def nickname(self) -> Nickname:
         """
         Represents a member's nickname.
 
@@ -247,10 +265,10 @@ class Member(Dataclass):
     @nickname.setter
     def nickname(self, value: str):
         if not value:
-            self._nickname = None
+            self._nickname = Nickname.NONE
             return
 
-        self._nickname = _Nickname(value)
+        self._nickname = Nickname(value)
         self._nickname.__dict__['parent'] = self
 
     def __hash__(self) -> int:
