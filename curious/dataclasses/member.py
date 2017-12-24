@@ -319,7 +319,7 @@ class Member(Dataclass):
         """
         :return: The computed display name of this user.
         """
-        return self.nickname if self.nickname else self.user.username
+        return self.nickname if self.nickname != Nickname.NONE else self.user.username
 
     @property
     def mention(self) -> str:
