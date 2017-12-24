@@ -30,9 +30,6 @@ from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.util import base64ify
 
-#: A sentinel value to indicate that the client should automatically shard.
-AUTOSHARD = object()
-
 logger = logging.getLogger("curious.client")
 
 
