@@ -21,7 +21,7 @@ This document displays the differences between each release of curious.
 
  - Add :attr:`.Channel.overwrites` for a key-value mapping of overwrites.
 
- - Add :class:`._Nickname`, and make :attr:`.Member.nickname` an instance of :class:`._Nickname`.
+ - Add :class:`.Nickname`, and make :attr:`.Member.nickname` an instance of :class:`.Nickname`.
 
  - Add :meth:`.EventManager.wait_for_manager`.
 
