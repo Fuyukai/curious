@@ -29,6 +29,8 @@ This document displays the differences between each release of curious.
 
  - Add :class:`._MemberRoleContainer`, and make :attr:`.Member.roles` an instance of this.
 
+ - Add :attr:`.Message.emojis`.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 

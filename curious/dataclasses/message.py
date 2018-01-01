@@ -19,6 +19,7 @@ from curious.util import AsyncIteratorWrapper, to_datetime
 
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 INVITE_REGEX = re.compile(r"(?:discord\.gg/(\S+)|discordapp\.com/invites/(\S+))")
+EMOJI_REGEX = re.compile(r"<a?:[\S]+:([0-9]+)>")
 
 
 class MessageType(enum.IntEnum):
@@ -172,6 +173,21 @@ class Message(Dataclass):
         mentions = CHANNEL_REGEX.findall(self.content)
         return self._resolve_mentions(mentions, "channel")
 
+    @property
+    def emojis(self) -> 'typing.List[dt_emoji.Emoji]':
+        """
+        Returns a list of :class:`.Emoji` that was found in this message.
+        """
+        matches = EMOJI_REGEX.findall(self.content)
+        emojis = []
+
+        for i in matches:
+            e = self.guild.emojis.get(int(i))
+            if e:
+                emojis.append(e)
+
+        return emojis
+
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """
         Gets a list of valid invites in this message.
@@ -319,7 +335,7 @@ class Message(Dataclass):
                 raise PermissionsError("manage_messages")
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
-        return None
+        return self
 
     async def get_who_reacted(self, emoji: 'typing.Union[dt_emoji.Emoji, str]') \
             -> 'typing.List[typing.Union[dt_user.User, dt_member.Member]]':
