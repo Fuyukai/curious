@@ -15,15 +15,14 @@ from curious.dataclasses.presence import RichPresence
 from curious.ipc.packet import IPCOpcode, IPCPacket
 
 
-def get_ipc_url() -> str:
+def get_ipc_url(slot: int = 0) -> str:
     """
     Gets the IPC URL for Discord.
     """
-    # TODO: Support not-linux.
     if platform.system() == "Linux":
-        return f"/run/user/{os.getuid()}/discord-ipc-0"
+        return f"/run/user/{os.getuid()}/discord-ipc-{slot}"
     elif platform.platform() == "Windows":
-        return r"\\?\pipe\discord-ipc-0"
+        return fr"\\?\pipe\discord-ipc-{slot}"
 
 
 def get_nonce() -> str:
@@ -60,7 +59,7 @@ class IPCClient(object):
     """
     VERSION = 1
 
-    def __init__(self, client_id: int):
+    def __init__(self, client_id: int, *, slot: int = 0):
         """
         :param client_id: The client ID to authenticate with.
         """
@@ -68,12 +67,13 @@ class IPCClient(object):
 
         self._ready = False
         self._sock = None  # type: Socket
+        self._ipc_slot = slot
 
     async def open(self):
         """
         Opens this IPC socket.
         """
-        path = get_ipc_url()
+        path = get_ipc_url(self._ipc_slot)
 
         self._sock = await curio.open_unix_connection(path)
         await self._write_handshake()
