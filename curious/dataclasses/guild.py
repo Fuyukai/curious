@@ -722,7 +722,7 @@ class Guild(Dataclass):
         """
         if full_name is not None:
             sp = full_name.split("#", 1)
-            return self.find_member(name=sp[0], discriminator=sp[1])
+            return self.search_for_member(name=sp[0], discriminator=sp[1])
 
         # coerce into a proper string
         if isinstance(discriminator, int):
