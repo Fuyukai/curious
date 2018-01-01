@@ -15,6 +15,7 @@ from types import MappingProxyType
 import curio
 import multio
 
+from curious.core.httpclient import Endpoints
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
     member as dt_member, permissions as dt_permissions, role, search as dt_search, \
     user as dt_user, \
@@ -22,7 +23,7 @@ from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite,
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Presence, Status
 from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
-from curious.util import AsyncIteratorWrapper, base64ify
+from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
 try:
     from curious.voice import voice_client
@@ -485,45 +486,47 @@ class Guild(Dataclass):
 
         # Placeholder values.
         #: The name of this guild.
-        self.name = None  # type: str
+        self.name: str = None
+
         #: The icon hash of this guild.
         #: Used to construct the icon URL later.
-        self._icon_hash = None  # type: str
+        self._icon_hash: str = None
+
         #: The splash hash of this guild.
         #: Used to construct the splash URL later.
-        self._splash_hash = None  # type: str
+        self._splash_hash: str = None
 
         #: The AFK channel ID of this guild.
-        self.afk_channel_id = None  # type: int
+        self.afk_channel_id: int = None
 
         #: The ID of the system channel for this guild.
         #: This is where welcome messages and the likes are sent.
         #: Effective replacement for default channel for bots.
-        self.system_channel_id = None
+        self.system_channel_id: int = None
 
         #: The owner ID of this guild.
-        self.owner_id = None  # type: int
+        self.owner_id: int = None
 
-        #: The AFK timeout for this guild.
-        self.afk_timeout = None  # type: int
+        #: The AFK timeout for this guild. None if there's no AFK timeout.
+        self.afk_timeout: int = None  # type: int
 
         #: The voice region of this guild.
-        self.region = None  # type: str
+        self.region: str = None
 
         #: The features this guild has.
-        self.features = None  # type: typing.List[str]
+        self.features: typing.List[str] = None
 
         #: The MFA level of this guild.
-        self.mfa_level = MFALevel.DISABLED  # type: MFALevel
+        self.mfa_level: MFALevel = MFALevel.DISABLED
         #: The verification level of this guild.
-        self.verification_level = VerificationLevel.NONE
+        self.verification_level: VerificationLevel = VerificationLevel.NONE
         #: The notification level of this guild.
-        self.notification_level = NotificationLevel.ALL_MESSAGES
+        self.notification_level: NotificationLevel = NotificationLevel.ALL_MESSAGES
         #: The content filter level of this guild.
-        self.content_filter_level = ContentFilterLevel.SCAN_NONE
+        self.content_filter_level: ContentFilterLevel = ContentFilterLevel.SCAN_NONE
 
         #: The shard ID this guild is associated with.
-        self.shard_id = None
+        self.shard_id: int = None
 
         #: The roles that this guild has.
         self._roles = {}
@@ -538,9 +541,9 @@ class Guild(Dataclass):
 
         #: The number of numbers this guild has.
         #: This is automatically updated.
-        self.member_count = 0  # type: int
+        self.member_count: int = 0
 
-        #: Is this guild a large guild?
+        #: Is this guild a large guild according to Discord?
         self._large = None  # type: bool
 
         #: Has this guild finished chunking?
@@ -633,7 +636,7 @@ class Guild(Dataclass):
         
         :return: The embed URL for this guild. 
         """
-        return (self._bot.http.GUILD_BASE + "/embed.png").format(guild_id=self.id)
+        return (Endpoints.GUILD_BASE + "/embed.png").format(guild_id=self.id)
 
     # for parity with inviteguild
     @property
@@ -700,6 +703,43 @@ class Guild(Dataclass):
 
         return self.embed_url + "?style={}".format(style)
 
+    def search_for_member(self, *, name: str = None, discriminator: str = None,
+                           full_name: str = None):
+        """
+        Searches for a member.
+
+        :param name: The username or nickname of the member.
+        :param discriminator: The discriminator of the member.
+        :param full_name: The full name (i.e. username#discrim) of the member. Optional; will be \
+            split up into the correct parameters.
+
+        .. warning::
+
+            Using a username and discriminator pair is most accurate when finding a user; a
+            nickname pair or not providing one of the arguments might not find the right member.
+
+        :return: A :class:`.Member` that matched, or None if no matches were found.
+        """
+        if full_name is not None:
+            sp = full_name.split("#", 1)
+            return self.find_member(name=sp[0], discriminator=sp[1])
+
+        # coerce into a proper string
+        if isinstance(discriminator, int):
+            discriminator = "{:04d}".format(discriminator)
+
+        for member in self._members.values():
+            # ensure discrim matches first
+            if discriminator is not None and discriminator != member.user.discriminator:
+                continue
+
+            if member.user.username == name:
+                return member
+
+            if member.nickname == name:
+                return member
+
+    @deprecated(since="0.7.0", see_instead=search_for_member, removal="0.9.0")
     def find_member(self, search_str: str) -> 'dt_member.Member':
         """
         Attempts to find a member in this guild by name#discrim.
@@ -764,7 +804,7 @@ class Guild(Dataclass):
 
             self._members[member_obj.id] = member_obj
 
-    def _handle_emojis(self, emojis: list):
+    def _handle_emojis(self, emojis: typing.List[dict]):
         """
         Handles the emojis for this guild.
         
@@ -790,13 +830,15 @@ class Guild(Dataclass):
         self.name = data.get("name")  # type: str
         self._icon_hash = data.get("icon")  # type: str
         self._splash_hash = data.get("splash")  # type: str
-        self.owner_id = int(data.get("owner_id"))  # type: int
+        self.owner_id = int(data.get("owner_id", 0)) or None  # type: int
         self._large = data.get("large", None)
         self.features = data.get("features", [])
         self.region = data.get("region")
+
         afk_channel_id = data.get("afk_channel_id")
         if afk_channel_id is not None:
             afk_channel_id = int(afk_channel_id)
+
         self.afk_channel_id = afk_channel_id
         self.afk_timeout = data.get("afk_timeout")
 

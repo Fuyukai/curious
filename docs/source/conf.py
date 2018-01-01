@@ -128,7 +128,7 @@ html_theme_path = [sphinx_py3doc_enhanced_theme.get_html_theme_path()]
 # html_theme_options = {}
 html_theme_options = {
     'bodyfont': '"Cabin",Arial,sans-serif',
-    'codefont': "'Deja Vu Sans Mono', 'Bitstream Vera Sans Mono', 'Monaco', "
+    'codefont': "'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', 'Monaco', "
                 "'Courier New', monospace",
     'googlewebfonturl': 'https://fonts.googleapis.com/css?family=Cabin'
 }

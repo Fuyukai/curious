@@ -9,7 +9,10 @@ import datetime
 import functools
 import imghdr
 import inspect
+import textwrap
+import types
 import typing
+import warnings
 
 import multio
 from multidict import MultiDict
@@ -220,6 +223,7 @@ def subclass_builtin(original: type):
     Subclasses an immutable builtin, providing method wrappers that return the subclass instead
     of the original.
     """
+
     def get_wrapper(subclass, func):
 
         @functools.wraps(func)
@@ -266,6 +270,54 @@ def subclass_builtin(original: type):
         return subclass
 
     return wrapper
+
+
+class CuriousDeprecatedWarning(FutureWarning):
+    """
+    Warned when a function is deprecated.
+    """
+
+
+def deprecated(*, since: str, see_instead, removal: str):
+    """
+    Marks a method as deprecated.
+
+    :param since: The version since this is deprecated.
+    :param see_instead: What method to see instead.
+    :param removal: The version this function will be removed at.
+    """
+    # TODO: In 3.7, this mess probably won't be needed.
+    def inner(func):
+        # calculate a new doc
+        original_doc = textwrap.dedent(func.__doc__)
+        func.__doc__ = f"**This function is deprecated since {since}.** " \
+                       f"See :meth:`.{see_instead.__qualname__}` instead.  \n" \
+                       f"It will be removed at version {removal}.\n\n" \
+                       f"{original_doc}"
+        print(func.__doc__)
+
+        def wrapper(*args, **kwargs):
+            warnings.warn(f"    This function is deprecated since {since}. "
+                          f"    See '{see_instead.__qualname__}' instead.",
+                          category=CuriousDeprecatedWarning)
+            return func(*args, **kwargs)
+
+        # HACKY METAPROGRAMMING
+        new_globals = {**func.__globals__}
+        new_globals.update(wrapper.__globals__)
+
+        new_wrapper = types.FunctionType(
+            wrapper.__code__, new_globals,
+            name=wrapper.__name__, argdefs=wrapper.__defaults__,
+            closure=wrapper.__closure__
+        )
+        new_wrapper = functools.wraps(func)(new_wrapper)
+
+        new_wrapper.deprecated = True
+        new_wrapper.__doc__ = func.__doc__
+        return new_wrapper
+
+    return inner
 
 
 def _ad_getattr(self, key: str):
