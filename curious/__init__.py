@@ -24,7 +24,7 @@ except DistributionNotFound:
     __version__ = "0.0.0"
 
 
-from curious.core.client import AUTOSHARD, BotType, Client
+from curious.core.client import BotType, Client
 from curious.core.event import EventContext, event
 from curious.core.gateway import Gateway
 from curious.core.state import GuildStore, State
