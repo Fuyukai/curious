@@ -27,7 +27,7 @@ def convert_member(ctx, arg: str) -> Member:
         if not member:
             raise ConversionFailedError(ctx, arg, Member)
     else:
-        member = ctx.guild.find_member(arg)
+        member = ctx.guild.search_for_member(full_name=arg)
         if not member:
             raise ConversionFailedError(ctx, arg, Member)
 
