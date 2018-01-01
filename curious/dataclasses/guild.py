@@ -772,7 +772,7 @@ class Guild(Dataclass):
         """
         for emoji in emojis:
             emoji_obj = dt_emoji.Emoji(**emoji, client=self._bot)
-            emoji_obj.guild_id = self
+            emoji_obj.guild_id = self.id
             self._emojis[emoji_obj.id] = emoji_obj
 
     def from_guild_create(self, **data: dict) -> 'Guild':

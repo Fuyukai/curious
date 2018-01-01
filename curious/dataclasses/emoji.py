@@ -47,7 +47,7 @@ class Emoji(Dataclass):
         return "<{}:{}:{}>".format('a' if self.animated else '', self.name, self.id)
 
     def __repr__(self):
-        return "<Emoji guild={} id={}>".format(self.guild, self.id)
+        return "<Emoji guild={!r} id={!r} name={!r}>".format(self.guild, self.id, self.name)
 
     async def edit(self, *,
                    name: str = None,
