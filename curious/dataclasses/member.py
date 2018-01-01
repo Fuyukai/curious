@@ -226,7 +226,7 @@ class Member(Dataclass):
 
         nick = kwargs.get("nick")
         #: The member's current :class:`._Nickname`.
-        self._nickname: Nickname = Nickname(nick) if nick else Nickname.NONE
+        self._nickname: Nickname = Nickname(nick)
 
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int
