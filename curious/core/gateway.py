@@ -237,7 +237,7 @@ class Gateway(object):
         self._close_reason = reason
         await self._stop_heartbeating.set()
 
-    async def _send(self, data):
+    async def _send(self, data: typing.Union[bytes, str]) -> None:
         """
         Sends some data.
 
@@ -255,7 +255,7 @@ class Gateway(object):
             await self.close()
             raise
 
-    def _send_dict(self, payload: dict):
+    def _send_dict(self, payload: dict) -> typing.Coroutine[None, None, None]:
         """
         Sends a dict to be packed down the gateway.
 
@@ -266,7 +266,7 @@ class Gateway(object):
         data = _dumper(payload)
         return self._send(data)
 
-    async def send(self, data: typing.Any):
+    async def send(self, data: typing.Any) -> None:
         """
         Sends a variable type of data down the gateway.
         """
@@ -356,7 +356,7 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def send_voice_state_update(self, guild_id: int, channel_id: int):
+    async def send_voice_state_update(self, guild_id: int, channel_id: int) -> None:
         """
         Sends a voice state update packet.
 
@@ -376,7 +376,7 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def send_heartbeat(self):
+    async def send_heartbeat(self) -> int:
         """
         Sends a single heartbeat.
         """
@@ -390,7 +390,7 @@ class Gateway(object):
         await self._send_dict(hb)
         return self.hb_stats.heartbeats
 
-    async def send_guild_sync(self, guilds):
+    async def send_guild_sync(self, guilds) -> None:
         """
         Sends a guild sync packet.
 
@@ -403,7 +403,7 @@ class Gateway(object):
 
         await self._send_dict(payload)
 
-    async def request_chunks(self, guilds):
+    async def request_chunks(self, guilds) -> None:
         """
         Requests member chunks from a guild.
 
@@ -451,7 +451,7 @@ class Gateway(object):
 
         return obb
 
-    async def reconnect(self, *, resume: bool = False):
+    async def reconnect(self, *, resume: bool = False) -> 'Gateway':
         """
         Reconnects the bot to the gateway.
 
@@ -481,7 +481,7 @@ class Gateway(object):
 
         return self
 
-    async def _get_chunks(self):
+    async def _get_chunks(self) -> None:
         """
         Called to start chunking all guild members.
         """
@@ -493,7 +493,7 @@ class Gateway(object):
         await self.request_chunks(self._enqueued_guilds)
         self._enqueued_guilds.clear()
 
-    def _get_heartbeat(self):
+    def _get_heartbeat(self) -> dict:
         return {
             "op": GatewayOp.HEARTBEAT,
             "d": self.sequence_num
