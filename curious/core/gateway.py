@@ -5,7 +5,6 @@ Websocket gateway code.
 """
 import collections
 import enum
-import inspect
 import logging
 import sys
 import threading
@@ -588,43 +587,8 @@ class Gateway(object):
             elif op == GatewayOp.DISPATCH:
                 # Handle the dispatch.
                 event = event_data.get("t")
-                handler = getattr(self.state, "handle_{}".format(event.lower()), None)
-
-                if handler:
-                    self.logger.debug("Parsing event {}.".format(event))
-                    self._dispatches_handled[event] += 1
-                    yield ("gateway_dispatch_received", data,)
-
-                    try:
-                        coro = handler(self, data)
-                        if inspect.isawaitable(coro):
-                            result = await coro
-                        elif inspect.isasyncgen(coro):
-                            # for event handlers with multiple yields
-                            async with multio.finalize_agen(coro) as gen:
-                                async for i in gen:
-                                    yield i
-
-                            continue
-                        else:
-                            result = coro
-
-                        # coerce into tuples
-                        if not isinstance(result, tuple):
-                            yield result,
-                        else:
-                            yield result
-
-                    except ChunkGuilds as e:
-                        # We need to download all member chunks from this guild.
-                        await self._get_chunks()
-                    except Exception:
-                        self.logger.exception("Error decoding event {} with data "
-                                              "{}".format(event, data))
-                        await self.close(code=1006, reason="Client error")
-                        raise
-                else:
-                    self.logger.warning("Unhandled event: {}".format(event))
+                self._dispatches_handled[event] += 1
+                yield ("gateway_dispatch_received", event, data,)
 
             else:
                 try:

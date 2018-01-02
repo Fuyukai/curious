@@ -18,8 +18,8 @@ import multio
 from asyncwebsockets import WebsocketClosed
 from asyncwebsockets.common import WebsocketUnusable
 
-from curious.core.event import EventManager, event as ev_dec
-from curious.core.gateway import Gateway, ReconnectWebsocket
+from curious.core.event import EventContext, EventManager, event as ev_dec
+from curious.core.gateway import ChunkGuilds, Gateway, ReconnectWebsocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
@@ -121,6 +121,7 @@ class Client(object):
 
         #: The current :class:`.EventManager` for this bot.
         self.events = EventManager()
+        self.events.add_event(self.handle_dispatches, name="gateway_dispatch_received")
 
         #: The :class:`~.HTTPClient` used for this bot.
         self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
@@ -524,6 +525,46 @@ class Client(object):
 
         return guild
 
+    async def handle_dispatches(self, ctx: EventContext, name: str, dispatch: dict):
+        """
+        Handles dispatches for the client.
+        """
+        try:
+            handle_name = name.lower()
+            handler = getattr(self.state, f"handle_{handle_name}")
+        except AttributeError:
+            logger.warning(f"Got unknown dispatch {name}")
+            return
+        else:
+            logger.debug(f"Processing event {name}")
+
+        try:
+            result = handler(ctx.gateway, dispatch)
+
+            if inspect.isawaitable(result):
+                result = await result
+            elif inspect.isasyncgen(result):
+                async with multio.finalize_agen(result) as gen:
+                    async for i in gen:
+                        await self.events.fire_event(i[0], *i[1:], gateway=ctx.gateway, client=self)
+
+                # no more processing after the async gen
+                return
+
+            if not isinstance(result, tuple):
+                await self.events.fire_event(result, gateway=ctx.gateway, client=self)
+            else:
+                await self.events.fire_event(result[0], *result[1:], gateway=ctx.gateway,
+                                             client=self)
+
+        # TODO: Change this from being an exception to being an event.
+        except ChunkGuilds:
+            ctx.gateway._get_chunks()
+        except Exception:
+            logger.exception(f"Error decoding event {event} with data {dispatch}!")
+            await ctx.gateway.close(code=1006, reason="Internal client error")
+            raise
+
     async def handle_shard(self, shard_id: int, shard_count: int):
         """
         Handles a shard.
@@ -609,7 +650,6 @@ class Client(object):
 
         :param shard_count: The number of shards to boot.
         :param autoshard: If the bot should be autosharded.
-        :return:
         """
         if autoshard:
             shard_count = await self.get_shard_count()
