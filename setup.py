@@ -1,6 +1,13 @@
+import os
 from pathlib import Path
 
 from setuptools import setup
+
+# Override readthedocs.
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if on_rtd:
+    import pip
+    pip.main("install git+https://github.com/sphinx-doc/sphinx.git".split())
 
 setup(
     name='discord-curious',
