@@ -310,7 +310,7 @@ def deprecated(*, since: str, see_instead, removal: str):
             name=wrapper.__name__, argdefs=wrapper.__defaults__,
             closure=wrapper.__closure__
         )
-        new_wrapper = functools.wraps(func)(new_wrapper)
+        new_wrapper = functools.update_wrapper(new_wrapper, func)
 
         new_wrapper.deprecated = True
         new_wrapper.__doc__ = func.__doc__

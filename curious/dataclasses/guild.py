@@ -984,7 +984,8 @@ class Guild(Dataclass):
     async def get_bans(self) -> 'typing.List[dt_user.User]':
         """
         Gets the bans for this guild.
-        :return: A list of User objects, one for each ban.
+
+        :return: A list of :class:`.User` objects, one for each ban.
         """
         if not self.me.guild_permissions.ban_members:
             raise PermissionsError("ban_members")
@@ -1040,7 +1041,7 @@ class Guild(Dataclass):
             user = await client.get_user(66237334693085184)
             await guild.ban(user)
 
-        :param victim: The :class:`~.Member` or :class:`~.User` object to ban.
+        :param victim: The :class:`.Member` or :class:`.User` object to ban.
         :param delete_message_days: The number of days to delete messages.
         """
         if not self.me.guild_permissions.ban_members:
@@ -1050,7 +1051,7 @@ class Guild(Dataclass):
             if self.owner == victim:
                 raise HierarchyError("Cannot ban the owner")
 
-            if victim.guild != self:
+            if victim.guild_id != self.id:
                 raise ValueError("Member must be from this guild (try `member.user` instead)")
 
             if victim.top_role >= self.me.top_role:
@@ -1070,7 +1071,6 @@ class Guild(Dataclass):
     async def unban(self, user: 'dt_user.User'):
         """
         Unbans a user from this guild.
-
         Example for unbanning the first banned user:
 
         .. code:: python
@@ -1084,6 +1084,11 @@ class Guild(Dataclass):
 
             user = await client.get_user(66237334693085184)
             await guild.unban(user)
+
+        .. note::
+
+            This does not take :class:`.Member` objects, as members cannot be in a guild and
+            banned from the guild.
 
         :param user: The :class:`~.User` to forgive and unban.
         """

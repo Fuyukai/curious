@@ -145,6 +145,7 @@ class CommandsManager(object):
                           module: str = None):
         """
         Loads a plugin.
+
         .. note::
 
             The client instance will automatically be provided to the Plugin's ``__init__``.
