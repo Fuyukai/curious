@@ -15,7 +15,7 @@ dependencies:
   - libffi
   # requirements for rtd
   - pip:
-    - sphinx
+    - git+https://github.com/sphinx-doc/sphinx
     - sphinx-autodoc-typehints
     - sphinxcontrib-asyncio
     - sphinx_py3doc_enhanced_theme
