@@ -39,7 +39,11 @@ setup(
     extras_require={
         "voice": ["opuslib==1.1.0",
                   "PyNaCL==1.0.1"],
-        "docs": ["sphinx_py3doc_enhanced_theme", "sphinx", "sphinxcontrib-asyncio",
-                 "sphinx-autodoc-typehints"]
-    }
+        "docs": [
+            "sphinx_py3doc_enhanced_theme",
+            "sphinx",
+            "sphinxcontrib-asyncio",
+            "sphinx-autodoc-typehints",
+        ]
+    },
 )

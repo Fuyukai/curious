@@ -1,7 +1,10 @@
 ## Read the docs config file.
 
-conda:
-    file: environment.yml
+# enable 3.6
+build:
+  image: latest
 
 python:
-   setup_py_install: true
+   version: 3.6
+   pip_install: true
+   extra_requrements: docs
