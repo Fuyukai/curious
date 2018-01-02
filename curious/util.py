@@ -294,7 +294,6 @@ def deprecated(*, since: str, see_instead, removal: str):
                        f"See :meth:`.{see_instead.__qualname__}` instead.  \n" \
                        f"It will be removed at version {removal}.\n\n" \
                        f"{original_doc}"
-        print(func.__doc__)
 
         def wrapper(*args, **kwargs):
             warnings.warn(f"    This function is deprecated since {since}. "

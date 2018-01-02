@@ -210,29 +210,29 @@ class Channel(Dataclass):
         super().__init__(kwargs.get("id"), client)
 
         #: The name of this channel.
-        self.name = kwargs.get("name", None)
+        self.name = kwargs.get("name", None)  # type: str
 
         #: The topic of this channel.
-        self.topic = kwargs.get("topic", None)
+        self.topic = kwargs.get("topic", None)  # type: str
 
         #: The ID of the guild this is associated with.
-        self.guild_id = int(kwargs.get("guild_id", 0)) or None
+        self.guild_id = int(kwargs.get("guild_id", 0)) or None  # type: int
 
         parent_id = kwargs.get("parent_id")
         if parent_id is not None:
             parent_id = int(parent_id)
 
         #: The parent ID of this channel.
-        self.parent_id = parent_id
+        self.parent_id = parent_id  # type: int
 
         #: The :class:`~.ChannelType` of channel this channel is.
-        self.type = ChannelType(kwargs.get("type", 0))
+        self.type = ChannelType(kwargs.get("type", 0))  # type: ChannelType
 
         #: If this channel is NSFW.
-        self.nsfw: bool = kwargs.get("nsfw", False)
+        self.nsfw = kwargs.get("nsfw", False)  # type: bool
 
         #: If private, the list of :class:`~.User` that are in this channel.
-        self._recipients = {}
+        self._recipients = {}  # type: _typing.Dict[str, dt_user.User]
         if self.private:
             for recipient in kwargs.get("recipients", []):
                 u = self._bot.state.make_user(recipient)
@@ -243,10 +243,12 @@ class Channel(Dataclass):
                 self._recipients[self._bot.user.id] = self._bot.user
 
         #: The position of this channel.
-        self.position = kwargs.get("position", 0)
+        self.position = kwargs.get("position", 0)  # type: int
 
         #: The last message ID of this channel.
         #: Used for history.
+        self._last_message_id = None  # type: int
+
         _last_message_id = kwargs.get("last_message_id", 0)
         if _last_message_id:
             self._last_message_id = int(_last_message_id)
@@ -256,13 +258,13 @@ class Channel(Dataclass):
         # group channel stuff
         #: The owner ID of the channel.
         #: This is None for non-group channels.
-        self.owner_id = int(kwargs.get("owner_id", 0)) or None
+        self.owner_id = int(kwargs.get("owner_id", 0)) or None  # type: int
 
         #: The icon hash of the channel.
-        self.icon_hash = kwargs.get("icon", None)
+        self.icon_hash = kwargs.get("icon", None)  # type: str
 
         #: The internal overwrites for this channel.
-        self._overwrites = {}
+        self._overwrites = {}  # type: _typing.Dict[int, dt_permissions.Overwrite]
 
     def __repr__(self):
         return f"<Channel id={self.id} name={self.name} type={self.type.name} " \

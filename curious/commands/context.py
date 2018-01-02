@@ -36,16 +36,16 @@ class Context(object):
         :param message: The :class:`.Message` this command was invoked with.
         """
         #: The message for this context.
-        self.message: Message = message
+        self.message = message  # type: Message
 
         #: The extracted command name for this context.
-        self.command_name: str = None
+        self.command_name = None  # type: str
 
         #: The tokens for this context.
-        self.tokens: List[str] = []
+        self.tokens = []  # type: List[str]
 
         #: The formatted command for this context.
-        self.formatted_command: str = None
+        self.formatted_command = None  # type: str
 
         #: The plugin for this context.
         self.plugin = None
@@ -54,7 +54,7 @@ class Context(object):
         self.manager = None
 
         #: The event context for this context.
-        self._event_context: EventContext = event_context
+        self._event_context = event_context  # type: EventContext
 
         #: The :class:`.Client` for this context.
         self.bot = event_context.bot

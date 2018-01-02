@@ -286,12 +286,12 @@ class EventContext(object):
         self.bot = cl
 
         #: The shard this event was received on.
-        self.shard_id: int = shard_id
+        self.shard_id = shard_id  # type: int
         #: The shard for this bot.
-        self.shard_count: int = cl.shard_count
+        self.shard_count = cl.shard_count  # type: int
 
         #: The event name for this event.
-        self.event_name: str = event_name
+        self.event_name = event_name  # type: int
 
     @property
     def handlers(self) -> typing.List[typing.Callable[['EventContext'], None]]:
@@ -300,7 +300,7 @@ class EventContext(object):
         """
         return self.bot.events.getall(self.event_name, [])
 
-    def change_status(self, *args, **kwargs):
+    def change_status(self, *args, **kwargs) -> typing.Coroutine[None, None, None]:
         """
         Changes the current status for this shard.
         

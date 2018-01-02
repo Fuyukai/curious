@@ -70,16 +70,16 @@ class Game(object):
         :param type: A :class:`.GameType` for this game.
         """
         #: The type of game this is.
-        self.type: GameType = 0
+        self.type = GameType.PLAYING  # type: GameType
         try:
-            self.type: GameType = GameType(kwargs.get("type", 0))
+            self.type = GameType(kwargs.get("type", 0))
         except ValueError:
             self.type = kwargs.get("type", 0)
 
         #: The stream URL this game is for.
-        self.url: str = kwargs.get("url", None)
+        self.url = kwargs.get("url", None)  # type: str
         #: The name of the game being played.
-        self.name: str = kwargs.get("name", None)
+        self.name = kwargs.get("name", None)  # type: str
 
     def to_dict(self) -> dict:
         """

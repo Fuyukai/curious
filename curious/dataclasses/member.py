@@ -4,6 +4,7 @@ Wrappers for Member objects (Users with guilds).
 .. currentmodule:: curious.dataclasses.member
 """
 import collections
+import datetime
 import typing
 from typing import List
 
@@ -222,11 +223,11 @@ class Member(Dataclass):
         self.roles = _MemberRoleContainer(self)
 
         #: The date the user joined the guild.
-        self.joined_at = to_datetime(kwargs.get("joined_at", None))
+        self.joined_at = to_datetime(kwargs.get("joined_at", None))  # type: datetime.datetime
 
         nick = kwargs.get("nick")
-        #: The member's current :class:`._Nickname`.
-        self._nickname: Nickname = Nickname(nick)
+        #: The member's current :class:`.Nickname`.
+        self._nickname = Nickname(nick)  # type: Nickname
 
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int

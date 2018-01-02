@@ -20,22 +20,22 @@ class Emoji(Dataclass):
         super().__init__(int(kwargs.get("id")), kwargs.get("client"))
 
         #: The name of this emoji.
-        self.name = kwargs.get("name", None)
+        self.name = kwargs.get("name", None)  # type: str
 
         #: A list of role IDs that this emoji can be used by.
-        self.role_ids = kwargs.get("roles", [])
+        self.role_ids = kwargs.get("roles", [])  # type: typing.List[int]
 
         #: If this emoji requires colons to use.
-        self.require_colons: bool = kwargs.get("require_colons", False)
+        self.require_colons = kwargs.get("require_colons", False)  # type: bool
 
         #: If this emoji is managed or not.
-        self.managed: bool = kwargs.get("managed", False)
+        self.managed = kwargs.get("managed", False)  # type: bool
 
         #: The ID of the guild this emoji is associated with.
-        self.guild_id: int = None
+        self.guild_id = None  # type: int
 
         #: If this emoji is animated or not.
-        self.animated: bool = kwargs.get("animated", False)
+        self.animated = kwargs.get("animated", False)  # type: bool
 
     def __eq__(self, other):
         if isinstance(other, str):

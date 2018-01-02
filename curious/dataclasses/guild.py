@@ -35,7 +35,7 @@ default_var = typing.TypeVar("T")
 
 class MFALevel(enum.IntEnum):
     """
-    Represents the MFA level of a :class:`~.Guild`.
+    Represents the MFA level of a :class:`.Guild`.
     """
     #: Used when MFA authentication is **disabled**.
     #: This means moderation actions will not require multi-factor auth.
@@ -48,7 +48,7 @@ class MFALevel(enum.IntEnum):
 
 class VerificationLevel(enum.IntEnum):
     """
-    Represents the verification levels for a :class:`~.Guild`.
+    Represents the verification levels for a :class:`.Guild`.
     """
     #: No verification level.
     #: All users can speak after joining immediately.
@@ -475,9 +475,6 @@ class Guild(Dataclass):
     valid_embed_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
 
     def __init__(self, bot, **kwargs):
-        """
-        Creates a new Guild object.
-        """
         super().__init__(kwargs.get("id"), bot)
 
         #: If the guild is unavailable or not.
@@ -486,47 +483,47 @@ class Guild(Dataclass):
 
         # Placeholder values.
         #: The name of this guild.
-        self.name: str = None
+        self.name = None  # type: str
 
         #: The icon hash of this guild.
         #: Used to construct the icon URL later.
-        self._icon_hash: str = None
+        self._icon_hash = None  # type: str
 
         #: The splash hash of this guild.
         #: Used to construct the splash URL later.
-        self._splash_hash: str = None
+        self._splash_hash = None  # type: str
 
         #: The AFK channel ID of this guild.
-        self.afk_channel_id: int = None
+        self.afk_channel_id = None  # type: int
 
         #: The ID of the system channel for this guild.
         #: This is where welcome messages and the likes are sent.
         #: Effective replacement for default channel for bots.
-        self.system_channel_id: int = None
+        self.system_channel_id = None  # type: int
 
         #: The owner ID of this guild.
-        self.owner_id: int = None
+        self.owner_id = None  # type: int
 
         #: The AFK timeout for this guild. None if there's no AFK timeout.
-        self.afk_timeout: int = None  # type: int
+        self.afk_timeout = None  # type: int
 
         #: The voice region of this guild.
-        self.region: str = None
+        self.region = None  # type: str
 
         #: The features this guild has.
-        self.features: typing.List[str] = None
+        self.features = None  # type: typing.List[str]
 
         #: The MFA level of this guild.
-        self.mfa_level: MFALevel = MFALevel.DISABLED
+        self.mfa_level = MFALevel.DISABLED
         #: The verification level of this guild.
-        self.verification_level: VerificationLevel = VerificationLevel.NONE
+        self.verification_level = VerificationLevel.NONE
         #: The notification level of this guild.
-        self.notification_level: NotificationLevel = NotificationLevel.ALL_MESSAGES
+        self.notification_level = NotificationLevel.ALL_MESSAGES
         #: The content filter level of this guild.
-        self.content_filter_level: ContentFilterLevel = ContentFilterLevel.SCAN_NONE
+        self.content_filter_level = ContentFilterLevel.SCAN_NONE
 
         #: The shard ID this guild is associated with.
-        self.shard_id: int = None
+        self.shard_id = None  # type: int
 
         #: The roles that this guild has.
         self._roles = {}
@@ -541,7 +538,7 @@ class Guild(Dataclass):
 
         #: The number of numbers this guild has.
         #: This is automatically updated.
-        self.member_count: int = 0
+        self.member_count = 0  # type: int
 
         #: Is this guild a large guild according to Discord?
         self._large = None  # type: bool
