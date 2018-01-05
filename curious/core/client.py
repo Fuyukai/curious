@@ -561,7 +561,7 @@ class Client(object):
         except ChunkGuilds:
             ctx.gateway._get_chunks()
         except Exception:
-            logger.exception(f"Error decoding event {event} with data {dispatch}!")
+            logger.exception(f"Error decoding event {name} with data {dispatch}!")
             await ctx.gateway.close(code=1006, reason="Internal client error")
             raise
 
