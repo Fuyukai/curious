@@ -286,12 +286,27 @@ def deprecated(*, since: str, see_instead, removal: str):
     :param see_instead: What method to see instead.
     :param removal: The version this function will be removed at.
     """
-    # TODO: In 3.7, this mess probably won't be needed.
+    # TODO: In 3.7, the globals mess probably won't be needed.
     def inner(func):
         # calculate a new doc
+        nonlocal see_instead
+        if not isinstance(see_instead, str):
+            qualname = see_instead.__qualname__
+            mod = inspect.getmodule(see_instead).__name__
+
+            # eat curious defines
+            if mod.startswith("curious."):
+                mod = ""
+
+            # check for classes
+            if '.' in qualname:
+                see_instead = f":meth:`{mod}.{qualname}`"
+            else:
+                see_instead = f":func:`{mod}.{qualname}`"
+
         original_doc = textwrap.dedent(func.__doc__)
         func.__doc__ = f"**This function is deprecated since {since}.** " \
-                       f"See :meth:`.{see_instead.__qualname__}` instead.  \n" \
+                       f"See :meth:`.{see_instead}` instead.  \n" \
                        f"It will be removed at version {removal}.\n\n" \
                        f"{original_doc}"
 

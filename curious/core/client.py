@@ -588,6 +588,9 @@ class Client(object):
                 logger.exception("Failed to connect to the gateway...")
                 total_tries += 1
                 continue
+            except BaseException:
+                # KeyboardInterrupt, EOFError
+                raise
             else:
                 # reset total tries, we made it
                 total_tries = 0
