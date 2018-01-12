@@ -4,12 +4,34 @@ Wrappers for Application Info objects.
 .. currentmodule:: curious.dataclasses.appinfo
 """
 from collections import namedtuple
+from sys import version_info
+from typing import List
 
 from curious.dataclasses import guild as dt_guild
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
-AuthorizedApp = namedtuple("AuthorizedApp", "scopes id application")
+
+class AuthorizedApp:
+    """
+    Represents an authorized app.
+    """
+    #: The ID of the application authorized.
+    id: int
+
+    #: The list of scopes this app was authorized for.
+    scopes: List[str]
+
+    #: The :class:`.AppInfo` for this application.
+    application: 'AppInfo'
+
+
+# PEP 557
+if version_info[0:2] >= (3, 7):
+    from typing import dataclass
+    AuthorizedApp = dataclass(AuthorizedApp)
+else:
+    AuthorizedApp = namedtuple("AuthorizedApp", "scopes id application")
 
 
 class AppInfo(Dataclass):
@@ -71,7 +93,7 @@ class AppInfo(Dataclass):
                                                                        self._icon_hash)
 
     async def add_to_guild(self, guild: 'dt_guild.Guild', *,
-                           permissions: int=0):
+                           permissions: int = 0):
         """
         Authorizes this bot to join a guild.
 
@@ -90,9 +112,3 @@ class AppInfo(Dataclass):
             raise CuriousError("This bot requires code grant")
 
         await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
-
-
-class OwnedAppInfo(AppInfo):
-    """
-    A special class for application info
-    """
