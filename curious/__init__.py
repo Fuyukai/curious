@@ -15,6 +15,7 @@ Curious - A Curio-based Python 3.5+ library for Discord bots.
     exc
     util
 """
+from __future__ import generator_stop  # enforce generator stop
 
 from pkg_resources import DistributionNotFound, get_distribution
 
