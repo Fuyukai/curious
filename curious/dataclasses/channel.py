@@ -59,7 +59,6 @@ class _TypingCtxManager:
         
     This class should **not** be instantiated directly - instead, use :meth:`~.Channel.typing`.
     """
-
     def __init__(self, channel: 'Channel'):
         self._channel = channel
 
@@ -213,6 +212,8 @@ class ChannelMessageWrapper(object):
     """
     Represents a channel's message container.
     """
+
+    __slots__ = "channel",
 
     def __init__(self, channel: 'Channel'):
         #: The :class:`.Channel` this container is used for.
