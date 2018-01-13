@@ -9,19 +9,19 @@ import pathlib
 import time
 import typing as _typing
 from math import floor
+from os import PathLike
 from types import MappingProxyType
 
 import curio
 import multio
 
-from curious.core import client as dt_client
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
     message as dt_message, permissions as dt_permissions, role as dt_role, user as dt_user, \
     webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, Forbidden, PermissionsError
-from curious.util import AsyncIteratorWrapper, base64ify
+from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
 
 class ChannelType(enum.IntEnum):
@@ -96,14 +96,22 @@ class HistoryIterator(collections.AsyncIterator):
             ...
             
     Note that usage 2 will only fill chunks of 100 messages at a time.
-
     """
 
-    def __init__(self, channel: 'Channel', client: 'dt_client.Client',
+    def __init__(self, channel: 'Channel',
                  max_messages: int = -1, *,
                  before: int = None, after: int = None):
+        """
+        :param channel: The :class:`.Channel` to iterate over.
+        :param max_messages: The maximum number of messages to return. <= 0 means infinite.
+        :param before: The message ID to fetch before.
+        :param after: The message ID to fetch after.
+
+        .. versionchanged:: 0.7.0
+
+            Removed the ``client`` parameter.
+        """
         self.channel = channel
-        self.client = client
 
         #: The current storage of messages.
         self.messages = collections.deque()
@@ -132,7 +140,7 @@ class HistoryIterator(collections.AsyncIterator):
         else:
             self.last_message_id = self.after
 
-    async def fill_messages(self):
+    async def fill_messages(self) -> None:
         """
         Called to fill the next <n> messages.
         
@@ -148,18 +156,18 @@ class HistoryIterator(collections.AsyncIterator):
             return
 
         if self.before:
-            messages = await self.client.http.get_message_history(self.channel.id,
-                                                                  before=self.last_message_id,
-                                                                  limit=to_get)
+            messages = await self.channel._bot.http.get_message_history(self.channel.id,
+                                                                        before=self.last_message_id,
+                                                                        limit=to_get)
         else:
-            messages = await self.client.http.get_message_history(self.channel.id,
-                                                                  after=self.last_message_id)
+            messages = await self.channel._bot.http.get_message_history(self.channel.id,
+                                                                        after=self.last_message_id)
             messages = reversed(messages)
 
         for message in messages:
             self.messages.append(self.client.state.make_message(message))
 
-    async def __anext__(self):
+    async def __anext__(self) -> 'dt_message.Message':
         self.current_count += 1
         if self.current_count == self.max_messages:
             raise StopAsyncIteration
@@ -177,11 +185,11 @@ class HistoryIterator(collections.AsyncIterator):
 
         return message
 
-    def __iter__(self):
-        raise RuntimeError("Use `async for`")
+    def __iter__(self) -> None:
+        raise RuntimeError("This is not an iterator - you want to use `async for` instead.")
 
-    def __await__(self):
-        raise RuntimeError("This is not a coroutine")
+    def __await__(self) -> None:
+        raise RuntimeError("This is not a coroutine - you want to use `async for` instead.")
 
     async def next(self) -> 'dt_message.Message':
         """
@@ -199,6 +207,308 @@ class HistoryIterator(collections.AsyncIterator):
             items.append(item)
 
         return items
+
+
+class ChannelMessageWrapper(object):
+    """
+    Represents a channel's message container.
+    """
+
+    def __init__(self, channel: 'Channel'):
+        #: The :class:`.Channel` this container is used for.
+        self.channel = channel
+
+    @property
+    def history(self) -> HistoryIterator:
+        """
+        :return: A :class:`.HistoryIterator` that can be used to iterate over the channel history.
+        """
+        return self.get_history(before=self.channel._last_message_id, limit=-1)
+
+    def get_history(self, before: int = None,
+                    after: int = None,
+                    limit: int = 100) -> HistoryIterator:
+        """
+        Gets history for this channel.
+
+        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async
+        iterated over to get message history.
+
+        .. code-block:: python3
+
+            async for message in channel.get_history(limit=1000):
+                print(message.content, "by", message.author.user.name)
+
+        :param limit: The maximum number of messages to get.
+        :param before: The snowflake ID to get messages before.
+        :param after: The snowflake ID to get messages after.
+        """
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).read_message_history:
+                raise PermissionsError("read_message_history")
+
+        return HistoryIterator(self.channel, before=before, after=after, max_messages=limit)
+
+    async def send(self, content: str = None, *,
+                   tts: bool = False, embed: Embed = None) -> 'dt_message.Message':
+        """
+        Sends a message to this channel.
+
+        This requires SEND_MESSAGES permission in the channel.
+        If the content is not a string, it will be automatically stringified.
+
+        .. code:: python
+
+            await channel.send("Hello, world!")
+
+        :param content: The content of the message to send.
+        :param tts: Should this message be text to speech?
+        :param embed: An embed object to send with this message.
+        :return: A new :class:`~.Message` object.
+        """
+        if self.channel.type not in [ChannelType.TEXT, ChannelType.PRIVATE]:
+            raise CuriousError("Cannot send messages to a voice channel")
+
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).send_messages:
+                raise PermissionsError("send_messages")
+
+        if not isinstance(content, str) and content is not None:
+            content = str(content)
+
+        # check for empty messages
+        if not content:
+            if not embed:
+                raise CuriousError("Cannot send an empty message")
+
+            if self.channel.guild and not \
+                    self.channel.permissions(self.channel.guild.me).embed_links:
+                raise PermissionsError("embed_links")
+        else:
+            if content and len(content) > 2000:
+                raise CuriousError("Content must be less than 2000 characters")
+
+        if embed is not None:
+            embed = embed.to_dict()
+
+        data = await self.channel._bot.http.send_message(self.channel.id, content,
+                                                         tts=tts, embed=embed)
+        obb = self.channel._bot.state.make_message(data, cache=True)
+
+        return obb
+
+    async def upload(self, fp: '_typing.Union[bytes, str, PathLike, _typing.IO]',
+                     *,
+                     filename: str = "unknown.bin",
+                     message_content: _typing.Optional[str] = None) -> 'dt_message.Message':
+        """
+        Uploads a message to this channel.
+
+        This requires SEND_MESSAGES and ATTACH_FILES permission in the channel.
+
+        .. code:: python
+
+            with open("/tmp/emilia_best_girl.jpg", 'rb') as f:
+                await channel.messages.upload(f, "my_waifu.jpg")
+
+        :param fp: Variable.
+
+            - If passed a string or a :class:`os.PathLike`, will open and read the file and
+            upload it.
+            - If passed bytes, will use the bytes as the file content.
+            - If passed a file-like, will read and use the content to upload.
+
+        :param filename: The filename for the file uploaded. If a path-like or str is passed, \
+            will use the filename from that if this is not specified.
+        :param message_content: Optional: Any extra content to be sent with the message.
+        :return: The new :class:`~.Message` created.
+        """
+        if self.channel.type == ChannelType.VOICE:
+            raise CuriousError("Cannot send messages to a voice channel")
+
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).send_messages:
+                raise PermissionsError("send_messages")
+
+            if not self.channel.permissions(self.channel.guild.me).attach_files:
+                raise PermissionsError("attach_files")
+
+        if isinstance(fp, bytes):
+            file_content = fp
+        elif isinstance(fp, (str, PathLike)):
+            if filename is None:
+                path = pathlib.Path(fp)
+                filename = path.parts[-1]
+
+            with open(fp, mode='rb') as f:
+                file_content = f.read()
+        elif isinstance(fp, _typing.IO) or hasattr(fp, "read"):
+            file_content = fp.read()
+
+            if isinstance(file_content, str):
+                file_content = file_content.encode("utf-8")
+        else:
+            raise ValueError("Got unknown type for upload")
+
+        data = await self.channel._bot.http.send_file(self.channel.id, file_content,
+                                                      filename=filename, content=message_content)
+        obb = self.channel._bot.state.make_message(data, cache=False)
+        return obb
+
+    async def bulk_delete(self, messages: '_typing.List[dt_message.Message]') -> int:
+        """
+        Deletes messages from a channel.
+        This is the low-level delete function - for the high-level function, see
+        :meth:`.Channel.messages.purge()`.
+
+        Example for deleting all the last 100 messages:
+
+        .. code:: python
+
+            history = channel.messages.get_history(limit=100)
+            messages = []
+
+            async for message in history:
+                messages.append(message)
+
+            await channel.messages.bulk_delete(messages)
+
+        :param messages: A list of :class:`.Message` objects to delete.
+        :return: The number of messages deleted.
+        """
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).manage_messages:
+                raise PermissionsError("manage_messages")
+
+        minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+        ids = []
+        for message in messages:
+            if message.id < minimum_allowed:
+                msg = f"Cannot delete message id {message.id} older than {minimum_allowed}"
+                raise CuriousError(msg)
+
+            ids.append(message.id)
+
+        await self.channel._bot.http.delete_multiple_messages(self.channel.id, ids)
+
+        return len(ids)
+
+    async def purge(self, limit: int = 100, *,
+                    author: 'dt_member.Member' = None,
+                    content: str = None,
+                    predicate: '_typing.Callable[[dt_message.Message], bool]' = None,
+                    fallback_from_bulk: bool = False):
+        """
+        Purges messages from a channel.
+        This will attempt to use ``bulk-delete`` if possible, but otherwise will use the normal
+        delete endpoint (which can get ratelimited severely!) if ``fallback_from_bulk`` is True.
+
+        Example for deleting all messages owned by the bot:
+
+        .. code-block:: python3
+
+            me = channel.guild.me
+            await channel.messages.purge(limit=100, author=me)
+
+        Custom check functions can also be applied which specify any extra checks. They take one
+        argument (the Message object) and return a boolean (True or False) determining if the
+        message should be deleted.
+
+        For example, to delete all messages with the letter ``i`` in them:
+
+        .. code-block:: python3
+
+            await channel.purge(limit=100, predicate=lambda message: 'i' in message.content)
+
+        :param limit: The maximum amount of messages to delete. -1 for unbounded size.
+        :param author: Only delete messages made by this author.
+        :param content: Only delete messages that exactly match this content.
+        :param predicate: A callable that determines if a message should be deleted.
+        :param fallback_from_bulk: If this is True, messages will be regular deleted if they \
+            cannot be bulk deleted.
+        :return: The number of messages deleted.
+        """
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).manage_messages \
+                    and not fallback_from_bulk:
+                raise PermissionsError("manage_messages")
+
+        checks = []
+        if author:
+            checks.append(lambda m: m.author == author)
+
+        if content:
+            checks.append(lambda m: m.content == content)
+
+        if predicate:
+            checks.append(predicate)
+
+        to_delete = []
+        history = self.get_history(limit=limit)
+
+        async for message in history:
+            if all(check(message) for check in checks):
+                to_delete.append(message)
+
+        can_bulk_delete = True
+
+        # Split into chunks of 100.
+        message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
+        minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
+        for chunk in message_chunks:
+            message_ids = []
+            for message in chunk:
+                if message.id < minimum_allowed:
+                    msg = f"Cannot delete message id {message.id} older than {minimum_allowed}"
+                    raise CuriousError(msg)
+
+                message_ids.append(message.id)
+
+            # First, try and bulk delete all the messages.
+            if can_bulk_delete:
+                try:
+                    await self.channel._bot.http.delete_multiple_messages(self.channel.id,
+                                                                          message_ids)
+                except Forbidden:
+                    # We might not have MANAGE_MESSAGES.
+                    # Check if we should fallback on normal delete.
+                    can_bulk_delete = False
+                    if not fallback_from_bulk:
+                        # Don't bother, actually.
+                        raise
+
+            # This is an `if not` instead of an `else` because `can_bulk_delete` might've changed.
+            if not can_bulk_delete:
+                # Instead, just delete() the message.
+                for message in chunk:
+                    await message.delete()
+
+        return len(to_delete)
+
+    async def get(self, message_id: int) -> 'dt_message.Message':
+        """
+        Gets a single message from this channel.
+
+        :param message_id: The message ID to retrieve.
+        :return: A new :class:`.Message` object.
+        """
+        if self.channel.guild:
+            if not self.channel.permissions(self.channel.guild.me).read_message_history:
+                raise PermissionsError("read_message_history")
+
+        if self.channel._bot.user.bot:
+            data = await self.channel._bot.http.get_message(self.channel.id, message_id)
+        else:
+            data = await self.channel._bot.http.get_message_history(self.channel.id,
+                                                                    around=message_id, limit=1)
+            if not data:
+                raise CuriousError("No messages found for this ID")
+            else:
+                data = data[0]
+
+        msg = self.channel._bot.state.make_message(data)
+
+        return msg
 
 
 class Channel(Dataclass):
@@ -227,6 +537,9 @@ class Channel(Dataclass):
 
         #: The :class:`~.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))  # type: ChannelType
+
+        #: The :class:`.ChannelMessageWrapper` for this channel.
+        self._messages = ChannelMessageWrapper(self)
 
         #: If this channel is NSFW.
         self.nsfw = kwargs.get("nsfw", False)  # type: bool
@@ -348,12 +661,22 @@ class Channel(Dataclass):
             return None
 
     @property
+    def messages(self) -> 'ChannelMessageWrapper':
+        """
+        :return: The :class:`.ChannelMessageWrapper` for this channel, if applicable.
+        """
+        if self.type in [ChannelType.VOICE, ChannelType.CATEGORY]:
+            raise CuriousError("This channel does not have messages")
+
+        return self._messages
+
+    @property
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.send`", removal="0.9.0")
     def history(self) -> HistoryIterator:
         """
-        :return: A :class:`~.AsyncIteratorWrapper: that can be used to iterate over the last \
-            infinity messages.
+        :return: A :class:`.HistoryIterator` that can be used to iterate over the channel history.
         """
-        return self.get_history(before=self._last_message_id, limit=-1)
+        return self.messages.history
 
     @property
     def pins(self) -> '_typing.AsyncIterator[dt_message.Message]':
@@ -422,6 +745,7 @@ class Channel(Dataclass):
         obb.parent_id = self.parent_id
         return obb
 
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.get_history`", removal="0.9.0")
     def get_history(self, before: int = None,
                     after: int = None,
                     limit: int = 100) -> HistoryIterator:
@@ -440,11 +764,7 @@ class Channel(Dataclass):
         :param before: The snowflake ID to get messages before.
         :param after: The snowflake ID to get messages after.
         """
-        if self.guild:
-            if not self.permissions(self.guild.me).read_message_history:
-                raise PermissionsError("read_message_history")
-
-        return HistoryIterator(self, self._bot, before=before, after=after, max_messages=limit)
+        return self.messages.get_history(before=before, after=after, limit=limit)
 
     async def get_pins(self) -> '_typing.List[dt_message.Message]':
         """
@@ -474,6 +794,7 @@ class Channel(Dataclass):
 
         return obbs
 
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.get`", removal="0.9.0")
     async def get_message(self, message_id: int) -> 'dt_message.Message':
         """
         Gets a single message from this channel.
@@ -481,22 +802,7 @@ class Channel(Dataclass):
         :param message_id: The message ID to retrieve.
         :return: A new :class:`.Message` object.
         """
-        if self.guild:
-            if not self.permissions(self.guild.me).read_message_history:
-                raise PermissionsError("read_message_history")
-
-        if self._bot.user.bot:
-            data = await self._bot.http.get_message(self.id, message_id)
-        else:
-            data = await self._bot.http.get_message_history(self.id, around=message_id, limit=1)
-            if not data:
-                raise CuriousError("No messages found for this ID")
-            else:
-                data = data[0]
-
-        msg = self._bot.state.make_message(data)
-
-        return msg
+        return await self.messages.get(message_id)
 
     async def create_webhook(self, *, name: str = None,
                              avatar: bytes = None) -> 'dt_webhook.Webhook':
@@ -588,6 +894,8 @@ class Channel(Dataclass):
 
         return invite
 
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.delete_messages`",
+                removal="0.9.0")
     async def delete_messages(self, messages: '_typing.List[dt_message.Message]') -> int:
         """
         Deletes messages from a channel.
@@ -609,21 +917,9 @@ class Channel(Dataclass):
         :param messages: A list of :class:`~.Message` objects to delete.
         :return: The number of messages deleted.
         """
-        if self.guild:
-            if not self.permissions(self.guild.me).manage_messages:
-                raise PermissionsError("manage_messages")
+        return await self.messages.bulk_delete(messages)
 
-        minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
-        ids = []
-        for message in messages:
-            if message.id < minimum_allowed:
-                raise CuriousError("Cannot delete messages older than {}".format(minimum_allowed))
-            ids.append(message.id)
-
-        await self._bot.http.delete_multiple_messages(self.id, ids)
-
-        return len(ids)
-
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.purge`", removal="0.9.0")
     async def purge(self, limit: int = 100, *,
                     author: 'dt_member.Member' = None,
                     content: str = None,
@@ -659,57 +955,8 @@ class Channel(Dataclass):
             cannot be bulk deleted.
         :return: The number of messages deleted.
         """
-        if self.guild:
-            if not self.permissions(self.guild.me).manage_messages and not fallback_from_bulk:
-                raise PermissionsError("manage_messages")
-
-        checks = []
-        if author:
-            checks.append(lambda m: m.author == author)
-
-        if content:
-            checks.append(lambda m: m.content == content)
-
-        if predicate:
-            checks.append(predicate)
-
-        to_delete = []
-        history = self.get_history(limit=limit)
-
-        async for message in history:
-            if all(check(message) for check in checks):
-                to_delete.append(message)
-
-        can_bulk_delete = True
-
-        # Split into chunks of 100.
-        message_chunks = [to_delete[i:i + 100] for i in range(0, len(to_delete), 100)]
-        for chunk in message_chunks:
-            m = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
-            message_ids = []
-            for message in chunk:
-                if message.id < m:
-                    raise CuriousError("Cannot delete messages older than {}".format(m))
-                message_ids.append(message.id)
-            # First, try and bulk delete all the messages.
-            if can_bulk_delete:
-                try:
-                    await self._bot.http.delete_multiple_messages(self.id, message_ids)
-                except Forbidden:
-                    # We might not have MANAGE_MESSAGES.
-                    # Check if we should fallback on normal delete.
-                    can_bulk_delete = False
-                    if not fallback_from_bulk:
-                        # Don't bother, actually.
-                        raise
-
-            # This is an `if not` instead of an `else` because `can_bulk_delete` might've changed.
-            if not can_bulk_delete:
-                # Instead, just delete() the message.
-                for message in chunk:
-                    await message.delete()
-
-        return len(to_delete)
+        return await self.messages.purge(limit=limit, author=author, content=content,
+                                         predicate=predicate, fallback_from_bulk=fallback_from_bulk)
 
     async def send_typing(self) -> None:
         """
@@ -731,6 +978,7 @@ class Channel(Dataclass):
         """
         return _TypingCtxManager(self)
 
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.send", removal="0.10.0")
     async def send(self, content: str = None, *,
                    tts: bool = False, embed: Embed = None) -> 'dt_message.Message':
         """
@@ -748,35 +996,9 @@ class Channel(Dataclass):
         :param embed: An embed object to send with this message.
         :return: A new :class:`~.Message` object.
         """
-        if self.type not in [ChannelType.TEXT, ChannelType.PRIVATE]:
-            raise CuriousError("Cannot send messages to a voice channel")
+        return await self.messages.send(content, tts=tts, embed=embed)
 
-        if self.guild:
-            if not self.permissions(self.guild.me).send_messages:
-                raise PermissionsError("send_messages")
-
-        if not isinstance(content, str) and content is not None:
-            content = str(content)
-
-        # check for empty messages
-        if not content:
-            if not embed:
-                raise CuriousError("Cannot send an empty message")
-
-            if self.guild and not self.permissions(self.guild.me).embed_links:
-                raise PermissionsError("embed_links")
-        else:
-            if content and len(content) > 2000:
-                raise CuriousError("Content must be less than 2000 characters")
-
-        if embed is not None:
-            embed = embed.to_dict()
-
-        data = await self._bot.http.send_message(self.id, content, tts=tts, embed=embed)
-        obb = self._bot.state.make_message(data, cache=True)
-
-        return obb
-
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.upload`", removal="0.10.0")
     async def send_file(self, file_content: bytes, filename: str,
                         *, message_content: _typing.Optional[str] = None) -> 'dt_message.Message':
         """
@@ -796,21 +1018,9 @@ class Channel(Dataclass):
         :param message_content: Optional: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
         """
-        if self.type == ChannelType.VOICE:
-            raise CuriousError("Cannot send messages to a voice channel")
+        return await self.messages.upload(file_content, filename, message_content=message_content)
 
-        if self.guild:
-            if not self.permissions(self.guild.me).send_messages:
-                raise PermissionsError("send_messages")
-
-            if not self.permissions(self.guild.me).attach_files:
-                raise PermissionsError("attach_files")
-
-        data = await self._bot.http.send_file(self.id, file_content,
-                                              filename=filename, content=message_content)
-        obb = self._bot.state.make_message(data, cache=False)
-        return obb
-
+    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.upload`", removal="0.10.0")
     async def upload_file(self, filename: str, *,
                           message_content: str = None) -> 'dt_message.Message':
         """
@@ -828,29 +1038,8 @@ class Channel(Dataclass):
         :param message_content: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
         """
-        if self.type == ChannelType.VOICE:
-            raise CuriousError("Cannot send messages to a voice channel")
-
-        if self.guild:
-            if not self.permissions(self.guild.me).send_messages:
-                raise PermissionsError("send_messages")
-
-            if not self.permissions(self.guild.me).attach_files:
-                raise PermissionsError("attach_files")
-
-        if hasattr(filename, "read"):
-            # file-like
-            file_data = filename.read()
-            name = getattr(filename, "name", None)
-        else:
-            # assume it's pathlike
-            path = pathlib.Path(filename)
-            name = path.parts[-1]
-
-            with open(path, mode='rb') as f:
-                file_data = f.read()
-
-        return await self.send_file(file_data, name, message_content=message_content)
+        return await self.messages.upload(fp=filename, filename=filename,
+                                          message_content=message_content)
 
     async def change_overwrite(self, overwrite: 'dt_permissions.Overwrite'):
         """

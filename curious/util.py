@@ -290,6 +290,8 @@ def deprecated(*, since: str, see_instead, removal: str):
     def inner(func):
         # calculate a new doc
         nonlocal see_instead
+        # store a copy
+        _see_instead = see_instead
         if not isinstance(see_instead, str):
             qualname = see_instead.__qualname__
             mod = inspect.getmodule(see_instead).__name__
@@ -312,7 +314,7 @@ def deprecated(*, since: str, see_instead, removal: str):
 
         def wrapper(*args, **kwargs):
             warnings.warn(f"    This function is deprecated since {since}. "
-                          f"    See '{see_instead.__qualname__}' instead.",
+                          f"    See '{see_instead}' instead.",
                           category=CuriousDeprecatedWarning)
             return func(*args, **kwargs)
 

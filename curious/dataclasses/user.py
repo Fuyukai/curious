@@ -200,7 +200,7 @@ class User(Dataclass):
         :return: A new :class:`~.Message` representing the sent message.
         """
         channel = await self.open_private_channel()
-        message = await channel.send(content, *args, **kwargs)
+        message = await channel.messages.send(content, *args, **kwargs)
 
         return message
 

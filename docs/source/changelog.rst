@@ -31,6 +31,8 @@ This document displays the differences between each release of curious.
 
  - Add :attr:`.Message.emojis`.
 
+ - Add :class:`.ChannelMessagesWrapper`, and move everything to point to it.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
 

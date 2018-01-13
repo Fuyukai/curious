@@ -21,7 +21,7 @@ def command(*,
 
         @command()
         async def ping(self, ctx):
-            await ctx.channel.send("Ping!")
+            await ctx.channel.messages.send("Ping!")
 
     :param name: The name of the command. If this is not specified, it will use the name of the \
         function object.

@@ -31,7 +31,7 @@ class Core(Plugin):
         member = ctx.author
         # To send a message back to the channel, you must use `ctx.channel.send(...)`.
         # We use `member.mention` here to mention the person that pinged us.
-        await ctx.channel.send("{}, pong!".format(member.mention))
+        await ctx.channel.messages.send("{}, pong!".format(member.mention))
 
     # Commands can also take parameters. They are defined by the function signature of the function.
     @command()
@@ -41,7 +41,7 @@ class Core(Plugin):
         """
         # The `name` in our signature allows somebody to run `!hello world` and `name` will be
         # automatically replaced with the string `world`.
-        await ctx.channel.send("Hello, {}!".format(name))
+        await ctx.channel.messages.send("Hello, {}!".format(name))
 
     # Commands can also provide aliases, by passing in a list.
     @command(aliases=["cold"])
@@ -49,17 +49,17 @@ class Core(Plugin):
         """
         Tells if the user is cool or not.
         """
-        await ctx.channel.send("It's a bit chilly.")
+        await ctx.channel.messages.send("It's a bit chilly.")
 
     # You can also provide invokation checks - these prevent people from running it unless they
     # meet specific criteria.
     @command()
-    @condition(lambda ctx: "e" not in ctx.author.user.nickname)
+    @condition(lambda ctx: "e" not in ctx.author.nickname)
     async def a(self, ctx: Context):
         """
         Only users without an `e` in their nickname can run this command.
         """
-        await ctx.channel.send("The letter `e` is for nerds!")
+        await ctx.channel.messages.send("The letter `e` is for nerds!")
 
 
 # To tie this all together, a new client instance needs to be created, and a manager created.

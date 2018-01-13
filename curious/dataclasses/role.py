@@ -21,7 +21,7 @@ class _MentionableRole(object):
     .. code-block:: python3
     
         async with role.allow_mentions():
-            await ctx.channel.send(role.mention)
+            await ctx.channel.messages.send(role.mention)
             
     """
     def __init__(self, r: 'Role'):
@@ -121,7 +121,7 @@ class Role(Dataclass):
         .. code-block:: python3
     
             async with role.allow_mentions():
-                await ctx.channel.send(role.mention)
+                await ctx.channel.messages.send(role.mention)
         """
         return _MentionableRole(self)
 

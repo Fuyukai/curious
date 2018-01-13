@@ -172,7 +172,7 @@ class Client(object):
                 '''
                 
                 ev = ctx.bot.events_handled.most_common(3)
-                await ctx.channel.send(", ".join("{}: {}".format(*x) for x in ev)
+                await ctx.channel.messages.send(", ".join("{}: {}".format(*x) for x in ev)
         
         """
 

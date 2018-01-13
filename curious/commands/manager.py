@@ -83,7 +83,7 @@ class CommandsManager(object):
 
         @command()
         async def ping(ctx: CommandsContext):
-            await ctx.channel.send(content="Pong!")
+            await ctx.channel.messages.send(content="Ping!")
 
         manager.add_command(ping)
 

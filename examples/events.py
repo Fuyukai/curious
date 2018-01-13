@@ -50,7 +50,7 @@ async def ready(ctx: EventContext):
 @bot.event("member_ban")
 async def announce_ban(ctx: EventContext, guild: Guild, member: Member):
     # Send the ban message to the system channel.
-    await guild.system_channel.send("{} got bent".format(member.user.name))
+    await guild.system_channel.messages.send("{} got bent".format(member.user.name))
 
 
 # Now, all that is left is to run the bot.

@@ -71,7 +71,7 @@ Commands can be created with the usage of the :meth:`.command` decorator:
     class MyPlugin(Plugin):
         @command()
         async def pong(self, ctx: Context):
-            await ctx.channel.send("Ping!")
+            await ctx.channel.messages.send("Ping!")
 
 All commands inside a plugin take a :class:`.Context` as their first argument, which stores some
 data about the message used to trigger the command; similar to the Click library's context.

@@ -148,4 +148,4 @@ async def help_command(ctx: Context, *, command: str = None):
         # Evidence-based policy
         content = await help_for_one(ctx, command)
 
-    await ctx.channel.send(content)
+    await ctx.channel.messages.send(content)
