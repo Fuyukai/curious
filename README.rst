@@ -26,7 +26,7 @@ Basic Example
 
     from curious import BotType, Client, Message
 
-    cl = Client("token", bot_type=BotType.BOT | BotType.NO_DMS, command_prefix="!")
+    cl = Client("token", bot_type=BotType.BOT | BotType.NO_DMS)
 
 
     @cl.event("ready")
