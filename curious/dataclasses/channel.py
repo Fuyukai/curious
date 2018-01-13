@@ -20,7 +20,7 @@ from curious.dataclasses import guild as dt_guild, invite as dt_invite, member a
     webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
-from curious.exc import CuriousError, Forbidden, PermissionsError
+from curious.exc import CuriousError, ErrorCode, Forbidden, HTTPException, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
 
@@ -44,6 +44,12 @@ class ChannelType(enum.IntEnum):
     #: Represents a category channel.
     CATEGORY = 4
 
+    def has_messages(self) -> bool:
+        """
+        :return: If this channel type has messages.
+        """
+        return self not in [ChannelType.VOICE, ChannelType.CATEGORY]
+
 
 class _TypingCtxManager:
     """
@@ -59,6 +65,7 @@ class _TypingCtxManager:
         
     This class should **not** be instantiated directly - instead, use :meth:`~.Channel.typing`.
     """
+
     def __init__(self, channel: 'Channel'):
         self._channel = channel
 
@@ -219,10 +226,10 @@ class ChannelMessageWrapper(object):
         #: The :class:`.Channel` this container is used for.
         self.channel = channel
 
-    def __iter__(self):
+    def __iter__(self) -> None:
         raise RuntimeError("Use `async for`")
 
-    def __aiter__(self):
+    def __aiter__(self) -> HistoryIterator:
         return self.history.__aiter__()
 
     @property
@@ -273,7 +280,7 @@ class ChannelMessageWrapper(object):
         :param embed: An embed object to send with this message.
         :return: A new :class:`~.Message` object.
         """
-        if self.channel.type not in [ChannelType.TEXT, ChannelType.PRIVATE]:
+        if not self.channel.type.has_messages():
             raise CuriousError("Cannot send messages to a voice channel")
 
         if self.channel.guild:
@@ -330,7 +337,7 @@ class ChannelMessageWrapper(object):
         :param message_content: Optional: Any extra content to be sent with the message.
         :return: The new :class:`~.Message` created.
         """
-        if self.channel.type == ChannelType.VOICE:
+        if not self.channel.type.has_messages():
             raise CuriousError("Cannot send messages to a voice channel")
 
         if self.channel.guild:
@@ -425,7 +432,8 @@ class ChannelMessageWrapper(object):
 
         .. code-block:: python3
 
-            await channel.purge(limit=100, predicate=lambda message: 'i' in message.content)
+            await channel.messages.purge(limit=100,
+                                         predicate=lambda message: 'i' in message.content)
 
         :param limit: The maximum amount of messages to delete. -1 for unbounded size.
         :param author: Only delete messages made by this author.
@@ -496,20 +504,32 @@ class ChannelMessageWrapper(object):
         """
         Gets a single message from this channel.
 
+        .. versionchanged:: 0.7.0
+
+            Errors raised are now consistent across bots and userbots.
+
         :param message_id: The message ID to retrieve.
         :return: A new :class:`.Message` object.
+        :raises CuriousError: If the message could not be found.
         """
         if self.channel.guild:
             if not self.channel.permissions(self.channel.guild.me).read_message_history:
                 raise PermissionsError("read_message_history")
 
         if self.channel._bot.user.bot:
-            data = await self.channel._bot.http.get_message(self.channel.id, message_id)
+            try:
+                data = await self.channel._bot.http.get_message(self.channel.id, message_id)
+            except HTTPException as e:
+                # transform into a CuriousError if it wasn't found
+                if e.error_code == ErrorCode.UNKNOWN_MESSAGE:
+                    raise CuriousError("No message found for this ID") from e
+
+                raise
         else:
             data = await self.channel._bot.http.get_message_history(self.channel.id,
                                                                     around=message_id, limit=1)
             if not data:
-                raise CuriousError("No messages found for this ID")
+                raise CuriousError("No message found for this ID")
             else:
                 data = data[0]
 
@@ -553,6 +573,7 @@ class Channel(Dataclass):
 
         #: If private, the list of :class:`~.User` that are in this channel.
         self._recipients = {}  # type: _typing.Dict[str, dt_user.User]
+
         if self.private:
             for recipient in kwargs.get("recipients", []):
                 u = self._bot.state.make_user(recipient)
@@ -672,7 +693,7 @@ class Channel(Dataclass):
         """
         :return: The :class:`.ChannelMessageWrapper` for this channel, if applicable.
         """
-        if self.type in [ChannelType.VOICE, ChannelType.CATEGORY]:
+        if not self.type.has_messages():
             raise CuriousError("This channel does not have messages")
 
         if self._messages is None:
@@ -708,7 +729,7 @@ class Channel(Dataclass):
         :return: A list of members that are in this voice channel.
         """
         if self.type != ChannelType.VOICE:
-            raise RuntimeError("No members for channels that aren't voice channels")
+            raise CuriousError("No members for channels that aren't voice channels")
 
         return list(
             filter(lambda member: member.voice.channel == self, self.guild.members.values())
@@ -971,8 +992,8 @@ class Channel(Dataclass):
         """
         Starts typing in the channel for 5 seconds.
         """
-        if self.type == ChannelType.VOICE:
-            raise CuriousError("Cannot send messages to a voice channel")
+        if not self.type.has_messages():
+            raise CuriousError("Cannot send messages to this channel")
 
         if self.guild:
             if not self.permissions(self.guild.me).send_messages:
@@ -1116,7 +1137,7 @@ class Channel(Dataclass):
             kwargs["type"] = kwargs["type_"]
 
         if "type" not in kwargs:
-            kwargs["type"] = ChannelType.TEXT
+            kwargs["type"] = self.type
 
         if "parent" in kwargs:
             kwargs["parent_id"] = kwargs["parent"].id
