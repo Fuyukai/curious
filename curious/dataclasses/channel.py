@@ -164,7 +164,7 @@ class HistoryIterator(collections.AsyncIterator):
             messages = reversed(messages)
 
         for message in messages:
-            self.messages.append(self.client.state.make_message(message))
+            self.messages.append(self.channel._bot.state.make_message(message))
 
     async def __anext__(self) -> 'dt_message.Message':
         self.current_count += 1
@@ -218,6 +218,12 @@ class ChannelMessageWrapper(object):
     def __init__(self, channel: 'Channel'):
         #: The :class:`.Channel` this container is used for.
         self.channel = channel
+
+    def __iter__(self):
+        raise RuntimeError("Use `async for`")
+
+    def __aiter__(self):
+        return self.history.__aiter__()
 
     @property
     def history(self) -> HistoryIterator:
