@@ -71,7 +71,7 @@ class EventManager(object):
         self.task_manager = None
 
         #: A list of event hooks.
-        self.event_hooks = []
+        self.event_hooks = set()
 
         #: A MultiDict of event listeners.
         self.event_listeners = MultiDict()
@@ -109,6 +109,7 @@ class EventManager(object):
         """
         self.event_listeners = remove_from_multidict(self.event_listeners, key=name, item=func)
 
+    # listeners
     def add_temporary_listener(self, name: str, listener):
         """
         Adds a new temporary listener.
@@ -129,6 +130,21 @@ class EventManager(object):
         :param listener: The listener function.
         """
         self.event_listeners = remove_from_multidict(self.event_listeners, key=name, item=listener)
+
+    def add_event_hook(self, listener):
+        """
+        Adds an event hook.
+
+        :param listener: The event hook callable to use.
+        """
+        logger.warning("Adding event hook '%s'", listener)
+        self.event_hooks.add(listener)
+
+    def remove_event_hook(self, listener):
+        """
+        Removes an event hook.
+        """
+        self.event_hooks.remove(listener)
 
     # wrapper functions
     async def _safety_wrapper(self, func, *args, **kwargs):

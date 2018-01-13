@@ -10,6 +10,7 @@ import sys
 import traceback
 import typing
 from collections import defaultdict
+from functools import partial
 
 import multio
 
@@ -136,7 +137,7 @@ class CommandsManager(object):
         """
         self.client.events.add_event(self.handle_message)
         self.client.events.add_event(self.default_command_error)
-        self.client.events.event_hooks.append(self.event_hook)
+        self.client.events.add_event_hook(self.event_hook)
 
         from curious.commands.decorators import command
         self.commands["help"] = command(name="help")(help_command)
@@ -304,9 +305,10 @@ class CommandsManager(object):
                     if ctx.event_name not in handler.events:
                         continue
 
-                    await tg.spawn(self.client.events._safety_wrapper(
-                        handler, ctx, *args, **kwargs
-                    ))
+                    cofunc = partial(self.client.events._safety_wrapper,
+                                     handler, ctx, *args, **kwargs)
+
+                    await tg.spawn(cofunc)
 
     async def handle_commands(self, ctx: EventContext, message: Message):
         """

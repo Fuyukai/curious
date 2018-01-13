@@ -111,8 +111,7 @@ Event Hooks
 
 The final way of managing events is with event hooks. These are hooks that are called upon every
 single event fired by the event manager, and can be useful for sub-dispatchers that filter events.
-To register an event hook, append your callable to :attr:`.EventManager.event_hooks`. It will
-then be called on every single event received.
+To register an event hook, use :meth:`.EventManager.add_event_hook`.
 
 .. code-block:: python3
 
@@ -120,5 +119,5 @@ then be called on every single event received.
         if ctx.event_name.startswith("guild_"):
             # do something
 
-    client.events.event_hooks.append(my_hook)
+    client.events.add_event_hook(my_hook)
 
