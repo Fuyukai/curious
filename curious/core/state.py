@@ -883,6 +883,8 @@ class State(object):
         if not new_message:
             return
 
+        yield "message_update_uncached", new_message
+
         # Try and find the old message.
         old_message = self._find_message(new_message.id)
         if not old_message:
@@ -902,6 +904,8 @@ class State(object):
         Called when MESSAGE_DELETE is dispatched.
         """
         message_id = int(event_data.get("id"))
+        yield "message_delete_uncached", message_id
+
         message = self._find_message(message_id)
 
         if not message:
@@ -914,7 +918,10 @@ class State(object):
         Called when MESSAGE_DELETE_BULK is dispatched.
         """
         messages = []
-        for message in event_data.get("ids", []):
+        ids = event_data.get("ids", [])
+        yield "message_delete_bulk_uncached", ids
+
+        for message in ids:
             message = self._find_message(int(message))
             if not message:
                 continue

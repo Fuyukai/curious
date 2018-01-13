@@ -121,6 +121,10 @@ State events
 
     Called when a message is created.
 
+.. py:cofunction:: message_update_uncached(ctx: EventContext, messsage: Message)
+
+    Called when a message is updated. This will ignore the cache.
+
 .. py:cofunction:: message_edit(ctx: EventContext, old_message: Message, \
     new_message: Message)
 
@@ -147,6 +151,10 @@ State events
         previously seen is in the message cache.
         Otherwise, the bot will silently eat the event.
 
+.. py:cofunction:: message_delete_uncached(ctx: EventContext, message_id: int)
+
+    Called when a message is deleted. This will ignore the cache.
+
 .. py:cofunction:: message_delete(ctx: EventContext, message: Message)
 
     Called when a message is deleted.
@@ -156,6 +164,10 @@ State events
         This event will only be called if a message that the bot has
         previously seen is in the message cache.
         Otherwise, the bot will silently eat the event.
+
+.. py:cofunction:: message_delete_bulk_uncached(ctx: EventContext, messages: List[int])
+
+    Called when messages are bulk deleted. This will ignore the cache.
 
 .. py:cofunction:: message_delete_bulk(ctx: EventContext, \
     messages: List[Message])
