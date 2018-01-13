@@ -135,6 +135,9 @@ class _WrapperBase(collections.Mapping, collections.Iterable):
     """
     Represents the base class for a wrapper object.
     """
+
+    __slots__ = ()
+
     @property
     @abc.abstractmethod
     def view(self) -> 'typing.Mapping[int, Dataclass]':
@@ -154,6 +157,7 @@ class GuildChannelWrapper(_WrapperBase):
     A wrapper for channels on a guild. This provides some convenience methods which make channel
     management more fluent.
     """
+    __slots__ = "_guild", "_channels"
 
     def __init__(self, guild: 'Guild',
                  channels: 'typing.MutableMapping[int, channel.Channel]'):
@@ -314,6 +318,8 @@ class GuildRoleWrapper(_WrapperBase):
     more fluent.
     """
 
+    __slots__ = "_guild", "_roles"
+
     def __init__(self, guild: 'Guild',
                  roles: 'typing.MutableMapping[int, role.Role]'):
         """
@@ -409,6 +415,7 @@ class GuildEmojiWrapper(_WrapperBase):
     """
     Wrapper for emoji objects for a guild.
     """
+    __slots__ = "_guild", "_emojis"
 
     def __init__(self, guild: 'Guild',
                  emojis: 'typing.MutableMapping[int, dt_emoji.Emoji]'):
@@ -841,7 +848,7 @@ class Guild(Dataclass):
 
         self.verification_level = VerificationLevel(data.get("verification_level", 0))
         self.mfa_level = MFALevel(data.get("mfa_level", 0))
-        self.notification_level = NotificationLevel(data.get("default_message_notifications"))
+        self.notification_level = NotificationLevel(data.get("default_message_notifications", 0))
         self.content_filter_level = ContentFilterLevel(data.get("explicit_content_filter", 0))
 
         self.member_count = data.get("member_count", 0)

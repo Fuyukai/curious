@@ -6,13 +6,14 @@ Wrappers for Application Info objects.
 from sys import version_info
 from typing import List, NamedTuple
 
-from curious.dataclasses import guild as dt_guild
+from curious.dataclasses import guild as dt_guild, user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
 # PEP 557
 if version_info[0:2] >= (3, 7):
     from typing import dataclass
+
     bases = ()
 else:
     dataclass = lambda type_: type_
@@ -71,18 +72,20 @@ class AppInfo(Dataclass):
         #: The icon hash for this application.
         self._icon_hash = self._application.get("icon", None)  # type: str
 
+        #: The bot :class:`.User` associated with this application, if available.
+        self.bot = None   # type: dt_user.User
+
         if "bot" in kwargs:
-            #: The bot :class:`~.User` associated with this application.
-            self.bot = self._bot.state.make_user(kwargs.get("bot", {}))  # type: User
+            self.bot = self._bot.state.make_user(kwargs.get("bot", {}))
         else:
             self.bot = None
 
     def __repr__(self):
-        return "<{} owner='{}' name='{}' bot='{}'>".format(type(self).__name__, self.owner,
-                                                           self.name, self.bot)
+        return "<{} owner='{!r}' name='{!r}' bot='{!r}'>".format(type(self).__name__, self.owner,
+                                                                 self.name, self.bot)
 
     @property
-    def icon_url(self):
+    def icon_url(self) -> str:
         """
         :return: The icon url for this bot.
         """
