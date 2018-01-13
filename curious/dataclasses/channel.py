@@ -540,7 +540,7 @@ class Channel(Dataclass):
         self.type = ChannelType(kwargs.get("type", 0))  # type: ChannelType
 
         #: The :class:`.ChannelMessageWrapper` for this channel.
-        self._messages = ChannelMessageWrapper(self)
+        self._messages = None  # type: ChannelMessageWrapper
 
         #: If this channel is NSFW.
         self.nsfw = kwargs.get("nsfw", False)  # type: bool
@@ -669,6 +669,8 @@ class Channel(Dataclass):
         if self.type in [ChannelType.VOICE, ChannelType.CATEGORY]:
             raise CuriousError("This channel does not have messages")
 
+        if self._messages is None:
+            self._messages = ChannelMessageWrapper(self)
         return self._messages
 
     @property
