@@ -1,3 +1,18 @@
+
+# This file is part of curious.
+#
+# curious is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# curious is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with curious.  If not, see <http://www.gnu.org/licenses/>.
 """
 Misc utilities used in commands related things.
 
@@ -179,6 +194,10 @@ def get_usage(func, invoked_as: str = None) -> str:
     return " ".join(final)
 
 
+# This function is a modified version of the code taken from https://stackoverflow.com/a/43035638.
+# This function is licenced under the MIT Licence. (C) 2017 THE_MAD_KING.
+# See: https://meta.stackexchange.com/questions/272956/a-new-code-license-the-mit-this-time-with-attribution-required
+# You can find a copy of the MIT Licence at https://opensource.org/licenses/MIT.
 def split_message_content(content: str, delim: str = " ") -> List[str]:
     """
     Splits a message into individual parts by `delim`, returning a list of strings.
@@ -200,7 +219,7 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
     in_quotes = False
 
     for char in content.strip():
-        if char == ' ' and not in_quotes:
+        if char == delim and not in_quotes:
             tokens.append(cur)
             cur = ''
         elif char == '"' and not in_quotes:

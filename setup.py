@@ -18,7 +18,7 @@ setup(
     packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
               'curious.voice', 'curious.ext.builders', 'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
-    license='MIT',
+    license='LGPLv3',
     author='Laura Dickinson',
     author_email='l@veriny.tf',
     description='A curio library for the Discord API',

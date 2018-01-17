@@ -1,3 +1,18 @@
+# This file is part of curious.
+#
+# curious is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# curious is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with curious.  If not, see <http://www.gnu.org/licenses/>.
+
 """
 Wrappers for Channel objects.
 
@@ -264,7 +279,7 @@ class ChannelMessageWrapper(object):
         return HistoryIterator(self.channel, before=before, after=after, max_messages=limit)
 
     async def send(self, content: str = None, *,
-                   tts: bool = False, embed: Embed = None) -> 'dt_message.Message':
+                   tts: bool = False, embed: 'Embed' = None) -> 'dt_message.Message':
         """
         Sends a message to this channel.
 
@@ -314,13 +329,13 @@ class ChannelMessageWrapper(object):
     async def upload(self, fp: '_typing.Union[bytes, str, PathLike, _typing.IO]',
                      *,
                      filename: str = "unknown.bin",
-                     message_content: _typing.Optional[str] = None) -> 'dt_message.Message':
+                     message_content: '_typing.Optional[str]' = None) -> 'dt_message.Message':
         """
         Uploads a message to this channel.
 
         This requires SEND_MESSAGES and ATTACH_FILES permission in the channel.
 
-        .. code:: python
+        .. code-block:: python3
 
             with open("/tmp/emilia_best_girl.jpg", 'rb') as f:
                 await channel.messages.upload(f, "my_waifu.jpg")
