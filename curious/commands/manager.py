@@ -329,6 +329,10 @@ class CommandsManager(object):
         """
         Handles commands for a message.
         """
+        # don't process messages pre-cache
+        if not message.author:
+            return
+
         # check bot type
         if message.author.user.bot and self.client.bot_type & 8:
             return
