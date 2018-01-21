@@ -137,6 +137,9 @@ class Client(object):
         #: The current :class:`.EventManager` for this bot.
         self.events = EventManager()
         self.events.add_event(self.handle_dispatches, name="gateway_dispatch_received")
+        self.events.add_event(self.handle_ready, name="ready")
+
+        self._ready_state = {}
 
         #: The :class:`~.HTTPClient` used for this bot.
         self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
@@ -574,11 +577,23 @@ class Client(object):
 
         # TODO: Change this from being an exception to being an event.
         except ChunkGuilds:
-            ctx.gateway._get_chunks()
+            await ctx.gateway._get_chunks()
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
             await ctx.gateway.close(code=1006, reason="Internal client error")
             raise
+
+    @ev_dec(name="ready")
+    async def handle_ready(self, ctx: 'EventContext'):
+        """
+        Handles a READY event, dispatching a ``shards_ready`` event when all shards are ready.
+        """
+        self._ready_state[ctx.shard_id] = True
+
+        if not all(self._ready_state.values()):
+            return
+
+        await self.events.fire_event("shards_ready", ctx=ctx)
 
     async def handle_shard(self, shard_id: int, shard_count: int):
         """
@@ -655,6 +670,10 @@ class Client(object):
         """
         if self.bot_type & BotType.BOT:
             self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
+
+        # update ready state
+        for shard_id in range(shard_count):
+            self._ready_state[shard_id] = False
 
         async with multio.asynclib.task_manager() as tg:
             self.events.task_manager = tg

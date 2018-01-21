@@ -18,9 +18,13 @@ State events
 
 .. py:cofunction:: ready(ctx: EventContext)
 
-    Called when a bot has finished streaming guilds and chunked all large
+    Called when a shard has finished streaming guilds and chunked all large
     guilds successfully. This is different to Discord's READY event, which
     fires as soon as the connection has opened.
+
+.. py:cofunction:: shards_ready(ctx: EventContext)
+
+    Called when all the shards for a client are ready.
 
 .. py:cofunction:: resumed(ctx: EventContext, events_replayed: int)
 

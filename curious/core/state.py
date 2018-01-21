@@ -788,6 +788,8 @@ class State(object):
             else:
                 # set finished_chunking now
                 await guild._finished_chunking.set()
+                members = len(event_data.get("members", []))
+                yield "guild_chunk", guild, members
 
         for i in await coerce_agen(self._check_ready(gw, guild)):
             yield i
