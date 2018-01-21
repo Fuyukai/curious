@@ -330,7 +330,7 @@ def deprecated(*, since: str, see_instead, removal: str):
         def wrapper(*args, **kwargs):
             warnings.warn(f"    This function is deprecated since {since}. "
                           f"    See '{see_instead}' instead.",
-                          category=CuriousDeprecatedWarning)
+                          category=CuriousDeprecatedWarning, stacklevel=2)
             return func(*args, **kwargs)
 
         # HACKY METAPROGRAMMING
