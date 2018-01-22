@@ -50,8 +50,8 @@ except ImportError:
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 
-# by default
-asks.init("curio")
+# TODO: Don't do this
+multio.init("curio")
 
 logger = logging.getLogger("curious.http")
 
@@ -180,7 +180,7 @@ class HTTPClient(object):
         self._ratelimit_remaining = lru(1024)
         self._is_bot = bot
 
-    def get_ratelimit_lock(self, bucket: object):
+    def get_ratelimit_lock(self, bucket: object) -> 'multio.Lock':
         """
         Gets a ratelimit lock from the dict if it exists, otherwise creates a new one.
         """
@@ -192,7 +192,8 @@ class HTTPClient(object):
             return lock
 
     # Special wrapper functions
-    def get_response_data(self, response: Response) -> typing.Union[str, dict]:
+    @staticmethod
+    def get_response_data(response: Response) -> typing.Union[str, dict]:
         """
         Return either the text of a request or the JSON.
 
