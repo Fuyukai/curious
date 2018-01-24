@@ -989,6 +989,15 @@ class Channel(Dataclass):
     async def typing(self):
         """
         :return: A context manager that sends typing repeatedly.
+
+        Usage:
+
+        .. code-block:: python3
+
+            async with channel.typing:
+                res = await do_long_action()
+
+            await channel.messages.send("Long action:", res)
         """
         running = multio.Event()
         async def runner():
