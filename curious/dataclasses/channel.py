@@ -23,11 +23,11 @@ import enum
 import pathlib
 import time
 import typing as _typing
+from contextlib import asynccontextmanager
 from math import floor
 from os import PathLike
 from types import MappingProxyType
 
-import curio
 import multio
 
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
@@ -36,7 +36,7 @@ from curious.dataclasses import guild as dt_guild, invite as dt_invite, member a
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, ErrorCode, Forbidden, HTTPException, PermissionsError
-from curious.util import AsyncIteratorWrapper, base64ify, deprecated
+from curious.util import AsyncIteratorWrapper, base64ify, deprecated, safe_generator
 
 
 class ChannelType(enum.IntEnum):
@@ -64,39 +64,6 @@ class ChannelType(enum.IntEnum):
         :return: If this channel type has messages.
         """
         return self not in [ChannelType.VOICE, ChannelType.CATEGORY]
-
-
-class _TypingCtxManager:
-    """
-    A context manager that when entered, starts typing, and cancels when exited.
-    
-    .. code-block:: python3
-    
-        async with ctx_man:
-            await long_operation()
-            ...
-        
-        print("done")
-        
-    This class should **not** be instantiated directly - instead, use :meth:`~.Channel.typing`.
-    """
-
-    def __init__(self, channel: 'Channel'):
-        self._channel = channel
-
-        self._t = None  # type: curio.Task
-
-    async def __aenter__(self):
-        self._t = await curio.spawn(self._type(), daemon=True)
-        return None
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self._t.cancel()
-
-    async def _type(self):
-        while True:
-            await self._channel.send_typing()
-            await multio.asynclib.sleep(5)
 
 
 class HistoryIterator(collections.AsyncIterator):
@@ -1017,11 +984,30 @@ class Channel(Dataclass):
         await self._bot.http.send_typing(self.id)
 
     @property
-    def typing(self):
+    @asynccontextmanager
+    @safe_generator
+    async def typing(self):
         """
         :return: A context manager that sends typing repeatedly.
         """
-        return _TypingCtxManager(self)
+        running = multio.Event()
+        async def runner():
+            await self.send_typing()
+            while True:
+                try:
+                    await multio.asynclib.timeout_after(5, running.wait())
+                except multio.asynclib.TaskTimeout:
+                    await self.send_typing()
+                else:
+                    return
+
+        async with multio.asynclib.task_manager() as tg:
+            try:
+                await multio.asynclib.spawn(tg, runner)
+                yield
+            finally:
+                await running.set()
+
 
     @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.send", removal="0.10.0")
     async def send(self, content: str = None, *,
@@ -1118,8 +1104,6 @@ class Channel(Dataclass):
 
                 # probably right /shrug
                 return True
-
-            listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
         else:
             coro = self._bot.http.edit_overwrite(self.id, target.id, type_,
                                                  allow=overwrite.allow.bitfield,
@@ -1128,14 +1112,9 @@ class Channel(Dataclass):
             async def _listener(before, after):
                 return after.id == self.id
 
-            listener = await curio.spawn(self._bot.wait_for("channel_update", _listener))
-
-        try:
+        async with self._bot.events.wait_for_manager("channel_update", _listener):
             await coro
-        except:
-            await listener.cancel()
-            raise
-        await listener.join()
+
         return self
 
     async def edit(self, **kwargs) -> 'Channel':

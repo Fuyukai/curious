@@ -18,24 +18,13 @@ Wrappers for Application Info objects.
 
 .. currentmodule:: curious.dataclasses.appinfo
 """
-from sys import version_info
-from typing import List, NamedTuple
+from typing import List
 
 from curious.dataclasses import guild as dt_guild, user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
-# PEP 557
-if version_info[0:2] >= (3, 7):
-    from typing import dataclass
 
-    bases = ()
-else:
-    dataclass = lambda type_: type_
-    bases = (NamedTuple,)
-
-
-@dataclass
 class AuthorizedApp:
     """
     Represents an authorized app.

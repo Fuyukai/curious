@@ -16,7 +16,7 @@ setup(
         "local_scheme": "dirty-tag"
     },
     packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
-              'curious.voice', 'curious.ext.builders', 'curious.ext.paginator', 'curious.ipc'],
+              'curious.voice', 'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
     license='LGPLv3',
     author='Laura Dickinson',
@@ -28,7 +28,7 @@ setup(
     ],
     install_requires=[
         "asyncwebsockets>=0.1.1",
-        "curio>=0.8.0,<0.9.0",
+        "curio>=0.9.0,<0.10.0",
         "pylru==1.0.9",
         "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",

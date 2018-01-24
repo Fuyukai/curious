@@ -36,6 +36,10 @@ This document displays the differences between each release of curious.
 0.6.0 (Released 2017-11-05)
 ---------------------------
 
+.. warning::
+
+    This is the last version of curious that supports Python 3.6.
+
  - Bring voice code inline with the standard of the rest of the code.
 
     - Change the voice gateway to use an async thread, rather than a regular thread.

@@ -351,6 +351,15 @@ def deprecated(*, since: str, see_instead, removal: str):
     return inner
 
 
+def safe_generator(cbl):
+    # only wrap if we have curio
+    try:
+        from curio.meta import safe_generator
+        return safe_generator(cbl)
+    except ModuleNotFoundError:
+        return cbl
+
+
 def _ad_getattr(self, key: str):
     try:
         return self[key]
