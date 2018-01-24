@@ -242,6 +242,7 @@ class Message(Dataclass):
         """
         final_mentions = []
         for mention in mentions:
+            obb = None
             if type_ == "member":
                 id = int(mention["id"])
                 obb = self.guild.members.get(id)
@@ -253,6 +254,7 @@ class Message(Dataclass):
                 obb = self.guild.roles.get(int(mention))
             elif type_ == "channel":
                 obb = self.guild.channels.get(int(mention))
+
             if obb is not None:
                 final_mentions.append(obb)
 

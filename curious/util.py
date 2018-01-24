@@ -26,8 +26,8 @@ import imghdr
 import inspect
 import textwrap
 import types
-import typing
 import warnings
+from typing import Any, Awaitable, Callable, Coroutine, List, Union
 
 import multio
 from multidict import MultiDict
@@ -35,7 +35,7 @@ from multidict import MultiDict
 NO_ITEM = object()
 
 
-def remove_from_multidict(d: MultiDict, key: str, item: typing.Any):
+def remove_from_multidict(d: MultiDict, key: str, item: Any):
     """
     Removes an item from a multidict key.
     """
@@ -68,7 +68,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
     
     """
 
-    def __init__(self, coro: typing.Awaitable[typing.List[typing.Any]]):
+    def __init__(self, coro: Callable[[], Union[Awaitable[List[Any]], Coroutine[None, None, Any]]]):
         self.coro = coro
 
         self.items = collections.deque()
@@ -89,7 +89,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
             raise StopAsyncIteration
 
     # helper methods
-    async def next(self, default=NO_ITEM) -> typing.Any:
+    async def next(self, default=NO_ITEM) -> Any:
         """
         Gets the next item from this iterable.
         """
@@ -101,7 +101,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
 
             return default
 
-    async def all(self) -> typing.List[typing.Any]:
+    async def all(self) -> List[Any]:
         """
         Gets a flattened list of items from this iterator.
         """
