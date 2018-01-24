@@ -61,7 +61,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
             # ... some long op
             return [..., ..., ...]
          
-        it = AsyncIteratorWrapper(a())
+        it = AsyncIteratorWrapper(a)
         
         async for item in it:
             print(item)
@@ -76,7 +76,7 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
         self._filled = False
 
     async def _fill(self):
-        self.items.extend(await self.coro)
+        self.items.extend(await self.coro())
         self._filled = True
 
     async def __anext__(self):

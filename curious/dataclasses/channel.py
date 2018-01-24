@@ -695,7 +695,7 @@ class Channel(Dataclass):
         """
         :return: A :class:`~.AsyncIteratorWrapper` that can be used to iterate over the pins. 
         """
-        return AsyncIteratorWrapper(self.get_pins())
+        return AsyncIteratorWrapper(self.get_pins)
 
     @property
     def icon_url(self) -> _typing.Union[str, None]:

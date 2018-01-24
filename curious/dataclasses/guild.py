@@ -930,7 +930,7 @@ class Guild(Dataclass):
         :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are
             banned.
         """
-        return AsyncIteratorWrapper(self.get_bans())
+        return AsyncIteratorWrapper(self.get_bans)
 
     @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
@@ -938,7 +938,7 @@ class Guild(Dataclass):
         :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this
             guild.
         """
-        return AsyncIteratorWrapper(self.get_invites())
+        return AsyncIteratorWrapper(self.get_invites)
 
     @property
     def icon_url(self) -> str:
@@ -1320,26 +1320,3 @@ class Guild(Dataclass):
         invite = dt_invite.Invite(self._bot, **invite_data)
 
         return invite
-
-    @property
-    def recent_mentions(self):
-        """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the mentions for \ 
-            this user in this guild.
-        """
-        return AsyncIteratorWrapper(
-            self.get_recent_mentions(limit=100, everyone_mentions=True, role_mentions=True)
-        )
-
-    def get_recent_mentions(self, *,
-                            limit: int = 25,
-                            everyone_mentions: bool = True, role_mentions: bool = True):
-        """
-        Gets mentions in this guild.
-        """
-        if self.me.user.bot is True:
-            raise CuriousError("Cannot get recent mentions on bot accounts")
-
-        return self.me.user.get_recent_mentions(guild=self, limit=limit,
-                                                everyone_mentions=everyone_mentions,
-                                                role_mentions=role_mentions)
