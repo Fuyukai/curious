@@ -104,7 +104,7 @@ class EventManager(object):
         :param func: The function to add.
         """
         if not inspect.iscoroutinefunction(func):
-            raise TypeError("Event must be a coroutine function")
+            raise TypeError("Event must be an async function")
 
         if name is None:
             evs = func.events
