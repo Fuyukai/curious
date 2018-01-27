@@ -23,12 +23,12 @@ import enum
 import pathlib
 import time
 import typing as _typing
-from contextlib import asynccontextmanager
 from math import floor
 from os import PathLike
 from types import MappingProxyType
 
 import multio
+from async_generator import asynccontextmanager
 
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
     message as dt_message, permissions as dt_permissions, role as dt_role, user as dt_user, \

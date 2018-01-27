@@ -14,12 +14,14 @@ install_requires = [
         "multio>=0.2.0,<0.3.0"
 ]
 
-# PEP 557
-if sys.version_info[0:2] <= (3, 6):
-    install_requires.append("dataclasses>=0.3")
+py36_requires = [
+    "dataclasses>=0.3",  # PEP 557
+    "async_generator~=1.9",  # asynccontextmanager
+    # pending 567 backport
+]
 
-# TODO: PEP 567 backport
-# TODO: asynccontextmanager backport
+if sys.version_info[0:2] <= (3, 6):
+    install_requires += py36_requires
 
 
 setup(
