@@ -85,7 +85,7 @@ class Chunker(object):
             return
 
         # if they're not all set then we don't want to fire ready at all
-        if not all(guild._finished_chunking.is_set() for guild in guilds):
+        if not all(guild._finished_chunking.is_set() for guild in guilds if guild.large):
             return
 
         # fire a ready
@@ -93,7 +93,7 @@ class Chunker(object):
         await self.client.events.fire_event("ready", gateway=gateway, client=self.client)
         self._ready[shard_id] = True
 
-    @event("guild_member_chunk")
+    @event("guild_chunk")
     async def handle_member_chunk(self, ctx: EventContext, guild: 'md_guild.Guild', members: int):
         """
         Checks if we can fire ready or not.
@@ -134,5 +134,5 @@ class Chunker(object):
             await self.fire_chunks(ctx.shard_id, guilds)
 
         self._connected[ctx.shard_id] = True
-        await self._potentially_fire_ready()
+        await self._potentially_fire_ready(ctx.shard_id)
 

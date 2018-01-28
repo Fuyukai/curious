@@ -468,7 +468,7 @@ class State(object):
         # Create all of the guilds.
         for guild in event_data.get("guilds", []):
             new_guild = Guild(self.client, **guild)
-            new_guild.shard_id = gw.shard_id
+            new_guild.shard_id = gw.gw_state.shard_id
             self._guilds[new_guild.id] = new_guild
 
         logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."

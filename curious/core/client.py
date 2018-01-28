@@ -325,7 +325,7 @@ class Client(object):
             await self.user.settings.update(status=status.value)
 
         gateway = self._gateways[shard_id]
-        return await gateway.send_status(game, status, afk=afk)
+        #return await gateway.send_status(game, status, afk=afk)
 
     # HTTP Functions
     async def edit_profile(self, *,

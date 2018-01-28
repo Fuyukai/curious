@@ -413,7 +413,6 @@ async def open_websocket(token: str, url: str, *,
         try:
             logger.info("Opening gateway connection to %s", url)
             await gw.open()
-            print("before yield")
             yield gw
         finally:
             # make sure we don't die on closing the task group
