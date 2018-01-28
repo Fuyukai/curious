@@ -267,13 +267,14 @@ class EventManager(object):
         if "ctx" not in kwargs:
             gateway = kwargs.pop("gateway")
             client = kwargs.pop("client")
-            ctx = EventContext(client, gateway.shard_id, event_name)
+            ctx = EventContext(client, gateway.gw_state.shard_id, event_name)
         else:
             ctx = kwargs.pop("ctx")
 
         # always ensure hooks are ran first
         for hook in self.event_hooks:
-            await self.spawn(hook(ctx, *args, **kwargs))
+            cofunc = functools.partial(hook, ctx, *args, **kwargs)
+            await self.spawn(cofunc)
 
         for handler in self.event_listeners.getall(event_name, []):
             coro = functools.partial(handler, ctx, *args, **kwargs)

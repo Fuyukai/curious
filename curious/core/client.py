@@ -26,15 +26,16 @@ import enum
 import functools
 import inspect
 import logging
+import traceback
 import typing
 from types import MappingProxyType
 
 import multio
-from asyncwebsockets import WebsocketClosed
-from asyncwebsockets.common import WebsocketUnusable
+from curio import TaskGroupError
 
+from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec
-from curious.core.gateway import ChunkGuilds, Gateway, ReconnectWebsocket
+from curious.core.gateway import open_websocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
@@ -138,6 +139,10 @@ class Client(object):
         self.events = EventManager()
         self.events.add_event(self.handle_dispatches, name="gateway_dispatch_received")
         self.events.add_event(self.handle_ready, name="ready")
+
+        #: The current :class:`.Chunker` for this bot.
+        self.chunker = md_chunker.Chunker(self)
+        self.chunker.register_events(self.events)
 
         self._ready_state = {}
 
@@ -290,7 +295,7 @@ class Client(object):
         This actually passes the arguments to :meth:`.EventManager.fire_event`.
         """
         gateway = kwargs.get("gateway")
-        if not self.state.is_ready(gateway.shard_id):
+        if not self.state.is_ready(gateway.gw_state.shard_id):
             if event_name not in self.IGNORE_READY and not event_name.startswith("gateway_"):
                 return
 
@@ -575,9 +580,6 @@ class Client(object):
                 await self.events.fire_event(result[0], *result[1:], gateway=ctx.gateway,
                                              client=self)
 
-        # TODO: Change this from being an exception to being an event.
-        except ChunkGuilds:
-            await ctx.gateway._get_chunks()
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
             await ctx.gateway.close(code=1006, reason="Internal client error")
@@ -602,65 +604,17 @@ class Client(object):
         :param shard_id: The shard ID to boot and handle.
         :param shard_count: The shard count to send in the identify packet.
         """
-
-        total_tries = 0
-        while True:
-            # keep retrying connecting
-            if total_tries == 10:
-                raise RuntimeError(f"Gave up reconnecting shard id {shard_id}")
+        # consume events
+        async with open_websocket(self._token, self._gw_url,
+                                  shard_id=shard_id, shard_count=shard_count) as gw:
+            self._gateways[shard_id] = gw
 
             try:
-                gw = await Gateway.from_token(self._token, self.state,
-                                              await self.get_gateway_url(),
-                                              shard_id=shard_id, shard_count=shard_count)
-            except Exception:
-                # give up
-                logger.exception("Failed to connect to the gateway...")
-                total_tries += 1
-                continue
-            except BaseException:
-                # KeyboardInterrupt, EOFError
-                raise
-            else:
-                # reset total tries, we made it
-                total_tries = 0
-                self._gateways[shard_id] = gw
-
-            try:
-                try:
-                    # consume events
-                    async with multio.finalize_agen(gw.events()) as agen:
-                        async for event in agen:
-                            await self.fire_event(event[0], *event[1:], gateway=gw)
-
-                except WebsocketClosed as e:
-                    # Try and handle the close.
-                    if e.reason == "Client closed connection":
-                        # internal
-                        return
-
-                    if e.code in [1000, 4007] or gw.session_id is None:
-                        logger.info("Shard {} disconnected with code {}, "
-                                    "creating new session".format(shard_id, e.code))
-
-                        self.state._reset(gw.shard_id)
-                        await gw.reconnect(resume=False)
-                    elif e.code not in (4004, 4011):
-                        # Try and RESUME.
-                        logger.info("Shard {} disconnected with close code {}, reason {}, "
-                                    "attempting a reconnect.".format(shard_id, e.code,
-                                                                     e.reason))
-
-                        await gw.reconnect(resume=True)
-                    else:
-                        raise
-                except ReconnectWebsocket:
-                    # We've been told to reconnect, try and RESUME.
-                    await gw.reconnect(resume=True)
-            except (WebsocketClosed, WebsocketUnusable):
-                # give up and retry.
-                total_tries += 1
-                continue
+                async with multio.finalize_agen(gw.events()) as agen:
+                    async for event in agen:
+                        await self.fire_event(event[0], *event[1:], gateway=gw)
+            finally:
+                self._gateways.pop(shard_id, None)
 
     async def start(self, shard_count: int):
         """
@@ -679,7 +633,7 @@ class Client(object):
             self.events.task_manager = tg
 
             for shard_id in range(0, shard_count):
-                await tg.spawn(self.handle_shard(shard_id, shard_count))
+                await multio.asynclib.spawn(tg, self.handle_shard, shard_id, shard_count)
 
     async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
@@ -692,7 +646,12 @@ class Client(object):
             shard_count = await self.get_shard_count()
 
         self.shard_count = shard_count
-        return await self.start(shard_count)
+        try:
+            return await self.start(shard_count)
+        except TaskGroupError as e:
+            for x in e.failed:
+                exc = x.next_exc
+                traceback.print_exception(None, exc, exc.__traceback__)
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True):
         """

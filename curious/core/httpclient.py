@@ -50,9 +50,6 @@ except ImportError:
 import curious
 from curious.exc import Forbidden, HTTPException, NotFound, Unauthorized
 
-# TODO: Don't do this
-multio.init("curio")
-
 logger = logging.getLogger("curious.http")
 
 
