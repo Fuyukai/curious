@@ -157,8 +157,7 @@ class Widget(object):
     @property
     def channels(self) -> 'typing.Mapping[int, typing.Union[dt_channel.Channel, WidgetChannel]]':
         """
-        :return: The channels associated with this widget. 
-        :rtype: One of :class:`~.Channel`, :class:`~.WidgetChannel`.
+        :return: A mapping of channels associated with this widget.
         """
         return self.guild.channels
 
