@@ -34,7 +34,7 @@ import multio
 from curio import TaskGroupError
 
 from curious.core import chunker as md_chunker
-from curious.core.event import EventContext, EventManager, event as ev_dec
+from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
 from curious.core.gateway import open_websocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
@@ -153,7 +153,8 @@ class Client(object):
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
 
-        self.scan_events()
+        for (name, event) in scan_events(self):
+            self.events.add_event(event)
 
     @property
     def user(self) -> BotUser:
@@ -170,7 +171,7 @@ class Client(object):
         return self.state.guilds
 
     @property
-    def invite_url(self):
+    def invite_url(self) -> str:
         """
         :return: The invite URL for this bot.
         """
@@ -263,24 +264,6 @@ class Client(object):
             self.events.add_event(func=f)
 
         return _inner
-
-    def scan_events(self):
-        """
-        Scans this class for functions marked with an event decorator.
-        """
-
-        def _pred(f):
-            if not hasattr(f, "events"):
-                return False
-
-            if getattr(f, "scan", False):
-                return True
-
-            return False
-
-        for _, item in inspect.getmembers(self, predicate=_pred):
-            logger.info("Registering event function {} for events {}".format(_, item.events))
-            self.events.add_event(item)
 
     # rip in peace old fire_event
     # 2016-2017

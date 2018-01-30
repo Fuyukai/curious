@@ -307,6 +307,24 @@ def event(name, scan: bool = True):
     return __innr
 
 
+def scan_events(obb) -> typing.Generator[None, typing.Tuple[str, typing.Any], None]:
+    """
+    Scans an object for any items marked as an event and yields them.
+    """
+    def _pred(f):
+        is_event = getattr(f, "is_event", False)
+        if not is_event:
+            return False
+
+        if not f.scan:
+            return False
+
+        return True
+
+    for _, item in inspect.getmembers(obb, predicate=_pred):
+        yield (_, item)
+
+
 class EventContext(object):
     """
     Represents a special context that are passed to events.
