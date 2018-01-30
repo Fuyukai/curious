@@ -41,7 +41,6 @@ from curious.dataclasses.role import Role
 from curious.dataclasses.user import BotUser, FriendType, RelationshipUser, User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
-from curious.util import coerce_agen
 
 UserType = typing.TypeVar("U", bound=User)
 logger = logging.getLogger("curious.state")
@@ -594,10 +593,6 @@ class State(object):
         if guild._chunks_left <= 0:
             # Set the finished chunking event.
             await guild._finished_chunking.set()
-
-        # Check if we have all chunks.
-        for i in await coerce_agen(self._check_ready(gw, guild)):
-            yield i
 
     async def handle_guild_create(self, gw: 'gateway.GatewayHandler', event_data: dict):
         """

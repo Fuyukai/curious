@@ -1,9 +1,12 @@
+import logging
 from collections import defaultdict
 from typing import List, MutableMapping
 
 from curious.core import client as md_client
 from curious.core.event import EventContext, event
 from curious.dataclasses import guild as md_guild
+
+logger = logging.getLogger(__name__)
 
 
 class Chunker(object):
@@ -39,6 +42,7 @@ class Chunker(object):
         """
         Fires off GUILD_MEMBER_CHUNK requests for the list of guilds.
         """
+        logger.info("Firing a chunk request for %s guilds", len(guilds))
         ids = [guild.id for guild in guilds]
         gateway = self.client._gateways[shard_id]
         await gateway.send_guild_chunks(ids)
@@ -59,12 +63,18 @@ class Chunker(object):
 
         for shard in shard_ids:
             guilds = self._pending[shard]
-            if len(guilds) < self.batch_size:
+            if not guilds:
+                # wtf
                 continue
 
+            if len(guilds) < self.batch_size:
+                # if all are available, skip the exit check
+                if any(guild.unavailable for guild in self.client.guilds_for(shard)):
+                    continue
+
             # pray for the gil
-            self._pending[shard].clear()
             await self.fire_chunks(shard, guilds)
+            self._pending[shard].clear()
 
     async def _potentially_fire_ready(self, shard_id: int):
         """
@@ -107,6 +117,7 @@ class Chunker(object):
         Potentially adds a guild to the pending count.
         """
         if guild.large:
+            logger.debug("Added guild `%s` to chunk pending", guild.id)
             self._pending[ctx.shard_id].append(guild)
 
         await self.potentially_fire_chunks(shard_id=ctx.shard_id)
@@ -115,7 +126,7 @@ class Chunker(object):
     @event("guild_joined")
     async def handle_new_guild(self, ctx: EventContext, guild: 'md_guild.Guild'):
         """
-        Handles a new guild (just become available for has just joined.
+        Handles a new guild (just become available for) has just joined.
         """
         # immediately chunk
         await self.fire_chunks(ctx.shard_id, [guild])
