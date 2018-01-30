@@ -73,8 +73,8 @@ class Chunker(object):
                     continue
 
             # pray for the gil
+            self._pending[shard] = []
             await self.fire_chunks(shard, guilds)
-            self._pending[shard].clear()
 
     async def _potentially_fire_ready(self, shard_id: int):
         """
