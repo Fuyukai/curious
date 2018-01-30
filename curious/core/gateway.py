@@ -26,7 +26,7 @@ import time
 import zlib
 from collections import Counter
 from dataclasses import dataclass  # use a 3.6 backport if available
-from typing import AsyncContextManager
+from typing import AsyncContextManager, List
 
 import multio
 from async_generator import asynccontextmanager
@@ -161,8 +161,10 @@ class GatewayHandler(object):
         await self.websocket.close(code=code, reason=reason, allow_reconnects=reconnect)
         # this kills the websocket
         await self._stop_heartbeating.set()
+
         if not reconnect:
             await self.websocket.sock.close()
+            await multio.asynclib.cancel_task_group(self.task_group)
 
     # send commands
     async def send(self, data: dict) -> None:
@@ -222,6 +224,21 @@ class GatewayHandler(object):
                 "seq": self.gw_state.sequence
             }
         }
+        return await self.send(payload)
+
+    async def send_guild_chunks(self, guild_ids: List[int]) -> None:
+        """
+        Sends GUILD_MEMBER_CHUNK packets to Discord.
+        """
+        payload = {
+            "op": GatewayOp.REQUEST_MEMBERS,
+            "d": {
+                "guild_id": list(map(str, guild_ids)),
+                "query": "",
+                "limit": 0
+            }
+        }
+
         return await self.send(payload)
 
     async def open(self) -> None:
