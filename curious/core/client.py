@@ -137,9 +137,6 @@ class Client(object):
 
         #: The current :class:`.EventManager` for this bot.
         self.events = EventManager()
-        self.events.add_event(self.handle_dispatches, name="gateway_dispatch_received")
-        self.events.add_event(self.handle_ready, name="ready")
-
         #: The current :class:`.Chunker` for this bot.
         self.chunker = md_chunker.Chunker(self)
         self.chunker.register_events(self.events)
@@ -548,6 +545,7 @@ class Client(object):
 
         return guild
 
+    @ev_dec(name="gateway_dispatch_received")
     async def handle_dispatches(self, ctx: EventContext, name: str, dispatch: dict):
         """
         Handles dispatches for the client.
