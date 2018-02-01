@@ -319,7 +319,7 @@ class GatewayHandler(object):
 
         decoded = json.loads(data)
         opcode = decoded.get('op')
-        event_data = decoded.get('d')
+        event_data = decoded.get('d', {})
         sequence = event_data.get('s')
 
         # update sequence number for dispatches
