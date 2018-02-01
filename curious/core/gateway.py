@@ -197,13 +197,13 @@ class GatewayHandler(object):
         }
         return await self.send(payload)
 
-    async def send_heartbeat(self):
+    async def send_heartbeat(self) -> None:
         """
         Sends a heartbeat to Discord.
         """
         # increment the stats
         self.heartbeat_stats.heartbeats += 1
-        self.heartbeat_stats.last_heartbeat = time.monotonic()
+        self.heartbeat_stats.last_heartbeat_time = time.monotonic()
 
         self.logger.debug("Heartbeating with sequence {}".format(self.heartbeat_stats.heartbeats))
         payload = {
@@ -349,7 +349,6 @@ class GatewayHandler(object):
 
         elif opcode == GatewayOp.HEARTBEAT:
             await self.send_heartbeat()
-            self.heartbeat_stats.heartbeats += 1
             yield "gateway_heartbeat_received",
 
         elif opcode == GatewayOp.HEARTBEAT_ACK:
