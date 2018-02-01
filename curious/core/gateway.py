@@ -205,7 +205,7 @@ class GatewayHandler(object):
         self.heartbeat_stats.heartbeats += 1
         self.heartbeat_stats.last_heartbeat_time = time.monotonic()
 
-        self.logger.debug("Heartbeating with sequence {}".format(self.heartbeat_stats.heartbeats))
+        self.logger.debug("Heartbeating with sequence {}".format(self.gw_state.sequence))
         payload = {
             "op": GatewayOp.HEARTBEAT,
             "d": self.gw_state.sequence
