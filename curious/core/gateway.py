@@ -331,6 +331,7 @@ class GatewayHandler(object):
             heartbeat_interval = event_data.get("heartbeat_interval", 45000) / 1000.0
 
             self.logger.debug("Heartbeating every {} seconds.".format(heartbeat_interval))
+            await self.send_heartbeat()
             await self._start_heatbeat_events(heartbeat_interval)
             trace = ", ".join(event_data["_trace"])
             self.logger.info(f"Connected to Discord servers {trace}")
@@ -348,11 +349,12 @@ class GatewayHandler(object):
 
         elif opcode == GatewayOp.HEARTBEAT:
             await self.send_heartbeat()
+            self.heartbeat_stats.heartbeats += 1
             yield "gateway_heartbeat_received",
 
         elif opcode == GatewayOp.HEARTBEAT_ACK:
             self.heartbeat_stats.heartbeat_acks += 1
-            self.heartbeat_stats.last_ack = time.monotonic()
+            self.heartbeat_stats.last_ack_time = time.monotonic()
             yield "gateway_heartbeat_ack",
 
         elif opcode == GatewayOp.INVALIDATE_SESSION:
