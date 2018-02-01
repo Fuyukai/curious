@@ -319,8 +319,8 @@ class GatewayHandler(object):
 
         decoded = json.loads(data)
         opcode = decoded.get('op')
+        sequence = decoded.get('s')
         event_data = decoded.get('d', {})
-        sequence = event_data.get('s')
 
         # update sequence number for dispatches
         if sequence is not None:
