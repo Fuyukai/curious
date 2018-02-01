@@ -241,6 +241,40 @@ class GatewayHandler(object):
 
         return await self.send(payload)
 
+    async def send_status(self, *, status: int = None, name: str = None, url: str = None,
+                          type_: int = None,
+                          afk: bool = None):
+        """
+        Sends a PRESENCE_UPDATE.
+
+        :param status: The int status to send.
+        :param name: The name of the status to send.
+        :param url: The URL to include if applicable.
+        :param type_: The type of the status to send.
+        :param afk: If the account is to be marked as AFK.
+        """
+        payload = {
+            "op": GatewayOp.PRESENCE,
+            "d": {}
+        }
+        if status is not None:
+            payload["d"]["status"] = status
+
+        if name is not None:
+            game = {
+                "name": name,
+                "type": type_
+            }
+            if url is not None:
+                game["url"] = url
+
+            payload["d"]["game"] = game
+
+        if afk is not None:
+            payload["d"].update(afk=afk, since=int(time.time() * 1000))
+
+        return await self.send(payload)
+
     async def open(self) -> None:
         """
         Opens a new connection to Discord.
@@ -293,7 +327,7 @@ class GatewayHandler(object):
 
         await multio.asynclib.spawn(self.task_group, heartbeater)
 
-    async def _stop_heartbeat_events(self):
+    async def _stop_heartbeat_events(self) -> None:
         """
         Cancels any current heartbeat events.
         """
