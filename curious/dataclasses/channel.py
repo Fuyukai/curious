@@ -227,7 +227,7 @@ class ChannelMessageWrapper(object):
         """
         Gets history for this channel.
 
-        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async
+        This is *not* an async function - it returns a :class:`HistoryIterator` which can be async
         iterated over to get message history.
 
         .. code-block:: python3
@@ -764,11 +764,11 @@ class Channel(Dataclass):
         """
         Gets history for this channel.
 
-        This is *not* a coroutine - it returns a :class:`HistoryIterator` which can be async 
+        This is *not* an async function - it returns a :class:`HistoryIterator` which can be async
         iterated over to get message history.
 
         .. code-block:: python3
-        
+
             async for message in channel.get_history(limit=1000):
                 print(message.content, "by", message.author.user.name)
 

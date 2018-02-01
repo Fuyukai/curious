@@ -251,10 +251,17 @@ class EventManager(object):
 
     async def spawn(self, cofunc, *args) -> typing.Any:
         """
-        Spawns a new coroutine function using our task manager.
+        Spawns a new async function using our task manager.
 
-        :param cofunc: The coroutine function to spawn.
-        :param args: Args to provide to the coroutine function.
+        Usage::
+
+            async def myfn(a, b):
+                await do_some_operation(a + b)
+
+            await events.spawn(myfn, 1, 2)
+
+        :param cofunc: The async function to spawn.
+        :param args: Args to provide to the async function.
         """
         return await multio.asynclib.spawn(self.task_manager, cofunc, *args)
 
