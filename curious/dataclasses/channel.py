@@ -683,7 +683,7 @@ class Channel(Dataclass):
         return self._messages
 
     @property
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.send`", removal="0.9.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages", removal="0.9.0")
     def history(self) -> HistoryIterator:
         """
         :return: A :class:`.HistoryIterator` that can be used to iterate over the channel history.
@@ -757,7 +757,7 @@ class Channel(Dataclass):
         obb.parent_id = self.parent_id
         return obb
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.get_history`", removal="0.9.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.get_history", removal="0.9.0")
     def get_history(self, before: int = None,
                     after: int = None,
                     limit: int = 100) -> HistoryIterator:
@@ -806,7 +806,7 @@ class Channel(Dataclass):
 
         return obbs
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.get`", removal="0.9.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.get", removal="0.9.0")
     async def get_message(self, message_id: int) -> 'dt_message.Message':
         """
         Gets a single message from this channel.
@@ -906,7 +906,7 @@ class Channel(Dataclass):
 
         return invite
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.delete_messages`",
+    @deprecated(since="0.7.0", see_instead="Channel.messages.delete_messages",
                 removal="0.9.0")
     async def delete_messages(self, messages: '_typing.List[dt_message.Message]') -> int:
         """
@@ -931,7 +931,7 @@ class Channel(Dataclass):
         """
         return await self.messages.bulk_delete(messages)
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.purge`", removal="0.9.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.purge", removal="0.9.0")
     async def purge(self, limit: int = 100, *,
                     author: 'dt_member.Member' = None,
                     content: str = None,
@@ -1000,6 +1000,7 @@ class Channel(Dataclass):
             await channel.messages.send("Long action:", res)
         """
         running = multio.Event()
+
         async def runner():
             await self.send_typing()
             while True:
@@ -1017,8 +1018,7 @@ class Channel(Dataclass):
             finally:
                 await running.set()
 
-
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.send", removal="0.10.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.send", removal="0.10.0")
     async def send(self, content: str = None, *,
                    tts: bool = False, embed: Embed = None) -> 'dt_message.Message':
         """
@@ -1038,7 +1038,7 @@ class Channel(Dataclass):
         """
         return await self.messages.send(content, tts=tts, embed=embed)
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.upload`", removal="0.10.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.upload", removal="0.10.0")
     async def send_file(self, file_content: bytes, filename: str,
                         *, message_content: _typing.Optional[str] = None) -> 'dt_message.Message':
         """
@@ -1060,7 +1060,7 @@ class Channel(Dataclass):
         """
         return await self.messages.upload(file_content, filename, message_content=message_content)
 
-    @deprecated(since="0.7.0", see_instead=":meth:`.Channel.messages.upload`", removal="0.10.0")
+    @deprecated(since="0.7.0", see_instead="Channel.messages.upload", removal="0.10.0")
     async def upload_file(self, filename: str, *,
                           message_content: str = None) -> 'dt_message.Message':
         """

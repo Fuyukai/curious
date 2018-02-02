@@ -30,20 +30,32 @@ The ``bot.py`` file will contain all of the code for the bot.
 Writing the Bot
 ---------------
 
-Open up ``bot.py`` and add the essential import:
+Open up ``bot.py`` and add the essential imports:
 
 .. code-block:: python3
 
+    import multio
     from curious.core.client import Client
 
-This will import :class:`~.Client`, which is used to communicate with
+This will import :mod:`multio` and :class:`~.Client`, which is used to communicate with
 Discord.
 
-Next, you want to define your new bot object.
+First off, you need to tell :mod:`multio` what library to use when running your bot.
 
 .. code-block:: python3
 
-    botto = Client()
+    # pick one depending on your personal preference
+
+    # curio, smaller and eats children
+    curio.init('curio')
+    # trio, bigger and also eats children
+    curio.init('trio')
+
+Next, you want to define your new bot object, passing your bot token to it:
+
+.. code-block:: python3
+
+    botto = Client("MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo")
 
 
 This object will be used to receive events from Discord, such as the messages.
@@ -88,12 +100,11 @@ Running the Bot
 
 The final stage to this basic tutorial is to **run the bot**.
 
-The simplest method is to call :meth:`.Client.run` on the bot with your
-token as the argument.
+The simplest method is to call :meth:`.Client.run`, like so:
 
 .. code-block:: python3
 
-    botto.run("MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo")
+    botto.run()
 
 When you type in a server that you and the bot account share, you will then
 see your messages pop up in the log for the bot.

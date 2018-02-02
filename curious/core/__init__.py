@@ -30,11 +30,4 @@ delegating it to client code.
     httpclient
     state
 """
-import asks
-import multio
 
-if asks.init != multio.init:
-    _init = multio.init
-    multio.init = lambda lib: (asks.init(lib), _init(lib))
-
-multio.init("curio")

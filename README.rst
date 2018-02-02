@@ -1,8 +1,8 @@
 Curious
 =======
 
-Curious is a Python 3.6+ wrapper for the Discord API, using
-`curio <https://github.com/dabeaz/curio>`__.
+``curious`` is a Python 3.6+ library to interact with the
+`Discord <https://discordapp.com>`_ API.
 
 Installation
 ------------

@@ -21,6 +21,10 @@
 import os
 import sys
 
+import multio
+
+multio.init('curio')
+
 import sphinx_py3doc_enhanced_theme
 from pkg_resources import DistributionNotFound, get_distribution
 
@@ -52,7 +56,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.autosummary',
               'sphinx_autodoc_typehints',
-              'sphinxcontrib.asyncio']
+              'sphinxcontrib_trio']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -68,8 +72,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'curious'
-copyright = '2017, Laura Dickinson'
-author = 'Laura Dickinson'
+copyright = '2017-2018, Laura F. Dickinson'
+author = 'Laura F. Dickinson'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

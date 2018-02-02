@@ -6,6 +6,10 @@ This document displays the differences between each release of curious.
 0.7.0 (Container Rewrite)
 -------------------------
 
+.. note::
+
+    This release enables `Trio <https://trio.readthedocs.io>`__ support.
+
  - Add get-by-name to :class:`.GuildChannelWrapper`, and :class:`.GuildRoleWrapper`.
 
  - Add :attr:`.Invite.features`.
@@ -13,8 +17,6 @@ This document displays the differences between each release of curious.
  - Add :class:`.GameType` for game types.
 
  - Make :attr:`.Invite.inviter` a property that returns a :class:`.Member` if one can be found.
-
- - Reorganize gateway event handling into an async generator.
 
  - Remove :meth:`.Client.boot_shard` amongst others, and create :meth:`.Client.handle_shard` to
    do all gateway-related handling functions.
@@ -33,12 +35,19 @@ This document displays the differences between each release of curious.
 
  - Add :class:`.ChannelMessagesWrapper`, and move everything to point to it.
 
+ - Rewrite the gateway code significantly.
+
+    - Use asyncwebsockets 0.2, which has automatic reconnect built-in.
+
+    - Make opening a gateway a context manager.
+
+    - Use proper dataclasses for state.
+
+    - Make heartbeating a proper background task. The async thread method was a) non-portable and
+      b) not actually any better; it would still wait for the event loop anyway.
+
 0.6.0 (Released 2017-11-05)
 ---------------------------
-
-.. warning::
-
-    This is the last version of curious that supports Python 3.6.
 
  - Bring voice code inline with the standard of the rest of the code.
 

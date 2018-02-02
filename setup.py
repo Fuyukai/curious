@@ -5,7 +5,6 @@ from setuptools import setup
 
 install_requires = [
         "asyncwebsockets>=0.2.0,<0.3.0",
-        "curio>=0.9.0,<0.10.0",
         "pylru==1.0.9",
         "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",

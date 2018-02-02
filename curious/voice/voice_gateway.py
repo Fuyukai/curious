@@ -26,11 +26,11 @@ import zlib
 
 import curio
 import multio
-from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
+# from asyncwebsockets import Websocket, WebsocketBytesMessage, WebsocketClosed, connect_websocket
 from curio.socket import gethostbyname
 from curio.thread import AWAIT, async_thread
 
-from curious.core.gateway import Gateway, ReconnectWebsocket
+#from curious.core.gateway import Gateway, ReconnectWebsocket
 
 logger = logging.getLogger("curious.voice")
 
@@ -238,7 +238,7 @@ class VoiceGateway(object):
         await self._stop_heartbeating.set()
 
     @classmethod
-    async def from_gateway(cls, gw: Gateway, guild_id: int, channel_id: int) -> 'VoiceGateway':
+    async def from_gateway(cls, gw: 'Gateway', guild_id: int, channel_id: int) -> 'VoiceGateway':
         """
         Opens a new voice gateway connection from an existing Gateway connection.
 

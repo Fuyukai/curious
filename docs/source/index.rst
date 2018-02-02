@@ -7,8 +7,7 @@ Welcome to curious's documentation!
 ===================================
 
 ``curious`` is a Python 3.6+ library to interact with the
-`Discord <https://discordapp.com>`_ API. It is based on top of `curio
-<https://github.com/dabeaz/curio>`_.
+`Discord <https://discordapp.com>`_ API. It is designed to work with either curio_ or trio_.
 
 Installation
 ------------
@@ -65,3 +64,6 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`search`
+
+.. _curio: https://curio.readthedocs.io/
+.. _trio: https://trio.readthedocs.io/
