@@ -47,9 +47,9 @@ First off, you need to tell :mod:`multio` what library to use when running your 
     # pick one depending on your personal preference
 
     # curio, smaller and eats children
-    curio.init('curio')
+    multio.init('curio')
     # trio, bigger and also eats children
-    curio.init('trio')
+    multio.init('trio')
 
 Next, you want to define your new bot object, passing your bot token to it:
 
