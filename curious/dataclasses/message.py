@@ -22,8 +22,6 @@ import enum
 import re
 import typing
 
-import curio
-
 from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, guild as dt_guild, \
     invite as dt_invite, member as dt_member, role as dt_role, user as dt_user, \
     webhook as dt_webhook
@@ -316,15 +314,10 @@ class Message(Dataclass):
 
         # Prevent race conditions by spawning a listener, then waiting for the task once we've
         # sent the HTTP request.
-        t = await curio.spawn(self._bot.wait_for("message_update",
-                                                 predicate=lambda o, n: n.id == self.id))
-        try:
+        async with self._bot.events.wait_for_manager("message_update",
+                                                     lambda o, n: n.id == self.id):
             await self._bot.http.edit_message(self.channel.id, self.id, content=new_content,
                                               embed=embed)
-        except:
-            await t.cancel()
-            raise
-        old, new = await t.join()
         return new
 
     async def pin(self) -> 'Message':

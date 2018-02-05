@@ -986,7 +986,7 @@ class Channel(Dataclass):
     @property
     @asynccontextmanager
     @safe_generator
-    async def typing(self):
+    async def typing(self) -> _typing.AsyncContextManager[None]:
         """
         :return: A context manager that sends typing repeatedly.
 

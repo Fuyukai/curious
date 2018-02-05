@@ -24,10 +24,11 @@ import logging
 import typing
 
 import multio
+from async_generator import asynccontextmanager
 from multidict import MultiDict
 
 from curious.core import client as md_client
-from curious.util import remove_from_multidict
+from curious.util import remove_from_multidict, safe_generator
 
 logger = logging.getLogger("curious.events")
 
@@ -49,6 +50,7 @@ class _WithWaitFor:
     """
     Helper class for managing a wait_for.
     """
+
     def __init__(self, manager, task_group, event_name: str, predicate):
         self.manager = manager
         self.task_group = task_group
@@ -72,6 +74,21 @@ class _WithWaitFor:
             pass
 
         return False
+
+
+@asynccontextmanager
+@safe_generator
+async def _wait_for_manager(manager, name: str, predicate):
+    """
+    Helper class for managing a wait_for.
+    """
+    async with multio.asynclib.task_manager() as tg:
+        try:
+            partial = functools.partial(manager.wait_for, name, predicate)
+            await multio.asynclib.spawn(partial)
+            yield
+        finally:
+            await multio.asynclib.cancel_task_group(tg)
 
 
 class EventManager(object):
@@ -235,7 +252,7 @@ class EventManager(object):
             return output[0]
         return output
 
-    def wait_for_manager(self, event_name: str, predicate) -> '_WithWaitFor':
+    def wait_for_manager(self, event_name: str, predicate) -> 'typing.AsyncContextManager[None]':
         """
         Returns a context manager that can be used to run some steps whilst waiting for a
         temporary listener.
@@ -247,7 +264,7 @@ class EventManager(object):
 
         This probably won't be needed outside of internal library functions.
         """
-        return _WithWaitFor(self, self.task_manager, event_name, predicate)
+        return _wait_for_manager(self, event_name, predicate)
 
     async def spawn(self, cofunc, *args) -> typing.Any:
         """
@@ -318,6 +335,7 @@ def scan_events(obb) -> typing.Generator[None, typing.Tuple[str, typing.Any], No
     """
     Scans an object for any items marked as an event and yields them.
     """
+
     def _pred(f):
         is_event = getattr(f, "is_event", False)
         if not is_event:

@@ -149,14 +149,20 @@ class HTTPClient(object):
     :param bot: Is this client a bot?
     :param max_connections: The max connections for this HTTP client.
     """
-    USER_AGENT = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]} " \
-                 "{2}/{3}".format(curious.__version__, sys.version_info,
-                                  multio.asynclib.lib_name,
-                                  pkg_resources.get_distribution(multio.asynclib.lib_name).version)
 
     def __init__(self, token: str, *,
                  bot: bool = True,
                  max_connections: int = 10):
+        fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) " \
+                          "Python/{1[0]}.{1[1]} {2}/{3}"
+
+        self.USER_AGENT = fmt.format(
+            curious.__version__,
+            sys.version_info,
+            multio.asynclib.lib_name,  # make sure to call init before creating your client!
+            pkg_resources.get_distribution(multio.asynclib.lib_name).version
+        )
+
         #: The token used for all requests.
         self.token = token
 
