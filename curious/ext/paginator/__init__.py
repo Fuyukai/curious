@@ -18,6 +18,8 @@ A reactions-based paginator.
 """
 import typing
 
+import multio
+
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.member import Member
@@ -31,12 +33,12 @@ class ReactionsPaginator(object):
     A paginator for a message using reactions.
     """
     BUTTON_BACKWARDS = "◀"
-    BUTTON_FORWARD   = "▶"
-    BUTTON_STOP      = "⏹"
+    BUTTON_FORWARD = "▶"
+    BUTTON_STOP = "⏹"
 
     def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel,
                  respond_to: typing.Union[Member, User], *,
-                 break_at: int=2000, title: str = None):
+                 break_at: int = 2000, title: str = None):
         """
         :param content: The content to page through.
         :param channel: The channel to send the content to.
@@ -63,6 +65,8 @@ class ReactionsPaginator(object):
 
         #: The message object that is being edited.
         self._message = None  # type: Message
+        self._running = False
+        self._reaction_queue = multio.Queue()
 
     @classmethod
     async def paginate_response(cls, content: str,
@@ -77,7 +81,7 @@ class ReactionsPaginator(object):
         await obb.paginate()
         return obb
 
-    async def send_current_page(self):
+    async def send_current_page(self) -> None:
         """
         Sends the current page to the channel.
         """
@@ -107,26 +111,32 @@ class ReactionsPaginator(object):
         """
         Starts paginating this message.
 
-        This will continuously listen for reactions on this message until the STOP button is pressed.
+        This will continuously listen for reactions on this message until the STOP button is
+        pressed.
         """
+        self._running = True
+
+        async def consume_reaction(ctx, message: Message, author: Member, reaction: Reaction):
+            """
+            Consumes reaction events and places them on a queue.
+            """
+            if message.id != self._message.id:
+                return
+
+            if author.id != self.respond_to.id:
+                return
+
+            if self._running:
+                await self._reaction_queue.put(reaction)
+
+        # spawn the consumer task first
+        self.bot.events.add_temporary_listener("message_reaction_add", consume_reaction)
+
+        # send the stuff we want
         await self.send_current_page()
         await self._add_initial_reactions()
 
-        def predicate(message: Message, author: Member, reaction: Reaction):
-            """
-            Inner predicate used in `wait_for`.
-            """
-            if message.id != self._message.id:
-                return False
-
-            if author.id != self.respond_to.id:
-                return False
-
-            return True
-
-        # Enter the loop.
-        while True:
-            *_, reaction = await self.bot.wait_for("message_reaction_add", predicate=predicate)
+        async for reaction in self._reaction_queue:
             if reaction.emoji == self.BUTTON_FORWARD:
                 if self.page < len(self._message_chunks) - 1:
                     self.page += 1
@@ -144,7 +154,10 @@ class ReactionsPaginator(object):
 
             if reaction.emoji == self.BUTTON_STOP:
                 # remove all reactions were done here
-                await self._message.remove_all_reactions()
                 break
 
             await self._message.unreact(reaction.emoji, self.respond_to)
+
+        # we've broken out of the loop, so remove reactions and cancel the listener
+        await self._message.remove_all_reactions()
+        self.bot.events.remove_listener_early("message_reaction_add", consume_reaction)
