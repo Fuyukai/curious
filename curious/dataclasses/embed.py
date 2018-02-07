@@ -166,7 +166,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
             raise ValueError("Image URLs must start with http[s]")
 
         if image_url:
-            self.image.image_url = image_url
+            self.image.url = image_url
 
         return self
 
