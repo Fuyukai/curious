@@ -318,7 +318,7 @@ class Message(Dataclass):
                                                      lambda o, n: n.id == self.id):
             await self._bot.http.edit_message(self.channel.id, self.id, content=new_content,
                                               embed=embed)
-        return new
+        return self
 
     async def pin(self) -> 'Message':
         """
