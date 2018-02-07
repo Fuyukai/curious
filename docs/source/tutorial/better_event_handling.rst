@@ -121,3 +121,6 @@ To register an event hook, use :meth:`.EventManager.add_event_hook`.
 
     client.events.add_event_hook(my_hook)
 
+.. warning::
+
+    An event hook crashing will bring down the entire bot. Be warned.
