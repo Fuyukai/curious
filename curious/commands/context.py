@@ -69,10 +69,13 @@ class Context(object):
         self.manager = None
 
         #: The event context for this context.
-        self._event_context = event_context  # type: EventContext
+        self.event_context = event_context  # type: EventContext
 
         #: The :class:`.Client` for this context.
         self.bot = event_context.bot
+
+    def __getattr__(self, item):
+        return getattr(self.event_context, item)
 
     @classmethod
     def add_converter(cls, type_: Type[Any], converter: 'Callable[[Context, str], Any]'):
