@@ -85,7 +85,7 @@ async def _wait_for_manager(manager, name: str, predicate):
     async with multio.asynclib.task_manager() as tg:
         try:
             partial = functools.partial(manager.wait_for, name, predicate)
-            await multio.asynclib.spawn(partial)
+            await multio.asynclib.spawn(tg, partial)
             yield
         finally:
             await multio.asynclib.cancel_task_group(tg)
