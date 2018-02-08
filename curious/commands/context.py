@@ -49,6 +49,7 @@ class Context(object):
     def __init__(self, message: Message, event_context: EventContext):
         """
         :param message: The :class:`.Message` this command was invoked with.
+        :param event_context: The EventContext for this context.
         """
         #: The message for this context.
         self.message = message  # type: Message
@@ -73,9 +74,6 @@ class Context(object):
 
         #: The :class:`.Client` for this context.
         self.bot = event_context.bot
-
-    def __getattr__(self, item):
-        return getattr(self.event_context, item)
 
     @classmethod
     def add_converter(cls, type_: Type[Any], converter: 'Callable[[Context, str], Any]'):
@@ -149,20 +147,28 @@ class Context(object):
         """
         return await _convert(self, self.tokens, inspect.signature(func))
 
+    def _make_reraise_ctx(self, new_name: str) -> EventContext:
+        """
+        Makes a new EventContext for re-dispatching.
+        """
+        return EventContext(self.bot, self.event_context.shard_id, new_name)
+
     async def _safety_wrapper(self, coro):
         """
         Runs a command in a safety wrapper.
         """
+        evt_ctx = self._make_reraise_ctx("command_error")
         try:
             await coro
         except CommandsError as e:
-            await self.manager.client.events.fire_event("command_error", self, e, ctx=self)
+            await self.manager.client.events.fire_event("command_error", self, e,
+                                                        ctx=evt_ctx)
         except Exception as e:
             try:
                 raise CommandInvokeError(self) from e
             except CommandInvokeError as e2:
                 await self.manager.client.events.fire_event("command_error", self, e2,
-                                                            ctx=self)
+                                                            ctx=evt_ctx)
 
     async def can_run(self, cmd) -> Tuple[bool, list]:
         """
@@ -272,7 +278,8 @@ class Context(object):
                     break
 
         if to_invoke is not None:
+            ev_ctx = self._make_reraise_ctx("command_error")
             try:
                 return await self.invoke(to_invoke)
             except CommandsError as e:
-                await self.manager.client.events.fire_event("command_error", e, ctx=self)
+                await self.manager.client.events.fire_event("command_error", self, e, ctx=ev_ctx)

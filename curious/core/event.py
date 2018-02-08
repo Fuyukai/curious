@@ -295,6 +295,9 @@ class EventManager(object):
         else:
             ctx = kwargs.pop("ctx")
 
+        # clobber event name
+        ctx.event_name = event_name
+
         # always ensure hooks are ran first
         for hook in self.event_hooks:
             cofunc = functools.partial(hook, ctx, *args, **kwargs)
@@ -366,7 +369,7 @@ class EventContext(object):
         self.shard_count = cl.shard_count  # type: int
 
         #: The event name for this event.
-        self.event_name = event_name  # type: int
+        self.event_name = event_name  # type: str
 
     @property
     def handlers(self) -> typing.List[typing.Callable[['EventContext'], None]]:

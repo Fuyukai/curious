@@ -576,7 +576,8 @@ class Client(object):
         if not all(self._ready_state.values()):
             return
 
-        await self.events.fire_event("shards_ready", ctx=ctx)
+        await self.events.fire_event("shards_ready", gateway=self._gateways[ctx.shard_id],
+                                     client=self)
 
     async def handle_shard(self, shard_id: int, shard_count: int):
         """
