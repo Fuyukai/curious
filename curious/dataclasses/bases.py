@@ -19,10 +19,28 @@ Base classes that all dataclasses inherit from.
 .. currentmodule:: curious.dataclasses.bases
 """
 import datetime
+import inspect
+import threading
+from contextlib import contextmanager
 
 from curious.core import client
 
 DISCORD_EPOCH = 1420070400000
+
+_allowing_external_makes = threading.local()
+_allowing_external_makes.flag = False
+
+
+@contextmanager
+def allow_external_makes() -> None:
+    """
+    Using this with a ``with`` allows dataclasses to be made outside of curious' internal code.
+    """
+    try:
+        _allowing_external_makes.flag = True
+        yield
+    finally:
+        _allowing_external_makes.flag = False
 
 
 class IDObject(object):
@@ -75,6 +93,39 @@ class Dataclass(IDObject):
 
     # __weakref__ is used to allow weakreffing
     __slots__ = "_bot", "__weakref__"
+
+    @classmethod
+    def __new__(cls, *args, **kwargs):
+        """
+        Inspects the stack to ensure we're being called correctly.
+        """
+        if _allowing_external_makes.flag is False:
+            try:
+                frameinfo = inspect.stack()[1]
+                frame = frameinfo.frame
+                f_globals = frame.f_globals
+                f_name = frame.f_code.co_name
+                module = f_globals.get('__name__', None)
+
+                if module is not None:
+                    if f_name == "_convert" and module.startswith("curious.commands"):
+                        raise RuntimeError("You passed a dataclass ({}) as a type hint to your "
+                                           "command without a converter - don't do this!\n"
+                                           "This error has been raised because no builtin converter"
+                                           "exists, or the built-in converter has been replaced. "
+                                           "Make sure to either add one or fix your code to use a "
+                                           "converter function!".format(cls.__name__))
+                    elif not module.startswith("curious"):
+                        raise RuntimeError("You tried to make a dataclass manually - don't do this!"
+                                           "\nThe library handles making dataclasses for you. If "
+                                           "you want to get an instance, use the appropriate "
+                                           "lookup method. \nIf you really need to make the "
+                                           "dataclass yourself, wrap it in a "
+                                           "``with allow_external_makes)``.")
+            finally:
+                del frameinfo, frame
+
+        return object.__new__(cls)
 
     def __init__(self, id: int, cl: 'client.Client'):
         super().__init__(id)
