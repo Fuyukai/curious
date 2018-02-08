@@ -87,7 +87,7 @@ class ErrorCode(enum.IntEnum):
     UNKNOWN = 0
 
 
-class HTTPException(CuriousError):
+class HTTPException(CuriousError, ConnectionError):
     """
     Raised when a HTTP request fails with a 400 <= e < 600 error code.
     """
@@ -134,7 +134,7 @@ class NotFound(HTTPException):
     """
 
 
-class PermissionsError(CuriousError):
+class PermissionsError(CuriousError, PermissionError):
     """
     Raised when you do not have sufficient permission to perform an action.
 
@@ -151,7 +151,7 @@ class PermissionsError(CuriousError):
     __repr__ = __str__
 
 
-class HierarchyError(CuriousError):
+class HierarchyError(CuriousError, PermissionError):
     """
     Raised when you can't do something due to the hierarchy.
     """
