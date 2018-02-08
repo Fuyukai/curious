@@ -22,7 +22,9 @@ import inspect
 import types
 from typing import Any, Callable, List, Tuple, Type, Union
 
-from curious.commands.converters import convert_channel, convert_float, convert_int, convert_member
+from curious.commands.converters import convert_channel, convert_float, convert_int, \
+    convert_member, \
+    convert_role
 from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
@@ -30,6 +32,7 @@ from curious.dataclasses.channel import Channel
 from curious.dataclasses.guild import Guild
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
+from curious.dataclasses.role import Role
 from curious.dataclasses.user import User
 
 
@@ -40,6 +43,7 @@ class Context(object):
     _converters = {
         Channel: convert_channel,
         Member: convert_member,
+        Role: convert_role,
         # Guild: _convert_guild,
         str: lambda ctx, arg: arg,
         int: convert_int,

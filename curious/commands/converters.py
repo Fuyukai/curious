@@ -21,6 +21,7 @@ Converter methods.
 from curious.commands.exc import ConversionFailedError
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.member import Member
+from curious.dataclasses.role import Role
 
 
 def convert_member(ctx, arg: str) -> Member:
@@ -53,29 +54,63 @@ def convert_channel(ctx, arg: str) -> Channel:
     """
     Converts an argument into a Channel.
     """
+    channel_id = None
     if arg.startswith("<#") and arg.endswith(">"):
-        id = arg[2:-1]
-
         try:
-            id = int(id)
+            channel_id = int(arg[2:-1])
         except ValueError:
             raise ConversionFailedError(ctx, arg, Channel)
+    elif all(i.isdigit() for i in arg):
+        channel_id = int(arg)
 
-        channel = ctx.guild.channels.get(id)
-        if not channel:
-            raise ConversionFailedError(ctx, arg, Channel)
+    if channel_id is not None:
+        try:
+            channel = ctx.guild.channels[channel_id]
+        except KeyError as e:
+            raise ConversionFailedError(ctx, arg, Channel) from e
     else:
         try:
-            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels.values()), None)
-            if channel is None:
-                channel = ctx.guild.channels.get(int(arg))
-        except (StopIteration, ValueError):
-            raise ConversionFailedError(ctx, arg, Channel)
-        else:
-            if channel is None:
-                raise ConversionFailedError(ctx, arg, Channel)
+            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels.values()))
+        except (StopIteration, ValueError) as e:
+            raise ConversionFailedError(ctx, arg, Channel) from e
+
+    if channel is None:
+        raise ConversionFailedError(ctx, arg, Channel)
 
     return channel
+
+
+def convert_role(ctx, arg: str) -> Role:
+    """
+    Converts an argument into a :class:`.Role`.
+    """
+    if arg.startswith("<@&") and arg.endswith(">"):
+        try:
+            role_id = int(arg[3:-1])
+        except ValueError:
+            raise ConversionFailedError(ctx, arg, Role)
+    elif all(i.isdigit() for i in arg):
+        role_id = int(arg)
+    else:
+        role_id = None
+
+    if role_id is not None:
+        try:
+            role = ctx.guild.roles[role_id]
+        except KeyError as e:
+            raise ConversionFailedError(ctx, arg, Role)
+    else:
+        try:
+            role = next(filter(lambda c: c.name == arg), ctx.guild.channels.values())
+        except (StopIteration, ValueError) as e:
+            raise ConversionFailedError(ctx, arg, Role) from e
+
+    if role is None:
+        raise ConversionFailedError(ctx, arg, Channel)
+
+    return None
+
+
 
 
 def convert_int(ctx, arg: str) -> int:
