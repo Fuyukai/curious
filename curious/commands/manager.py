@@ -367,11 +367,13 @@ class CommandsManager(object):
         await ctx.try_invoke()
 
     @event("command_error")
-    async def default_command_error(self, ctx: Context, err: CommandsError):
+    async def default_command_error(self, ev_ctx: EventContext, ctx: Context, err: CommandsError):
         """
         Handles command errors by default.
         """
+        # autoremove ourself if applicable
         if len(self.client.events.event_listeners.getall("command_error")) > 1:
+            self.client.events.remove_event("command_error", self.default_command_error)
             return
 
         fmtted = ''.join(traceback.format_exception(type(err), err, err.__traceback__))
