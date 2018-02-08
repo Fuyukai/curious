@@ -101,16 +101,14 @@ def convert_role(ctx, arg: str) -> Role:
             raise ConversionFailedError(ctx, arg, Role)
     else:
         try:
-            role = next(filter(lambda c: c.name == arg), ctx.guild.channels.values())
+            role = next(filter(lambda c: c.name == arg, ctx.guild.roles.values()))
         except (StopIteration, ValueError) as e:
             raise ConversionFailedError(ctx, arg, Role) from e
 
     if role is None:
         raise ConversionFailedError(ctx, arg, Channel)
 
-    return None
-
-
+    return role
 
 
 def convert_int(ctx, arg: str) -> int:
