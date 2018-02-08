@@ -112,7 +112,7 @@ class Dataclass(IDObject):
                         raise RuntimeError("You passed a dataclass ({}) as a type hint to your "
                                            "command without a converter - don't do this!\n"
                                            "This error has been raised because no builtin converter"
-                                           "exists, or the built-in converter has been replaced. "
+                                           " exists, or the built-in converter has been replaced. "
                                            "Make sure to either add one or fix your code to use a "
                                            "converter function!".format(cls.__name__))
                     elif not module.startswith("curious"):
