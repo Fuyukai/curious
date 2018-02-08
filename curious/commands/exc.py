@@ -18,9 +18,10 @@ Defines commands-specific exceptions.
 
 .. currentmodule:: curious.commands.exc
 """
+from curious.exc import CuriousError
 
 
-class CommandsError(Exception):
+class CommandsError(CuriousError):
     pass
 
 
@@ -32,7 +33,7 @@ class ConditionsFailedError(CommandsError):
         self.ctx = ctx
         self.conditions = check
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if isinstance(self.conditions, list):
             return f"The conditions for `{self.ctx.command_name}` failed."
 
@@ -49,26 +50,26 @@ class MissingArgumentError(CommandsError):
         self.ctx = ctx
         self.arg = arg
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Missing required argument `{self.arg}` in `{self.ctx.command_name}`."
 
     __str__ = __repr__
 
 
-class CommandInvokeError(Exception):
+class CommandInvokeError(CommandsError):
     """
     Raised when a command has an error during invokation.
     """
     def __init__(self, ctx):
         self.ctx = ctx
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Command {self.ctx.command_name} failed to invoke with error `{self.__cause__}`."
 
     __str__ = __repr__
 
 
-class ConversionFailedError(Exception):
+class ConversionFailedError(CommandsError):
     """
     Raised when conversion fails.
     """
@@ -77,7 +78,7 @@ class ConversionFailedError(Exception):
         self.arg = arg
         self.to_type = to_type
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Cannot convert `{self.arg}` to type `{self.to_type.__name__}`."
 
     __str__ = __repr__
