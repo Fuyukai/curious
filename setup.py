@@ -9,7 +9,7 @@ install_requires = [
         "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",
         "asks>=1.3.0,<1.4.0",
-        "multidict>=2.1.6<2.2.0",
+        "multidict>=2.1.6,<2.2.0",
         "multio>=0.2.0,<0.3.0",
         "async_generator~=1.9",  # asynccontextmanager for 3.6
 ]
