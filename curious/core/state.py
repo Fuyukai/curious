@@ -28,6 +28,7 @@ from types import MappingProxyType
 import multio
 
 from curious.core import gateway
+from curious.dataclasses.bases import allow_external_makes
 from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import ContentFilterLevel, Guild, MFALevel, NotificationLevel, \
@@ -651,7 +652,9 @@ class State(object):
         if not guild:
             return
 
-        old_guild = copy.copy(guild)
+        # disable dataclass checking temporarily
+        with allow_external_makes():
+            old_guild = copy.copy(guild)
 
         guild.unavailable = event_data.get("unavailable", False)
         guild.name = event_data.get("name", guild.name)
