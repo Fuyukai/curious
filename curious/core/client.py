@@ -26,12 +26,10 @@ import enum
 import functools
 import inspect
 import logging
-import traceback
 import typing
 from types import MappingProxyType
 
 import multio
-from curio import TaskGroupError
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -152,6 +150,9 @@ class Client(object):
         #: The application info for this bot. Instance of :class:`~.AppInfo`.
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
+
+        #: The task manager used for this bot.
+        self.task_manager = None
 
         for (name, event) in scan_events(self):
             self.events.add_event(event)
@@ -588,13 +589,18 @@ class Client(object):
         """
         # consume events
         async with open_websocket(self._token, self._gw_url,
-                                  shard_id=shard_id, shard_count=shard_count) as gw:
+                                  shard_id=shard_id, shard_count=shard_count,
+                                  task_manager=self.task_manager) as gw:
             self._gateways[shard_id] = gw
 
             try:
                 async with multio.finalize_agen(gw.events()) as agen:
                     async for event in agen:
                         await self.fire_event(event[0], *event[1:], gateway=gw)
+            except multio.asynclib.Cancelled:
+                pass
+            except:  # kill the bot if we failed to parse something
+                await multio.asynclib.cancel_task_group(self.task_manager)
             finally:
                 self._gateways.pop(shard_id, None)
 
@@ -612,6 +618,7 @@ class Client(object):
             self._ready_state[shard_id] = False
 
         async with multio.asynclib.task_manager() as tg:
+            self.task_manager = tg
             self.events.task_manager = tg
 
             for shard_id in range(0, shard_count):
@@ -628,12 +635,7 @@ class Client(object):
             shard_count = await self.get_shard_count()
 
         self.shard_count = shard_count
-        try:
-            return await self.start(shard_count)
-        except TaskGroupError as e:
-            for x in e.failed:
-                exc = x.next_exc
-                traceback.print_exception(None, exc, exc.__traceback__)
+        return await self.start(shard_count)
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True):
         """

@@ -25,13 +25,13 @@ import sys
 import time
 import zlib
 from collections import Counter
-from dataclasses import dataclass  # use a 3.6 backport if available
 from typing import AsyncContextManager, List
 
 import multio
 from async_generator import asynccontextmanager
 from asyncwebsockets import ClientWebsocket, WebsocketBytesMessage, WebsocketClosed, \
     WebsocketConnectionEstablished, WebsocketTextMessage, connect_websocket
+from dataclasses import dataclass  # use a 3.6 backport if available
 
 from curious.util import safe_generator
 
@@ -164,7 +164,6 @@ class GatewayHandler(object):
 
         if not reconnect:
             await self.websocket.sock.close()
-            await multio.asynclib.cancel_task_group(self.task_group)
 
     # send commands
     async def send(self, data: dict) -> None:
@@ -426,7 +425,8 @@ class GatewayHandler(object):
 @asynccontextmanager
 @safe_generator
 async def open_websocket(token: str, url: str, *,
-                         shard_id: int = 0, shard_count: int = 1) \
+                         shard_id: int = 0, shard_count: int = 1,
+                         task_manager=None) \
         -> AsyncContextManager[GatewayHandler]:
     """
     Opens a new connection to Discord.
@@ -436,7 +436,7 @@ async def open_websocket(token: str, url: str, *,
     .. code-block:: python3
 
         async with trio.open_nursery() as nursery:
-            async with open_websocket(token, url) as gateway:
+            async with open_websocket(token, url, task_group=nursery) as gateway:
                 # example for changing presence
                 nursery.start_soon(some_gw_handler, gateway)
 
@@ -449,6 +449,8 @@ async def open_websocket(token: str, url: str, *,
     :param url: The gateway URL to connect with.
     :param shard_id: The shard ID to connect with. Defaults to 0.
     :param shard_count: The number of shards to boot with.
+    :param task_manager: The task group to use for the heartbeat task. If none is specified, \
+        one will be created automatically.
 
     :return: An async context manager that yields a :class:`.GatewayHandler`.
     """
@@ -459,8 +461,10 @@ async def open_websocket(token: str, url: str, *,
 
     logger = logging.getLogger(f"curious.gateway:shard-{shard_id}")
 
-    # open a task group for the heartbeat task
-    async with multio.asynclib.task_manager() as tg:
+    # open a task group for the heartbeat task if applicable
+    tg = task_manager if task_manager is not None else multio.asynclib.task_manager()
+
+    async with tg:
         gw.task_group = tg
         try:
             logger.info("Opening gateway connection to %s", url)
