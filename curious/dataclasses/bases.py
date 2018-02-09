@@ -20,6 +20,7 @@ Base classes that all dataclasses inherit from.
 """
 import datetime
 import inspect
+import sys
 import threading
 from contextlib import contextmanager
 
@@ -106,6 +107,7 @@ class Dataclass(IDObject):
                 f_globals = frame.f_globals
                 f_name = frame.f_code.co_name
                 module = f_globals.get('__name__', None)
+                file = f_globals.get('__file__', None)
 
                 if module is not None:
                     if f_name == "_convert" and module.startswith("curious.commands"):
@@ -115,7 +117,8 @@ class Dataclass(IDObject):
                                            " exists, or the built-in converter has been replaced. "
                                            "Make sure to either add one or fix your code to use a "
                                            "converter function!".format(cls.__name__))
-                    elif not module.startswith("curious"):
+                    elif not module.startswith("curious") \
+                            and f'/python3.{sys.version_info[2]}' not in file:
                         raise RuntimeError("You tried to make a dataclass manually - don't do this!"
                                            "\nThe library handles making dataclasses for you. If "
                                            "you want to get an instance, use the appropriate "
