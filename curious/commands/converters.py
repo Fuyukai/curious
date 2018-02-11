@@ -41,7 +41,7 @@ def convert_member(ctx, arg: str) -> Member:
     elif all(i.isdigit() for i in arg):
         member_id = int(arg)
 
-    if member_id is None:
+    if member_id is not None:
         member = ctx.guild.members.get(member_id)
     else:
         member = ctx.guild.search_for_member(full_name=arg)
