@@ -26,6 +26,8 @@ Commands helpers.
     decorators
     plugin
     utils
+    ratelimit
+    help
 
     exc
     converters
