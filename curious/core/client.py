@@ -647,11 +647,8 @@ class Client(object):
         :param with_monitor: If the curio monitor should be used.
         """
 
-        try:
-            p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
-            curio.run(p, with_monitor=with_monitor)
-        except (KeyboardInterrupt, EOFError):
-            pass
+        p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
+        curio.run(p, with_monitor=with_monitor)
 
     @classmethod
     def from_token(cls, token: str = None):
