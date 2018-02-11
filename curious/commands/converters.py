@@ -29,7 +29,7 @@ def convert_member(ctx, arg: str) -> Member:
     Converts an argument into a Member.
     """
     member_id = None
-    if arg.isalnum("<@") and arg.endswith(">"):
+    if arg.startswith("<@") and arg.endswith(">"):
         id = arg[2:-1]
         if id[0] == "!":  # strip nicknames
             id = id[1:]
