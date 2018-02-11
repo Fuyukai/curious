@@ -22,17 +22,22 @@ import enum
 import json
 import logging
 import sys
+import threading
 import time
 import zlib
 from collections import Counter
-from typing import AsyncContextManager, List
+from typing import AsyncContextManager, AsyncIterator, List, Union
 
-import multio
+import curio
 from async_generator import asynccontextmanager
-from asyncwebsockets import ClientWebsocket, WebsocketBytesMessage, WebsocketClosed, \
-    WebsocketConnectionEstablished, WebsocketTextMessage, connect_websocket
+from curio.meta import finalize
+from curio.thread import AWAIT, async_thread
 from dataclasses import dataclass  # use a 3.6 backport if available
+from lomond import WebSocket
+from lomond.events import Binary, Closed, Connecting, Event, Text
+from lomond.persist import persist
 
+from curious import USER_AGENT
 from curious.util import safe_generator
 
 
@@ -104,6 +109,76 @@ class HeartbeatStats:
         return self.last_ack_time - self.last_heartbeat_time
 
 
+class BasicWebsocketWrapper(object):
+    """
+    Wraps a lomond websocket in a thread.
+    """
+    _done = object()
+
+    def __init__(self, url: str) -> None:
+        #: The gateway task running in an async thread.
+        self._task = None  # type: curio.Task
+
+        #: The websocket URL.
+        self.url = url
+
+        self._queue = curio.UniversalQueue()
+        self._cancelled = threading.Event()
+        self._ws = None  # type: WebSocket
+
+    @async_thread
+    def websocket_handler(self) -> None:
+        """
+        The actual websocket handler.
+
+        This wraps the Lomond reconnecting websocket, putting data on the queue.
+        """
+        ws = WebSocket(self.url, agent=USER_AGENT)
+        self._ws = ws
+        # generate poll events every 0.5 seconds to see if we can cancel
+        websocket = persist(ws, ping_rate=0, poll=1, exit_event=self._cancelled)
+        for event in websocket:
+            self._queue.put(event)
+
+        # signal the end of the queue
+        self._queue.put(self._done)
+
+    async def __aiter__(self) -> AsyncIterator[Event]:
+        async for event in self._queue:
+            if event is not self._done:
+                yield event
+            else:
+                return
+
+    @async_thread
+    def send_text(self, message: str):
+        """
+        Sends text to the websocket.
+        """
+        self._ws.send_text(message)
+
+    @async_thread
+    def close(self, code: int = 1000, reason: str = "Client disconnect", reconnect: bool = False):
+        """
+        Cancels and closes this websocket.
+        """
+        self._ws.close(code=code, reason=reason)
+
+        # if reconnecting, don't close this as this will kill the websocket prematurely
+        if not reconnect:
+            self._cancelled.set()
+            AWAIT(self._task.cancel())
+
+    @classmethod
+    async def open(cls, url: str) -> 'BasicWebsocketWrapper':
+        """
+        Opens a websocket to the specified URL.
+        """
+        obb = cls(url)
+        task = await curio.spawn(obb.websocket_handler())
+        obb._task = task
+        return obb
+
 
 class GatewayHandler(object):
     """
@@ -128,14 +203,14 @@ class GatewayHandler(object):
         #: The current heartbeat stats being used for this gateway.
         self.heartbeat_stats = HeartbeatStats()
 
-        #: The current :class:`asyncwebsockets.ClientWebsocket` connected to Discord.
-        self.websocket: ClientWebsocket = None
+        #: The current :class:`.BasicWebsocketWrapper` connected to Discord.
+        self.websocket: BasicWebsocketWrapper = None
 
         #: The current task group for this gateway.
-        self.task_group = None
+        self.task_group = None  # type: curio.TaskGroup
 
         self._logger = None
-        self._stop_heartbeating = multio.Event()
+        self._stop_heartbeating = curio.Event()
         self._dispatches_handled = Counter()
 
     @property
@@ -149,7 +224,7 @@ class GatewayHandler(object):
         self._logger = logging.getLogger("curious.gateway:shard-{}".format(self.gw_state.shard_id))
         return self._logger
 
-    async def close(self, code: int = 1000, reason = "Client closed connection", *,
+    async def close(self, code: int = 1000, reason: str = "Client closed connection", *,
                     reconnect: bool = False):
         """
         Close the current websocket connection.
@@ -158,12 +233,9 @@ class GatewayHandler(object):
         :param reason: The close reason.
         :param reconnect: If we should reconnect.
         """
-        await self.websocket.close(code=code, reason=reason, allow_reconnects=reconnect)
+        await self.websocket.close(code=code, reason=reason, reconnect=reconnect)
         # this kills the websocket
         await self._stop_heartbeating.set()
-
-        if not reconnect:
-            await self.websocket.sock.close()
 
     # send commands
     async def send(self, data: dict) -> None:
@@ -171,7 +243,7 @@ class GatewayHandler(object):
         Sends data down the websocket.
         """
         dumped = json.dumps(data)
-        return await self.websocket.send_message(dumped)
+        return await self.websocket.send_text(dumped)
 
     async def send_identify(self):
         """
@@ -282,24 +354,23 @@ class GatewayHandler(object):
 
             This only opens the websocket.
         """
-        self.websocket = await connect_websocket(self.gw_state.gateway_url, reconnecting=True)
+        self.websocket = await BasicWebsocketWrapper.open(self.gw_state.gateway_url)
 
     async def events(self):
         """
         Returns an async generator used to iterate over the events received by this websocket.
         """
         async for event in self.websocket:
-            if isinstance(event, WebsocketClosed):
-                print(event.code, event.reason)
+            if isinstance(event, Closed):
                 await self._stop_heartbeat_events()
                 yield "websocket_closed",
 
-            elif isinstance(event, WebsocketConnectionEstablished):
+            elif isinstance(event, Connecting):
                 yield "websocket_opened",
 
-            elif isinstance(event, (WebsocketBytesMessage, WebsocketTextMessage)):
+            elif isinstance(event, (Text, Binary)):
                 gen = self.handle_data_event(event)
-                async with multio.asynclib.finalize_agen(gen) as finalized:
+                async with finalize(gen) as finalized:
                     async for i in finalized:
                         yield i
 
@@ -312,19 +383,19 @@ class GatewayHandler(object):
         if self._stop_heartbeating.is_set():
             self._stop_heartbeating.clear()
 
-        async def heartbeater():
+        async def heartbeater() -> None:
             while True:
                 try:
-                    async with multio.asynclib.timeout_after(heartbeat_interval):
+                    async with curio.timeout_after(heartbeat_interval):
                         await self._stop_heartbeating.wait()
-                except multio.asynclib.TaskTimeout:
+                except curio.TaskTimeout:
                     pass
                 else:
                     break
 
                 await self.send_heartbeat()
 
-        await multio.asynclib.spawn(self.task_group, heartbeater)
+        await self.task_group.spawn(heartbeater)
 
     async def _stop_heartbeat_events(self) -> None:
         """
@@ -335,16 +406,16 @@ class GatewayHandler(object):
         self.heartbeat_stats.heartbeats = 0
         self.heartbeat_stats.heartbeat_acks = 0
 
-    async def handle_data_event(self, evt: WebsocketBytesMessage):
+    async def handle_data_event(self, evt: Union[Text, Binary]):
         """
         Handles a data event.
         """
-        if isinstance(evt.data, bytes):
+        if evt.name == "binary":
             # magic numbers
             data = zlib.decompress(evt.data, 15, 10490000)
             data = data.decode("utf-8")
         else:
-            data = evt.data
+            data = evt.text
 
         # empty payloads
         if not data:
@@ -425,8 +496,7 @@ class GatewayHandler(object):
 @asynccontextmanager
 @safe_generator
 async def open_websocket(token: str, url: str, *,
-                         shard_id: int = 0, shard_count: int = 1,
-                         task_manager=None) \
+                         shard_id: int = 0, shard_count: int = 1) \
         -> AsyncContextManager[GatewayHandler]:
     """
     Opens a new connection to Discord.
@@ -449,9 +519,6 @@ async def open_websocket(token: str, url: str, *,
     :param url: The gateway URL to connect with.
     :param shard_id: The shard ID to connect with. Defaults to 0.
     :param shard_count: The number of shards to boot with.
-    :param task_manager: The task group to use for the heartbeat task. If none is specified, \
-        one will be created automatically.
-
     :return: An async context manager that yields a :class:`.GatewayHandler`.
     """
     params = f"/?v={GatewayHandler.GATEWAY_VERSION}&encoding=json"
@@ -461,10 +528,7 @@ async def open_websocket(token: str, url: str, *,
 
     logger = logging.getLogger(f"curious.gateway:shard-{shard_id}")
 
-    # open a task group for the heartbeat task if applicable
-    tg = task_manager if task_manager is not None else multio.asynclib.task_manager()
-
-    async with tg:
+    async with curio.TaskGroup() as tg:
         gw.task_group = tg
         try:
             logger.info("Opening gateway connection to %s", url)

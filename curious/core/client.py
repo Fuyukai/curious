@@ -29,7 +29,8 @@ import logging
 import typing
 from types import MappingProxyType
 
-import multio
+import curio
+from curio.meta import finalize
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -152,7 +153,7 @@ class Client(object):
         self.application_info = None  # type: AppInfo
 
         #: The task manager used for this bot.
-        self.task_manager = None
+        self.task_manager = None  # type: curio.TaskGroup
 
         for (name, event) in scan_events(self):
             self.events.add_event(event)
@@ -549,7 +550,7 @@ class Client(object):
             if inspect.isawaitable(result):
                 result = await result
             elif inspect.isasyncgen(result):
-                async with multio.finalize_agen(result) as gen:
+                async with finalize(result) as gen:
                     async for i in gen:
                         await self.events.fire_event(i[0], *i[1:], gateway=ctx.gateway, client=self)
 
@@ -565,7 +566,7 @@ class Client(object):
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
             await ctx.gateway.close(code=1006, reason="Internal client error")
-            await multio.asynclib.cancel_task_group(self.task_manager)
+            await self.task_manager.cancel_remaining()
             raise
 
     @ev_dec(name="ready")
@@ -590,18 +591,16 @@ class Client(object):
         """
         # consume events
         async with open_websocket(self._token, self._gw_url,
-                                  shard_id=shard_id, shard_count=shard_count,
-                                  task_manager=self.task_manager) as gw:
+                                  shard_id=shard_id, shard_count=shard_count) as gw:
             self._gateways[shard_id] = gw
 
             try:
-                async with multio.finalize_agen(gw.events()) as agen:
+                async with finalize(gw.events()) as agen:
                     async for event in agen:
                         await self.fire_event(event[0], *event[1:], gateway=gw)
-            except multio.asynclib.Cancelled:
-                pass
-            except:  # kill the bot if we failed to parse something
-                await multio.asynclib.cancel_task_group(self.task_manager)
+            except Exception as e:  # kill the bot if we failed to parse something
+                await self.task_manager.cancel_remaining()
+                raise
             finally:
                 self._gateways.pop(shard_id, None)
 
@@ -618,12 +617,12 @@ class Client(object):
         for shard_id in range(shard_count):
             self._ready_state[shard_id] = False
 
-        async with multio.asynclib.task_manager() as tg:
+        async with curio.TaskGroup() as tg:
             self.task_manager = tg
             self.events.task_manager = tg
 
             for shard_id in range(0, shard_count):
-                await multio.asynclib.spawn(tg, self.handle_shard, shard_id, shard_count)
+                await tg.spawn(self.handle_shard, shard_id, shard_count)
 
     async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
@@ -638,17 +637,19 @@ class Client(object):
         self.shard_count = shard_count
         return await self.start(shard_count)
 
-    def run(self, *, shard_count: int = 1, autoshard: bool = True):
+    def run(self, *, shard_count: int = 1, autoshard: bool = True,
+            with_monitor: bool = False):
         """
-        Convenience method to run the bot with a multio handler.
+        Convenience method to run the bot with curio.
 
         :param shard_count: The number of shards to use. Ignored if autoshard is True.
         :param autoshard: If the bot should be autosharded.
+        :param with_monitor: If the curio monitor should be used.
         """
 
         try:
             p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
-            multio.run(p)
+            curio.run(p, with_monitor=with_monitor)
         except (KeyboardInterrupt, EOFError):
             pass
 

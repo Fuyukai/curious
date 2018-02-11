@@ -4,7 +4,8 @@ from pathlib import Path
 from setuptools import setup
 
 install_requires = [
-        "asyncwebsockets>=0.2.1,<0.3.0",
+        "lomond>=0.1.13,<0.2",
+        "curio>=0.8,<0.10",
         "pylru==1.0.9",
         "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",

@@ -34,22 +34,10 @@ Open up ``bot.py`` and add the essential imports:
 
 .. code-block:: python3
 
-    import multio
     from curious.core.client import Client
 
-This will import :mod:`multio` and :class:`~.Client`, which is used to communicate with
+This will import the :class:`~.Client`, which is used to communicate with
 Discord.
-
-First off, you need to tell :mod:`multio` what library to use when running your bot.
-
-.. code-block:: python3
-
-    # pick one depending on your personal preference
-
-    # curio, smaller and eats children
-    multio.init('curio')
-    # trio, bigger and also eats children
-    multio.init('trio')
 
 Next, you want to define your new bot object, passing your bot token to it:
 

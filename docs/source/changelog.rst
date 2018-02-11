@@ -6,10 +6,6 @@ This document displays the differences between each release of curious.
 0.7.0 (Container Rewrite)
 -------------------------
 
-.. note::
-
-    This release enables `Trio <https://trio.readthedocs.io>`__ support.
-
  - Add get-by-name to :class:`.GuildChannelWrapper`, and :class:`.GuildRoleWrapper`.
 
  - Add :attr:`.Invite.features`.
@@ -37,14 +33,12 @@ This document displays the differences between each release of curious.
 
  - Rewrite the gateway code significantly.
 
-    - Use asyncwebsockets 0.2, which has automatic reconnect built-in.
+    - Use Lomond in a thread instead of our own wrapper.
 
     - Make opening a gateway a context manager.
 
     - Use proper dataclasses for state.
 
-    - Make heartbeating a proper background task. The async thread method was a) non-portable and
-      b) not actually any better; it would still wait for the event loop anyway.
 
 0.6.0 (Released 2017-11-05)
 ---------------------------

@@ -32,12 +32,19 @@ Curious - An async Python 3.6+ library for Discord bots.
 """
 from __future__ import generator_stop  # enforce generator stop
 
+import sys
+
+import curio
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:
     __version__ = get_distribution("discord-curious").version
 except DistributionNotFound:
     __version__ = "0.0.0"
+
+_fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]} curio/{2}"
+USER_AGENT = _fmt.format(__version__, sys.version_info, curio.__version__)
+del _fmt
 
 
 from curious.core.client import BotType, Client

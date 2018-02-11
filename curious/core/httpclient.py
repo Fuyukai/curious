@@ -20,7 +20,6 @@ The main Discord HTTP interface.
 """
 import datetime
 import logging
-import sys
 import time
 import typing
 import weakref
@@ -30,7 +29,6 @@ from urllib.parse import quote
 
 import asks
 import multio
-import pkg_resources
 import pytz
 from asks.errors import ConnectivityError
 from asks.response_objects import Response
@@ -153,15 +151,7 @@ class HTTPClient(object):
     def __init__(self, token: str, *,
                  bot: bool = True,
                  max_connections: int = 10):
-        fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) " \
-                          "Python/{1[0]}.{1[1]} {2}/{3}"
-
-        self.USER_AGENT = fmt.format(
-            curious.__version__,
-            sys.version_info,
-            multio.asynclib.lib_name,  # make sure to call init before creating your client!
-            pkg_resources.get_distribution(multio.asynclib.lib_name).version
-        )
+        self.USER_AGENT = curious.USER_AGENT
 
         #: The token used for all requests.
         self.token = token
