@@ -23,7 +23,7 @@ import inspect
 import logging
 import typing
 
-import multio
+import curio
 from async_generator import asynccontextmanager
 from multidict import MultiDict
 
@@ -46,49 +46,19 @@ class ListenerExit(Exception):
     """
 
 
-class _WithWaitFor:
-    """
-    Helper class for managing a wait_for.
-    """
-
-    def __init__(self, manager, task_group, event_name: str, predicate):
-        self.manager = manager
-        self.task_group = task_group
-        self._task = None
-
-        self._evt = event_name
-        self._pred = predicate
-
-    async def __aenter__(self):
-        # spawn the wait_for handler
-        partial = functools.partial(self.manager.wait_for, self._evt, self._pred)
-        self._task = await self.task_group.spawn(partial)
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if exc_type:
-            await self._task.cancel()
-
-        try:
-            await self._task.join()
-        except multio.asynclib.Cancelled:
-            pass
-
-        return False
-
-
 @asynccontextmanager
 @safe_generator
 async def _wait_for_manager(manager, name: str, predicate):
     """
     Helper class for managing a wait_for.
     """
-    async with multio.asynclib.task_manager() as tg:
+    async with curio.TaskGroup() as tg:
         try:
             partial = functools.partial(manager.wait_for, name, predicate)
-            await multio.asynclib.spawn(tg, partial)
+            await tg.spawn(partial)
             yield
         finally:
-            await multio.asynclib.cancel_task_group(tg)
+            await tg.cancel_remaining()
 
 
 class EventManager(object):
@@ -211,7 +181,7 @@ class EventManager(object):
         :param event_name: The name of the event.
         :param predicate: The predicate to use to check for the event.
         """
-        p = multio.Promise()
+        p = curio.Promise()
         errored = False
 
         async def listener(ctx, *args):
@@ -280,7 +250,7 @@ class EventManager(object):
         :param cofunc: The async function to spawn.
         :param args: Args to provide to the async function.
         """
-        return await multio.asynclib.spawn(self.task_manager, cofunc, *args)
+        return await self.task_manager.spawn(cofunc, *args)
 
     async def fire_event(self, event_name: str, *args, **kwargs):
         """

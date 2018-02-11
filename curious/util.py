@@ -29,7 +29,7 @@ import types
 import warnings
 from typing import Any, Awaitable, Callable, Coroutine, List, Union
 
-import multio
+from curio.meta import finalize
 from multidict import MultiDict
 
 NO_ITEM = object()
@@ -226,7 +226,7 @@ async def coerce_agen(gen):
     Coerces an async generator into a list.
     """
     results = []
-    async with multio.finalize_agen(gen) as agen:
+    async with finalize(gen) as agen:
         async for i in agen:
             results.append(i)
 

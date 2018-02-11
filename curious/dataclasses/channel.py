@@ -27,7 +27,7 @@ from math import floor
 from os import PathLike
 from types import MappingProxyType
 
-import multio
+import curio
 from async_generator import asynccontextmanager
 
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
@@ -999,24 +999,24 @@ class Channel(Dataclass):
 
             await channel.messages.send("Long action:", res)
         """
-        running = multio.Event()
+        running = curio.Event()
 
         async def runner():
             await self.send_typing()
             while True:
                 try:
-                    await multio.asynclib.timeout_after(5, running.wait())
-                except multio.asynclib.TaskTimeout:
+                    await curio.timeout_after(5, running.wait)
+                except curio.TaskTimeout:
                     await self.send_typing()
                 else:
                     return
 
-        async with multio.asynclib.task_manager() as tg:
+        async with curio.TaskGroup() as tg:
+            task = await tg.spawn(runner)  # type: curio.Task
             try:
-                await multio.asynclib.spawn(tg, runner)
                 yield
             finally:
-                await running.set()
+                await task.cancel()
 
     @deprecated(since="0.7.0", see_instead="Channel.messages.send", removal="0.10.0")
     async def send(self, content: str = None, *,

@@ -25,7 +25,7 @@ import logging
 import typing
 from types import MappingProxyType
 
-import multio
+import curio
 
 from curious.core import gateway
 from curious.dataclasses.bases import allow_external_makes
@@ -142,7 +142,7 @@ class State(object):
 
         self.__shards_is_ready = collections.defaultdict(lambda: False)
         self.__voice_state_crap = collections.defaultdict(
-            lambda *args, **kwargs: ((multio.Event(), multio.Event()), {})
+            lambda *args, **kwargs: ((curio.Event(), curio.Event()), {})
         )
 
     def is_ready(self, shard_id: int) -> bool:
@@ -150,7 +150,7 @@ class State(object):
         Checks if a shard is ready.
         
         :param shard_id: The shard ID to check.
-        :return: A :class:`multio.Event` signifying if this shard is ready or not.
+        :return: A boolean signifying if this shard is ready or not.
         """
         return self.__shards_is_ready[shard_id]
 
