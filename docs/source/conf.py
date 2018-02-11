@@ -21,10 +21,6 @@
 import os
 import sys
 
-import multio
-
-multio.init('curio')
-
 import sphinx_py3doc_enhanced_theme
 from pkg_resources import DistributionNotFound, get_distribution
 

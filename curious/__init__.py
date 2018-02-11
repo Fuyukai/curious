@@ -70,3 +70,7 @@ from curious.dataclasses.user import BotUser, User, UserProfile, UserSettings
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget, WidgetChannel, WidgetGuild, WidgetMember
+
+# for asks
+import multio
+multio.init('curio')
