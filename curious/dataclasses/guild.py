@@ -489,7 +489,7 @@ class Guild(Dataclass):
         "mfa_level", "verification_level", "notification_level", "content_filter_level", "features",
         "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count", "_voice_states",
         "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash",
-        "owner_id", "afk_channel_id", "system_channel_id",
+        "owner_id", "afk_channel_id", "system_channel_id", "widget_channel_id",
         "voice_client",
         "channels", "roles", "emojis"
     )
@@ -522,6 +522,9 @@ class Guild(Dataclass):
         #: This is where welcome messages and the likes are sent.
         #: Effective replacement for default channel for bots.
         self.system_channel_id = None  # type: int
+
+        #: The widget channel ID for this guild.
+        self.widget_channel_id = None  # type: int
 
         #: The owner ID of this guild.
         self.owner_id = None  # type: int
@@ -582,14 +585,14 @@ class Guild(Dataclass):
         if kwargs:
             self.from_guild_create(**kwargs)
 
-    def _copy(self):
+    def _copy(self) -> 'Guild':
         return copy.copy(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Guild id='{}' name='{}' members='{}'>".format(self.id, self.name,
                                                                self.member_count)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr(self)
 
     @property
@@ -723,7 +726,7 @@ class Guild(Dataclass):
         return self.embed_url + "?style={}".format(style)
 
     def search_for_member(self, *, name: str = None, discriminator: str = None,
-                           full_name: str = None):
+                          full_name: str = None):
         """
         Searches for a member.
 
@@ -740,8 +743,12 @@ class Guild(Dataclass):
         :return: A :class:`.Member` that matched, or None if no matches were found.
         """
         if full_name is not None:
-            sp = full_name.split("#", 1)
-            return self.search_for_member(name=sp[0], discriminator=sp[1])
+            if "#" in full_name:
+                sp = full_name.split("#", 1)
+                return self.search_for_member(name=sp[0], discriminator=sp[1])
+            else:
+                # usually a mistake
+                return self.search_for_member(name=full_name)
 
         # coerce into a proper string
         if isinstance(discriminator, int):
@@ -767,8 +774,8 @@ class Guild(Dataclass):
         The discriminator is optional, but if provided allows better matching.
 
         :param search_str: The name#discrim pair to search for.
-        :return: A :class:`~.Member` object that represents the member, or None if no member could \ 
-            be found.
+        :return: A :class:`~.Member` object that represents the member, or None if no member \
+                could be found.
         """
         sp = search_str.rsplit("#", 1)
         if len(sp) == 1:
