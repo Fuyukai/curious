@@ -20,6 +20,7 @@ Decorators to annotate function objects.
 """
 from typing import List
 
+from curious.commands.ratelimit import BucketNamer, CommandRateLimit
 from curious.commands.utils import get_description
 
 
@@ -83,6 +84,21 @@ def condition(cbl):
             func.cmd_conditions = []
 
         func.cmd_conditions.append(cbl)
+        return func
+
+    return inner
+
+
+def ratelimit(*, limit: int, time: float, bucket_namer=BucketNamer.AUTHOR):
+    """
+    Adds a ratelimit to a command.
+    """
+    def inner(func):
+        if not hasattr(func, "cmd_ratelimits"):
+            func.cmd_ratelimits = []
+
+        rl = CommandRateLimit(limit=limit, time=time, bucket_namer=bucket_namer)
+        func.cmd_ratelimits.append(rl)
         return func
 
     return inner

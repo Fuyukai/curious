@@ -18,6 +18,9 @@ Defines commands-specific exceptions.
 
 .. currentmodule:: curious.commands.exc
 """
+import time
+from math import ceil
+
 from curious.exc import CuriousError
 
 
@@ -83,3 +86,17 @@ class ConversionFailedError(CommandsError):
         return f"Cannot convert `{self.arg}` to type `{self.to_type.__name__}`: {self.message}."
 
     __str__ = __repr__
+
+
+class CommandRateLimited(CommandsError):
+    """
+    Raised when a command is ratelimited.
+    """
+    def __init__(self, context, func, limit):
+        self.ctx = context
+        self.func = func
+        self.limit = limit
+
+    def __repr__(self) -> str:
+        left = int(ceil(self.limit.time - time.monotonic()))
+        return f"The command {self.ctx.command_name} is currently rate limited for {left} seconds."
