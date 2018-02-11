@@ -565,6 +565,7 @@ class Client(object):
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
             await ctx.gateway.close(code=1006, reason="Internal client error")
+            await multio.asynclib.cancel_task_group(self.task_manager)
             raise
 
     @ev_dec(name="ready")
