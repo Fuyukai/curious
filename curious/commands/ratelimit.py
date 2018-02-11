@@ -71,7 +71,7 @@ class CommandRateLimit(object):
         return self.command.cmd_name, self.bucket_namer(ctx)
 
 
-class Ratelimiter(object):
+class RateLimiter(object):
     """
     Represents a ratelimiter. This ensures that commands meet the ratelimit before being ran.
     """
@@ -117,7 +117,7 @@ class Ratelimiter(object):
                     # we're good, so we can just reset the bucket and continue on our way
                     await self.update_bucket(bucket_key, 1, time.monotonic() + limit.time)
                 else:
-                    raise CommandRateLimited(ctx, cmd, limit)
+                    raise CommandRateLimited(ctx, cmd, limit, bucket)
             else:
                 # we haven't, but we need to up the number anyway
                 await self.update_bucket(bucket_key, bucket[0] + 1, bucket[1])

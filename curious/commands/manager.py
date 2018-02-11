@@ -33,6 +33,7 @@ from curious.commands.context import Context
 from curious.commands.exc import CommandsError
 from curious.commands.help import help_command
 from curious.commands.plugin import Plugin
+from curious.commands.ratelimit import RateLimiter
 from curious.commands.utils import prefix_check_factory
 from curious.core import client as md_client
 from curious.core.event import EventContext, event
@@ -134,6 +135,9 @@ class CommandsManager(object):
 
         #: A dictionary of stand-alone commands, i.e. commands not associated with a plugin.
         self.commands = {}
+
+        #: The current ratelimiter.
+        self.ratelimiter = RateLimiter()
 
         self._module_plugins = defaultdict(lambda: [])
 

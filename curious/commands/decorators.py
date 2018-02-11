@@ -98,6 +98,7 @@ def ratelimit(*, limit: int, time: float, bucket_namer=BucketNamer.AUTHOR):
             func.cmd_ratelimits = []
 
         rl = CommandRateLimit(limit=limit, time=time, bucket_namer=bucket_namer)
+        rl.command = func
         func.cmd_ratelimits.append(rl)
         return func
 

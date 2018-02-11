@@ -20,6 +20,7 @@ Defines commands-specific exceptions.
 """
 import time
 from math import ceil
+from typing import Tuple
 
 from curious.exc import CuriousError
 
@@ -92,11 +93,15 @@ class CommandRateLimited(CommandsError):
     """
     Raised when a command is ratelimited.
     """
-    def __init__(self, context, func, limit):
+    def __init__(self, context, func, limit, bucket: Tuple[int, float]):
         self.ctx = context
         self.func = func
         self.limit = limit
+        self.bucket = bucket
 
     def __repr__(self) -> str:
-        left = int(ceil(self.limit.time - time.monotonic()))
-        return f"The command {self.ctx.command_name} is currently rate limited for {left} seconds."
+        left = int(ceil(self.bucket[1] - time.monotonic()))
+        return f"The command {self.ctx.command_name} is currently rate limited for " \
+               f"{left} second(s)."
+
+    __str__ = __repr__

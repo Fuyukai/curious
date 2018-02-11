@@ -254,6 +254,9 @@ class Context(object):
         if not can_run:
             raise ConditionsFailedError(self, conditions_failed)
 
+        # check if we're ratelimited
+        await self.manager.ratelimiter.ensure_ratelimits(self, matched_command)
+
         # convert all the arguments into the command
         converted_args, converted_kwargs = await self._get_converted_args(matched_command)
 
