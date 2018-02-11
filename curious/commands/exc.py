@@ -73,12 +73,13 @@ class ConversionFailedError(CommandsError):
     """
     Raised when conversion fails.
     """
-    def __init__(self, ctx, arg: str, to_type: type):
+    def __init__(self, ctx, arg: str, to_type: type, message: str = "Unknown error"):
         self.ctx = ctx
         self.arg = arg
         self.to_type = to_type
+        self.message = message
 
     def __repr__(self) -> str:
-        return f"Cannot convert `{self.arg}` to type `{self.to_type.__name__}`."
+        return f"Cannot convert `{self.arg}` to type `{self.to_type.__name__}`: {self.message}."
 
     __str__ = __repr__

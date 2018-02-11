@@ -28,24 +28,26 @@ def convert_member(ctx, arg: str) -> Member:
     """
     Converts an argument into a Member.
     """
-    if arg.startswith("<@") and arg.endswith(">"):
-        # Parse the mention out
+    member_id = None
+    if arg.isalnum("<@") and arg.endswith(">"):
         id = arg[2:-1]
-        if id[0] == "!":  # nicknames
+        if id[0] == "!":  # strip nicknames
             id = id[1:]
 
         try:
-            id = int(id)
+            member_id = int(id)
         except ValueError:
-            raise ConversionFailedError(ctx, arg, Member)
+            raise ConversionFailedError(ctx, arg, Member, "Invalid member ID")
+    elif all(i.isdigit() for i in arg):
+        member_id = int(arg)
 
-        member = ctx.guild.members.get(id)
-        if not member:
-            raise ConversionFailedError(ctx, arg, Member)
+    if member_id is None:
+        member = ctx.guild.members.get(member_id)
     else:
         member = ctx.guild.search_for_member(full_name=arg)
-        if not member:
-            raise ConversionFailedError(ctx, arg, Member)
+
+    if member is None:
+        raise ConversionFailedError(ctx, arg, Member, "Could not find Member")
 
     return member
 
@@ -59,23 +61,17 @@ def convert_channel(ctx, arg: str) -> Channel:
         try:
             channel_id = int(arg[2:-1])
         except ValueError:
-            raise ConversionFailedError(ctx, arg, Channel)
+            raise ConversionFailedError(ctx, arg, Channel, "Invalid channel ID")
     elif all(i.isdigit() for i in arg):
         channel_id = int(arg)
 
     if channel_id is not None:
-        try:
-            channel = ctx.guild.channels[channel_id]
-        except KeyError as e:
-            raise ConversionFailedError(ctx, arg, Channel) from e
+        channel = ctx.guild.channels.get(channel_id)
     else:
-        try:
-            channel = next(filter(lambda c: c.name == arg, ctx.guild.channels.values()))
-        except (StopIteration, ValueError) as e:
-            raise ConversionFailedError(ctx, arg, Channel) from e
+        channel = next(filter(lambda c: c.name == arg, ctx.guild.channels.values()), None)
 
     if channel is None:
-        raise ConversionFailedError(ctx, arg, Channel)
+        raise ConversionFailedError(ctx, arg, Channel, "Could not find channel")
 
     return channel
 
@@ -84,29 +80,22 @@ def convert_role(ctx, arg: str) -> Role:
     """
     Converts an argument into a :class:`.Role`.
     """
+    role_id = None
     if arg.startswith("<@&") and arg.endswith(">"):
         try:
             role_id = int(arg[3:-1])
         except ValueError:
-            raise ConversionFailedError(ctx, arg, Role)
+            raise ConversionFailedError(ctx, arg, Role, "Invalid role ID")
     elif all(i.isdigit() for i in arg):
         role_id = int(arg)
-    else:
-        role_id = None
 
     if role_id is not None:
-        try:
-            role = ctx.guild.roles[role_id]
-        except KeyError as e:
-            raise ConversionFailedError(ctx, arg, Role)
+        role = ctx.guild.roles.get(role_id)
     else:
-        try:
-            role = next(filter(lambda c: c.name == arg, ctx.guild.roles.values()))
-        except (StopIteration, ValueError) as e:
-            raise ConversionFailedError(ctx, arg, Role) from e
+        role = next(filter(lambda c: c.name == arg, ctx.guild.roles.values()), None)
 
     if role is None:
-        raise ConversionFailedError(ctx, arg, Channel)
+        raise ConversionFailedError(ctx, arg, Role, "Could not find role")
 
     return role
 
@@ -118,7 +107,7 @@ def convert_int(ctx, arg: str) -> int:
     try:
         return int(arg)
     except ValueError as e:
-        raise ConversionFailedError(ctx, arg, int) from e
+        raise ConversionFailedError(ctx, arg, int, "Invalid integer") from e
 
 
 def convert_float(ctx, arg: str) -> float:
@@ -128,4 +117,4 @@ def convert_float(ctx, arg: str) -> float:
     try:
         return float(arg)
     except ValueError as e:
-        raise ConversionFailedError(ctx, arg, float) from e
+        raise ConversionFailedError(ctx, arg, float, "Invalid float") from e
