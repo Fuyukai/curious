@@ -163,22 +163,6 @@ class State(object):
         for guild in self.guilds_for_shard(shard_id):
             guild._finished_chunking.clear()
 
-    def _mark_for_chunking(self, gw: 'gateway.GatewayHandler', guild: Guild):
-        """
-        Marks a guild for chunking.
-        """
-        if all(not g.unavailable for g in self.guilds_for_shard(guild.shard_id)):
-            gw._enqueued_guilds.append(guild)
-            # we have all guilds anyway, so raise ChunkGuilds NOW
-            raise gateway.ChunkGuilds
-
-        if len(gw._enqueued_guilds) >= 74:
-            # bump it up to 75, if applicable
-            gw._enqueued_guilds.append(guild)
-            raise gateway.ChunkGuilds
-
-        gw._enqueued_guilds.append(guild)
-
     @property
     def guilds(self) -> typing.Mapping[int, Guild]:
         """
@@ -612,10 +596,10 @@ class State(object):
 
         guild.shard_id = gw.gw_state.shard_id
         # TODO: Need to do this
-        #try:
+        # try:
         #    guild.me.presence.game = gw.game
         #    guild.me.presence.status = gw.status
-        #except AttributeError:
+        # except AttributeError:
         #    # unavailable guilds etc
         #    pass
 
@@ -632,7 +616,7 @@ class State(object):
 
                 logger.info("Joined guild {} ({}), requesting members if applicable"
                             .format(guild.name, guild.id))
-                #if guild.large:
+                # if guild.large:
                 #    await gw.request_chunks([guild])
 
         else:
@@ -866,7 +850,8 @@ class State(object):
 
         yield "message_reaction_add", message, author, reaction,
 
-    async def handle_message_reaction_remove_all(self, gw: 'gateway.GatewayHandler', event_data: dict):
+    async def handle_message_reaction_remove_all(self, gw: 'gateway.GatewayHandler',
+                                                 event_data: dict):
         """
         Called when all reactions are removed from a message.
         """
