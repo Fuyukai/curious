@@ -25,6 +25,7 @@ from curious.commands.utils import get_description
 
 def command(*,
             name: str = None, description: str = None,
+            hidden: bool = False,
             aliases: List[str] = None, **kwargs):
     """
     Marks a function as a command. This annotates the command with some attributes that allow it
@@ -42,6 +43,7 @@ def command(*,
         function object.
     :param description: The description of the command. If this is not specified, it will use the \
         first line of the docstring.
+    :param hidden: If this command is hidden; i.e. it doesn't show up in the help listing.
     :param aliases: A list of aliases for this command.
     :param kwargs: Anything to annotate the command with.
     """
@@ -55,7 +57,9 @@ def command(*,
         func.cmd_subcommand = False
         func.cmd_subcommands = []
         func.cmd_parent = None
+        func.cmd_hidden = hidden
         func.cmd_conditions = getattr(func, "cmd_conditions", [])
+        func.cmd_ratelimits = getattr(func, "cmd_ratelimits", [])
 
         # annotate command object with any extra
         for ann_name, annotation in kwargs.items():
