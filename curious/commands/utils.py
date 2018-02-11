@@ -213,7 +213,6 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
     :return: A list of items split
     """
 
-    # https://stackoverflow.com/a/43035638
     tokens = []
     cur = ''
     in_quotes = False
@@ -231,6 +230,10 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
         else:
             cur += char
     tokens.append(cur)
+
+    # cleanup tokens
+    tokens = [token for token in tokens if token != ""]
+
     return tokens
 
 
