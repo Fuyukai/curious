@@ -129,7 +129,7 @@ class Context(object):
         # no match
         return False
 
-    def _lookup_converter(self, annotation):
+    def _lookup_converter(self, annotation: Type[Any]) -> 'Callable[[Context, str], Any]':
         """
         Looks up a converter for the specified annotation.
         """
@@ -153,11 +153,11 @@ class Context(object):
 
     def _make_reraise_ctx(self, new_name: str) -> EventContext:
         """
-        Makes a new EventContext for re-dispatching.
+        Makes a new :class:`.EventContext` for re-dispatching.
         """
         return EventContext(self.bot, self.event_context.shard_id, new_name)
 
-    async def _safety_wrapper(self, coro):
+    async def _safety_wrapper(self, coro) -> None:
         """
         Runs a command in a safety wrapper.
         """
@@ -261,7 +261,12 @@ class Context(object):
         converted_args, converted_kwargs = await self._get_converted_args(matched_command)
 
         # finally, spawn the new command task
-        return await matched_command(self, *converted_args, **converted_kwargs)
+        try:
+            return await matched_command(self, *converted_args, **converted_kwargs)
+        except CommandsError:
+            raise
+        except Exception as e:
+            raise CommandInvokeError(self) from e
 
     async def try_invoke(self) -> Any:
         """
