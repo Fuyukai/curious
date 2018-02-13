@@ -28,7 +28,7 @@ from math import ceil
 from urllib.parse import quote
 
 import asks
-import curio
+import multio
 import pytz
 from asks.errors import ConnectivityError
 from asks.response_objects import Response
@@ -167,20 +167,20 @@ class HTTPClient(object):
         self.headers = headers
 
         #: The global ratelimit lock.
-        self.global_lock = curio.Lock()
+        self.global_lock = multio.Lock()
 
         self._rate_limits = weakref.WeakValueDictionary()
         self._ratelimit_remaining = lru(1024)
         self._is_bot = bot
 
-    def get_ratelimit_lock(self, bucket: object) -> 'curio.Lock':
+    def get_ratelimit_lock(self, bucket: object) -> 'multio.Lock':
         """
         Gets a ratelimit lock from the dict if it exists, otherwise creates a new one.
         """
         try:
             return self._rate_limits[bucket]
         except KeyError:
-            lock = curio.Lock()
+            lock = multio.Lock()
             self._rate_limits[bucket] = lock
             return lock
 
@@ -249,7 +249,7 @@ class HTTPClient(object):
                     # We need to sleep for a bit before we can start making another request.
                     sleep_time = ceil(reset_time - time.time())
                     logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
 
             for tries in range(0, 5):
                 method = kwargs.get("method", "???")
@@ -274,7 +274,7 @@ class HTTPClient(object):
                     # 502 means that we can retry without worrying about ratelimits.
                     # Perform exponential backoff to prevent spamming discord.
                     sleep_time = 1 + (tries * 2)
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     continue
 
                 if response.status_code == 429:
@@ -282,7 +282,7 @@ class HTTPClient(object):
                     # But it's okay, we can handle it.
                     logger.warning("Hit a 429 in bucket {}. Check your clock!".format(bucket))
                     sleep_time = ceil(int(response.headers["Retry-After"]) / 1000)
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     continue
 
                 # Extract ratelimit headers.
@@ -318,7 +318,7 @@ class HTTPClient(object):
                             bucket, sleep_time
                         )
                     # Sleep that amount of time.
-                    await curio.sleep(sleep_time)
+                    await multio.asynclib.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
                     if is_global:
                         await self.global_lock.release()

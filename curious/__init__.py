@@ -34,7 +34,6 @@ from __future__ import generator_stop  # enforce generator stop
 
 import sys
 
-import curio
 from pkg_resources import DistributionNotFound, get_distribution
 
 try:
@@ -42,8 +41,8 @@ try:
 except DistributionNotFound:
     __version__ = "0.0.0"
 
-_fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]} curio/{2}"
-USER_AGENT = _fmt.format(__version__, sys.version_info, curio.__version__)
+_fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}"
+USER_AGENT = _fmt.format(__version__, sys.version_info)
 del _fmt
 
 
@@ -72,5 +71,5 @@ from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget, WidgetChannel, WidgetGuild, WidgetMember
 
 # for asks
-import multio
-multio.init('curio')
+# import multio
+# multio.init('curio')

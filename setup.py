@@ -5,7 +5,6 @@ from setuptools import setup
 
 install_requires = [
         "lomond>=0.1.13,<0.2",
-        "curio>=0.8,<0.10",
         "pylru==1.0.9",
         "oauthlib>=2.0.2,<2.1.0",
         "pytz>=2017.3",
@@ -41,6 +40,13 @@ setup(
     python_requires=">=3.6.2",
     setup_requires=[
         "setuptools_scm",
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3 :: Only",
+        "Framework :: Trio",
+        "Development Status :: 4 - Beta"
     ],
     install_requires=install_requires,
     extras_require={

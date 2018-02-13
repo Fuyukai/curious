@@ -29,8 +29,7 @@ import logging
 import typing
 from types import MappingProxyType
 
-import curio
-from curio.meta import finalize
+import multio
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -550,7 +549,7 @@ class Client(object):
             if inspect.isawaitable(result):
                 result = await result
             elif inspect.isasyncgen(result):
-                async with finalize(result) as gen:
+                async with multio.asynclib.finalize_agen(result) as gen:
                     async for i in gen:
                         await self.events.fire_event(i[0], *i[1:], gateway=ctx.gateway, client=self)
 
@@ -565,8 +564,7 @@ class Client(object):
 
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
-            await ctx.gateway.close(code=1006, reason="Internal client error")
-            await self.task_manager.cancel_remaining()
+            await self._kill()
             raise
 
     @ev_dec(name="ready")
@@ -595,11 +593,11 @@ class Client(object):
             self._gateways[shard_id] = gw
 
             try:
-                async with finalize(gw.events()) as agen:
+                async with multio.asynclib.finalize_agen(gw.events()) as agen:
                     async for event in agen:
                         await self.fire_event(event[0], *event[1:], gateway=gw)
             except Exception as e:  # kill the bot if we failed to parse something
-                await self.task_manager.cancel_remaining()
+                await self._kill()
                 raise
             finally:
                 self._gateways.pop(shard_id, None)
@@ -617,12 +615,12 @@ class Client(object):
         for shard_id in range(shard_count):
             self._ready_state[shard_id] = False
 
-        async with curio.TaskGroup() as tg:
+        async with multio.asynclib.task_manager() as tg:
             self.task_manager = tg
             self.events.task_manager = tg
 
             for shard_id in range(0, shard_count):
-                await tg.spawn(self.handle_shard, shard_id, shard_count)
+                await multio.asynclib.spawn(tg, self.handle_shard, shard_id, shard_count)
 
     async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
@@ -637,18 +635,23 @@ class Client(object):
         self.shard_count = shard_count
         return await self.start(shard_count)
 
-    def run(self, *, shard_count: int = 1, autoshard: bool = True,
-            with_monitor: bool = False):
+    async def _kill(self):
+        """
+        Kills the bot by closing all shards.
+        """
+        for gateway in self._gateways.values():
+            await gateway.close(code=1006, reason="Bot killed")
+
+    def run(self, *, shard_count: int = 1, autoshard: bool = True, **kwargs):
         """
         Convenience method to run the bot with curio.
 
         :param shard_count: The number of shards to use. Ignored if autoshard is True.
         :param autoshard: If the bot should be autosharded.
-        :param with_monitor: If the curio monitor should be used.
         """
 
         p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
-        curio.run(p, with_monitor=with_monitor)
+        multio.run(p, **kwargs)
 
     @classmethod
     def from_token(cls, token: str = None):

@@ -25,7 +25,7 @@ import logging
 import typing
 from types import MappingProxyType
 
-import curio
+import multio
 
 from curious.core import gateway
 from curious.dataclasses.bases import allow_external_makes
@@ -142,7 +142,7 @@ class State(object):
 
         self.__shards_is_ready = collections.defaultdict(lambda: False)
         self.__voice_state_crap = collections.defaultdict(
-            lambda *args, **kwargs: ((curio.Event(), curio.Event()), {})
+            lambda *args, **kwargs: ((multio.Event(), multio.Event()), {})
         )
 
     def is_ready(self, shard_id: int) -> bool:
@@ -438,6 +438,7 @@ class State(object):
         """
         Called when READY is dispatched.
         """
+        raise Exception
         # Create our bot user.
         self._user = BotUser(self.client, **event_data.get("user"))
         # cache ourselves

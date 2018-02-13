@@ -23,7 +23,7 @@ import inspect
 import logging
 import typing
 
-import curio
+import multio
 from async_generator import asynccontextmanager
 from multidict import MultiDict
 
@@ -52,13 +52,13 @@ async def _wait_for_manager(manager, name: str, predicate):
     """
     Helper class for managing a wait_for.
     """
-    async with curio.TaskGroup() as tg:
+    async with multio.asynclib.task_manager() as tg:
         try:
             partial = functools.partial(manager.wait_for, name, predicate)
-            await tg.spawn(partial)
+            await multio.asynclib.spawn(tg, partial)
             yield
         finally:
-            await tg.cancel_remaining()
+            await multio.asynclib.cancel_task_group(tg)
 
 
 class EventManager(object):
@@ -181,7 +181,7 @@ class EventManager(object):
         :param event_name: The name of the event.
         :param predicate: The predicate to use to check for the event.
         """
-        p = curio.Promise()
+        p = multio.Promise()
         errored = False
 
         async def listener(ctx, *args):
@@ -250,7 +250,7 @@ class EventManager(object):
         :param cofunc: The async function to spawn.
         :param args: Args to provide to the async function.
         """
-        return await self.task_manager.spawn(cofunc, *args)
+        return await multio.asynclib.spawn(self.task_manager, cofunc, *args)
 
     async def fire_event(self, event_name: str, *args, **kwargs):
         """

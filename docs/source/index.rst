@@ -6,7 +6,7 @@
 Welcome to curious's documentation!
 ===================================
 
-``curious`` is a Python 3.6+ curio library to interact with the
+``curious`` is a Python 3.6+ library to interact with the
 `Discord <https://discordapp.com>`_ API
 
 Installation
