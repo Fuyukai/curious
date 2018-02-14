@@ -69,7 +69,7 @@ class Message(Dataclass):
     """
     Represents a Message.
     """
-    __slots__ = ("content", "guild_id", "author", "channel", "created_at", "edited_at", "embeds",
+    __slots__ = ("content", "guild_id", "author", "created_at", "edited_at", "embeds",
                  "attachments", "_mentions", "_role_mentions", "reactions", "channel_id",
                  "author_id", "type")
 

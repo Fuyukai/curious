@@ -861,8 +861,8 @@ class Guild(Dataclass):
             return self
 
         self.name = data.get("name")  # type: str
-        self._icon_hash = data.get("icon")  # type: str
-        self._splash_hash = data.get("splash")  # type: str
+        self.icon_hash = data.get("icon")  # type: str
+        self.splash_hash = data.get("splash")  # type: str
         self.owner_id = int(data.get("owner_id", 0)) or None  # type: int
         self._large = data.get("large", None)
         self.features = data.get("features", [])

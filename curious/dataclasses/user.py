@@ -100,7 +100,7 @@ class AvatarUrl(object):
             base_url = f"https://cdn.discordapp.com/embed/avatars/" \
                        f"{int(self._user.discriminator) % 5}"
         else:
-            base_url = f"https://cdn.discordapp.com/embed/avatars/" \
+            base_url = f"https://cdn.discordapp.com/avatars/" \
                        f"{self._user.id}/{self._user.avatar_hash}"
 
         return f"{base_url}.{self._format}?size={self._size}"

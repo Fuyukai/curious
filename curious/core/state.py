@@ -612,8 +612,8 @@ class State(object):
         if not guild.member_count:
             guild.member_count = len(guild._members)
         guild._large = event_data.get("large", guild._large)
-        guild._icon_hash = event_data.get("icon", guild._icon_hash)
-        guild._splash_hash = event_data.get("splash", guild._splash_hash)
+        guild.icon_hash = event_data.get("icon", guild.icon_hash)
+        guild.splash_hash = event_data.get("splash", guild.splash_hash)
         guild.region = event_data.get("region", guild.region)
         guild.features = event_data.get("features", guild.features)
 
