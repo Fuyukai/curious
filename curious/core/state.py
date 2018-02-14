@@ -438,7 +438,6 @@ class State(object):
         """
         Called when READY is dispatched.
         """
-        raise Exception
         # Create our bot user.
         self._user = BotUser(self.client, **event_data.get("user"))
         # cache ourselves
