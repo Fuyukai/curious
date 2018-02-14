@@ -29,7 +29,8 @@ setup(
         "version_scheme": "guess-next-dev",
         "local_scheme": "dirty-tag"
     },
-    packages=['curious', 'curious.core', 'curious.commands', 'curious.dataclasses',
+    packages=['curious', 'curious.core', 'curious.core._ws_wrapper',
+              'curious.commands', 'curious.dataclasses',
               'curious.voice', 'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
     license='LGPLv3',
