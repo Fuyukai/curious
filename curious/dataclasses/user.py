@@ -23,12 +23,10 @@ import datetime
 import enum
 import typing
 from collections import namedtuple
-from types import MappingProxyType
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.appinfo import AppInfo, AuthorizedApp
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.presence import Presence
 from curious.exc import CuriousError
 from curious.util import AsyncIteratorWrapper, attrdict
 
@@ -73,10 +71,75 @@ class UserProfile(object):
         """
         :return: ``True`` if this user has Nitro, ``False`` if not. 
         """
-        return self.premium_since is not None or self.user._avatar_hash.startswith("a_")
+        return self.premium_since is not None or self.user.avatar_hash.startswith("a_")
 
     def __repr__(self):
         return "<UserProfile user='{}' premium={}>".format(self.user, self.premium)
+
+
+class AvatarUrl(object):
+    """
+    Represents a user's avatar URL.
+
+    To get the actual URL, do str(avatar_url).
+    """
+
+    def __init__(self, user: 'User') -> None:
+        """
+        :param user: The :class:`.User` for this URL.
+        """
+        self._user = user
+        self._format = "webp"
+        self._size = 256
+
+    def __str__(self) -> str:
+        """
+        :return: The string URL for this avatar URL.
+        """
+        if not self._user.avatar_hash:
+            base_url = f"https://cdn.discordapp.com/embed/avatars/" \
+                       f"{int(self._user.discriminator) % 5}"
+        else:
+            base_url = f"https://cdn.discordapp.com/embed/avatars/" \
+                       f"{self._user.id}/{self._user.avatar_hash}"
+
+        return f"{base_url}.{self._format}?size={self._size}"
+
+    def as_format(self, format: str) -> 'AvatarUrl':
+        """
+        Gets the URL in the specified format.
+
+        :param format: The format to use. Usually ``png``, ``webp`` or ``gif``.
+        :return: A new :class:`.AvatarUrl` with the specified format.
+        """
+        obb = AvatarUrl(self._user)
+        obb._format = format
+        obb._size = self._size
+        return obb
+
+    def with_size(self, size: int) -> 'AvatarUrl':
+        """
+        Gets the URL in the specified size.
+
+        :param size: The size for the URL.
+        :return: A new :class:`.AvatarUrl` with the specified size.
+        """
+        obb = AvatarUrl(self._user)
+        obb._format = self._format
+        obb._size = size
+        return obb
+
+    def __eq__(self, other: 'AvatarUrl'):
+        if not isinstance(other, AvatarUrl):
+            return NotImplemented
+
+        return str(self) == str(other)
+
+    def __lt__(self, other):
+        if not isinstance(other, AvatarUrl):
+            return NotImplemented
+
+        return str(self) < str(other)
 
 
 class User(Dataclass):
@@ -131,35 +194,18 @@ class User(Dataclass):
         return new_object
 
     @property
-    def avatar_url(self) -> str:
+    def avatar_url(self) -> 'AvatarUrl':
         """
         :return: The avatar URL of this user.
         """
-        if not self.avatar_hash:
-            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
-                int(self.discriminator) % 5
-            )
-
-        # `a_` signifies Nitro and that they have an animated avatar.
-        if self.avatar_hash.startswith("a_"):
-            suffix = ".gif"  # soon: animated webp
-        else:
-            suffix = ".webp"
-
-        return "https://cdn.discordapp.com/avatars/{}/{}{}".format(self.id, self.avatar_hash,
-                                                                   suffix)
+        return AvatarUrl(self)
 
     @property
     def static_avatar_url(self) -> str:
         """
         :return: The avatar URL of this user, but static.
         """
-        if not self.avatar_hash:
-            return "https://cdn.discordapp.com/embed/avatars/{}.png".format(
-                int(self.discriminator) % 5
-            )
-
-        return "https://cdn.discordapp.com/avatars/{}/{}.png".format(self.id, self.avatar_hash)
+        return str(self.avatar_url.as_format('png'))
 
     @property
     def name(self) -> str:
@@ -185,7 +231,7 @@ class User(Dataclass):
                                                       self.discriminator)
 
     def __str__(self) -> str:
-        return "{}#{}".format(self.username, self.discriminator)
+        return f"{self.username}#{self.discriminator}"
 
     async def open_private_channel(self) -> 'dt_channel.Channel':
         """
@@ -326,16 +372,6 @@ class BotUser(User):
     async def send(self, *args, **kwargs):
         raise NotImplementedError("Cannot send messages to your own user")
 
-    async def block(self, *args, **kwargs):
-        raise NotImplementedError("Cannot block or unblock yourself")
-
-    unblock = block
-
-    async def send_friend_request(self):
-        raise NotImplementedError("Cannot be friends with yourself")
-
-    remove_friend = send_friend_request
-
     async def edit(self, *args, **kwargs):
         """
         Edits the bot's current profile.
@@ -351,8 +387,8 @@ class BotUser(User):
     @property
     def authorized_apps(self) -> 'typing.AsyncIterator[AuthorizedApp]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized apps \ 
-            for this user. 
+        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized \
+            apps for this user.
         """
         return AsyncIteratorWrapper(self.get_authorized_apps)
 
@@ -371,65 +407,3 @@ class BotUser(User):
                                        application=AppInfo(self._bot, **item)))
 
         return final
-
-    @property
-    def friends(self) -> typing.Mapping[int, 'RelationshipUser']:
-        """
-        :return: A mapping of :class:`~.RelationshipUser` that represents the friends for this user.
-        """
-        if self.bot:
-            raise CuriousError("Bots cannot have friends")
-
-        return MappingProxyType(self._bot.state._friends)
-
-    @property
-    def blocks(self) -> typing.Mapping[int, 'RelationshipUser']:
-        """
-        :return: A mapping of :class:`~.RelationshipUser` that represents the blocked users for \ 
-            this user.
-        """
-        if self.bot:
-            raise CuriousError("Bots cannot have friends")
-
-        return MappingProxyType(self._bot.state._blocked)
-
-
-class RelationshipUser(User):
-    """
-    A user that is either friends or blocked with the current user.
-    
-    Only useful for user bots.
-    """
-
-    def __init__(self, client, **kwargs):
-        super().__init__(client, **kwargs)
-
-        #: The presence for this friend.
-        self.presence = Presence(status=kwargs.get("status"), game=kwargs.get("game"))
-
-        #: The :class:`.FriendType` of friend this user is.
-        self.type_ = None  # type: FriendType
-
-    async def remove_friend(self):
-        """
-        Removes this user as a friend.
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot have friends")
-
-        if self.type_ != FriendType.FRIEND:
-            raise CuriousError("This user is not your friend")
-
-        await self._bot.http.remove_relationship(self.id)
-
-    async def unblock(self):
-        """
-        Unblocks this user.
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot have blocks")
-
-        if self.type_ != FriendType.BLOCKED:
-            raise CuriousError("This user is not blocked")
-
-        await self._bot.http.remove_relationship(self.id)
