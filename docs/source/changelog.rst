@@ -39,6 +39,8 @@ This document displays the differences between each release of curious.
 
     - Use proper dataclasses for state.
 
+ - Add :class:`.AvatarUrl`.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------
