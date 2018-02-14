@@ -25,15 +25,16 @@ import datetime
 import enum
 import typing
 from math import ceil
+from os import PathLike
 from types import MappingProxyType
 
 import multio
+from dataclasses import dataclass
 
 from curious.core.httpclient import Endpoints
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
     member as dt_member, permissions as dt_permissions, role, search as dt_search, \
-    user as dt_user, \
-    voice_state as dt_vs, webhook as dt_webhook
+    user as dt_user, voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Presence, Status
 from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
@@ -471,6 +472,18 @@ class GuildEmojiWrapper(_WrapperBase):
         return emoji
 
 
+@dataclass(frozen=True)
+class GuildBan:
+    """
+    Represents a ban in a guild.
+    """
+    #: The reason for the ban.
+    reason: str
+
+    #: The victim of the ban.
+    victim: 'dt_user.User'
+
+
 class Guild(Dataclass):
     """
     Represents a guild object on Discord.
@@ -642,7 +655,6 @@ class Guild(Dataclass):
         try:
             return self._channels[self.afk_channel_id]
         except IndexError:
-            # the afk channel CAN be None
             return None
 
     @property
@@ -664,8 +676,8 @@ class Guild(Dataclass):
         return sum(1 for member in self._members.values() if member.status is not Status.OFFLINE)
 
     # Presence methods
-    def members_with_status(self,
-                            status: Status) -> 'typing.Generator[dt_member.Member, None, None]':
+    def members_with_status(self, status: Status) \
+            -> 'typing.Generator[dt_member.Member, None, None]':
         """
         A generator that returns the members that match the specified status.
         """
@@ -924,13 +936,12 @@ class Guild(Dataclass):
         if self._large is not None:
             return self._large
 
-        return self.member_count >= self._bot.gateways[self.shard_id].large_threshold
+        return self.member_count >= 250
 
     @property
-    def bans(self) -> 'typing.AsyncIterator[dt_user.User]':
+    def bans(self) -> 'typing.AsyncIterator[GuildBan]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`~.User` objects that are
-            banned.
+        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`.GuildBan` objects.
         """
         return AsyncIteratorWrapper(self.get_bans)
 
@@ -974,7 +985,7 @@ class Guild(Dataclass):
         :return: The :class:`VoiceClient` that was connected to this guild.
         """
         if voice_client is None:
-            raise RuntimeError("Cannot to voice - voice support is not installed")
+            raise RuntimeError("Cannot connect to voice - voice support is not installed")
 
         if channel.guild != self:
             raise CuriousError("Cannot use channel from a different guild")
@@ -997,32 +1008,35 @@ class Guild(Dataclass):
 
         try:
             invite = await self.get_vanity_invite()
+            invites.insert(0, invite)
         except (CuriousError, HTTPException):
             pass
-        else:
-            if invite is not None:
-                invites.append(invite)
 
         return invites
 
-    async def get_bans(self) -> 'typing.List[dt_user.User]':
+    async def get_bans(self) -> 'typing.List[GuildBan]':
         """
         Gets the bans for this guild.
 
-        :return: A list of :class:`.User` objects, one for each ban.
+        :return: A list of :class:`.GuildBan` objects.
         """
         if not self.me.guild_permissions.ban_members:
             raise PermissionsError("ban_members")
 
         bans = await self._bot.http.get_bans(self.id)
-        users = []
+        ban_results = []
 
-        for user_data in bans:
-            # TODO: Audit log stuff, if it ever comes out.
-            user_data = user_data.get("user", None)
-            users.append(dt_user.User(self._bot, **user_data))
+        for ban in bans:
+            user_data = ban.get("user", None)
+            if user_data is None:
+                continue
 
-        return users
+            user = self._bot.state.make_user(user_data)
+            self._bot.state._check_decache_user(user.id)
+            ban = GuildBan(reason=ban.get("reason", None), user=user)
+            ban_results.append(ban)
+
+        return ban_results
 
     async def kick(self, victim: 'dt_member.Member'):
         """
@@ -1234,14 +1248,14 @@ class Guild(Dataclass):
         await self._bot.http.edit_guild(self.id,
                                         icon_content=image)
 
-    def upload_icon(self, path):
+    async def upload_icon(self, path: PathLike):
         """
         Uploads a new icon for the guild.
 
         :param path: A path-like object to use to upload.
         """
         with open(path, 'rb') as f:
-            return self.change_icon(f.read())
+            return await self.change_icon(f.read())
 
     async def get_widget_info(self) -> 'typing.Tuple[bool, typing.Union[None, channel.Channel]]':
         """

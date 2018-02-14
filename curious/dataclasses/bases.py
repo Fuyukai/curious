@@ -64,7 +64,7 @@ class IDObject(object):
         self.id = id
 
     def __repr__(self):
-        return "<{} id={}>".format(self.__class__.__name__, self.id)
+        return "<{} id={!r}>".format(self.__class__.__name__, self.id)
 
     __str__ = __repr__
 
@@ -118,7 +118,7 @@ class Dataclass(IDObject):
                                            "Make sure to either add one or fix your code to use a "
                                            "converter function!".format(cls.__name__))
                     elif not module.startswith("curious") \
-                            and f'/python3.{sys.version_info[2]}' not in file:
+                            and f'/python3.{sys.version_info[1]}' not in file:
                         raise RuntimeError("You tried to make a dataclass manually - don't do this!"
                                            "\nThe library handles making dataclasses for you. If "
                                            "you want to get an instance, use the appropriate "

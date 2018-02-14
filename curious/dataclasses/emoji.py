@@ -52,16 +52,16 @@ class Emoji(Dataclass):
         #: If this emoji is animated or not.
         self.animated = kwargs.get("animated", False)  # type: bool
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if isinstance(other, str):
             return False
 
         return self.id == other.id
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "<{}:{}:{}>".format('a' if self.animated else '', self.name, self.id)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Emoji guild={!r} id={!r} name={!r}>".format(self.guild, self.id, self.name)
 
     async def edit(self, *,
@@ -81,7 +81,7 @@ class Emoji(Dataclass):
                                               name=name, roles=roles)
         return self
 
-    async def delete(self):
+    async def delete(self) -> None:
         """
         Deletes this emoji.
         """
@@ -109,7 +109,8 @@ class Emoji(Dataclass):
         """
         :return: The URL to this emoji.
         """
+        cdn_url = f"https://cdn.discordapp.com/emojis/{self.id}"
         if not self.animated:
-            return "https://cdn.discordapp.com/emojis/{}.png".format(self.id)
+            return f"{cdn_url}.png"
 
-        return f"https://cdn.discordapp.com/emojis/{self.id}.gif"
+        return f"{cdn_url}.gif"

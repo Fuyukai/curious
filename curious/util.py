@@ -75,11 +75,11 @@ class AsyncIteratorWrapper(collections.AsyncIterator):
 
         self._filled = False
 
-    async def _fill(self):
+    async def _fill(self) -> None:
         self.items.extend(await self.coro())
         self._filled = True
 
-    async def __anext__(self):
+    async def __anext__(self) -> Any:
         if not self._filled:
             await self._fill()
 

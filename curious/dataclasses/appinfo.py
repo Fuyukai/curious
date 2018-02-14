@@ -20,11 +20,14 @@ Wrappers for Application Info objects.
 """
 from typing import List
 
+from dataclasses import dataclass
+
 from curious.dataclasses import guild as dt_guild, user as dt_user
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
 
+@dataclass
 class AuthorizedApp:
     """
     Represents an authorized app.
@@ -44,7 +47,7 @@ class AppInfo(Dataclass):
     Represents the application info for an OAuth2 application.
     """
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, **kwargs) -> None:
         self._application = kwargs.get("application", {})
 
         #: The client ID of this application.
@@ -84,7 +87,7 @@ class AppInfo(Dataclass):
         else:
             self.bot = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{} owner='{!r}' name='{!r}' bot='{!r}'>".format(type(self).__name__, self.owner,
                                                                  self.name, self.bot)
 

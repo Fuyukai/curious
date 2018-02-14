@@ -26,6 +26,7 @@ import typing as _typing
 from math import floor
 from os import PathLike
 from types import MappingProxyType
+from typing import AsyncIterator
 
 import multio
 from async_generator import asynccontextmanager
@@ -553,8 +554,8 @@ class Channel(Dataclass):
         #: If this channel is NSFW.
         self.nsfw = kwargs.get("nsfw", False)  # type: bool
 
-        #: If private, the list of :class:`~.User` that are in this channel.
-        self._recipients = {}  # type: _typing.Dict[str, dt_user.User]
+        #: If private, the mapping of :class:`.User` that are in this channel.
+        self._recipients = {}  # type: _typing.Dict[int, dt_user.User]
 
         if self.private:
             for recipient in kwargs.get("recipients", []):
@@ -645,7 +646,7 @@ class Channel(Dataclass):
         if self.type != ChannelType.PRIVATE:
             return None
 
-        return list(self.recipients.values())[0]
+        return next(self.recipients.values())
 
     @property
     def owner(self) -> '_typing.Union[dt_user.User, None]':
@@ -791,6 +792,14 @@ class Channel(Dataclass):
             messages.append(self._bot.state.make_message(message))
 
         return messages
+
+    @property
+    def webhooks(self) -> 'AsyncIterator[dt_webhook.Webhook]':
+        """
+        :return: A :class:`.AsyncIteratorWrapper` for the :class:`.Webhook` objects in this \
+            channel.
+        """
+        return AsyncIteratorWrapper(self.get_webhooks)
 
     async def get_webhooks(self) -> '_typing.List[dt_webhook.Webhook]':
         """
