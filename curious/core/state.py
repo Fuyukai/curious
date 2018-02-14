@@ -443,11 +443,10 @@ class State(object):
         # cache ourselves
         self._users[self._user.id] = self._user
 
-        logger.info(
-            "We have been issued a session on shard {}, parsing ready for `{}#{}` ({})"
-                .format(gw.gw_state.shard_id, self._user.username, self._user.discriminator,
-                        self._user.id)
-        )
+        logger.info("We have been issued a session on shard {}, parsing ready for `{}#{}` ({})"
+                    .format(gw.gw_state.shard_id, self._user.username, self._user.discriminator,
+                            self._user.id)
+                    )
 
         # Create all of the guilds.
         for guild in event_data.get("guilds", []):

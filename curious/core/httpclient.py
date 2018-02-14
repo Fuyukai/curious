@@ -214,7 +214,10 @@ class HTTPClient(object):
         path = quote(path)
         kwargs["path"] = path
 
-        return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
+        # temporary
+        # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
+        kwargs["uri"] = Endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+        return await asks.request(*args, headers=headers, timeout=5, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
         """
