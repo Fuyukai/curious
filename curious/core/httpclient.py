@@ -24,7 +24,7 @@ import time
 import typing
 import weakref
 from email.utils import parsedate
-from math import ceil
+from math import ceil, floor
 from urllib.parse import quote
 
 import asks
@@ -310,16 +310,27 @@ class HTTPClient(object):
                     if reset:
                         sleep_time = int(reset) - parsed_time
                     else:
-                        sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
+                        retry_after = response.headers.get("Retry-After")
+                        if retry_after is not None:
+                            sleep_time = ceil(int(response.headers.get("Retry-After")) / 1000)
+                        else:
+                            # fallback in case we get some really bad response
+                            sleep_time = 1 + (tries * 2)
 
+                    before_time = time.monotonic()
                     if is_global:
                         logger.debug("Reached the global ratelimit, acquiring global lock.")
                         await self.global_lock.acquire()
-                    else:
-                        logger.debug(
-                            "Being ratelimited under bucket %s, waking in %s seconds",
-                            bucket, sleep_time
-                        )
+                    after_time = int(floor(time.monotonic() - before_time))
+                    if after_time != 0:
+                        # subtract the time we spent waiting for the global lock to be acquired
+                        sleep_time -= after_time
+
+                    logger.debug(
+                        "Being ratelimited under bucket %s, waking in %s seconds",
+                        bucket, sleep_time
+                    )
+
                     # Sleep that amount of time.
                     await multio.asynclib.sleep(sleep_time)
                     # If the global lock is acquired, unlock it now
