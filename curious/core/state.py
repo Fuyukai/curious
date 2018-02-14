@@ -311,7 +311,7 @@ class State(object):
             self._check_decache_user(webhook.owner.id)
 
         # default fields, these are lazily loaded by properties
-        webhook._default_name = event_data.get("name", None)
+        webhook.default_name = event_data.get("name", None)
         webhook._default_avatar = event_data.get("avatar", None)
 
         return webhook
