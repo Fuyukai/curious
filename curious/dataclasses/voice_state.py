@@ -29,7 +29,7 @@ class VoiceState(object):
     __slots__ = ("user_id", "guild_id", "channel_id", "_self_mute",
                  "_server_mute", "_self_deaf", "_server_deaf", "_bot")
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self._bot = kwargs.get("client")
 
         #: The ID of the user for this VoiceState.

@@ -21,6 +21,7 @@ Wrappers for Search objects.
 import collections
 import functools
 import typing
+from typing import Iterator
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
     message as dt_message, user as dt_user
@@ -37,13 +38,13 @@ class MessageGroup:
         self.msgs = msgs
 
     # generic magic methods
-    def __getitem__(self, item):
+    def __getitem__(self, item) -> 'dt_message.Message':
         return self.msgs[item]
 
-    def __iter__(self):
+    def __iter__(self) -> 'Iterator[dt_message.Message]':
         return iter(self.msgs)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<MessageGroup msgs='{}'>".format(self.msgs)
 
     @property
@@ -84,7 +85,7 @@ class SearchResults(collections.AsyncIterator):
             print(i.after)   # 2 messages from after
             
     """
-    def __init__(self, sq: 'SearchQuery'):
+    def __init__(self, sq: 'SearchQuery') -> None:
         self.sq = sq
 
         # state vars
@@ -94,7 +95,7 @@ class SearchResults(collections.AsyncIterator):
         self._limit = -1
         self._total_count = 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<SearchResults page='{}' messages='{}'>".format(self.page, len(self.groups))
 
     # builder methods
@@ -113,7 +114,7 @@ class SearchResults(collections.AsyncIterator):
         self._limit = limit
         return self
 
-    async def fetch_next_page(self):
+    async def fetch_next_page(self) -> None:
         """
         Fetches the next page of results from the SearchQuery.
         """
@@ -193,10 +194,11 @@ class SearchQuery(object):
     and return the next page of results as soon as the current one is exhausted.
     """
 
-    def __init__(self, guild: 'dt_guild.Guild' = None, channel: 'dt_channel.Channel' = None):
+    def __init__(self, guild: 'dt_guild.Guild' = None,
+                 channel: 'dt_channel.Channel' = None) -> None:
         """
-        :param guild: The :class:`~.Guild` to search the messages for.
-        :param channel: The :class:`~.Channel` to search messages for. Only used for DMs.
+        :param guild: The :class:`.Guild` to search the messages for.
+        :param channel: The :class:`.Channel` to search messages for. Only used for DMs.
         """
         self._guild = guild
 
@@ -225,18 +227,18 @@ class SearchQuery(object):
         return params
 
     # magic methods
-    def __enter__(self):
+    def __enter__(self) -> 'SearchQuery':
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         return False
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<SearchQuery guild='{}' channel='{}'>".format(self.guild, self.channel)
 
     # internal properties
     @property
-    def _http_meth(self):
+    def _http_meth(self) -> typing.Callable[[], dict]:
         """
         :return: The built URL to execute this search query on. 
         """

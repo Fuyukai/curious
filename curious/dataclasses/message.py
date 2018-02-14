@@ -85,9 +85,6 @@ class Message(Dataclass):
         #: The ID of the channel the message was sent in.
         self.channel_id = int(kwargs.get("channel_id", 0))  # type: int
 
-        #: The :class:`~.Channel` this message was sent in.
-        self.channel = None  # type: dt_channel.Channel
-
         #: The ID of the author.
         self.author_id = int(kwargs.get("author", {}).get("id", 0)) or None  # type: int
 
@@ -142,14 +139,21 @@ class Message(Dataclass):
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
-        :return: The :class:`~.Guild` this message is associated with. 
+        :return: The :class:`.Guild` this message is associated with.
         """
         return self.channel.guild
 
     @property
+    def channel(self) -> 'dt_channel.Channel':
+        """
+        :return: The :class:`.Channel` this message is associated with.
+        """
+        return self._bot.state.find_channel(self.channel_id)
+
+    @property
     def mentions(self) -> 'typing.List[dt_member.Member]':
         """
-        Returns a list of :class:`~.Member` that were mentioned in this message. 
+        Returns a list of :class:`.Member` that were mentioned in this message.
         
         .. warning::
             
@@ -312,8 +316,6 @@ class Message(Dataclass):
         if embed:
             embed = embed.to_dict()
 
-        # Prevent race conditions by spawning a listener, then waiting for the task once we've
-        # sent the HTTP request.
         async with self._bot.events.wait_for_manager("message_update",
                                                      lambda o, n: n.id == self.id):
             await self._bot.http.edit_message(self.channel.id, self.id, content=new_content,

@@ -28,8 +28,8 @@ class Reaction(object):
     """
     Represents a reaction.
     """
-    def __init__(self, **kwargs):
-        #: The :class:`Message` this reaction is for.
+    def __init__(self, **kwargs) -> None:
+        #: The :class:`.Message` this reaction is for.
         self.message = None
 
         #: The emoji that represents this reaction.
@@ -41,10 +41,10 @@ class Reaction(object):
         #: If this user reacted to the message.
         self.me = kwargs.get("me", False)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Reaction emoji={} count={}>".format(self.emoji, self.count)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not isinstance(other, Reaction):
             return NotImplemented
 
@@ -53,6 +53,6 @@ class Reaction(object):
 
         return self.emoji == other.emoji
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         # naiive
         return hash(self.message) + hash(self.emoji)

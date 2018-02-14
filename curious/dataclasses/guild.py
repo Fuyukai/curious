@@ -493,7 +493,7 @@ class Guild(Dataclass):
         "id", "unavailable", "name", "afk_timeout", "region",
         "mfa_level", "verification_level", "notification_level", "content_filter_level", "features",
         "shard_id", "_roles", "_members", "_channels", "_emojis", "member_count", "_voice_states",
-        "_large", "_chunks_left", "_finished_chunking", "_icon_hash", "_splash_hash",
+        "_large", "_chunks_left", "_finished_chunking", "icon_hash", "splash_hash",
         "owner_id", "afk_channel_id", "system_channel_id", "widget_channel_id",
         "voice_client",
         "channels", "roles", "emojis"
@@ -514,11 +514,11 @@ class Guild(Dataclass):
 
         #: The icon hash of this guild.
         #: Used to construct the icon URL later.
-        self._icon_hash = None  # type: str
+        self.icon_hash = None  # type: str
 
         #: The splash hash of this guild.
         #: Used to construct the splash URL later.
-        self._splash_hash = None  # type: str
+        self.splash_hash = None  # type: str
 
         #: The AFK channel ID of this guild.
         self.afk_channel_id = None  # type: int

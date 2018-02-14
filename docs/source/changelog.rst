@@ -43,6 +43,10 @@ This document displays the differences between each release of curious.
 
  - Add :class:`.GuildBan`, and make :meth:`.Guild.get_bans` return a list of those.
 
+ - Move :attr:`.Guild._splash_hash` and :attr:`.Guild._icon_hash` to public attributes.
+
+ - Add a ``permissions.pyi`` file for static introspection of the permissions class.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------

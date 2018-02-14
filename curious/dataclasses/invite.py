@@ -19,13 +19,13 @@ Wrappers for Invite objects.
 Invite objects are linked to a real channel and real guild, but Discord does not return the full
 data for these objects. Therefore, a few "mini" objects are provided that represent the objects:
 
- - :class:`~.InviteGuild`, which contains the ``name``, ``splash_url`` and ``icon_url`` of the
+ - :class:`.InviteGuild`, which contains the ``name``, ``splash_url`` and ``icon_url`` of the
    Guild.
- - :class:`~.InviteChannel`, which contains the ``name`` and ``type`` of the Channel.
+ - :class:`.InviteChannel`, which contains the ``name`` and ``type`` of the Channel.
  
-These objects will be returned on :attr`~.Invite.guild` and :attr:`~.Invite.channel` respectively
-if the data for each  is not cached by curious. Otherwise, full :class:`~.Guild` and
-:class:`~.Channel` objects will be returned.
+These objects will be returned on :attr`.Invite.guild` and :attr:`.Invite.channel` respectively
+if the data for each  is not cached by curious. Otherwise, full :class:`.Guild` and
+:class:`.Channel` objects will be returned.
 
 .. currentmodule:: curious.dataclasses.invite
 """
@@ -50,7 +50,7 @@ class InviteGuild(IDObject):
         self.name = kwargs.get("name", None)  # type: str
 
         #: The splash hash of this guild.
-        self._splash_hash = kwargs.get("splash")  # type: str
+        self.splash_hash = kwargs.get("splash")  # type: str
 
         #: The icon hash of this guild.
         self._icon_hash = kwargs.get("icon")  # type: str
@@ -88,9 +88,9 @@ class InviteGuild(IDObject):
         """
         :return: The splash URL for this guild, or None if one isn't set.
         """
-        if self._splash_hash:
+        if self.splash_hash:
             return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id,
-                                                                           self._splash_hash)
+                                                                           self.splash_hash)
 
 
 class InviteChannel(IDObject):

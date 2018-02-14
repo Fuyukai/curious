@@ -20,7 +20,6 @@ Wrappers for Member objects (Users with guilds).
 """
 import collections
 import datetime
-import typing
 from typing import List
 
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
@@ -100,11 +99,11 @@ class Nickname(str):
         # the wait_for means at this point the nickname has been changed
         return parent.nickname
 
-    def reset(self) -> typing.Coroutine[None, None, 'Nickname']:
+    async def reset(self) -> 'Nickname':
         """
         Resets a member's nickname.
         """
-        return self.set(self.NONE)
+        return await self.set(self.NONE)
 
 
 class _MemberRoleContainer(collections.Sequence):

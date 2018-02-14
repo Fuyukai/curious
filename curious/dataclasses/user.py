@@ -221,8 +221,7 @@ class User(Dataclass):
     @property
     def created_at(self) -> datetime.datetime:
         """
-        :return: The time this user was created.
-        :rtype: datetime.datetime
+        :return: The :class:`.datetime.datetime` this user was created at.
         """
         return self.snowflake_timestamp
 
@@ -236,6 +235,10 @@ class User(Dataclass):
     async def open_private_channel(self) -> 'dt_channel.Channel':
         """
         Opens a private channel with a user.
+
+        .. note::
+
+            You probably won't need this to just send messages to a user.
 
         :return: The newly created private channel.
         """

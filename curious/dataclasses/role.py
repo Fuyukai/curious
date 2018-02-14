@@ -62,7 +62,7 @@ class Role(Dataclass):
     __slots__ = "name", "colour", "hoisted", "mentionable", "permissions", "managed", "position", \
                 "guild_id"
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, **kwargs) -> None:
         super().__init__(kwargs.get("id"), client)
 
         #: The name of this role.
@@ -89,7 +89,7 @@ class Role(Dataclass):
         #: The ID of the guild associated with this Role.
         self.guild_id = int(kwargs.get("guild_id", 0))  # type: dt_guild.Guild
 
-    def __lt__(self, other: 'Role'):
+    def __lt__(self, other: 'Role') -> bool:
         if not isinstance(other, Role):
             return NotImplemented
 
@@ -100,7 +100,7 @@ class Role(Dataclass):
             if self.position != other.position \
             else self.id < other.id
 
-    def _copy(self):
+    def _copy(self) -> 'Role':
         obb = object.__new__(self.__class__)
 
         obb.name = self.name
@@ -180,7 +180,7 @@ class Role(Dataclass):
         """
         Deletes this role.
         """
-        if not self.me.guild_permissions.manage_roles:
+        if not self.guild.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
 
         await self._bot.http.delete_role(self.guild.id, self.id)

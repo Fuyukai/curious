@@ -42,7 +42,7 @@ class Webhook(Dataclass):
     """
 
     __slots__ = "user", "guild_id", "channel_id", "token", "owner", \
-                "_default_name", "_default_avatar"
+                "default_name", "_default_avatar"
 
     def __init__(self, client, **kwargs):
         # Use the webhook ID is provided (i.e created from a message object).
@@ -66,7 +66,7 @@ class Webhook(Dataclass):
         self.owner = None  # type: dt_user.User
 
         #: The default name of this webhook.
-        self._default_name = None  # type: str
+        self.default_name = None  # type: str
 
         #: The default avatar of this webhook.
         self._default_avatar = None  # type: str
@@ -77,13 +77,6 @@ class Webhook(Dataclass):
                                                                     repr(self.owner))
 
     __str__ = __repr__
-
-    @property
-    def default_name(self) -> str:
-        """
-        :return: The default name of this webhook.
-        """
-        return self._default_name
 
     @property
     def default_avatar_url(self) -> str:
@@ -99,7 +92,7 @@ class Webhook(Dataclass):
         """
         if self.user.avatar_hash is None:
             return self.default_avatar_url
-        return self.user.avatar_url
+        return str(self.user.avatar_url)
 
     @property
     def name(self) -> str:
@@ -142,6 +135,7 @@ class Webhook(Dataclass):
     async def get_token(self) -> str:
         """
         Gets the token for this webhook, if no token was set earlier.
+
         :return: The token for the webhook.
         """
         if self.token:

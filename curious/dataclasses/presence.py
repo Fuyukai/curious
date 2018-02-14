@@ -78,7 +78,7 @@ class Game(object):
 
     __slots__ = "type", "url", "name"
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
         :param name: The name for the game. 100 characters max.
         :param url: The URL for the game, if streaming.
@@ -109,7 +109,7 @@ class Game(object):
 
         return d
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Game name='{}' type={} url={}>".format(self.name, self.type, self.url)
 
 
@@ -120,8 +120,12 @@ class Presence(object):
 
     __slots__ = "_status", "_game"
 
-    def __init__(self, **kwargs):
-        #: The :class:`~.Status` for this presence.
+    def __init__(self, **kwargs) -> None:
+        """
+        :param status: The :class:`.Status` for this presence.
+        :param game: The :class:`.Game` for this presence.
+        """
+        #: The :class:~.Status` for this presence.
         self._status = None  # type: Status
         # prevent dupe code by using our setter
         self.status = kwargs.get("status", Status.OFFLINE)
