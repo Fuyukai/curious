@@ -41,6 +41,8 @@ This document displays the differences between each release of curious.
 
  - Add :class:`.AvatarUrl`.
 
+ - Add :class:`.GuildBan`, and make :meth:`.Guild.get_bans` return a list of those.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------
