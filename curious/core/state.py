@@ -39,7 +39,7 @@ from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.presence import Status
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
-from curious.dataclasses.user import BotUser, FriendType, RelationshipUser, User
+from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
@@ -126,12 +126,6 @@ class State(object):
 
         #: The guilds the bot can see.
         self._guilds = GuildStore()
-
-        #: This user's friends.
-        self._friends = {}  # type: typing.Dict[int, RelationshipUser]
-
-        #: This user's blocked users.
-        self._blocked = {}  # type: typing.Dict[int, RelationshipUser]
 
         #: The current user cache.
         self._users = {}
@@ -261,10 +255,6 @@ class State(object):
 
         # don't decache ourself
         if self._users[id] == self._user:
-            return
-
-        # if its in friends/blocked, keep the RelationshipUser
-        if id in self._friends or id in self._blocked:
             return
 
         # check if its in a private channel
@@ -498,27 +488,8 @@ class State(object):
         except (ValueError, TypeError):
             return
 
+        # deprecated - previously friend updates, but userbot support was removed
         if not guild:
-            # user presence update
-            fr = self._friends.get(user_id)
-
-            if not fr:
-                # wtf
-                return
-
-            # re-create the user object
-            if "username" in user:
-                # full user object
-                self._friends[user_id] = self.make_user(user,
-                                                        user_klass=RelationshipUser,
-                                                        override_cache=True)
-                fr = self._friends[user_id]
-
-            fr.presence.status = event_data.get("status")
-            game = event_data.get("game")
-            fr.presence.game = game
-
-            yield "friend_update", fr
             return
 
         # try and create a new member from the presence update
@@ -543,12 +514,9 @@ class State(object):
 
         # update the nickname
         member.nickname = event_data.get("nick", member.nickname)
-
-        user = member.user
-        if not isinstance(user, RelationshipUser):
-            # recreate the user object, so the user is properly cached
-            if "username" in event_data["user"]:
-                self.make_user(event_data["user"], override_cache=True)
+        # recreate the user object, so the user is properly cached
+        if "username" in event_data["user"]:
+            self.make_user(event_data["user"], override_cache=True)
 
         yield "member_update", old_member, member,
 
@@ -1287,61 +1255,6 @@ class State(object):
             return
 
         yield "message_ack", channel, message,
-
-    async def handle_relationship_add(self, gw: 'gateway.GatewayHandler', event_data: dict):
-        """
-        Called when a relationship is added.
-        """
-        type_ = event_data.get("type", 0)
-
-        if type_ == 1:
-            # FR accepted
-            u = RelationshipUser(client=self.client, **event_data.get("user"))
-            u.type_ = FriendType.FRIEND
-            self._friends[u.id] = u
-        elif type_ == 2:
-            u = RelationshipUser(client=self.client, **event_data.get("user"))
-            u.type_ = FriendType.BLOCKED
-            self._blocked[u.id] = u
-        else:
-            return
-
-        self._users[u.id] = u
-
-        yield "relationship_add", u,
-
-    async def handle_relationship_remove(self, gw: 'gateway.GatewayHandler', event_data: dict):
-        """
-        Called when a relationship is removed.
-        """
-        type_ = event_data.get("type", 0)
-        u_id = int(event_data.get("id", 0))
-
-        if type_ == 1:
-            u = self._friends.pop(u_id, None)
-        elif type_ == 2:
-            u = self._blocked.pop(u_id, None)
-        else:
-            return
-
-        # replace the type in `_users` with a generic user
-        # this wont cause race conditions due to the GIL etc
-        del self._users[u_id]
-        new_user = self.make_user(
-            {
-                "id": u_id,
-                "username": u.username,
-                "discriminator": u.discriminator,
-                "avatar": u.avatar_hash,
-                "bot": u.bot
-            }
-        )
-        self._users[u_id] = new_user
-
-        # maybe decache it anyway
-        self._check_decache_user(u_id)
-
-        yield "relationship_remove", u,
 
     async def handle_channel_recipient_add(self, gw: 'gateway.GatewayHandler', event_data: dict):
         """
