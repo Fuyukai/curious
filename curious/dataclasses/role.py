@@ -21,8 +21,6 @@ Wrappers for Role objects.
 
 import functools
 
-import curio
-
 from curious.dataclasses import guild as dt_guild, member as dt_member, \
     permissions as dt_permissions
 from curious.dataclasses.bases import Dataclass
@@ -209,18 +207,8 @@ class Role(Dataclass):
             if isinstance(permissions, dt_permissions.Permissions):
                 permissions = permissions.bitfield
 
-        listener = await curio.spawn(self._bot.wait_for("role_update",
-                                                        lambda b, a: a.id == self.id))
-
-        try:
-            await self._bot.http.edit_role(self.guild.id, self.id,
+        async with self._bot.events.wait_for_manager("role_update", lambda b, a: a.id == self.id):
+            await self._bot.http.edit_role(self.guild_id, self.id,
                                            name=name, permissions=permissions, colour=colour,
-                                           hoist=hoist,
-                                           position=position, mentionable=mentionable)
-        except:
-            await listener.cancel()
-            raise
-
-        await listener.join()
-
+                                           hoist=hoist, position=position, mentionable=mentionable)
         return self

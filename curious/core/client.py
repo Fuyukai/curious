@@ -152,7 +152,7 @@ class Client(object):
         self.application_info = None  # type: AppInfo
 
         #: The task manager used for this bot.
-        self.task_manager = None  # type: curio.TaskGroup
+        self.task_manager = None
 
         for (name, event) in scan_events(self):
             self.events.add_event(event)
@@ -644,7 +644,7 @@ class Client(object):
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True, **kwargs):
         """
-        Convenience method to run the bot with curio.
+        Convenience method to run the bot with multio.
 
         :param shard_count: The number of shards to use. Ignored if autoshard is True.
         :param autoshard: If the bot should be autosharded.

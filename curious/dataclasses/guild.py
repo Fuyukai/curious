@@ -27,7 +27,7 @@ import typing
 from math import ceil
 from types import MappingProxyType
 
-import curio
+import multio
 
 from curious.core.httpclient import Endpoints
 from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
@@ -292,19 +292,12 @@ class GuildChannelWrapper(_WrapperBase):
 
             return False
 
-        listener = await curio.spawn(self._guild._bot.wait_for("channel_update", _listener))
-        try:
+        async with self._guild._bot.events.wait_for_manager("channel_update", _listener):
             channel_data = await self._guild._bot.http.create_channel(self._guild.id, **kwargs)
             # if it's a text channel and the topic was provided, automatically add it
             if type is channel.ChannelType.TEXT and topic is not None:
                 await self._guild._bot.http.edit_channel(channel_id=channel_data["id"], topic=topic)
-        except:
-            await listener.cancel()
-            raise
 
-        # wait on the listener
-        await listener.wait()
-        # we can safely assume this exists
         return self._channels[int(channel_data.get("id"))]
 
     def edit(self, channel: 'channel.Channel', **kwargs):
@@ -568,7 +561,7 @@ class Guild(Dataclass):
         self._large = None  # type: bool
 
         #: Has this guild finished chunking?
-        self._finished_chunking = curio.Event()
+        self._finished_chunking = multio.Event()
         self._chunks_left = 0
 
         #: The current voice client associated with this guild.
