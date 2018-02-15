@@ -23,6 +23,7 @@ import collections
 import copy
 import datetime
 import enum
+import sys
 import typing
 from math import ceil
 from os import PathLike
@@ -472,7 +473,6 @@ class GuildEmojiWrapper(_WrapperBase):
         return emoji
 
 
-@dataclass(frozen=True)
 class GuildBan:
     """
     Represents a ban in a guild.
@@ -482,6 +482,13 @@ class GuildBan:
 
     #: The victim of the ban.
     victim: 'dt_user.User'
+
+
+if 'sphinx' in sys.modules:
+    # fuck you
+    pass
+else:
+    GuildBan = dataclass(GuildBan, frozen=True)
 
 
 class GuildBanContainer(object):
@@ -566,7 +573,7 @@ class GuildBanContainer(object):
         return await self.add(*args, **kwargs)
 
     async def remove(self, user: 'dt_user.User', *,
-               reason: str = None) -> None:
+                     reason: str = None) -> None:
         """
         Unbans a user from this guild.
         Example for unbanning the first banned user:
