@@ -32,9 +32,9 @@ import multio
 from dataclasses import dataclass
 
 from curious.core.httpclient import Endpoints
-from curious.dataclasses import channel, emoji as dt_emoji, invite as dt_invite, \
-    member as dt_member, permissions as dt_permissions, role, search as dt_search, \
-    user as dt_user, voice_state as dt_vs, webhook as dt_webhook
+from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, invite as dt_invite, \
+    member as dt_member, permissions as dt_permissions, role as dt_role, \
+    search as dt_search, user as dt_user, voice_state as dt_vs, webhook as dt_webhook
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.presence import Presence, Status
 from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
@@ -160,7 +160,7 @@ class _WrapperBase(collections.Mapping, collections.Iterable):
         Represents a read-only view for this wrapper.
         """
 
-    def __iter__(self) -> typing.Iterable[int]:
+    def __iter__(self) -> typing.Iterator[typing.Any]:
         return iter(self.view.keys())
 
     def __repr__(self) -> str:
@@ -175,7 +175,7 @@ class GuildChannelWrapper(_WrapperBase):
     __slots__ = "_guild", "_channels"
 
     def __init__(self, guild: 'Guild',
-                 channels: 'typing.MutableMapping[int, channel.Channel]'):
+                 channels: 'typing.MutableMapping[int, dt_channel.Channel]'):
         """
         :param guild: The :class:`~.Guild` object that owns this wrapper.
         :param channels: The dictionary of channels that this wrapper contains.
@@ -184,13 +184,13 @@ class GuildChannelWrapper(_WrapperBase):
         self._channels = channels
 
     @property
-    def view(self) -> 'typing.Mapping[int, channel.Channel]':
+    def view(self) -> 'typing.Mapping[int, dt_channel.Channel]':
         """
         :return: A read-only view into the channels for this wrapper.
         """
         return MappingProxyType(self._channels)
 
-    def __getitem__(self, key) -> 'channel.Channel':
+    def __getitem__(self, key) -> 'dt_channel.Channel':
         default = object()
         got = self.get(key, default=default)
         if got is default:
@@ -202,8 +202,8 @@ class GuildChannelWrapper(_WrapperBase):
         return len(self._channels)
 
     # overwritten methods from the abc
-    def get(self, key: typing.Union[str, int], default: default_var=None) \
-            -> 'typing.Union[channel.Channel, default_var]':
+    def get(self, key: typing.Union[str, int], default: default_var = None) \
+            -> 'typing.Union[dt_channel.Channel, default_var]':
         """
         Gets a channel by name or ID.
 
@@ -216,8 +216,8 @@ class GuildChannelWrapper(_WrapperBase):
         else:
             return self._get_by_name(key, default=default)
 
-    def _get_by_name(self, name: str, default: default_var=None) \
-            -> 'typing.Union[channel.Channel, default_var]':
+    def _get_by_name(self, name: str, default: default_var = None) \
+            -> 'typing.Union[dt_channel.Channel, default_var]':
         """
         Gets a channel by name.
 
@@ -236,12 +236,12 @@ class GuildChannelWrapper(_WrapperBase):
         except StopIteration:
             return default
 
-    async def create(self, name: str, type_: 'channel.ChannelType' = None,
+    async def create(self, name: str, type_: 'dt_channel.ChannelType' = None,
                      permission_overwrites: 'typing.List[dt_permissions.Overwrite]' = None,
                      *,
-                     parent: 'channel.Channel' = None,
+                     parent: 'dt_channel.Channel' = None,
                      bitrate: int = 64, user_limit: int = 0,
-                     topic: str = None) -> 'channel.Channel':
+                     topic: str = None) -> 'dt_channel.Channel':
         """
         Creates a new channel.
 
@@ -266,28 +266,28 @@ class GuildChannelWrapper(_WrapperBase):
             raise PermissionsError("manage_channels")
 
         if type_ is None:
-            type_ = channel.ChannelType.TEXT
+            type_ = dt_channel.ChannelType.TEXT
 
         kwargs = {
             "name": name,
             "type": type_.value,
             "permission_overwrites": permission_overwrites,
         }
-        if type_ is channel.ChannelType.VOICE:
+        if type_ is dt_channel.ChannelType.VOICE:
             kwargs["bitrate"] = bitrate
             kwargs["user_limit"] = user_limit
 
         if parent is not None:
-            if parent.type != channel.ChannelType.CATEGORY:
+            if parent.type != dt_channel.ChannelType.CATEGORY:
                 raise CuriousError("Cannot create channel with non-category parent")
 
-            if type_.value == channel.ChannelType.CATEGORY:
+            if type_.value == dt_channel.ChannelType.CATEGORY:
                 raise CuriousError("Cannot create category channel with category")
 
             kwargs["parent_id"] = parent.id
 
         # create a listener so we wait for the WS before editing
-        async def _listener(channel: channel.Channel):
+        async def _listener(channel: dt_channel.Channel):
             if channel.name == name and channel.guild == self._guild:
                 return True
 
@@ -296,12 +296,12 @@ class GuildChannelWrapper(_WrapperBase):
         async with self._guild._bot.events.wait_for_manager("channel_update", _listener):
             channel_data = await self._guild._bot.http.create_channel(self._guild.id, **kwargs)
             # if it's a text channel and the topic was provided, automatically add it
-            if type is channel.ChannelType.TEXT and topic is not None:
+            if type is dt_channel.ChannelType.TEXT and topic is not None:
                 await self._guild._bot.http.edit_channel(channel_id=channel_data["id"], topic=topic)
 
         return self._channels[int(channel_data.get("id"))]
 
-    def edit(self, channel: 'channel.Channel', **kwargs):
+    def edit(self, channel: 'dt_channel.Channel', **kwargs):
         """
         Edits a channel.
         """
@@ -310,7 +310,7 @@ class GuildChannelWrapper(_WrapperBase):
 
         return channel.edit(**kwargs)
 
-    def delete(self, channel: 'channel.Channel'):
+    def delete(self, channel: 'dt_channel.Channel'):
         """
         Deletes a channel.
         """
@@ -329,7 +329,7 @@ class GuildRoleWrapper(_WrapperBase):
     __slots__ = "_guild", "_roles"
 
     def __init__(self, guild: 'Guild',
-                 roles: 'typing.MutableMapping[int, role.Role]'):
+                 roles: 'typing.MutableMapping[int, dt_role.Role]'):
         """
         :param guild: The :class:`~.Guild` object that owns this wrapper.
         :param roles: The dictionary of roles that this wrapper contains.
@@ -338,13 +338,13 @@ class GuildRoleWrapper(_WrapperBase):
         self._roles = roles
 
     @property
-    def view(self) -> 'typing.Mapping[int, role.Role]':
+    def view(self) -> 'typing.Mapping[int, dt_role.Role]':
         """
         :return: A read-only view into the channels for this wrapper.
         """
         return MappingProxyType(self._roles)
 
-    def __getitem__(self, key) -> 'role.Role':
+    def __getitem__(self, key) -> 'dt_role.Role':
         default = object()
         got = self.get(key, default=default)
         if got is default:
@@ -356,8 +356,8 @@ class GuildRoleWrapper(_WrapperBase):
         return len(self._roles)
 
     # overwritten methods from the abc
-    def get(self, key: typing.Union[str, int], default: default_var=None) \
-            -> 'typing.Union[role.Role, default_var]':
+    def get(self, key: typing.Union[str, int], default: default_var = None) \
+            -> 'typing.Union[dt_role.Role, default_var]':
         """
         Gets a role by name or ID.
 
@@ -370,8 +370,8 @@ class GuildRoleWrapper(_WrapperBase):
         else:
             return self._get_by_name(key, default=default)
 
-    def _get_by_name(self, name: str, default: default_var=None) \
-            -> 'typing.Union[role.Role, default_var]':
+    def _get_by_name(self, name: str, default: default_var = None) \
+            -> 'typing.Union[dt_role.Role, default_var]':
         """
         Gets a role by name.
 
@@ -385,7 +385,7 @@ class GuildRoleWrapper(_WrapperBase):
         except StopIteration:
             return default
 
-    async def create(self, **kwargs) -> 'role.Role':
+    async def create(self, **kwargs) -> 'dt_role.Role':
         """
         Creates a new role in this guild.
 
@@ -394,13 +394,13 @@ class GuildRoleWrapper(_WrapperBase):
         if not self._guild.me.guild_permissions.manage_roles:
             raise PermissionsError("manage_roles")
 
-        role_obb = role.Role(client=self._guild._bot,
-                             **(await self._guild._bot.http.create_role(self._guild.id)))
+        role_obb = dt_role.Role(client=self._guild._bot,
+                                **(await self._guild._bot.http.create_role(self._guild.id)))
         self._roles[role_obb.id] = role_obb
         role_obb.guild_id = self._guild.id
         return await role_obb.edit(**kwargs)
 
-    def edit(self, role: 'role.Role', **kwargs):
+    def edit(self, role: 'dt_role.Role', **kwargs):
         """
         Edits a role.
         """
@@ -409,7 +409,7 @@ class GuildRoleWrapper(_WrapperBase):
 
         return role.edit(**kwargs)
 
-    def delete(self, role: 'role.Role'):
+    def delete(self, role: 'dt_role.Role'):
         """
         Deletes a role.
         """
@@ -441,15 +441,15 @@ class GuildEmojiWrapper(_WrapperBase):
         """
         return MappingProxyType(self._emojis)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> 'dt_emoji.Emoji':
         return self._emojis[key]
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._emojis)
 
     async def create(self, *,
                      name: str, image_data: typing.Union[str, bytes],
-                     roles: 'typing.List[role.Role]' = None) -> 'dt_emoji.Emoji':
+                     roles: 'typing.List[dt_role.Role]' = None) -> 'dt_emoji.Emoji':
         """
         Creates a new emoji in this guild.
 
@@ -484,6 +484,133 @@ class GuildBan:
     victim: 'dt_user.User'
 
 
+class GuildBanContainer(object):
+    """
+    A container for guild bans.
+    """
+
+    def __init__(self, guild: 'Guild'):
+        self._guild = guild
+
+    async def __aiter__(self) -> 'typing.AsyncGenerator[GuildBan]':
+        bans = await self._guild._bot.http.get_bans(self._guild.id)
+
+        for ban in bans:
+            user_data = ban.get("user", None)
+            if user_data is None:
+                continue
+
+            user = self._guild._bot.state.make_user(user_data)
+            self._guild._bot.state._check_decache_user(user.id)
+            ban = GuildBan(reason=ban.get("reason", None), user=user)
+            yield ban
+
+    async def add(self, victim: 'typing.Union[dt_user.User, dt_member.Member]', *,
+                  delete_message_days: int, reason: str = None) -> GuildBan:
+        """
+        Bans somebody from the guild.
+
+        This can either ban a :class:`~.Member`, in which they must be in the guild.
+        Or this can ban a :class:`~.User`, which does not need to be in the guild.
+
+        Example for banning a member:
+
+        .. code:: python
+
+            member = guild.members[66237334693085184]
+            await guild.ban(member)
+
+        Example for banning a user:
+
+        .. code:: python
+
+            user = await client.get_user(66237334693085184)
+            await guild.ban(user)
+
+        :param victim: The :class:`.Member` or :class:`.User` object to ban.
+        :param delete_message_days: The number of days to delete messages.
+        :param reason: The reason given for banning.
+        """
+        if not self._guild.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
+        if isinstance(victim, dt_member.Member):
+            if self._guild.owner == victim:
+                raise HierarchyError("Cannot ban the owner")
+
+            if victim.guild_id != self._guild.id:
+                raise ValueError("Member must be from this guild (try `member.user` instead!)")
+
+            if victim.top_role >= self._guild.me.top_role:
+                raise HierarchyError("Top role is equal to or lower than victim's top role")
+
+            victim_user = victim.user
+            victim_id = victim.user.id
+
+        elif isinstance(victim, dt_user.User):
+            victim_user = victim
+            victim_id = victim.id
+
+        else:
+            raise TypeError("Victim must be a Member or a User")
+
+        await self._guild._bot.http.ban_user(guild_id=self._guild.id, user_id=victim_id,
+                                             delete_message_days=delete_message_days,
+                                             reason=reason)
+        return GuildBan(reason=reason, victim=victim_user)
+
+    async def ban(self, *args, **kwargs) -> 'GuildBan':
+        """
+        Shortcut for :meth:`.GuildBanWrapper.add`.
+        """
+        return await self.add(*args, **kwargs)
+
+    def remove(self, user: 'dt_user.User', *,
+               reason: str = None) -> None:
+        """
+        Unbans a user from this guild.
+        Example for unbanning the first banned user:
+
+        .. code-block:: python3
+
+            user = next(await guild.get_bans())
+            await guild.unban(user)
+
+        To unban an arbitrary user, use :meth:`~.Client.get_user`.
+
+        .. code-block:: python3
+
+            user = await client.get_user(66237334693085184)
+            await guild.unban(user)
+
+        .. note::
+
+            This does not take :class:`.Member` objects, as members cannot be in a guild and
+            banned from the guild.
+
+        :param user: The :class:`~.User` to forgive and unban.
+        :param reason: The reason given for unbanning.
+        """
+        if not self._guild.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
+        forgiven_id = user.id
+
+        await self._guild._bot.http.unban_user(self._guild.id, forgiven_id, reason=reason)
+
+    async def unban(self, *args, **kwargs) -> None:
+        """
+        Shortcut for :meth:`.GuildBanWrapper.remove`.
+        """
+        return await self.remove(*args, **kwargs)
+
+    async def flatten(self) -> 'typing.List[GuildBan]':
+        """
+        Gets all the bans for this guild.
+        """
+        return [ban async for ban in self]
+
+
 class Guild(Dataclass):
     """
     Represents a guild object on Discord.
@@ -496,12 +623,12 @@ class Guild(Dataclass):
         "_large", "_chunks_left", "_finished_chunking", "icon_hash", "splash_hash",
         "owner_id", "afk_channel_id", "system_channel_id", "widget_channel_id",
         "voice_client",
-        "channels", "roles", "emojis"
+        "channels", "roles", "emojis", "bans",
     )
 
     valid_embed_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
 
-    def __init__(self, bot, **kwargs):
+    def __init__(self, bot, **kwargs) -> None:
         super().__init__(kwargs.get("id"), bot)
 
         #: If the guild is unavailable or not.
@@ -586,6 +713,8 @@ class Guild(Dataclass):
         self.roles = GuildRoleWrapper(self, self._roles)
         #: The :class:`.GuildEmojiWrapper` that wraps the emojis in this Guild.
         self.emojis = GuildEmojiWrapper(self, self._emojis)
+        #: The :class:`.GuildBanContainer` for this Guild.
+        self.bans = GuildBanContainer(self)
 
         if kwargs:
             self.from_guild_create(**kwargs)
@@ -608,7 +737,7 @@ class Guild(Dataclass):
         return MappingProxyType(self._members)
 
     @property
-    def owner(self) -> 'dt_member.Member':
+    def owner(self) -> 'typing.Union[dt_member.Member, None]':
         """
         :return: A :class:`~.Member` object that represents the owner of this guild.
         """
@@ -628,7 +757,7 @@ class Guild(Dataclass):
             return None
 
     @property
-    def default_role(self) -> 'typing.Union[role.Role, None]':
+    def default_role(self) -> 'typing.Union[dt_role.Role, None]':
         """
         :return: A :class:`~.Role` that represents the default role of this guild.
         """
@@ -638,17 +767,17 @@ class Guild(Dataclass):
             return None
 
     @property
-    def system_channel(self) -> 'typing.Union[channel.Channel, None]':
+    def system_channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
         :return: A :class:`~.Channel` that represents the system channel for this guild.
         """
         try:
-            return self.channels[self.system_channel_id]
+            return self._channels[self.system_channel_id]
         except KeyError:
             return None
 
     @property
-    def afk_channel(self) -> 'typing.Union[channel.Channel, None]':
+    def afk_channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
         :return: A :class:`~.Channel` representing the AFK channel for this guild.
         """
@@ -826,9 +955,9 @@ class Guild(Dataclass):
             self._chunks_left -= 1
 
         for member_data in members:
-            id = int(member_data["user"]["id"])
-            if id in self._members:
-                member_obj = self._members[id]
+            member_id = int(member_data["user"]["id"])
+            if member_id in self._members:
+                member_obj = self._members[member_id]
             else:
                 member_obj = dt_member.Member(self._bot, **member_data)
 
@@ -868,8 +997,8 @@ class Guild(Dataclass):
         self.features = data.get("features", [])
         self.region = data.get("region")
 
-        afk_channel_id = data.get("afk_channel_id")
-        if afk_channel_id is not None:
+        afk_channel_id = data.get("afk_channel_id", 0)
+        if afk_channel_id > 0:
             afk_channel_id = int(afk_channel_id)
 
         self.afk_channel_id = afk_channel_id
@@ -884,7 +1013,7 @@ class Guild(Dataclass):
 
         # Create all the Role objects for the server.
         for role_data in data.get("roles", []):
-            role_obj = role.Role(self._bot, **role_data)
+            role_obj = dt_role.Role(self._bot, **role_data)
             role_obj.guild_id = self.id
             self._roles[role_obj.id] = role_obj
 
@@ -902,7 +1031,7 @@ class Guild(Dataclass):
 
         # Create all of the channel objects.
         for channel_data in data.get("channels", []):
-            channel_obj = channel.Channel(self._bot, **channel_data)
+            channel_obj = dt_channel.Channel(self._bot, **channel_data)
             channel_obj.guild_id = self.id
             channel_obj._update_overwrites(channel_data.get("permission_overwrites", []),
                                            guild=self)
@@ -939,13 +1068,6 @@ class Guild(Dataclass):
         return self.member_count >= 250
 
     @property
-    def bans(self) -> 'typing.AsyncIterator[GuildBan]':
-        """
-        :return: A :class:`~.AsyncIteratorWrapper` that yields :class:`.GuildBan` objects.
-        """
-        return AsyncIteratorWrapper(self.get_bans)
-
-    @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
         """
         :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this
@@ -958,17 +1080,17 @@ class Guild(Dataclass):
         """
         :return: The icon URL for this guild, or None if one isn't set.
         """
-        if self._icon_hash:
-            return "https://cdn.discordapp.com/icons/{}/{}.webp".format(self.id, self._icon_hash)
+        if self.icon_hash:
+            return "https://cdn.discordapp.com/icons/{}/{}.webp".format(self.id, self.icon_hash)
 
     @property
     def splash_url(self) -> str:
         """
         :return: The splash URL for this guild, or None if one isn't set.
         """
-        if self._splash_hash:
+        if self.splash_hash:
             return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id,
-                                                                           self._splash_hash)
+                                                                           self.splash_hash)
 
     # Guild methods.
     async def leave(self) -> None:
@@ -977,7 +1099,7 @@ class Guild(Dataclass):
         """
         await self._bot.http.leave_guild(self.id)
 
-    async def connect_to_voice(self, channel: 'channel.Channel') -> 'voice_client.VoiceClient':
+    async def connect_to_voice(self, channel: 'dt_channel.Channel') -> 'voice_client.VoiceClient':
         """
         Connects to a voice channel in this guild.
 
@@ -1014,30 +1136,6 @@ class Guild(Dataclass):
 
         return invites
 
-    async def get_bans(self) -> 'typing.List[GuildBan]':
-        """
-        Gets the bans for this guild.
-
-        :return: A list of :class:`.GuildBan` objects.
-        """
-        if not self.me.guild_permissions.ban_members:
-            raise PermissionsError("ban_members")
-
-        bans = await self._bot.http.get_bans(self.id)
-        ban_results = []
-
-        for ban in bans:
-            user_data = ban.get("user", None)
-            if user_data is None:
-                continue
-
-            user = self._bot.state.make_user(user_data)
-            self._bot.state._check_decache_user(user.id)
-            ban = GuildBan(reason=ban.get("reason", None), user=user)
-            ban_results.append(ban)
-
-        return ban_results
-
     async def kick(self, victim: 'dt_member.Member'):
         """
         Kicks somebody from the guild.
@@ -1057,8 +1155,9 @@ class Guild(Dataclass):
 
         await self._bot.http.kick_member(self.id, victim_id)
 
+    @deprecated(since="0.7.0", see_instead=GuildBanContainer.add, removal="0.9.0")
     async def ban(self, victim: 'typing.Union[dt_member.Member, dt_user.User]', *,
-                  delete_message_days: int = 7):
+                  delete_message_days: int = 7) -> GuildBan:
         """
         Bans somebody from the guild.
 
@@ -1082,31 +1181,10 @@ class Guild(Dataclass):
         :param victim: The :class:`.Member` or :class:`.User` object to ban.
         :param delete_message_days: The number of days to delete messages.
         """
-        if not self.me.guild_permissions.ban_members:
-            raise PermissionsError("ban_members")
+        return await self.bans.add(victim, delete_message_days=delete_message_days)
 
-        if isinstance(victim, dt_member.Member):
-            if self.owner == victim:
-                raise HierarchyError("Cannot ban the owner")
-
-            if victim.guild_id != self.id:
-                raise ValueError("Member must be from this guild (try `member.user` instead)")
-
-            if victim.top_role >= self.me.top_role:
-                raise HierarchyError("Top role is equal to or lower than victim's top role")
-
-            victim_id = victim.user.id
-
-        elif isinstance(victim, dt_user.User):
-            victim_id = victim.id
-
-        else:
-            raise TypeError("Victim must be a Member or a User")
-
-        await self._bot.http.ban_user(guild_id=self.id, user_id=victim_id,
-                                      delete_message_days=delete_message_days)
-
-    async def unban(self, user: 'dt_user.User'):
+    @deprecated(since="0.7.0", see_instead=GuildBanContainer.remove, removal="0.9.0")
+    async def unban(self, user: 'dt_user.User') -> None:
         """
         Unbans a user from this guild.
         Example for unbanning the first banned user:
@@ -1130,12 +1208,7 @@ class Guild(Dataclass):
 
         :param user: The :class:`~.User` to forgive and unban.
         """
-        if not self.me.guild_permissions.ban_members:
-            raise PermissionsError("ban_members")
-
-        forgiven_id = user.id
-
-        await self._bot.http.unban_user(self.id, forgiven_id)
+        return await self.bans.remove(user)
 
     async def get_webhooks(self) -> 'typing.List[dt_webhook.Webhook]':
         """
@@ -1162,8 +1235,9 @@ class Guild(Dataclass):
 
         await self._bot.http.delete_webhook(webhook.id)
 
-    async def change_role_positions(self, roles: 'typing.Union[typing.Dict[role.Role, int], '
-                                                 'typing.List[typing.Tuple[role.Role, int]]]'):
+    async def change_role_positions(self,
+                                    roles: 'typing.Union[typing.Dict[dt_role.Role, int], '
+                                           'typing.List[typing.Tuple[dt_role.Role, int]]]'):
         """
         Changes the positions of a mapping of roles.
 
@@ -1201,7 +1275,7 @@ class Guild(Dataclass):
         await self._bot.http.edit_member_voice_state(self.id, member.id, deaf=deaf, mute=mute)
         return member.voice
 
-    async def modify_guild(self, *, afk_channel: 'channel.Channel' = None,
+    async def modify_guild(self, *, afk_channel: 'dt_channel.Channel' = None,
                            verification_level: VerificationLevel = None,
                            content_filter_level: ContentFilterLevel = None,
                            notification_level: NotificationLevel = None,
@@ -1257,7 +1331,8 @@ class Guild(Dataclass):
         with open(path, 'rb') as f:
             return await self.change_icon(f.read())
 
-    async def get_widget_info(self) -> 'typing.Tuple[bool, typing.Union[None, channel.Channel]]':
+    async def get_widget_info(self) -> 'typing.Tuple[bool, ' \
+                                       'typing.Union[None, dt_channel.Channel]]':
         """
         Gets the widget info for the current guild.
         
@@ -1268,7 +1343,7 @@ class Guild(Dataclass):
         return info.get("enabled", False), self.channels.get(int(info.get("channel_id", 0)))
 
     async def edit_widget(self, *,
-                          status: bool = None, channel: 'channel.Channel' = -1):
+                          status: bool = None, channel: 'dt_channel.Channel' = -1):
         """
         Edits the widget for this guild.
         
@@ -1310,7 +1385,7 @@ class Guild(Dataclass):
 
         return invite
 
-    async def set_vanity_invite(self, url: str) -> 'dt_invite.Invite':
+    async def set_vanity_invite(self, url: str) -> 'typing.Union[dt_invite.Invite, None]':
         """
         Sets the vanity :class:`~.Invite` for this guild.
 
