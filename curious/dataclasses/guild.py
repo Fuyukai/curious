@@ -565,7 +565,7 @@ class GuildBanContainer(object):
         """
         return await self.add(*args, **kwargs)
 
-    def remove(self, user: 'dt_user.User', *,
+    async def remove(self, user: 'dt_user.User', *,
                reason: str = None) -> None:
         """
         Unbans a user from this guild.
@@ -998,7 +998,7 @@ class Guild(Dataclass):
         self.region = data.get("region")
 
         afk_channel_id = data.get("afk_channel_id", 0)
-        if afk_channel_id > 0:
+        if afk_channel_id:
             afk_channel_id = int(afk_channel_id)
 
         self.afk_channel_id = afk_channel_id

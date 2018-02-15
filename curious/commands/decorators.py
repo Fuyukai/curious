@@ -18,10 +18,15 @@ Decorators to annotate function objects.
 
 .. currentmodule:: curious.commands.decorators
 """
-from typing import List
+import inspect
+import logging
+from typing import List, Type
 
+from curious.commands import plugin as md_plugin
 from curious.commands.ratelimit import BucketNamer, CommandRateLimit
 from curious.commands.utils import get_description
+
+logger = logging.getLogger(__name__)
 
 
 def command(*,
@@ -79,6 +84,7 @@ def condition(cbl):
 
     This will add the callable to ``cmd_conditions`` on the function.
     """
+
     def inner(func):
         if not hasattr(func, "cmd_conditions"):
             func.cmd_conditions = []
@@ -93,6 +99,7 @@ def ratelimit(*, limit: int, time: float, bucket_namer=BucketNamer.AUTHOR):
     """
     Adds a ratelimit to a command.
     """
+
     def inner(func):
         if not hasattr(func, "cmd_ratelimits"):
             func.cmd_ratelimits = []
@@ -109,6 +116,7 @@ def _subcommand(parent):
     """
     Decorator factory set on a command to produce subcommands.
     """
+
     def inner(**kwargs):
         # MULTIPLE LAYERS
         def inner_2(func):
@@ -122,3 +130,60 @@ def _subcommand(parent):
 
     return inner
 
+
+def autoplugin(plugin: 'Type[md_plugin.Plugin]' = None, *,
+               startswith: str = "command") -> 'Type[md_plugin.Plugin]':
+    """
+    Automatically assigns commands inside a plugin.
+
+    This will scan a :class:`.Plugin` for functions matching the pattern ``command_[parent_]name``,
+    and automatically decorate them with the command decorator and subcommand decorators.
+
+    :param plugin: The :class:`.Plugin` subclass to autoplugin.
+    :param startswith: Used to override what the command function prefix will be.
+    :return: The edited plugin.
+    """
+    # we were called like @autoplugin(startswith="something")
+    # so return a lambda that provides the plugin
+    if plugin is None:
+        return lambda plugin: autoplugin(plugin, startswith=startswith)
+
+    if not issubclass(plugin, md_plugin.Plugin):
+        raise ValueError(f"Cannot autoplugin an object of type non-PluginMeta ({type(plugin)})")
+
+    # we were called like @autoplugin or the lambda above completed
+    logger.debug("Processing autocommand for plugin type %s", plugin.__name__)
+    for name, member in plugin.__dict__.copy().items():
+        if not name.startswith(startswith + "_"):
+            continue
+
+        parts = name.split("_", 2)
+        if len(parts) == 2:  # regular command, no parent
+            # wrap it in a command and continue
+            made_command = command(name=parts[1])(member)
+            logger.debug("Made a top-level command %s on plugin %s", parts[1], plugin.__name__)
+            setattr(plugin, name, made_command)
+        else:
+            # we have a parent, so call parent.subcommand() on it instead
+            parent = parts[1]
+
+            # o(n2) loop!
+            def _pred(i):
+                return hasattr(i, "cmd_name") and i.cmd_name == parent
+
+            for _, found_command in inspect.getmembers(plugin, predicate=_pred):
+                break
+            else:
+                raise AttributeError(
+                    f"When doing an autoplugin, could not locate parent command {parent}.\n"
+                    f"You need to make sure that the parent A) exists and B) is before the "
+                    f"current command in the class definition for the autoplugin to resolve the "
+                    f"name properly."
+                ) from None
+
+            made_command = found_command.subcommand(name=parts[2])(member)
+            logger.debug("Made a subcommand %s (parent %s) on plugin %s",
+                         parts[2], parts[1], plugin.__name__)
+            setattr(plugin, name, made_command)
+
+    return plugin
