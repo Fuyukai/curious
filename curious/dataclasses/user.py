@@ -21,14 +21,12 @@ Wrappers for User objects.
 
 import datetime
 import enum
-import typing
 from collections import namedtuple
 
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
-from curious.dataclasses.appinfo import AppInfo, AuthorizedApp
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
-from curious.util import AsyncIteratorWrapper, attrdict
+from curious.util import attrdict
 
 
 class FriendType(enum.IntEnum):
@@ -386,27 +384,3 @@ class BotUser(User):
         A higher level interface to editing the bot's avatar.
         """
         return await self._bot.edit_avatar(path)
-
-    @property
-    def authorized_apps(self) -> 'typing.AsyncIterator[AuthorizedApp]':
-        """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to get all the authorized \
-            apps for this user.
-        """
-        return AsyncIteratorWrapper(self.get_authorized_apps)
-
-    async def get_authorized_apps(self) -> typing.Sequence[AuthorizedApp]:
-        """
-        Gets a list of authorized applications for this user.
-
-        :return: A sequence of :class:`~.AuthorizedApp`.
-        """
-        data = await self._bot.http.get_authorized_apps()
-        final = []
-
-        for item in data:
-            id = int(item.get("id", 0))
-            final.append(AuthorizedApp(id=id, scopes=item.get("scopes", []),
-                                       application=AppInfo(self._bot, **item)))
-
-        return final
