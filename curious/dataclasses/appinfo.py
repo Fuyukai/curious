@@ -18,7 +18,7 @@ Wrappers for Application Info objects.
 
 .. currentmodule:: curious.dataclasses.appinfo
 """
-from typing import List
+from typing import List, Union
 
 from dataclasses import dataclass
 
@@ -92,7 +92,7 @@ class AppInfo(Dataclass):
                                                                  self.name, self.bot)
 
     @property
-    def icon_url(self) -> str:
+    def icon_url(self) -> Union[str, None]:
         """
         :return: The icon url for this bot.
         """

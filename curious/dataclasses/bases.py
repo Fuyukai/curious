@@ -63,7 +63,7 @@ class IDObject(object):
         #: The ID of this object.
         self.id = id
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<{} id={!r}>".format(self.__class__.__name__, self.id)
 
     __str__ = __repr__
@@ -75,13 +75,13 @@ class IDObject(object):
         """
         return datetime.datetime.utcfromtimestamp(((int(self.id) >> 22) + DISCORD_EPOCH) / 1000)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if not hasattr(other, "id"):
             return NotImplemented
 
         return other.id == self.id
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.id)
 
 
