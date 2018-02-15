@@ -36,7 +36,8 @@ class ReactionsPaginator(object):
     BUTTON_FORWARD = "▶"
     BUTTON_STOP = "⏹"
 
-    def __init__(self, content: typing.Union[str, typing.List[str]], channel: Channel,
+    def __init__(self, content: typing.Union[str, typing.List[str], typing.List[Embed]],
+                 channel: Channel,
                  respond_to: typing.Union[Member, User], *,
                  break_at: int = 2000, title: str = None):
         """
@@ -85,8 +86,12 @@ class ReactionsPaginator(object):
         """
         Sends the current page to the channel.
         """
-        embed = Embed(description=self._message_chunks[self.page])
-        embed.set_footer(text="Page {}/{}".format(self.page + 1, len(self._message_chunks)))
+        chunk = self._message_chunks[self.page]
+        if isinstance(chunk, Embed):
+            embed = chunk
+        else:
+            embed = Embed(description=self._message_chunks[self.page])
+            embed.set_footer(text="Page {}/{}".format(self.page + 1, len(self._message_chunks)))
 
         if self._message is None:
             self._message = await self.channel.messages.send(
