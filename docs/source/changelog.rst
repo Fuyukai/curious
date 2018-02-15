@@ -51,6 +51,8 @@ This document displays the differences between each release of curious.
 
  - Enable :mod:`trio` support.
 
+ - Add :func:`.autoplugin` which automatically assigns commands inside a plugin.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------
