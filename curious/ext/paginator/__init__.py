@@ -20,6 +20,7 @@ import typing
 
 import multio
 
+from curious.core.event import ListenerExit
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.member import Member
@@ -133,6 +134,8 @@ class ReactionsPaginator(object):
 
             if self._running:
                 await self._reaction_queue.put(reaction)
+            else:
+                raise ListenerExit
 
         # spawn the consumer task first
         self.bot.events.add_temporary_listener("message_reaction_add", consume_reaction)
@@ -141,28 +144,36 @@ class ReactionsPaginator(object):
         await self.send_current_page()
         await self._add_initial_reactions()
 
-        async for reaction in self._reaction_queue:
-            if reaction.emoji == self.BUTTON_FORWARD:
-                if self.page < len(self._message_chunks) - 1:
-                    self.page += 1
-                else:
-                    self.page = 0
-                await self.send_current_page()
+        try:
+            while True:
+                async with multio.asynclib.timeout_after(120):
+                    reaction = await self._reaction_queue.get()
 
-            if reaction.emoji == self.BUTTON_BACKWARDS:
-                if self.page > 0:
-                    self.page -= 1
-                else:
-                    self.page = len(self._message_chunks) - 1
+                if reaction.emoji == self.BUTTON_FORWARD:
+                    if self.page < len(self._message_chunks) - 1:
+                        self.page += 1
+                    else:
+                        self.page = 0
+                    await self.send_current_page()
 
-                await self.send_current_page()
+                if reaction.emoji == self.BUTTON_BACKWARDS:
+                    if self.page > 0:
+                        self.page -= 1
+                    else:
+                        self.page = len(self._message_chunks) - 1
 
-            if reaction.emoji == self.BUTTON_STOP:
-                # remove all reactions were done here
-                break
+                    await self.send_current_page()
 
-            await self._message.unreact(reaction.emoji, self.respond_to)
+                if reaction.emoji == self.BUTTON_STOP:
+                    # remove all reactions were done here
+                    break
 
+                await self._message.unreact(reaction.emoji, self.respond_to)
+        except multio.asynclib.TaskTimeout:
+            # eat timeouts but nothing else
+            pass
+
+        self._running = False
         # we've broken out of the loop, so remove reactions and cancel the listener
         await self._message.remove_all_reactions()
         self.bot.events.remove_listener_early("message_reaction_add", consume_reaction)
