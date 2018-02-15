@@ -18,9 +18,7 @@ Wrappers for Application Info objects.
 
 .. currentmodule:: curious.dataclasses.appinfo
 """
-from typing import List, Union
-
-from dataclasses import dataclass
+from typing import Union
 
 from curious.dataclasses import guild as dt_guild, user as dt_user
 from curious.dataclasses.bases import Dataclass
@@ -108,17 +106,3 @@ class AppInfo(Dataclass):
 
         await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
 
-
-@dataclass
-class AuthorizedApp:
-    """
-    Represents an authorized app.
-    """
-    #: The ID of the application authorized.
-    id: int
-
-    #: The list of scopes this app was authorized for.
-    scopes: List[str]
-
-    #: The :class:`.AppInfo` for this application.
-    application: 'AppInfo'
