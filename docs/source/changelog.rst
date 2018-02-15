@@ -47,6 +47,10 @@ This document displays the differences between each release of curious.
 
  - Add a ``permissions.pyi`` file for static introspection of the permissions class.
 
+ - Add a :class:`.GuildBanContainer`.
+
+ - Enable :mod:`trio` support.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------
@@ -408,7 +412,7 @@ This document displays the differences between each release of curious.
 
  - Add widget support inside the HTTPClient.
 
- - Fix events inside cogs.
+ - Fix events inside plugins.
 
  - Add new error code mapping to :class:`.HTTPException`.
    This provides clearer display as to what went wrong when performing a
