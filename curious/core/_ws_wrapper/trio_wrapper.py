@@ -67,12 +67,12 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
 
         :param code: The close code to use.
         :param reason: The close reason to use.
+        :param reconnect: If the websocket should reconnect.
         """
         if not reconnect:
             self._cancelled.set()
 
-        await trio.run_sync_in_worker_thread(functools.partial(self._ws.close, code=code,
-                                                               reason=reason))
+        self._ws.close(code=code, reason=reason)
 
     async def send_text(self, text: str) -> None:
         """
@@ -80,7 +80,7 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
 
         :param text: The text to send.
         """
-        await trio.run_sync_in_worker_thread(functools.partial(self._ws.send_text, text))
+        self._ws.send_text(text)
 
     async def __aiter__(self) -> 'AsyncIterator[Event]':
         async for item in self._queue:
