@@ -209,6 +209,10 @@ class HTTPClient(object):
         else:
             headers = self.headers.copy()
 
+        # update reason header
+        if "reason" in kwargs:
+            headers["X-Audit-Log-Reason"] = quote(kwargs["reason"])
+
         # ensure path is escaped
         path = kwargs["path"]
         path = quote(path)
@@ -870,16 +874,17 @@ class HTTPClient(object):
         return data
 
     async def ban_user(self, guild_id: int, user_id: int,
-                       delete_message_days: int = 7):
+                       delete_message_days: int = 7, reason: str = None):
         """
         Bans a user from a guild.
 
         :param guild_id: The ID of the guild to ban on.
         :param user_id: The user ID to ban from the guild.
         :param delete_message_days: The number of days to delete messages from this user.
+        :param reason: The reason for this ban.
         """
         url = Endpoints.GUILD_BAN_USER.format(guild_id=guild_id, user_id=user_id)
-        payload = {}
+        payload = {"reason": reason}
 
         if delete_message_days:
             payload["delete-message-days"] = delete_message_days
@@ -887,16 +892,18 @@ class HTTPClient(object):
         data = await self.put(url, bucket="bans:{}".format(guild_id), json=payload)
         return data
 
-    async def unban_user(self, guild_id: int, user_id: int):
+    async def unban_user(self, guild_id: int, user_id: int, reason: str = None):
         """
         Unbans a user from a guild.
 
         :param guild_id: The ID of the guild to unban on.
         :param user_id: The user ID that has been forgiven.
+        :param reason: The reason for this unban.
         """
+        # TODO: Do reasons properly
         url = Endpoints.GUILD_BAN_USER.format(guild_id=guild_id, user_id=user_id)
 
-        data = await self.delete(url, bucket="bans:{}".format(guild_id))
+        data = await self.delete(url, bucket="bans:{}".format(guild_id), reason=reason)
         return data
 
     async def create_guild(self, name: str, region: str = None, icon: str = None,
