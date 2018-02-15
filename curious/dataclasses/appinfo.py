@@ -27,21 +27,6 @@ from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
 
 
-@dataclass
-class AuthorizedApp:
-    """
-    Represents an authorized app.
-    """
-    #: The ID of the application authorized.
-    id: int
-
-    #: The list of scopes this app was authorized for.
-    scopes: List[str]
-
-    #: The :class:`.AppInfo` for this application.
-    application: 'AppInfo'
-
-
 class AppInfo(Dataclass):
     """
     Represents the application info for an OAuth2 application.
@@ -80,7 +65,7 @@ class AppInfo(Dataclass):
         self._icon_hash = self._application.get("icon", None)  # type: str
 
         #: The bot :class:`.User` associated with this application, if available.
-        self.bot = None   # type: dt_user.User
+        self.bot = None  # type: dt_user.User
 
         if "bot" in kwargs:
             self.bot = self._bot.state.make_user(kwargs.get("bot", {}))
@@ -122,3 +107,18 @@ class AppInfo(Dataclass):
             raise CuriousError("This bot requires code grant")
 
         await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
+
+
+@dataclass
+class AuthorizedApp:
+    """
+    Represents an authorized app.
+    """
+    #: The ID of the application authorized.
+    id: int
+
+    #: The list of scopes this app was authorized for.
+    scopes: List[str]
+
+    #: The :class:`.AppInfo` for this application.
+    application: 'AppInfo'
