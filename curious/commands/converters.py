@@ -109,7 +109,7 @@ def convert_int(ann, ctx, arg: str) -> int:
     Converts an argument into an integer.
     """
     try:
-        return int(arg)
+        return int(arg, 0)
     except ValueError as e:
         raise ConversionFailedError(ctx, arg, int, "Invalid integer") from e
 
