@@ -296,7 +296,7 @@ class ChannelMessageWrapper(object):
 
     async def upload(self, fp: '_typing.Union[bytes, str, PathLike, _typing.IO]',
                      *,
-                     filename: str = "unknown.bin",
+                     filename: str = None,
                      message_content: '_typing.Optional[str]' = None) -> 'dt_message.Message':
         """
         Uploads a message to this channel.
@@ -332,13 +332,17 @@ class ChannelMessageWrapper(object):
 
         if isinstance(fp, bytes):
             file_content = fp
-        elif isinstance(fp, (str, PathLike)):
+        elif isinstance(fp, pathlib.Path):
             if filename is None:
-                path = pathlib.Path(fp)
+                filename = fp.parts[-1]
+
+            file_content = fp.read_bytes()
+        elif isinstance(fp, (str, PathLike)):
+            path = pathlib.Path(fp)
+            if filename is None:
                 filename = path.parts[-1]
 
-            with open(fp, mode='rb') as f:
-                file_content = f.read()
+            file_content = path.read_bytes()
         elif isinstance(fp, _typing.IO) or hasattr(fp, "read"):
             file_content = fp.read()
 
@@ -346,6 +350,9 @@ class ChannelMessageWrapper(object):
                 file_content = file_content.encode("utf-8")
         else:
             raise ValueError("Got unknown type for upload")
+
+        if filename is None:
+            filename = "unknown.bin"
 
         data = await self.channel._bot.http.send_file(self.channel.id, file_content,
                                                       filename=filename, content=message_content)

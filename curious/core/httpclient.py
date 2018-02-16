@@ -20,6 +20,8 @@ The main Discord HTTP interface.
 """
 import datetime
 import logging
+import mimetypes
+import random
 import time
 import typing
 import weakref
@@ -60,6 +62,88 @@ def parse_date_header(header: str) -> datetime.datetime:
     """
     dt = datetime.datetime(*parsedate(header)[:6], tzinfo=pytz.UTC)
     return dt
+
+
+def encode_multipart(fields, files, boundary=None):
+    r"""Encode dict of form fields and dict of files as multipart/form-data.
+    Return tuple of (body_string, headers_dict). Each value in files is a dict
+    with required keys 'filename' and 'content', and optional 'mimetype' (if
+    not specified, tries to guess mime type or uses 'application/octet-stream').
+    >>> body, headers = encode_multipart({'FIELD': 'VALUE'},
+    ...                                  {'FILE': {'filename': 'F.TXT', 'content': 'CONTENT'}},
+    ...                                  boundary='BOUNDARY')
+    >>> print('\n'.join(repr(l) for l in body.split('\r\n')))
+    '--BOUNDARY'
+    'Content-Disposition: form-data; name="FIELD"'
+    ''
+    'VALUE'
+    '--BOUNDARY'
+    'Content-Disposition: form-data; name="FILE"; filename="F.TXT"'
+    'Content-Type: text/plain'
+    ''
+    'CONTENT'
+    '--BOUNDARY--'
+    ''
+    >>> print(sorted(headers.items()))
+    [('Content-Length', '193'), ('Content-Type', 'multipart/form-data; boundary=BOUNDARY')]
+    >>> len(body)
+    193
+    Copied from: https://code.activestate.com/recipes/578668-encode-multipart-form-data-for-uploading-files-via/
+    """
+    _BOUNDARY_CHARS = "oanfwenfuwengvwenvnewuifn34fy8u0newfwer69420"
+
+    def escape_quote(s):
+        return s.replace(b'"', b'\\"')
+
+    if boundary is None:
+        boundary = b''.join(random.choice(_BOUNDARY_CHARS).encode() for i in range(30))
+    lines = []
+
+    for name, value in fields.items():
+        if isinstance(name, str):
+            name = name.encode()
+        else:
+            name = str(name).encode()
+
+        if isinstance(value, str):
+            value = value.encode()
+        else:
+            value = str(value).encode()
+
+        lines.extend((
+            b'--%s' % boundary,
+            b'Content-Disposition: form-data; name="%s"' % escape_quote(name),
+            b'',
+            value,
+        ))
+
+    for name, value in files.items():
+        filename = value['filename']
+        if 'mimetype' in value:
+            mimetype = value['mimetype']
+        else:
+            mimetype = mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        lines.extend((
+            b'--%s' % boundary,
+            b'Content-Disposition: form-data; name="%s"; filename="%s"' % (
+                escape_quote(name.encode()), escape_quote(filename.encode())),
+            b'Content-Type: %s' % mimetype.encode(),
+            b'',
+            value['content'],
+        ))
+
+    lines.extend((
+        b'--%s--' % boundary,
+        b'',
+    ))
+    body = b'\r\n'.join(lines)
+
+    headers = {
+        'Content-Type': 'multipart/form-data; boundary=%s' % boundary.decode(),
+        'Content-Length': str(len(body)),
+    }
+
+    return body, headers
 
 
 # more of a namespace
@@ -206,6 +290,7 @@ class HTTPClient(object):
         headers = kwargs.get("headers", None)
         if headers is not None:
             headers.update(self.headers.copy())
+            kwargs.pop("headers")
         else:
             headers = self.headers.copy()
 
@@ -608,10 +693,16 @@ class HTTPClient(object):
             payload["content"] = content
 
         files = {
-            filename: content
+            "file": {
+                "filename": filename,
+                "content": file_content
+            }
         }
+
+        body, headers = encode_multipart(payload, files)
+
         data = await self.post(url, "messages:{}".format(channel_id),
-                               body=payload, files=files)
+                               data=body, headers=headers)
         return data
 
     async def delete_message(self, channel_id: int, message_id: int):
