@@ -608,10 +608,7 @@ class HTTPClient(object):
             payload["content"] = content
 
         files = {
-            "file": {
-                "filename": filename,
-                "content": file_content
-            }
+            filename: content
         }
         data = await self.post(url, "messages:{}".format(channel_id),
                                body=payload, files=files)
