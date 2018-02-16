@@ -22,9 +22,10 @@ import inspect
 import types
 from typing import Any, Callable, List, Tuple, Type, Union
 
-from curious.commands.converters import convert_channel, convert_float, convert_int, \
-    convert_member, \
-    convert_role
+import typing_inspect
+
+from curious.commands.converters import convert_channel, convert_float, convert_int, convert_list, \
+    convert_member, convert_role
 from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
@@ -45,7 +46,8 @@ class Context(object):
         Member: convert_member,
         Role: convert_role,
         # Guild: _convert_guild,
-        str: lambda ctx, arg: arg,
+        List: convert_list,
+        str: lambda ann, ctx, arg: arg,
         int: convert_int,
         float: convert_float,
     }
@@ -129,21 +131,25 @@ class Context(object):
         # no match
         return False
 
-    def _lookup_converter(self, annotation: Type[Any]) -> 'Callable[[Context, str], Any]':
+    def _lookup_converter(self, annotation: Type[Any]) -> 'Callable[[Any, Context, str], Any]':
         """
         Looks up a converter for the specified annotation.
         """
+        origin = typing_inspect.get_origin(annotation)
+        if origin is not None:
+            annotation = origin
+
         if annotation in self._converters:
             return self._converters[annotation]
 
         if annotation is inspect.Parameter.empty:
-            return lambda ctx, i: i
+            return lambda ann, ctx, i: i
 
         # str etc
         if callable(annotation):
             return annotation
 
-        return lambda ctx, i: i
+        return lambda ann, ctx, i: i
 
     async def _get_converted_args(self, func) -> Tuple[tuple, dict]:
         """

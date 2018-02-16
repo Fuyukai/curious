@@ -1,4 +1,3 @@
-
 # This file is part of curious.
 #
 # curious is free software: you can redistribute it and/or modify
@@ -21,6 +20,8 @@ Misc utilities used in commands related things.
 import collections
 import inspect
 from typing import Callable, Iterable, List, Union
+
+import typing_inspect
 
 from curious.commands.exc import MissingArgumentError
 from curious.core.client import Client
@@ -100,9 +101,9 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
 
             converter = ctx._lookup_converter(param.annotation)
             if len(f) == 1:
-                final_kwargs[param.name] = converter(ctx, f[0])
+                final_kwargs[param.name] = converter(param.annotation, ctx, f[0])
             else:
-                final_kwargs[param.name] = converter(ctx, " ".join(f))
+                final_kwargs[param.name] = converter(param.annotation, ctx, " ".join(f))
             continue
 
         if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
@@ -154,6 +155,15 @@ def get_usage(func, invoked_as: str = None) -> str:
 
     signature = inspect.signature(func)
 
+    # TODO: Replace this with a proper one
+    def stringify(ann):
+        origin = typing_inspect.get_origin(ann)
+        if not origin:
+            return ann.__name__
+
+        args = typing_inspect.get_args(ann, evaluate=True)
+        return f"{origin.__name__}[{', '.join(arg.__name__ for arg in args)}]"
+
     for n, (name, param) in enumerate(signature.parameters.items()):
         # always skip the first arg, as it's self/ctx
         if n == 0:
@@ -170,20 +180,20 @@ def get_usage(func, invoked_as: str = None) -> str:
         if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
                           inspect.Parameter.POSITIONAL_ONLY]:
             if param.annotation is not inspect.Parameter.empty:
-                s = "<{}: {}>".format(param.name, param.annotation.__name__)
+                s = "<{}: {}>".format(param.name, stringify(param.annotation))
             else:
                 s = "<{}>".format(param.name)
 
         elif param.kind in [inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_POSITIONAL]:
             if param.default is not inspect.Parameter.empty:
                 if param.annotation is not inspect.Parameter.empty:
-                    s = "[{}: {} (default: {})]".format(param.name, param.annotation.__name__,
+                    s = "[{}: {} (default: {})]".format(param.name, stringify(param.annotation),
                                                         repr(param.default))
                 else:
                     s = "[{} (default: {})]".format(param.name, repr(param.default))
             else:
                 if param.annotation is not inspect.Parameter.empty:
-                    s = "<{}: {}>".format(param.name, param.annotation.__name__)
+                    s = "<{}: {}>".format(param.name, stringify(param.annotation))
                 else:
                     s = "<{}>".format(param.name)
         else:
@@ -196,7 +206,8 @@ def get_usage(func, invoked_as: str = None) -> str:
 
 # This function is a modified version of the code taken from https://stackoverflow.com/a/43035638.
 # This function is licenced under the MIT Licence. (C) 2017 THE_MAD_KING.
-# See: https://meta.stackexchange.com/questions/272956/a-new-code-license-the-mit-this-time-with-attribution-required
+# See: https://meta.stackexchange.com/questions/272956/a-new-code-license-the-mit-this-time-with
+# -attribution-required
 # You can find a copy of the MIT Licence at https://opensource.org/licenses/MIT.
 def split_message_content(content: str, delim: str = " ") -> List[str]:
     """

@@ -18,13 +18,17 @@ Converter methods.
 
 .. currentmodule:: curious.commands.converters
 """
+from typing import Any, List
+
+import typing_inspect
+
 from curious.commands.exc import ConversionFailedError
 from curious.dataclasses.channel import Channel
 from curious.dataclasses.member import Member
 from curious.dataclasses.role import Role
 
 
-def convert_member(ctx, arg: str) -> Member:
+def convert_member(ann, ctx, arg: str) -> Member:
     """
     Converts an argument into a Member.
     """
@@ -52,7 +56,7 @@ def convert_member(ctx, arg: str) -> Member:
     return member
 
 
-def convert_channel(ctx, arg: str) -> Channel:
+def convert_channel(ann, ctx, arg: str) -> Channel:
     """
     Converts an argument into a Channel.
     """
@@ -76,7 +80,7 @@ def convert_channel(ctx, arg: str) -> Channel:
     return channel
 
 
-def convert_role(ctx, arg: str) -> Role:
+def convert_role(ann, ctx, arg: str) -> Role:
     """
     Converts an argument into a :class:`.Role`.
     """
@@ -100,7 +104,7 @@ def convert_role(ctx, arg: str) -> Role:
     return role
 
 
-def convert_int(ctx, arg: str) -> int:
+def convert_int(ann, ctx, arg: str) -> int:
     """
     Converts an argument into an integer.
     """
@@ -110,7 +114,7 @@ def convert_int(ctx, arg: str) -> int:
         raise ConversionFailedError(ctx, arg, int, "Invalid integer") from e
 
 
-def convert_float(ctx, arg: str) -> float:
+def convert_float(ann, ctx, arg: str) -> float:
     """
     Converts an argument into a float.
     """
@@ -118,3 +122,18 @@ def convert_float(ctx, arg: str) -> float:
         return float(arg)
     except ValueError as e:
         raise ConversionFailedError(ctx, arg, float, "Invalid float") from e
+
+
+def convert_list(ann, ctx, arg: str) -> List[Any]:
+    """
+    Converts a :class:`typing.List`.
+    """
+    internal = typing_inspect.get_args(ann)[0]
+    converter = ctx._lookup_converter(internal)
+    sp = arg.split(" ")
+    results = []
+
+    for arg in sp:
+        results.append(converter(internal, ctx, arg))
+
+    return results
