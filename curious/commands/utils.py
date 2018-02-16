@@ -23,7 +23,7 @@ from typing import Callable, Iterable, List, Union
 
 import typing_inspect
 
-from curious.commands.exc import MissingArgumentError
+from curious.commands.exc import ConversionFailedError, MissingArgumentError
 from curious.core.client import Client
 from curious.dataclasses.message import Message
 from curious.util import replace_quotes
@@ -54,6 +54,14 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
     final_args = []
     final_kwargs = {}
 
+    def _with_reraise(func, ann, ctx, arg):
+        try:
+            return func(ann, ctx, arg)
+        except ConversionFailedError:
+            raise
+        except Exception as e:
+            raise ConversionFailedError(ctx, arg, ann, message="Converter error") from e
+
     args_it = iter(tokens)
     for n, (name, param) in enumerate(signature.parameters.items()):
         if n == 0:
@@ -83,7 +91,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             # Only add it to the final_args, then continue the loop.
             arg = replace_quotes(arg)
             converter = ctx._lookup_converter(param.annotation)
-            final_args.append(converter(ctx, arg))
+            final_args.append(_with_reraise(converter, param.annotation, ctx, arg))
             continue
 
         if param.kind in [inspect.Parameter.KEYWORD_ONLY]:
@@ -101,9 +109,10 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
 
             converter = ctx._lookup_converter(param.annotation)
             if len(f) == 1:
-                final_kwargs[param.name] = converter(param.annotation, ctx, f[0])
+                final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
             else:
-                final_kwargs[param.name] = converter(param.annotation, ctx, " ".join(f))
+                final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
+                                                         " ".join(f))
             continue
 
         if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
@@ -120,7 +129,9 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                 f.append(next_arg)
 
             converter = ctx._lookup_converter(param.annotation)
-            final_args.append(converter(ctx, " ".join(f)))
+            final_args.append(
+                _with_reraise(converter, param.annotation, ctx, " ".join(f))
+            )
 
         if param.kind in [inspect.Parameter.VAR_KEYWORD]:
             # no
