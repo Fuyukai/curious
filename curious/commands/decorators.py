@@ -20,7 +20,7 @@ Decorators to annotate function objects.
 """
 import inspect
 import logging
-from typing import List, Type
+from typing import Any, List, Type
 
 from curious.commands import plugin as md_plugin
 from curious.commands.ratelimit import BucketNamer, CommandRateLimit
@@ -56,21 +56,27 @@ def command(*,
 
     # wrapper function that actually marks the object
     def inner(func):
-        func.is_cmd = True
-        func.cmd_name = name or func.__name__
-        func.cmd_description = description or get_description(func)
-        func.cmd_aliases = aliases or []
-        func.cmd_subcommand = False
-        func.cmd_subcommands = []
-        func.cmd_parent = None
-        func.cmd_hidden = hidden
-        func.cmd_conditions = getattr(func, "cmd_conditions", [])
-        func.cmd_ratelimits = getattr(func, "cmd_ratelimits", [])
+        def set(attr: str, value: Any):
+            try:
+                return getattr(func, attr)
+            except AttributeError:
+                setattr(func, attr, value)
+
+        set("is_command", True)
+        set("cmd_name", name or func.__name__)
+        set("cmd_description", description or get_description(func))
+        set("cmd_aliases", [])
+        set("cmd_subcommand", False)
+        set("cmd_subcommands", [])
+        set("cmd_parent", None)
+        set("cmd_hidden", False)
+        set("cmd_conditions", [])
+        set("cmd_ratelimits", [])
 
         # annotate command object with any extra
         for ann_name, annotation in kwargs.items():
             ann_name = "cmd_" + name
-            setattr(func, ann_name, annotation)
+            set(ann_name, annotation)
 
         func.subcommand = _subcommand(func)
         return func
@@ -120,6 +126,9 @@ def _subcommand(parent):
     def inner(**kwargs):
         # MULTIPLE LAYERS
         def inner_2(func):
+            if not hasattr(func, "is_command"):
+                raise TypeError("Cannot be a subcommand of a non-command")
+
             cmd = command(**kwargs)(func)
             cmd.cmd_subcommand = True
             cmd.cmd_parent = parent
