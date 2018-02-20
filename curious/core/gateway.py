@@ -200,6 +200,10 @@ class GatewayHandler(object):
         self.heartbeat_stats.heartbeats += 1
         self.heartbeat_stats.last_heartbeat_time = time.monotonic()
 
+        if self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
+            self.logger.warning("Connection has zombied, reconnecting.")
+            return await self.close(code=1006, reason="Zombied connection", reconnect=True)
+
         self.logger.debug("Heartbeating with sequence {}".format(self.gw_state.sequence))
         payload = {
             "op": GatewayOp.HEARTBEAT,
