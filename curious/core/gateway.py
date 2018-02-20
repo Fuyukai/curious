@@ -295,7 +295,7 @@ class GatewayHandler(object):
 
         self.websocket = await ws_open(self.gw_state.gateway_url)
 
-    async def events(self) -> AsyncGenerator[Any]:
+    async def events(self) -> AsyncGenerator[None, Any]:
         """
         Returns an async generator used to iterate over the events received by this websocket.
         """

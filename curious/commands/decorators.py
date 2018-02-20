@@ -62,14 +62,14 @@ def command(*,
             except AttributeError:
                 setattr(func, attr, value)
 
-        set("is_command", True)
+        set("is_cmd", True)
         set("cmd_name", name or func.__name__)
         set("cmd_description", description or get_description(func))
-        set("cmd_aliases", [])
+        set("cmd_aliases", aliases or [])
         set("cmd_subcommand", False)
         set("cmd_subcommands", [])
         set("cmd_parent", None)
-        set("cmd_hidden", False)
+        set("cmd_hidden", hidden)
         set("cmd_conditions", [])
         set("cmd_ratelimits", [])
 
@@ -126,7 +126,7 @@ def _subcommand(parent):
     def inner(**kwargs):
         # MULTIPLE LAYERS
         def inner_2(func):
-            if not hasattr(func, "is_command"):
+            if not hasattr(func, "is_cmd"):
                 raise TypeError("Cannot be a subcommand of a non-command")
 
             cmd = command(**kwargs)(func)

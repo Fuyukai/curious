@@ -21,6 +21,8 @@ Classes for plugin objects.
 import inspect
 from collections import OrderedDict
 
+import multio
+
 from curious.core import client as md_client
 
 
@@ -37,6 +39,9 @@ class Plugin(metaclass=PluginMeta):
         #: The client for this plugin.
         self.client = client
 
+        #: The task group for this plugin.
+        self.task_group = None
+
     async def load(self) -> None:
         """
         Called when this plugin is loaded.
@@ -44,6 +49,12 @@ class Plugin(metaclass=PluginMeta):
         By default, this does nothing. It is meant to be overridden to customize behaviour.
         """
         pass
+
+    async def spawn(self, cofunc, *args):
+        """
+        Spawns a task using this plugin's task group.
+        """
+        return await multio.asynclib.spawn(self.task_group, cofunc, *args)
 
     async def unload(self) -> None:
         """
