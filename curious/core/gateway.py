@@ -25,7 +25,7 @@ import sys
 import time
 import zlib
 from collections import Counter
-from typing import AsyncContextManager, List, Union
+from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
 import multio
 from async_generator import asynccontextmanager
@@ -169,7 +169,7 @@ class GatewayHandler(object):
         dumped = json.dumps(data)
         return await self.websocket.send_text(dumped)
 
-    async def send_identify(self):
+    async def send_identify(self) -> None:
         """
         Sends an IDENTIFY to Discord.
         """
@@ -279,19 +279,19 @@ class GatewayHandler(object):
             This only opens the websocket.
         """
         if multio.asynclib.lib_name == "curio":
-            from curious.core._ws_wrapper.curio_wrapper import CurioWebsocketWrapper as wrapper
-            open = wrapper.open
+            from curious.core._ws_wrapper.curio_wrapper import CurioWebsocketWrapper as Wrapper
+            ws_open = Wrapper.open
         elif multio.asynclib.lib_name == "trio":
-            from curious.core._ws_wrapper.trio_wrapper import TrioWebsocketWrapper as wrapper
-            open = lambda url: wrapper.open(url, self.task_group)
+            from curious.core._ws_wrapper.trio_wrapper import TrioWebsocketWrapper as Wrapper
+            ws_open = lambda url: Wrapper.open(url, self.task_group)
         else:
             raise RuntimeError("Unsupported lib: " + multio.asynclib.lib_name)
 
-        self.logger.info("Using %s for the gateway", wrapper.__name__)
+        self.logger.info("Using %s for the gateway", Wrapper.__name__)
 
-        self.websocket = await open(self.gw_state.gateway_url)
+        self.websocket = await ws_open(self.gw_state.gateway_url)
 
-    async def events(self):
+    async def events(self) -> AsyncGenerator[Any]:
         """
         Returns an async generator used to iterate over the events received by this websocket.
         """
