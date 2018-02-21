@@ -305,7 +305,7 @@ class HTTPClient(object):
 
         # temporary
         # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
-        if not 'uri' in kwargs:
+        if 'uri' not in kwargs:
             kwargs["uri"] = Endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
         else:
             kwargs.pop("path", None)
