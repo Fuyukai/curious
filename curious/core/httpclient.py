@@ -305,7 +305,11 @@ class HTTPClient(object):
 
         # temporary
         # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
-        kwargs["uri"] = Endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+        if not 'uri' in kwargs:
+            kwargs["uri"] = Endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+        else:
+            kwargs.pop("path", None)
+
         return await asks.request(*args, headers=headers, timeout=5, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
