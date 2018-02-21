@@ -424,7 +424,7 @@ class Member(Dataclass):
 
         :param delete_message_days: The number of days of messages to delete.
         """
-        return await self.guild.ban(self, delete_message_days=delete_message_days)
+        return await self.guild.bans.add(self, delete_message_days=delete_message_days)
 
     async def kick(self):
         """
