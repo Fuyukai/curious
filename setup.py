@@ -32,7 +32,7 @@ setup(
     },
     packages=['curious', 'curious.core', 'curious.core._ws_wrapper',
               'curious.commands', 'curious.dataclasses',
-              'curious.voice', 'curious.ext.paginator', 'curious.ipc'],
+              'curious.ext.paginator', 'curious.ipc'],
     url='https://github.com/SunDwarf/curious',
     license='LGPLv3',
     author='Laura Dickinson',
