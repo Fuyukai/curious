@@ -50,9 +50,10 @@ from curious.core.event import EventContext, event
 from curious.core.gateway import open_websocket, GatewayHandler
 from curious.core.state import GuildStore, State
 from curious.dataclasses.appinfo import AppInfo
+from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.channel import Channel, ChannelType
-from curious.dataclasses.embed import Attachment, Embed
+from curious.dataclasses.embed import Embed
 from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import ContentFilterLevel, Guild, GuildChannelWrapper, \
     GuildEmojiWrapper, GuildRoleWrapper, MFALevel, NotificationLevel, VerificationLevel

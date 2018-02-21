@@ -25,8 +25,9 @@ import typing
 from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, guild as dt_guild, \
     invite as dt_invite, member as dt_member, role as dt_role, user as dt_user, \
     webhook as dt_webhook
+from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.bases import Dataclass
-from curious.dataclasses.embed import Attachment, Embed
+from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, ErrorCode, HTTPException, PermissionsError
 from curious.util import AsyncIteratorWrapper, to_datetime
 
@@ -113,11 +114,11 @@ class Message(Dataclass):
         for embed in kwargs.get("embeds", []):
             self.embeds.append(Embed(**embed))
 
-        #: The list of attachments this message contains.
+        #: The list of :class:`.Attachment` this message contains.
         self.attachments = []
 
         for attachment in kwargs.get("attachments", []):
-            self.attachments.append(Attachment(**attachment))
+            self.attachments.append(Attachment(bot=self._bot, **attachment))
 
         #: The mentions for this message.
         #: This is UNORDERED.

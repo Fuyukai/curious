@@ -24,25 +24,6 @@ import datetime
 from curious.util import attrdict
 
 
-# TODO: Turn this into a real class
-class Attachment(attrdict):
-    """
-    Represents an attachment in a message.
-    """
-    def __init__(self, **kwargs):
-        self.id = int(kwargs.get("id", 0))
-        attrdict.__init__(self, **kwargs)
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Attachment):
-            return NotImplemented
-
-        return self.id == other.id
-
-    def __hash__(self):
-        return hash(self.id)
-
-
 class Embed(object):  # not an IDObject! Embeds don't have IDs.
     """
     Represents an Embed object on Discord.
