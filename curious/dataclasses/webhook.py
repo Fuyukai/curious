@@ -44,7 +44,7 @@ class Webhook(Dataclass):
     __slots__ = "user", "guild_id", "channel_id", "token", "owner", \
                 "default_name", "_default_avatar"
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, **kwargs) -> None:
         # Use the webhook ID is provided (i.e created from a message object).
         # If that doesn't exist, we use the ID of the data instead (it's probably right!).
         super().__init__(kwargs.get("webhook_id", kwargs.get("id")), cl=client)
@@ -71,7 +71,7 @@ class Webhook(Dataclass):
         #: The default avatar of this webhook.
         self._default_avatar = None  # type: str
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<Webhook id={} name={} channel={} owner={}>".format(self.id, self.name,
                                                                     repr(self.channel),
                                                                     repr(self.owner))
@@ -172,7 +172,7 @@ class Webhook(Dataclass):
         if self.token is not None:
             # edit with token, don't pass to guild
             data = await self._bot.http.edit_webhook_with_token(self.id, name=name, avatar=avatar)
-            self._default_name = data.get("name")
+            self.default_name = data.get("name")
             self._default_avatar = data.get("avatar")
 
             # Update the user too

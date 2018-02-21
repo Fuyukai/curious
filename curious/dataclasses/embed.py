@@ -167,7 +167,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
 
         return self
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         """
         Converts this embed into a flattened dict.
         """
