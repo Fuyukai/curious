@@ -21,7 +21,6 @@ Contains the class for the commands manager for a client.
 import importlib
 import inspect
 import logging
-import math
 import sys
 import traceback
 import typing
@@ -182,15 +181,6 @@ class CommandsManager(object):
         # call load, of course
         await instance.load()
 
-        # make the task group for this plugin
-        async def closure():
-            async with multio.asynclib.task_manager() as tg:
-                # sleeps forever, basically
-                instance.task_group = tg
-                await multio.asynclib.sleep(math.inf)
-
-        await multio.asynclib.spawn(self.client.task_manager, closure)
-
         self.plugins[plugin_name] = instance
         if module is not None:
             self._module_plugins[module].append(instance)
@@ -213,7 +203,10 @@ class CommandsManager(object):
                 break
 
         if p is not None:
-            await multio.asynclib.cancel_task_group(p.task_group)
+            # cancel the task group used for this plugin, if it's running
+            if p.task_group is not None:
+                await multio.asynclib.cancel_task_group(p.task_group)
+
             await p.unload()
 
         return p

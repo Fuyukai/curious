@@ -19,6 +19,7 @@ Classes for plugin objects.
 .. currentmodule:: curious.commands.plugin
 """
 import inspect
+import logging
 from collections import OrderedDict
 
 import multio
@@ -54,7 +55,27 @@ class Plugin(metaclass=PluginMeta):
         """
         Spawns a task using this plugin's task group.
         """
-        return await multio.asynclib.spawn(self.task_group, cofunc, *args)
+        if self.task_group is None:
+            # spawn a new task group function
+            async def task_group_magic():
+                logger = logging.getLogger(__name__)
+                try:
+                    async with multio.asynclib.task_manager() as tg:
+                        self.task_group = tg
+                        await multio.asynclib.spawn(tg, cofunc, *args)
+                except multio.asynclib.TaskGroupError as e:
+                    errors = multio.asynclib.unwrap_taskgrouperror(e)
+                    for error in errors:
+                        logger.exception("Plugin task group crashed!", exc_info=error)
+                except Exception as e:
+                    logger.exception("Plugin task group crashed!", exc_info=e)
+                finally:
+                    self.task_group = None
+
+            await multio.asynclib.spawn(self.client.task_manager, task_group_magic)
+        else:
+            # spawn using the current one
+            await multio.asynclib.spawn(self.task_group, cofunc, *args)
 
     async def unload(self) -> None:
         """
