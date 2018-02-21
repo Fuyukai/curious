@@ -24,6 +24,7 @@ import typing
 import weakref
 
 from curious.dataclasses import member as dt_member, role as dt_role
+from curious.exc import PermissionsError
 
 
 # I'm far too lazy to type out each permission bit manually.
@@ -138,7 +139,14 @@ def build_permissions_class(name: str = "Permissions") -> type:
         name: property(fget=_get_permission_getter(name, bit),
                        fset=_get_permission_setter(name, bit),
                        doc=_doc_base.format(name, bit)) for (name, bit) in permissions.items()
-        }
+    }
+
+    def raise_for_permission(self, permission: typing.Union[str]) -> None:
+        """
+        Raises :class:`.PermissionsError` if this permission does not have the required bit.
+        """
+        if not getattr(self, permission):
+            raise PermissionsError(permission)
 
     # Create some useful classmethods.
     @classmethod
@@ -165,6 +173,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
         "__repr__": lambda self: "<Permissions value={}>".format(self.bitfield),
         "all": all,
         "none": none,
+        "raise_for_permission": raise_for_permission,
         "__slots__": ("bitfield",),
         **properties
     }
@@ -226,7 +235,7 @@ class Overwrite(object):
                                                                                self.allow,
                                                                                self.deny)
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> bool:
         """
         Attribute getter helper.
 

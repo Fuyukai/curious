@@ -1,13 +1,19 @@
 """
 Permissions pyi file.
 """
+from typing import Any, Union
+
+from curious.dataclasses.channel import Channel
+from curious.dataclasses.member import Member
+from curious.dataclasses.role import Role
+
 
 class Permissions(object):
     __slots__ = 'bitfield',
-    bitfield: int
-
     def __new__(cls, value: int, **kwargs): ...
-    def __init__(self, value: int, **kwargs): ...
+    def __init__(self, value: int, **kwargs):
+        self.bitfield: int = value
+
     def _get_bit(self, bit: int) -> bool: ...
     def _set_bit(self, bit: int, value: bool): ...
     def __repr__(self) -> str: ...
@@ -16,6 +22,8 @@ class Permissions(object):
     def all(cls) -> Permissions: ...
     @classmethod
     def none(cls) -> Permissions: ...
+
+    def raise_for_permission(self, permission: Union[str, int]) -> None:
 
     @property
     def create_instant_invite(self) -> bool: ...
@@ -73,3 +81,18 @@ class Permissions(object):
     def manage_webhooks(self) -> bool: ...
     @property
     def manage_emojis(self) -> bool: ...
+
+
+class Overwrite(object):
+     __slots__ = "target", "channel", "allow", "deny"
+
+     def __init__(self, allow: Union[int, Permissions], deny: Union[int, Permissions],
+                  obb: Union[Member, Role],
+                  channel: Channel = None):
+         self.allow = allow
+         self.deny = deny
+         self.target = obb
+         self.channel = channel
+     def __repr__(self) -> str: ...
+     def __getattr__(self, item) -> bool: ...
+     def __setattr__(self, item: str, value: Any): ...

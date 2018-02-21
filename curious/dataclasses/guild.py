@@ -495,6 +495,9 @@ class GuildBanContainer(object):
         self._guild = guild
 
     async def __aiter__(self) -> 'typing.AsyncGenerator[GuildBan]':
+        if not self._guild.me.guild_permissions.ban_members:
+            raise PermissionsError("ban_members")
+
         bans = await self._guild._bot.http.get_bans(self._guild.id)
 
         for ban in bans:
