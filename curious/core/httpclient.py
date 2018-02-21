@@ -235,14 +235,12 @@ class HTTPClient(object):
     def __init__(self, token: str, *,
                  bot: bool = True,
                  max_connections: int = 10):
-        self.USER_AGENT = curious.USER_AGENT
-
         #: The token used for all requests.
         self.token = token
 
         # Calculated headers
         headers = {
-            "User-Agent": self.USER_AGENT,
+            "User-Agent": curious.USER_AGENT,
             "Authorization": "{}{}".format("Bot " if bot else "", self.token)
         }
 
