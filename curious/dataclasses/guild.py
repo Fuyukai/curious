@@ -41,11 +41,6 @@ from curious.dataclasses.presence import Presence, Status
 from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
-try:
-    from curious.voice import voice_client
-except ImportError:
-    voice_client = None
-
 default_var = typing.TypeVar("T")
 
 
@@ -1106,26 +1101,26 @@ class Guild(Dataclass):
         """
         await self._bot.http.leave_guild(self.id)
 
-    async def connect_to_voice(self, channel: 'dt_channel.Channel') -> 'voice_client.VoiceClient':
-        """
-        Connects to a voice channel in this guild.
-
-        :param channel: The :class:`~.Channel` to connect to.
-        :return: The :class:`VoiceClient` that was connected to this guild.
-        """
-        if voice_client is None:
-            raise RuntimeError("Cannot connect to voice - voice support is not installed")
-
-        if channel.guild != self:
-            raise CuriousError("Cannot use channel from a different guild")
-
-        if self.voice_client is not None and self.voice_client.open:
-            raise CuriousError("Voice client already exists in this guild")
-
-        gw = self._bot._gateways[self.shard_id]
-        self.voice_client = await voice_client.VoiceClient.create(self._bot, gw, channel)
-        await self.voice_client.connect()
-        return self.voice_client
+    # async def connect_to_voice(self, channel: 'dt_channel.Channel') -> 'voice_client.VoiceClient':
+    #     """
+    #     Connects to a voice channel in this guild.
+    #
+    #     :param channel: The :class:`~.Channel` to connect to.
+    #     :return: The :class:`VoiceClient` that was connected to this guild.
+    #     """
+    #     if voice_client is None:
+    #         raise RuntimeError("Cannot connect to voice - voice support is not installed")
+    #
+    #     if channel.guild != self:
+    #         raise CuriousError("Cannot use channel from a different guild")
+    #
+    #     if self.voice_client is not None and self.voice_client.open:
+    #         raise CuriousError("Voice client already exists in this guild")
+    #
+    #     gw = self._bot._gateways[self.shard_id]
+    #     self.voice_client = await voice_client.VoiceClient.create(self._bot, gw, channel)
+    #     await self.voice_client.connect()
+    #     return self.voice_client
 
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """

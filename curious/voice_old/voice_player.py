@@ -21,7 +21,7 @@ import threading
 import time
 import typing
 
-from curious.voice import voice_client
+from curious.voice_old import voice_client
 
 
 class VoicePlayer(threading.Thread):

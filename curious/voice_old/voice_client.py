@@ -46,8 +46,8 @@ try:
 except Exception:
     has_opus = False
 
-from curious.voice import voice_player as vp
-from curious.voice.voice_gateway import VoiceGateway
+from curious.voice_old import voice_player as vp
+from curious.voice_old.voice_gateway import VoiceGateway
 
 logger = logging.getLogger("curious.voice")
 

@@ -16,7 +16,7 @@
 """
 Voice connection utilities.
 
-.. currentmodule:: curious.voice
+.. currentmodule:: curious.voice_old
 
 .. autosummary::
     :toctree: voice
@@ -25,5 +25,5 @@ Voice connection utilities.
 ..    voice_gateway
 ..    voice_player
 """
-from curious.voice.voice_client import VoiceClient
-from curious.voice.voice_player import VoicePlayer
+from curious.voice_old.voice_client import VoiceClient
+from curious.voice_old.voice_player import VoicePlayer
