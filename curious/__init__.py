@@ -25,7 +25,6 @@ Curious - An async Python 3.6+ library for Discord bots.
     commands
     dataclasses
     ext.paginator
-    voice
     
     exc
     util
@@ -60,7 +59,6 @@ from curious.dataclasses.guild import ContentFilterLevel, Guild, GuildChannelWra
 from curious.dataclasses.invite import Invite, InviteChannel, InviteGuild, InviteMetadata
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
-from curious.dataclasses.permissions import Overwrite, Permissions
 from curious.dataclasses.presence import Game, Presence, Status
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role

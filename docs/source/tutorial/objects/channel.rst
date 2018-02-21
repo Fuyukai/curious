@@ -12,9 +12,8 @@ Message Handling
 
 The most important part of a channel is message handling - that is, being able to send messages,
 upload files, and view logs for the channel.
-
 Curious provides a neat wrapper over the message handling part of the channel, which provides
-some utility methods.
+some utility methods, the :class:`.ChannelMessageWrapper`.
 
 To send a message to a channel, you can use :meth:`.Channel.messages.send`, like so:
 
