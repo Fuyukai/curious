@@ -53,6 +53,8 @@ This document displays the differences between each release of curious.
 
  - Add :func:`.autoplugin` which automatically assigns commands inside a plugin.
 
+ - Add :meth:`.Plugin.spawn` for easy background task spawning.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------

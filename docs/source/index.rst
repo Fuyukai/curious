@@ -9,6 +9,17 @@ Welcome to curious's documentation!
 ``curious`` is a Python 3.6+ library to interact with the
 `Discord <https://discordapp.com>`_ API
 
+Advantages of Curious
+---------------------
+
+    - High-level; abstractions are provided at every layer for ease of use
+    - Fast; curious can load your bot and begin processing in a matter of seconds
+    - Safe; curious validates your data client-side, preventing using up ratelimits on bogus
+      requests
+    - Powerful; curious exposes every layer of interaction with the Discord API for your usage
+    - async; Based on top off the ``curio`` or ``trio`` libraries for a pleasant async experience.
+
+
 Installation
 ------------
 
@@ -16,14 +27,14 @@ Curious is available on PyPI under ``discord-curious``:
 
 .. code-block:: bash
 
-   $ pip install -U discord-curious
+    $ pip install -U discord-curious
 
 
 Or for the latest development version:
 
 .. code-block:: bash
 
-   $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
+    $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
 
 Examples
 --------
@@ -36,16 +47,16 @@ Documentation
 -------------
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   tutorial/gettingstarted
-   tutorial/firstbot
-   tutorial/commands
-   tutorial/better_event_handling
+    tutorial/gettingstarted
+    tutorial/firstbot
+    tutorial/commands
+    tutorial/better_event_handling
 
-   events
+    events
 
-   changelog
+    changelog
 
 API Documentation
 -----------------
@@ -53,10 +64,10 @@ API Documentation
 The documentation below is automatically generated from the docstrings.
 
 .. toctree::
-   :caption: Autosummary
-   :maxdepth: 3
+    :caption: Autosummary
+    :maxdepth: 3
 
-   autogen/curious
+    autogen/curious
 
 
 Indices and tables

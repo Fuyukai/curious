@@ -73,8 +73,6 @@ Commands can be created with the usage of the :meth:`.command` decorator:
         async def pong(self, ctx: Context):
             await ctx.channel.messages.send("Ping!")
 
-All commands inside a plugin take a :class:`.Context` as their first argument, which stores some
-data about the message used to trigger the command; similar to the Click library's context.
 
 You can register plugins or modules containing plugins with the manager:
 
@@ -87,21 +85,61 @@ You can register plugins or modules containing plugins with the manager:
         # load plugins from a module
         await manager.load_plugins_from("my.plugin.module")
 
-Conditions
-----------
+Commands
+--------
 
-Conditions are a way to ensure that a command only runs under certain circumstances. A condition
-can be added to a command with the usage of the :meth:`.condition` decorator:
+Commands are a way of running an isolated block of code in response to a user sending a message
+with a prefix. Commands can be created with the :meth:`~curious.commands.decorators.command`
+decorator which will automatically annotate the function with some metadata that marks it as a
+command.
 
 .. code-block:: python3
 
     @command()
-    @condition(lambda ctx: ctx.guild.id == 198101180180594688)
-    async def secret_command(self, ctx): ...
+    async def ping(self, ctx: Context):
+        await ctx.channel.messages.send("Pong!")
 
-The argument to ``condition`` must be a callable that takes one argument, a :class:`.Context`
-object, and returns True if the command will run and False otherwise. If an exception is raised,
-it will be trapped and the command will not run (similar to returning False).
+The command decorator takes several arguments to customize the behaviour of the command outside
+of the code inside the function; see the decorator docstring for more information.
+
+Subcommands
+-----------
+
+Curious supports subcommands natively, using a small amount of metaprogramming magic. To create a
+subcommand, simply use the ``parent.subcommand()`` function as a decorator on your command, like so:
+
+.. code-block:: python3
+
+    @command()
+    async def say(self, ctx: Context):
+        # this only runs if no subcommand was provided by the user
+        await ctx.channel.messages.send(":x: What do you want me to say?")
+
+    @say.subcommand()
+    async def hello(self, ctx: Context):
+        await ctx.channel.messages.send("Hello!")
+
+Subcommands can be nested infinitely deep; you can have subcommands of subcommands down to any
+level.
+
+Context
+-------
+
+.. warning::
+
+    This is subject to change in newer versions due to ContextVar support.
+
+The :class:`.Context` object is a powerful object when using commands; as well as containing some
+internal machinery used to run commands it also provides an interface to the context of the
+command, i.e. the server/channel/author for the command, and so on.
+
+Some useful attributes on the context object:
+
+    - :attr:`.Context.channel` - The :class:`.Channel` object that the command was sent in.
+    - :attr:`.Context.author` - The :class:`.Member` or :class:`.User` that sent the command.
+    - :attr:`.Context.guild` - The :class:`.Guild` object the command was sent in. May be None.
+    - :attr:`.Context.bot` - The reference to the bot that the command was handled by.
+    - :attr:`.Context.event_context` - The :class:`.EventContext` used internally for the command.
 
 Arguments
 ---------
@@ -129,6 +167,22 @@ type annotations on the arguments. Some built-in converters are provided:
 Additional converters can be added by calling :meth:`.Context.add_converter`; the converter must
 be a simple callable that takes a pair of arguments ``(ctx, arg)`` and returns the appropriate type.
 
+Conditions
+----------
+
+Conditions are a way to ensure that a command only runs under certain circumstances. A condition
+can be added to a command with the usage of the :meth:`.condition` decorator:
+
+.. code-block:: python3
+
+    @command()
+    @condition(lambda ctx: ctx.guild.id == 198101180180594688)
+    async def secret_command(self, ctx): ...
+
+The argument to ``condition`` must be a callable that takes one argument, a :class:`.Context`
+object, and returns True if the command will run and False otherwise. If an exception is raised,
+it will be trapped and the command will not run (similar to returning False).
+
 Free-standing commands
 ----------------------
 
@@ -145,3 +199,24 @@ You can also add free-standing commands that aren't bound to a plugin with
 
 These will then be available to the client.
 
+Background Tasks
+----------------
+
+Background tasks are async functions that run in the background; i.e. you don't have to await
+them. curious provides an easy, portable way to spawn a background task from a :class:`.Plugin`,
+using :meth:`.Plugin.spawn`:
+
+.. code-block:: python3
+
+    async def my_task(self):
+        while True:
+            print("Ok!")
+            await trio.sleep(300)
+
+    @command()
+    async def spawn(self, ctx):
+        await self.spawn(self.my_task)
+
+This task will be parented to the plugin's task group, which is parented to the client's root
+task group. Exceptions will automatically be swallowed and logged, to prevent crashing the whole
+bot.

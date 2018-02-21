@@ -34,17 +34,24 @@ Open up ``bot.py`` and add the essential imports:
 
 .. code-block:: python3
 
+    import multio
     from curious.core.client import Client
 
-This will import the :class:`~.Client`, which is used to communicate with
-Discord.
+This will import the :class:`.Client`, which is used to communicate with
+Discord, and :mod:`multio` which is used to pick your backend.
+
+Before anything else, you need to choose an async library to run your bot with:
+
+.. code-block:: python3
+
+    multio.init('curio')  # lean mean killing machine
+    multio.init('trio')  # lean mean maiming machine
 
 Next, you want to define your new bot object, passing your bot token to it:
 
 .. code-block:: python3
 
     botto = Client("MjYwOTUwODE2NTM2NTI2ODQ5.Cz2mGQ.SKl78a6NT6SBpwYQrIDnR1olPqo")
-
 
 This object will be used to receive events from Discord, such as the messages.
 
