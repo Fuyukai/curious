@@ -126,7 +126,7 @@ def _subcommand(parent):
     def inner(**kwargs):
         # MULTIPLE LAYERS
         def inner_2(func):
-            if not hasattr(func, "is_cmd"):
+            if not hasattr(parent, "is_cmd"):
                 raise TypeError("Cannot be a subcommand of a non-command")
 
             cmd = command(**kwargs)(func)
