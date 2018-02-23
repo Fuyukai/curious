@@ -38,10 +38,12 @@ from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
+from curious.dataclasses.message import CHANNEL_REGEX, MENTION_REGEX
 from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
+from curious.exc import NotFound
 from curious.util import base64ify
 
 logger = logging.getLogger("curious.client")
@@ -408,6 +410,63 @@ class Client(object):
         """
         data = await self.http.get_widget_data(guild_id)
         return Widget(self, **data)
+
+    async def clean_content(self, content: str) -> str:
+        """
+        Cleans the content of a message, using the bot's cache.
+
+        :param content: The content to clean.
+        :return: The cleaned up message.
+        """
+        final = []
+        tokens = content.split(" ")
+        # o(2n) loop
+        print(content)
+        for token in tokens:
+            # try and find a channel from public channels
+            channel_match = CHANNEL_REGEX.match(token)
+            if channel_match is not None:
+                channel_id = int(channel_match.groups()[0])
+                channel = self.state.find_channel(channel_id)
+                if channel is None or channel.type not in \
+                        [dt_channel.ChannelType.TEXT, dt_channel.ChannelType.VOICE]:
+                    final.append("#deleted-channel")
+                else:
+                    final.append(f"#{channel.name}")
+
+                continue
+
+            # user matching works by doing a search over our guilds
+            # then failing that, trying to get it from users
+            user_match = MENTION_REGEX.match(token)
+            if user_match is not None:
+                found_name = None
+                user_id = int(user_match.groups()[0])
+                print("matching user", user_id, token)
+                for guild in self.guilds.values():
+                    try:
+                        found_name = guild.members[user_id].name
+                        break
+                    except KeyError:
+                        continue
+                else:
+                    try:
+                        found_name = await self.get_user(user_id)
+                    except NotFound:
+                        pass
+
+                if found_name is None:
+                    final.append(token)
+                else:
+                    final.append(f"@{found_name}")
+
+                continue
+
+            # if we got here, matching failed
+            # so just add the token
+            final.append(token)
+
+        return " ".join(final)
 
     # download_ methods
     async def download_guild_member(self, guild_id: int, member_id: int) -> 'dt_member.Member':

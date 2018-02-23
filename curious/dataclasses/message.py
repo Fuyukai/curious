@@ -34,6 +34,7 @@ from curious.util import AsyncIteratorWrapper, to_datetime
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
 INVITE_REGEX = re.compile(r"(?:discord\.gg/(\S+)|discordapp\.com/invites/(\S+))")
 EMOJI_REGEX = re.compile(r"<a?:[\S]+:([0-9]+)>")
+MENTION_REGEX = re.compile(r"<@!?([0-9]+)>")
 
 
 class MessageType(enum.IntEnum):
