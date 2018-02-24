@@ -71,24 +71,36 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
         assert isinstance(param, inspect.Parameter)
         # We loop over the signature parameters because it's easier to use those to consume.
         # Get the next argument from args.
-        try:
-            arg = next(args_it)
-        except StopIteration as e:
-            # not good!
-            # If we're a *arg format, we can safely handle this, or if we have a default.
-            if param.kind == inspect.Parameter.VAR_POSITIONAL:
-                break
 
-            if param.default is inspect.Parameter.empty:
-                raise MissingArgumentError(ctx, param.name) from e
+        def consume_token() -> str:
+            try:
+                return next(args_it)
+            except StopIteration as e:
+                # not good!
+                # If we're a *arg format, we can safely handle this, or if we have a default.
+                if param.kind in [inspect.Parameter.KEYWORD_ONLY,
+                                  inspect.Parameter.VAR_POSITIONAL]:
+                    return None
 
-            # we continue immediately so that we dont try and do anything with defaults
-            continue
+                if param.default is inspect.Parameter.empty:
+                    raise MissingArgumentError(ctx, param.name) from e
+
+                return None  # ??
+
+        arg = consume_token()
+        if arg is None:
+            break
 
         # Begin the consumption!
         if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
                           inspect.Parameter.POSITIONAL_ONLY]:
-            # Only add it to the final_args, then continue the loop.
+            # ensure we have a non-empty argument
+            while arg == "":
+                if arg is None:
+                    break
+
+                arg = next(args_it)
+
             arg = replace_quotes(arg)
             converter = ctx._lookup_converter(param.annotation)
             final_args.append(_with_reraise(converter, param.annotation, ctx, arg))
@@ -100,9 +112,8 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             f = [arg]
 
             while True:
-                try:
-                    next_arg = next(args_it)
-                except StopIteration:
+                next_arg = consume_token()
+                if next_arg is None:
                     break
 
                 f.append(next_arg)
@@ -121,9 +132,8 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             f = [arg]
 
             while True:
-                try:
-                    next_arg = next(args_it)
-                except StopIteration:
+                next_arg = consume_token()
+                if next_arg is None:
                     break
 
                 f.append(next_arg)
@@ -252,9 +262,6 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
         else:
             cur += char
     tokens.append(cur)
-
-    # cleanup tokens
-    tokens = [token for token in tokens if token != ""]
 
     return tokens
 
