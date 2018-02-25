@@ -462,7 +462,7 @@ class Client(object):
 
             emoji_match = EMOJI_REGEX.match(token)
             if emoji_match is not None:
-                final.append(f":{emoji_match.group(0)}:")
+                final.append(f":{emoji_match.groups()[0]}:")
                 continue
 
             # if we got here, matching failed
