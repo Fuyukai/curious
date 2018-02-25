@@ -38,7 +38,7 @@ from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.invite import Invite
-from curious.dataclasses.message import CHANNEL_REGEX, MENTION_REGEX
+from curious.dataclasses.message import CHANNEL_REGEX, EMOJI_REGEX, MENTION_REGEX
 from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
@@ -421,7 +421,6 @@ class Client(object):
         final = []
         tokens = content.split(" ")
         # o(2n) loop
-        print(content)
         for token in tokens:
             # try and find a channel from public channels
             channel_match = CHANNEL_REGEX.match(token)
@@ -442,7 +441,6 @@ class Client(object):
             if user_match is not None:
                 found_name = None
                 user_id = int(user_match.groups()[0])
-                print("matching user", user_id, token)
                 for guild in self.guilds.values():
                     try:
                         found_name = guild.members[user_id].name
@@ -460,6 +458,11 @@ class Client(object):
                 else:
                     final.append(f"@{found_name}")
 
+                continue
+
+            emoji_match = EMOJI_REGEX.match(token)
+            if emoji_match is not None:
+                final.append(f":{emoji_match.group(0)}:")
                 continue
 
             # if we got here, matching failed
