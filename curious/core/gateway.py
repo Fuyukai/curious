@@ -431,6 +431,9 @@ class GatewayHandler(object):
 
         elif opcode == GatewayOp.DISPATCH:
             event = decoded.get("t")
+            if not event:
+                return
+
             if event == "READY":
                 # hijack the session id
                 self.gw_state.session_id = event_data["session_id"]
