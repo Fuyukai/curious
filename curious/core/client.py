@@ -474,11 +474,11 @@ class Client(object):
     # download_ methods
     async def download_guild_member(self, guild_id: int, member_id: int) -> 'dt_member.Member':
         """
-        Downloads a :class:`~.Member` over HTTP.
+        Downloads a :class:`.Member` over HTTP.
         
         .. warning::
             
-            The :attr:`~.Member.roles` and similar fields will be empty when downloading a Member, 
+            The :attr:`.Member.roles` and similar fields will be empty when downloading a Member,
             unless the guild was in cache.
         
         :param guild_id: The ID of the guild which the member is in. 

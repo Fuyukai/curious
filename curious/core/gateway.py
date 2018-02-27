@@ -149,17 +149,24 @@ class GatewayHandler(object):
         return self._logger
 
     async def close(self, code: int = 1000, reason: str = "Client closed connection", *,
-                    reconnect: bool = False):
+                    reconnect: bool = False, clear_session_id: bool = True):
         """
         Close the current websocket connection.
 
         :param code: The close code.
         :param reason: The close reason.
         :param reconnect: If we should reconnect.
+        :param clear_session_id: If we should clear the session ID.
         """
         await self.websocket.close(code=code, reason=reason, reconnect=reconnect)
         # this kills the websocket
         await self._stop_heartbeating.set()
+
+        if clear_session_id:
+            self.gw_state.session_id = None
+            # also clear heartbeats so we don't immediately HEARTBEAT with the wrong hb
+            self.heartbeat_stats.heartbeats = 0
+            self.heartbeat_stats.heartbeat_acks = 0
 
     # send commands
     async def send(self, data: dict) -> None:
@@ -383,7 +390,7 @@ class GatewayHandler(object):
                 self.logger.info("Sending IDENTIFY...")
                 await self.send_identify()
             else:
-                self.logger.info("Sending RESUME...")
+                self.logger.info("We already have a session ID, Sending RESUME...")
                 await self.send_resume()
 
             # give an event down here instead of above
@@ -410,7 +417,6 @@ class GatewayHandler(object):
             else:
                 self.logger.warning("Received INVALIDATE_SESSION with d False, re-identifying.")
                 self.gw_state.sequence = 0
-                # clear session id so that if we reconnect we
                 self.gw_state.session_id = None
                 await self.send_identify()
 
@@ -424,6 +430,11 @@ class GatewayHandler(object):
 
             self._dispatches_handled[event] += 1
             yield ("gateway_dispatch_received", event, event_data,)
+
+        elif opcode == GatewayOp.RECONNECT:
+            self.logger.info("Being asked to reconnect...")
+            await self.close(code=1000, reason="Server asked to reconnect",
+                             reconnect=True)
 
         else:
             try:
