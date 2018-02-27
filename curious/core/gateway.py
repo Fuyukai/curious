@@ -165,6 +165,7 @@ class GatewayHandler(object):
         if clear_session_id:
             self.gw_state.session_id = None
             # also clear heartbeats so we don't immediately HEARTBEAT with the wrong hb
+            self.gw_state.sequence = None
             self.heartbeat_stats.heartbeats = 0
             self.heartbeat_stats.heartbeat_acks = 0
 
@@ -209,7 +210,11 @@ class GatewayHandler(object):
 
         if self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
             self.logger.warning("Connection has zombied, reconnecting.")
-            return await self.close(code=1006, reason="Zombied connection", reconnect=True)
+
+            # Note: The 1006 close code signifies an error.
+            # In my testing, closing with a 1006 will allow
+            return await self.close(code=1006, reason="Zombied connection", reconnect=True,
+                                    clear_session_id=False)
 
         self.logger.debug("Heartbeating with sequence {}".format(self.gw_state.sequence))
         payload = {
@@ -434,7 +439,7 @@ class GatewayHandler(object):
         elif opcode == GatewayOp.RECONNECT:
             self.logger.info("Being asked to reconnect...")
             await self.close(code=1000, reason="Server asked to reconnect",
-                             reconnect=True)
+                             reconnect=True, clear_session_id=False)
 
         else:
             try:
@@ -487,4 +492,4 @@ async def open_websocket(token: str, url: str, *,
         finally:
             # make sure we don't die on closing the task group
             await gw._stop_heartbeating.set()
-            await gw.close(code=1000)
+            await gw.close(code=1000, reason="Closing bot")
