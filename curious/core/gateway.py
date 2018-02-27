@@ -212,7 +212,9 @@ class GatewayHandler(object):
             self.logger.warning("Connection has zombied, reconnecting.")
 
             # Note: The 1006 close code signifies an error.
-            # In my testing, closing with a 1006 will allow
+            # In my testing, closing with a 1006 will allow a resume once reconnected,
+            # whereas other close codes won't.
+            # The timeout mihgt be too high to RESUME, however.
             return await self.close(code=1006, reason="Zombied connection", reconnect=True,
                                     clear_session_id=False)
 
