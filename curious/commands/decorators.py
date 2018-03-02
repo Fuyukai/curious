@@ -166,6 +166,9 @@ def autoplugin(plugin: 'Type[md_plugin.Plugin]' = None, *,
         if not name.startswith(startswith + "_"):
             continue
 
+        # unwrap all functions
+        member = inspect.unwrap(member)
+
         parts = name.split("_", 2)
         if len(parts) == 2:  # regular command, no parent
             # wrap it in a command and continue

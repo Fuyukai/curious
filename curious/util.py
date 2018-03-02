@@ -301,6 +301,7 @@ def deprecated(*, since: str, see_instead, removal: str):
     :param see_instead: What method to see instead.
     :param removal: The version this function will be removed at.
     """
+
     # TODO: In 3.7, the globals mess probably won't be needed.
     def inner(func):
         # calculate a new doc
