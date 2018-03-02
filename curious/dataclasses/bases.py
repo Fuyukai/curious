@@ -95,7 +95,7 @@ class Dataclass(IDObject):
     # __weakref__ is used to allow weakreffing
     __slots__ = "_bot", "__weakref__"
 
-    @classmethod
+    @staticmethod
     def __new__(cls, *args, **kwargs):
         """
         Inspects the stack to ensure we're being called correctly.
