@@ -305,8 +305,6 @@ def deprecated(*, since: str, see_instead, removal: str):
     def inner(func):
         # calculate a new doc
         nonlocal see_instead
-        # store a copy
-        _see_instead = see_instead
         if not isinstance(see_instead, str):
             qualname = see_instead.__qualname__
             mod = inspect.getmodule(see_instead).__name__
@@ -321,11 +319,13 @@ def deprecated(*, since: str, see_instead, removal: str):
             else:
                 see_instead = f":func:`{mod}.{qualname}`"
 
-        original_doc = textwrap.dedent(func.__doc__)
-        func.__doc__ = f"**This function is deprecated since {since}.** " \
-                       f"See :meth:`.{see_instead}` instead.  \n" \
-                       f"It will be removed at version {removal}.\n\n" \
-                       f"{original_doc}"
+        doc = inspect.getdoc(func)
+        if doc is not None:
+            original_doc = textwrap.dedent(func.__doc__)
+            func.__doc__ = f"**This function is deprecated since {since}.** " \
+                           f"See :meth:`.{see_instead}` instead.  \n" \
+                           f"It will be removed at version {removal}.\n\n" \
+                           f"{original_doc}"
 
         def wrapper(*args, **kwargs):
             warnings.warn(f"    This function is deprecated since {since}. "
@@ -345,7 +345,7 @@ def deprecated(*, since: str, see_instead, removal: str):
         new_wrapper = functools.update_wrapper(new_wrapper, func)
 
         new_wrapper.deprecated = True
-        new_wrapper.__doc__ = func.__doc__
+        new_wrapper.__doc__ = inspect.getdoc(func)
         return new_wrapper
 
     return inner

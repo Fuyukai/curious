@@ -160,7 +160,7 @@ def get_description(func) -> str:
     if not func.__doc__:
         return None
 
-    doc = inspect.cleandoc(func.__doc__)
+    doc = inspect.cleandoc(inspect.getdoc(func))
     lines = doc.split("\n")
     return lines[0]
 
