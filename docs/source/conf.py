@@ -42,7 +42,7 @@ except ImportError:
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-# needs_sphinx = '1.0'
+needs_sphinx = '1.6'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -68,7 +68,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'curious'
-copyright = '2017-2018, Laura F. Dickinson'
+copyright = '2016-2018, Laura F. Dickinson'
 author = 'Laura F. Dickinson'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -187,10 +187,11 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'curious', 'curious Documentation',
-     author, 'curious', 'One line description of project.',
+     author, 'curious', 'An async discord library',
      'Miscellaneous'),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {"python": ('https://docs.python.org/3/', None),
-                       "curio": ("https://curio.readthedocs.io/en/latest/", None)}
+                       "curio": ("https://curio.readthedocs.io/en/latest/", None),
+                       "trio": ("https://trio.readthedocs.io/en/latest/", None)}

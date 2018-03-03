@@ -34,13 +34,13 @@ Or for the latest development version:
 
 .. code-block:: bash
 
-    $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
+    $ pip install -U git+https://github.com/Fuyukai/curious.git#egg=curious
 
 Examples
 --------
 
 Examples for how to use the library are available at
-https://github.com/SunDwarf/curious/tree/master/examples.
+https://github.com/Fuyukai/curious/tree/master/examples.
 
 
 Documentation

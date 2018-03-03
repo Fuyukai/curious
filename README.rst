@@ -17,7 +17,7 @@ Or for the latest development version:
 
 .. code-block:: bash
 
-    $ pip install -U git+https://github.com/SunDwarf/curious.git#egg=curious
+    $ pip install -U git+https://github.com/Fuyukai/curious.git#egg=curious
 
 Basic Example
 -------------
