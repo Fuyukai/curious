@@ -10,7 +10,7 @@ install_requires = [
         "pytz>=2017.3",
         "asks>=1.3.0,<1.4.0",
         "multidict>=4.1.0,<4.2.0",
-        "multio>=0.2.0,<0.3.0",
+        "multio>=0.2.1,<0.3.0",
         "async_generator~=1.9",  # asynccontextmanager for 3.6
         "typing_inspect>=0.2.0"
 ]
