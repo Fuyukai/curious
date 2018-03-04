@@ -114,7 +114,7 @@ class Client(object):
         :param bot_type: A union of :class:`.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.
-        self._gateways = {}  # type: typing.Mapping[int, GatewayHandler]
+        self._gateways = {}  # type: typing.MutableMapping[int, GatewayHandler]
 
         #: The number of shards this client has.
         self.shard_count = 0
@@ -265,6 +265,7 @@ class Client(object):
         def _inner(func):
             f = ev_dec(name)(func)
             self.events.add_event(func=f)
+            return func
 
         return _inner
 
