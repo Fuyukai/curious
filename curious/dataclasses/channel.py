@@ -678,6 +678,19 @@ class Channel(Dataclass):
             return None
 
     @property
+    def children(self) -> '_typing.List[Channel]':
+        """
+        :return: A list of :class:`.Channel` children this channel has, if any.
+        """
+        if not self.guild:
+            return []
+
+        channels = [channel
+                    for channel in self.guild.channels.values()
+                    if channel.parent_id == self.id]
+        return channels
+
+    @property
     def messages(self) -> 'ChannelMessageWrapper':
         """
         :return: The :class:`.ChannelMessageWrapper` for this channel, if applicable.

@@ -55,6 +55,12 @@ This document displays the differences between each release of curious.
 
  - Add :meth:`.Plugin.spawn` for easy background task spawning.
 
+ - Add :attr:`.Channel.children` to get the children of a channel.
+
+ - Deprivatize :meth:`.State.find_message`.
+
+ - Lookup messages in the cache to avoid a roundtrip when doing :meth:`.ChannelMessagesWrapper.get`.
+
 
 0.6.0 (Released 2017-11-05)
 ---------------------------
