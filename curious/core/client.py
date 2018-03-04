@@ -33,7 +33,7 @@ import multio
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
-from curious.core.gateway import open_websocket
+from curious.core.gateway import GatewayHandler, open_websocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
@@ -114,7 +114,7 @@ class Client(object):
         :param bot_type: A union of :class:`~.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.
-        self._gateways = {}
+        self._gateways = {}  # type: typing.Mapping[int, GatewayHandler]
 
         #: The number of shards this client has.
         self.shard_count = 0
@@ -207,7 +207,7 @@ class Client(object):
         return c
 
     @property
-    def gateways(self):
+    def gateways(self) -> 'typing.Mapping[int, GatewayHandler]':
         """
         :return: A read-only view of the current gateways for this client. 
         """
