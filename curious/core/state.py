@@ -221,7 +221,7 @@ class State(object):
         This will search all guild channels, as well as private channels.
         
         :param channel_id: The ID of the channel to find.
-        :return: A :class:`~.Channel` that represents the channel, or None if no channel was found.
+        :return: A :class:`.Channel` that represents the channel, or None if no channel was found.
         """
         # default channel_id == guild id
         # for old guilds with a default channel
@@ -238,7 +238,13 @@ class State(object):
             if channel_id in guild._channels:
                 return guild._channels[channel_id]
 
-    def _find_message(self, message_id: int) -> Message:
+    def find_message(self, message_id: int) -> Message:
+        """
+        Finds a message in the current cache, if it exists.
+
+        :param message_id: The message ID to find.
+        :return: A :class:`.Message` to find, or None if it was not cached.
+        """
         for message in reversed(self.messages):
             if message.id == message_id:
                 return message
@@ -703,7 +709,7 @@ class State(object):
         yield "message_update_uncached", new_message
 
         # Try and find the old message.
-        old_message = self._find_message(new_message.id)
+        old_message = self.find_message(new_message.id)
         if not old_message:
             return
 
@@ -723,7 +729,7 @@ class State(object):
         message_id = int(event_data.get("id"))
         yield "message_delete_uncached", message_id
 
-        message = self._find_message(message_id)
+        message = self.find_message(message_id)
 
         if not message:
             return
@@ -739,7 +745,7 @@ class State(object):
         yield "message_delete_bulk_uncached", ids
 
         for message in ids:
-            message = self._find_message(int(message))
+            message = self.find_message(int(message))
             if not message:
                 continue
 
@@ -767,7 +773,7 @@ class State(object):
             return
 
         message_id = int(message_id)
-        message = self._find_message(message_id)
+        message = self.find_message(message_id)
 
         if not message:
             return
@@ -821,7 +827,7 @@ class State(object):
         """
         Called when all reactions are removed from a message.
         """
-        message = self._find_message(int(event_data.get("message_id", 0)))
+        message = self.find_message(int(event_data.get("message_id", 0)))
         if not message:
             return
 
@@ -838,7 +844,7 @@ class State(object):
             return
 
         message_id = int(message_id)
-        message = self._find_message(message_id)
+        message = self.find_message(message_id)
 
         if not message:
             return
@@ -1242,7 +1248,7 @@ class State(object):
         """
         channel = self.find_channel(int(event_data.get("channel_id", 0)))
         try:
-            message = self._find_message(int(event_data.get("message_id", 0)))
+            message = self.find_message(int(event_data.get("message_id", 0)))
         except (ValueError, TypeError):
             # message_id is None, wtf?
             return

@@ -506,22 +506,18 @@ class ChannelMessageWrapper(object):
             if not self.channel.permissions(self.channel.guild.me).read_message_history:
                 raise PermissionsError("read_message_history")
 
-        if self.channel._bot.user.bot:
-            try:
-                data = await self.channel._bot.http.get_message(self.channel.id, message_id)
-            except HTTPException as e:
-                # transform into a CuriousError if it wasn't found
-                if e.error_code == ErrorCode.UNKNOWN_MESSAGE:
-                    raise CuriousError("No message found for this ID") from e
+        cached_message = self.channel._bot.state.find_message(message_id)
+        if cached_message is not None:
+            return cached_message
 
-                raise
-        else:
-            data = await self.channel._bot.http.get_message_history(self.channel.id,
-                                                                    around=message_id, limit=1)
-            if not data:
-                raise CuriousError("No message found for this ID")
-            else:
-                data = data[0]
+        try:
+            data = await self.channel._bot.http.get_message(self.channel.id, message_id)
+        except HTTPException as e:
+            # transform into a CuriousError if it wasn't found
+            if e.error_code == ErrorCode.UNKNOWN_MESSAGE:
+                raise CuriousError("No message found for this ID") from e
+
+            raise
 
         msg = self.channel._bot.state.make_message(data)
 
@@ -653,7 +649,10 @@ class Channel(Dataclass):
         if self.type != ChannelType.PRIVATE:
             return None
 
-        return next(self.recipients.values())
+        try:
+            return next(iter(self.recipients.values()))
+        except StopIteration:
+            return None
 
     @property
     def owner(self) -> '_typing.Union[dt_user.User, None]':
