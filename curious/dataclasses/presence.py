@@ -131,7 +131,7 @@ class Presence(object):
         self.status = kwargs.get("status", Status.OFFLINE)
 
         game = kwargs.get("game", None)
-        #: The :class:`~.Game` for this presence.
+        #: The :class:`.Game` for this presence.
         self._game = None  # type: Game
 
         # NB: this does a property set to ensure the types are right.
@@ -143,7 +143,7 @@ class Presence(object):
     @property
     def status(self) -> Status:
         """
-        :return: The :class:`~.Status` associated with this presence. 
+        :return: The :class:`.Status` associated with this presence.
         """
         return self._status
 
@@ -160,7 +160,7 @@ class Presence(object):
     @property
     def game(self) -> Game:
         """
-        :return: The :class:`~.Game` associated with this presence.
+        :return: The :class:`.Game` associated with this presence.
         """
         return self._game
 

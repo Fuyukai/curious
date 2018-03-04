@@ -105,14 +105,14 @@ class Webhook(Dataclass):
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
-        :return: The :class:`~.Guild` this webhook is in.
+        :return: The :class:`.Guild` this webhook is in.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
     def channel(self) -> 'dt_channel.Channel':
         """
-        :return: The :class:`~.Channel` this webhook is in. 
+        :return: The :class:`.Channel` this webhook is in.
         """
         if self.guild is None:
             return None
@@ -125,10 +125,10 @@ class Webhook(Dataclass):
         """
         Creates a new webhook.
 
-        :param channel: The :class:`~.Channel` to create the webhook in.
+        :param channel: The :class:`.Channel` to create the webhook in.
         :param name: The name of the webhook to create.
         :param avatar: The bytes data for the webhook's default avatar.
-        :return: A new :class:`~.Webhook`.
+        :return: A new :class:`.Webhook`.
         """
         return await channel.create_webhook(name=name, avatar=avatar)
 

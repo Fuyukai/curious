@@ -246,21 +246,21 @@ class Member(Dataclass):
         #: The ID of the guild that this member is in.
         self.guild_id = None  # type: int
 
-        #: The current :class:`~.Presence` of this member.
+        #: The current :class:`.Presence` of this member.
         self.presence = Presence(status=kwargs.get("status", Status.OFFLINE),
                                  game=kwargs.get("game", None))
 
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
-        :return: The :class:`~.Guild` associated with this member. 
+        :return: The :class:`.Guild` associated with this member.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
     def voice(self) -> 'dt_vs.VoiceState':
         """
-        :return: The :class:`~.VoiceState` associated with this member.
+        :return: The :class:`.VoiceState` associated with this member.
         """
         try:
             return self.guild._voice_states[self.id]
@@ -349,14 +349,14 @@ class Member(Dataclass):
     @property
     def status(self) -> Status:
         """
-        :return: The current :class:`~.Status` of this member.
+        :return: The current :class:`.Status` of this member.
         """
         return self.presence.status if self.presence else Status.OFFLINE
 
     @property
     def game(self) -> Game:
         """
-        :return: The current :class:`~.Game` this member is playing.
+        :return: The current :class:`.Game` this member is playing.
         """
         if not self.presence:
             return None
@@ -385,7 +385,7 @@ class Member(Dataclass):
     @property
     def top_role(self) -> 'dt_role.Role':
         """
-        :return: This member's top-most :class:`~.Role`.
+        :return: This member's top-most :class:`.Role`.
         """
         return self.roles.top_role
 

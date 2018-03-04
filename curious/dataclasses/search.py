@@ -50,21 +50,21 @@ class MessageGroup:
     @property
     def before(self) -> 'typing.Tuple[dt_message.Message, dt_message.Message]':
         """
-        :return: The two :class:`~.Message` objects that happen before the requested message.
+        :return: The two :class:`.Message` objects that happen before the requested message.
         """
         return self.msgs[0], self.msgs[1]
 
     @property
     def message(self) -> 'dt_message.Message':
         """
-        :return: The :class:`~.Message` that matched this search query. 
+        :return: The :class:`.Message` that matched this search query.
         """
         return self.msgs[2]
 
     @property
     def after(self) -> 'typing.Tuple[dt_message.Message, dt_message.Message]':
         """
-        :return: The two :class:`~.Message` objects that happen after the requested message. 
+        :return: The two :class:`.Message` objects that happen after the requested message.
         """
         return self.msgs[3], self.msgs[4]
 
@@ -74,7 +74,7 @@ class SearchResults(collections.AsyncIterator):
     An async iterator that can be used to iterate over the results of a search.
     This will automatically fill results, and return messages as appropriate.
     
-    The return type of iterating over this is a :class:`~.MessageGroup`, which contains the messages 
+    The return type of iterating over this is a :class:`.MessageGroup`, which contains the messages
     around the message that matched the search result.
     
     .. code-block:: python3
@@ -109,7 +109,7 @@ class SearchResults(collections.AsyncIterator):
                 ...
         
         :param limit: The limit to set.
-        :return: This :class:`~.SearchResults`.
+        :return: This :class:`.SearchResults`.
         """
         self._limit = limit
         return self
@@ -136,7 +136,7 @@ class SearchResults(collections.AsyncIterator):
         If no results were found, this will raise an IndexError, and you must fetch the next page 
         with :meth:`.SearchResults.fetch_next_page`.
         
-        :return: A :class:`~.MessageGroup` for the next page of results, if applicable.
+        :return: A :class:`.MessageGroup` for the next page of results, if applicable.
         """
         # prevent more fetching
         if self._limit != -1 and self._total_count >= self._limit:
@@ -258,21 +258,21 @@ class SearchQuery(object):
     @property
     def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
         """
-        :return: The :class:`~.Guild` this search query is searching. 
+        :return: The :class:`.Guild` this search query is searching.
         """
         return self._guild
 
     @property
     def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
-        The :class:`~.Channel` that is being searched.
+        The :class:`.Channel` that is being searched.
         
         .. note::
             
             If this a DM, this will not be added in the params.
         
-        :getter: Gets the :class:`~.Channel` to be searched.
-        :setter: Sets the :class:`~.Channel` to be searched. 
+        :getter: Gets the :class:`.Channel` to be searched.
+        :setter: Sets the :class:`.Channel` to be searched.
         """
         return self._channel
 
@@ -311,7 +311,7 @@ class SearchQuery(object):
         """
         A simple way of accessing the search results for a search query.
         
-        :return: A :class:`~.SearchResults` representing the results of this query. 
+        :return: A :class:`.SearchResults` representing the results of this query.
         """
         return SearchResults(self)
 
@@ -326,7 +326,7 @@ class SearchQuery(object):
             of this.
         
         :param page: The page of results to return.
-        :return: A list of :class:`~.Message` which returns the results of the search query.
+        :return: A list of :class:`.Message` which returns the results of the search query.
         """
         func = self._http_meth
         params = self.make_params()
@@ -349,7 +349,7 @@ class SearchQuery(object):
         Executes the search query and gets the messages for the specified page.
         
         :param page: The page of results to return. 
-        :return: A :class:`~.SearchResult` that can be used to search the results.
+        :return: A :class:`.SearchResult` that can be used to search the results.
         """
         res = SearchResults(self)
         res.page = page

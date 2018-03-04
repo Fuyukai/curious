@@ -65,7 +65,7 @@ class VoiceClient(object):
     """
     The voice client instance controls connecting to Discord's voice servers.
 
-    This should ***not*** be created directly - instead use :class:`~.Channel.connect()` to connect
+    This should ***not*** be created directly - instead use :class:`.Channel.connect()` to connect
     to a voice channel, and use the instance returned from.
     """
 
@@ -78,9 +78,9 @@ class VoiceClient(object):
     def __init__(self, main_client,
                  channel):
         """
-        :param main_client: The :class:`~.curious.core.client.Client` object associated with this
+        :param main_client: The :class:`.curious.core.client.Client` object associated with this
             VoiceClient.
-        :param channel: The :class:`~.Channel` associated with this VoiceClient.
+        :param channel: The :class:`.Channel` associated with this VoiceClient.
         """
 
         #: The main client this voice client is associated with.
@@ -329,7 +329,7 @@ class VoiceClient(object):
 
         :param main_client: The main :class:`.Client` to use.
         :param gateway: The gateway instance to use.
-        :param channel: The :class:`~.Channel` to connect to.
+        :param channel: The :class:`.Channel` to connect to.
         """
         vs_ws = await VoiceGateway.from_gateway(gw=gateway, channel_id=channel.id,
                                                 guild_id=channel.guild.id)

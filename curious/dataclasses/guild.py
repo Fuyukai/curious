@@ -83,7 +83,7 @@ class VerificationLevel(enum.IntEnum):
 
     def can_speak(self, member: 'dt_member.Member') -> bool:
         """
-        Checks if a :class:`~.Member` can speak in their :class:`~.Guild`.
+        Checks if a :class:`.Member` can speak in their :class:`.Guild`.
         
         :param member: The member to check.
         :return: True if they can speak, False if they can't.
@@ -119,7 +119,7 @@ class VerificationLevel(enum.IntEnum):
 
 class NotificationLevel(enum.IntEnum):
     """
-    Represents the default notification level for a :class:`~.Guild`.
+    Represents the default notification level for a :class:`.Guild`.
     """
     #: All messages notify members, by default.
     ALL_MESSAGES = 0
@@ -130,7 +130,7 @@ class NotificationLevel(enum.IntEnum):
 
 class ContentFilterLevel(enum.IntEnum):
     """
-    Represents the content filter level for a :class:`~.Guild`. 
+    Represents the content filter level for a :class:`.Guild`.
     """
     #: No messages will be scanned.
     SCAN_NONE = 0
@@ -173,7 +173,7 @@ class GuildChannelWrapper(_WrapperBase):
     def __init__(self, guild: 'Guild',
                  channels: 'typing.MutableMapping[int, dt_channel.Channel]'):
         """
-        :param guild: The :class:`~.Guild` object that owns this wrapper.
+        :param guild: The :class:`.Guild` object that owns this wrapper.
         :param channels: The dictionary of channels that this wrapper contains.
         """
         self._guild = guild
@@ -327,7 +327,7 @@ class GuildRoleWrapper(_WrapperBase):
     def __init__(self, guild: 'Guild',
                  roles: 'typing.MutableMapping[int, dt_role.Role]'):
         """
-        :param guild: The :class:`~.Guild` object that owns this wrapper.
+        :param guild: The :class:`.Guild` object that owns this wrapper.
         :param roles: The dictionary of roles that this wrapper contains.
         """
         self._guild = guild
@@ -515,8 +515,8 @@ class GuildBanContainer(object):
         """
         Bans somebody from the guild.
 
-        This can either ban a :class:`~.Member`, in which they must be in the guild.
-        Or this can ban a :class:`~.User`, which does not need to be in the guild.
+        This can either ban a :class:`.Member`, in which they must be in the guild.
+        Or this can ban a :class:`.User`, which does not need to be in the guild.
 
         Example for banning a member:
 
@@ -581,7 +581,7 @@ class GuildBanContainer(object):
             user = next(await guild.get_bans())
             await guild.unban(user)
 
-        To unban an arbitrary user, use :meth:`~.Client.get_user`.
+        To unban an arbitrary user, use :meth:`.Client.get_user`.
 
         .. code-block:: python3
 
@@ -593,7 +593,7 @@ class GuildBanContainer(object):
             This does not take :class:`.Member` objects, as members cannot be in a guild and
             banned from the guild.
 
-        :param user: The :class:`~.User` to forgive and unban.
+        :param user: The :class:`.User` to forgive and unban.
         :param reason: The reason given for unbanning.
         """
         if not self._guild.me.guild_permissions.ban_members:
@@ -737,14 +737,14 @@ class Guild(Dataclass):
     @property
     def members(self) -> 'typing.Mapping[int, dt_member.Member]':
         """
-        :return: A mapping of :class:`~.Member` that represent members on this guild.
+        :return: A mapping of :class:`.Member` that represent members on this guild.
         """
         return MappingProxyType(self._members)
 
     @property
     def owner(self) -> 'typing.Union[dt_member.Member, None]':
         """
-        :return: A :class:`~.Member` object that represents the owner of this guild.
+        :return: A :class:`.Member` object that represents the owner of this guild.
         """
         try:
             return self._members[self.owner_id]
@@ -754,7 +754,7 @@ class Guild(Dataclass):
     @property
     def me(self) -> 'typing.Union[dt_member.Member, None]':
         """
-        :return: A :class:`~.Member` object that represents the current user in this guild.
+        :return: A :class:`.Member` object that represents the current user in this guild.
         """
         try:
             return self._members[self._bot.user.id]
@@ -764,7 +764,7 @@ class Guild(Dataclass):
     @property
     def default_role(self) -> 'typing.Union[dt_role.Role, None]':
         """
-        :return: A :class:`~.Role` that represents the default role of this guild.
+        :return: A :class:`.Role` that represents the default role of this guild.
         """
         try:
             return self.roles[self.id]
@@ -774,7 +774,7 @@ class Guild(Dataclass):
     @property
     def system_channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
-        :return: A :class:`~.Channel` that represents the system channel for this guild.
+        :return: A :class:`.Channel` that represents the system channel for this guild.
         """
         try:
             return self._channels[self.system_channel_id]
@@ -784,7 +784,7 @@ class Guild(Dataclass):
     @property
     def afk_channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
-        :return: A :class:`~.Channel` representing the AFK channel for this guild.
+        :return: A :class:`.Channel` representing the AFK channel for this guild.
         """
         try:
             return self._channels[self.afk_channel_id]
@@ -822,35 +822,35 @@ class Guild(Dataclass):
     @property
     def online_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of online :class:`~.Member` objects.
+        :return: A generator of online :class:`.Member` objects.
         """
         return self.members_with_status(Status.ONLINE)
 
     @property
     def idle_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of idle :class:`~.Member` objects.
+        :return: A generator of idle :class:`.Member` objects.
         """
         return self.members_with_status(Status.IDLE)
 
     @property
     def dnd_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of DnD :class:`~.Member` objects.
+        :return: A generator of DnD :class:`.Member` objects.
         """
         return self.members_with_status(Status.DND)
 
     @property
     def offline_members(self) -> 'typing.Generator[dt_member.Member, None, None]':
         """
-        :return: A generator of offline/invisible :class:`~.Member` objects.
+        :return: A generator of offline/invisible :class:`.Member` objects.
         """
         return self.members_with_status(Status.OFFLINE)
 
     @property
     def search(self) -> 'dt_search.SearchQuery':
         """
-        :return: A :class:`~.SearchQuery` that can be used to search this guild's messages. 
+        :return: A :class:`.SearchQuery` that can be used to search this guild's messages.
         """
         return dt_search.SearchQuery(guild=self)
 
@@ -915,7 +915,7 @@ class Guild(Dataclass):
         The discriminator is optional, but if provided allows better matching.
 
         :param search_str: The name#discrim pair to search for.
-        :return: A :class:`~.Member` object that represents the member, or None if no member \
+        :return: A :class:`.Member` object that represents the member, or None if no member \
                 could be found.
         """
         sp = search_str.rsplit("#", 1)
@@ -1075,7 +1075,7 @@ class Guild(Dataclass):
     @property
     def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
         """
-        :return: A class:`~.AsyncIteratorWrapper` that yields :class:`~.Invite` objects for this
+        :return: A class:`.AsyncIteratorWrapper` that yields :class:`.Invite` objects for this
             guild.
         """
         return AsyncIteratorWrapper(self.get_invites)
@@ -1108,7 +1108,7 @@ class Guild(Dataclass):
     #     """
     #     Connects to a voice channel in this guild.
     #
-    #     :param channel: The :class:`~.Channel` to connect to.
+    #     :param channel: The :class:`.Channel` to connect to.
     #     :return: The :class:`VoiceClient` that was connected to this guild.
     #     """
     #     if voice_client is None:
@@ -1128,7 +1128,7 @@ class Guild(Dataclass):
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """
         Gets the invites for this guild.
-        :return: A list :class:`~.Invite` objects.
+        :return: A list :class:`.Invite` objects.
         """
         invites = await self._bot.http.get_invites_for(self.id)
         invites = [dt_invite.Invite(self._bot, **i) for i in invites]
@@ -1145,7 +1145,7 @@ class Guild(Dataclass):
         """
         Kicks somebody from the guild.
 
-        :param victim: The :class:`~.Member` to kick.
+        :param victim: The :class:`.Member` to kick.
         """
         if not self.me.guild_permissions.kick_members:
             raise PermissionsError("kick_members")
@@ -1166,8 +1166,8 @@ class Guild(Dataclass):
         """
         Bans somebody from the guild.
 
-        This can either ban a :class:`~.Member`, in which they must be in the guild. 
-        Or this can ban a :class:`~.User`, which does not need to be in the guild.
+        This can either ban a :class:`.Member`, in which they must be in the guild.
+        Or this can ban a :class:`.User`, which does not need to be in the guild.
 
         Example for banning a member:
 
@@ -1199,7 +1199,7 @@ class Guild(Dataclass):
             user = next(await guild.get_bans())
             await guild.unban(user)
 
-        To unban an arbitrary user, use :meth:`~.Client.get_user`.
+        To unban an arbitrary user, use :meth:`.Client.get_user`.
 
         .. code:: python
 
@@ -1211,7 +1211,7 @@ class Guild(Dataclass):
             This does not take :class:`.Member` objects, as members cannot be in a guild and
             banned from the guild.
 
-        :param user: The :class:`~.User` to forgive and unban.
+        :param user: The :class:`.User` to forgive and unban.
         """
         return await self.bans.remove(user)
 
@@ -1219,7 +1219,7 @@ class Guild(Dataclass):
         """
         Gets the webhooks for this guild.
 
-        :return: A list of :class:`~.Webhook` objects for the guild.
+        :return: A list of :class:`.Webhook` objects for the guild.
         """
         webhooks = await self._bot.http.get_webhooks_for_guild(self.id)
         obbs = []
@@ -1233,7 +1233,7 @@ class Guild(Dataclass):
         """
         Deletes a webhook in this guild.
 
-        :param webhook: The :class:`~.Webhook` to delete.
+        :param webhook: The :class:`.Webhook` to delete.
         """
         if not self.me.guild_permissions.manage_webhooks:
             raise PermissionsError("manage_webhooks")
@@ -1270,7 +1270,7 @@ class Guild(Dataclass):
         """
         Changes the voice state of a member.
 
-        :param member: The :class:`~.Member` to change the voice state of.
+        :param member: The :class:`.Member` to change the voice state of.
         :param deaf: Should this member be deafened?
         :param mute: Should this member be muted?
         """
@@ -1291,7 +1291,7 @@ class Guild(Dataclass):
         For a list of available arguments, see 
         https://discordapp.com/developers/docs/resources/guild#modify-guild.
         
-        :param afk_channel: The :class:`~.Channel` that represents the AFK voice channel.
+        :param afk_channel: The :class:`.Channel` that represents the AFK voice channel.
         :param verification_level: The :class:`.VerificationLevel` to use for this guild.
         :param content_filter_level: The :class:`.ContentFilterLevel` to use for this guild.
         :param notification_level: The :class:`.NotificationLevel` to use for this guild.
@@ -1366,9 +1366,9 @@ class Guild(Dataclass):
 
     async def get_vanity_invite(self) -> 'typing.Union[None, dt_invite.Invite]':
         """
-        Gets the vanity :class:`~.Invite` for this guild.
+        Gets the vanity :class:`.Invite` for this guild.
 
-        :return: The :class:`~.Invite` that corresponds with this guild, if it has one.
+        :return: The :class:`.Invite` that corresponds with this guild, if it has one.
         """
         if 'vanity-url' not in self.features:
             return None
@@ -1392,10 +1392,10 @@ class Guild(Dataclass):
 
     async def set_vanity_invite(self, url: str) -> 'typing.Union[dt_invite.Invite, None]':
         """
-        Sets the vanity :class:`~.Invite` for this guild.
+        Sets the vanity :class:`.Invite` for this guild.
 
         :param url: The code to use for this guild.
-        :return: The :class:`~.Invite` produced.
+        :return: The :class:`.Invite` produced.
         """
         if 'vanity-url' not in self.features:
             raise CuriousError("This guild has no vanity URL")

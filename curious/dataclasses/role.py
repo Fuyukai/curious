@@ -158,7 +158,7 @@ class Role(Dataclass):
         
             :meth:`.Guild.add_roles`
 
-        :param member: The :class:`~.Member` to assign to.
+        :param member: The :class:`.Member` to assign to.
         """
         await self.guild.add_roles(member, self)
         return self
@@ -171,7 +171,7 @@ class Role(Dataclass):
         
             :meth:`.Guild.remove_roles`
         
-        :param member: The :class:`~.Member` to assign to. 
+        :param member: The :class:`.Member` to assign to.
         """
         await self.guild.remove_roles(member, self)
         return self

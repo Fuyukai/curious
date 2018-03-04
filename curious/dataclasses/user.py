@@ -209,7 +209,7 @@ class User(Dataclass):
         Sends a message to the user over a private channel.
 
         :param content: The contet of the message to send.
-        :return: A new :class:`~.Message` representing the sent message.
+        :return: A new :class:`.Message` representing the sent message.
         """
         channel = await self.open_private_channel()
         message = await channel.messages.send(content, *args, **kwargs)
@@ -220,7 +220,7 @@ class User(Dataclass):
         """
         Unbans this user from a guild.
 
-        :param guild: The :class:`~.Guild` to unban in.
+        :param guild: The :class:`.Guild` to unban in.
         """
         return await guild.bans.remove(self)
 

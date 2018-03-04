@@ -110,7 +110,7 @@ class Message(Dataclass):
         else:
             self.edited_at = None
 
-        #: The list of :class:`~.Embed` objects this message contains.
+        #: The list of :class:`.Embed` objects this message contains.
         self.embeds = []
         for embed in kwargs.get("embeds", []):
             self.embeds.append(Embed(**embed))
@@ -168,7 +168,7 @@ class Message(Dataclass):
     @property
     def role_mentions(self) -> 'typing.List[dt_role.Role]':
         """
-        Returns a list of :class:`~.Role` that were mentioned in this message.
+        Returns a list of :class:`.Role` that were mentioned in this message.
         
         .. warning::
             
@@ -182,7 +182,7 @@ class Message(Dataclass):
     @property
     def channel_mentions(self) -> 'typing.List[dt_channel.Channel]':
         """
-        Returns a list of :class:`~.Channel` that were mentioned in this message.
+        Returns a list of :class:`.Channel` that were mentioned in this message.
         
         .. note::
         
@@ -357,7 +357,7 @@ class Message(Dataclass):
         Fetches who reacted to this message.
 
         :param emoji: The emoji to check.
-        :return: A list of either :class:`~.Member` or :class:`~.User` that reacted to this message.
+        :return: A list of either :class:`.Member` or :class:`.User` that reacted to this message.
         """
         if isinstance(emoji, dt_emoji.Emoji):
             emoji = "{}:{}".format(emoji.name, emoji.id)

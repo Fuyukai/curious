@@ -193,7 +193,7 @@ class State(object):
     # get_all_* methods
     def get_all_channels(self) -> typing.Generator[Channel, None, None]:
         """
-        :return: A generator that yields all :class:`~.Channel`s the bot can see.
+        :return: A generator that yields all :class:`.Channel`s the bot can see.
         """
         for guild in self._guilds.values():
             for channel in guild.channels.values():
@@ -201,7 +201,7 @@ class State(object):
 
     def get_all_members(self) -> typing.Generator[Member, None, None]:
         """
-        :return: A generator that yields all :class:`~.Member`s the bot can see.
+        :return: A generator that yields all :class:`.Member`s the bot can see.
         """
         for guild in self.guilds.values():
             for member in guild.members.values():
@@ -209,7 +209,7 @@ class State(object):
 
     def get_all_roles(self) -> typing.Generator[Role, None, None]:
         """
-        :return: A generator that yields all :class:`~.Role`s the bot can see. 
+        :return: A generator that yields all :class:`.Role`s the bot can see.
         """
         for guild in self.guilds.values():
             for role in guild.roles.values():
@@ -282,7 +282,7 @@ class State(object):
         Creates a new webhook object from the event data.
 
         :param event_data: The event data.
-        :return: A :class:`~.Webhook`.
+        :return: A :class:`.Webhook`.
         """
         if "content" in event_data:
             # message object, so we have to do a minor bit of remapping
@@ -327,7 +327,7 @@ class State(object):
         Creates a new private channel and caches it.
 
         :param channel_data: The channel data to cache.
-        :return: A new :class:`~.Channel`.
+        :return: A new :class:`.Channel`.
         """
         channel = Channel(self.client, **channel_data)
         self._private_channels[channel.id] = channel
@@ -343,7 +343,7 @@ class State(object):
         :param user_data: The user data to use to create.
         :param user_klass: The type of user to create.
         :param override_cache: Should the cache be overridden?
-        :return: A new :class`~.User` (hopefully).
+        :return: A new :class`.User` (hopefully).
         """
         id = int(user_data.get("id", 0))
         if id in self._users and not override_cache:
@@ -360,7 +360,7 @@ class State(object):
         
         :param event_data: The message data to use to create.
         :param cache: Should this message be cached?
-        :return: A new :class:`~.Message` object for the message.
+        :return: A new :class:`.Message` object for the message.
         """
         message = Message(self.client, **event_data)
 

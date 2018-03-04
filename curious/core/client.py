@@ -111,7 +111,7 @@ class Client(object):
         """
         :param token: The current token for this bot.
         :param state_klass: The class to construct the connection state from.
-        :param bot_type: A union of :class:`~.BotType` that defines the type of this bot.
+        :param bot_type: A union of :class:`.BotType` that defines the type of this bot.
         """
         #: The mapping of `shard_id -> gateway` objects.
         self._gateways = {}  # type: typing.Mapping[int, GatewayHandler]
@@ -143,13 +143,13 @@ class Client(object):
 
         self._ready_state = {}
 
-        #: The :class:`~.HTTPClient` used for this bot.
+        #: The :class:`.HTTPClient` used for this bot.
         self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
 
         #: The cached gateway URL.
         self._gw_url = None  # type: str
 
-        #: The application info for this bot. Instance of :class:`~.AppInfo`.
+        #: The application info for this bot. Instance of :class:`.AppInfo`.
         #: This will be None for user bots.
         self.application_info = None  # type: AppInfo
 
@@ -162,14 +162,14 @@ class Client(object):
     @property
     def user(self) -> BotUser:
         """
-        :return: The :class:`~.User` that this client is logged in as.
+        :return: The :class:`.User` that this client is logged in as.
         """
         return self.state._user
 
     @property
     def guilds(self) -> 'typing.Mapping[int, dt_guild.Guild]':
         """
-        :return: A mapping of int -> :class:`~.Guild` that this client can see.
+        :return: A mapping of int -> :class:`.Guild` that this client can see.
         """
         return self.state.guilds
 
@@ -298,7 +298,7 @@ class Client(object):
         Changes the bot's current status.
 
         :param game: The game object to use. None for no game.
-        :param status: The new status. Must be a :class:`~.Status` object.
+        :param status: The new status. Must be a :class:`.Status` object.
         :param afk: Is the bot AFK? Only useful for userbots.
         :param shard_id: The shard to change your status on.
         """
@@ -359,7 +359,7 @@ class Client(object):
         Gets a user by ID.
 
         :param user_id: The ID of the user to get.
-        :return: A new :class:`~.User` object.
+        :return: A new :class:`.User` object.
         """
         try:
             return self.state._users[user_id]
@@ -374,7 +374,7 @@ class Client(object):
         Gets an application by ID.
 
         :param application_id: The client ID of the application to fetch.
-        :return: A new :class:`~.AppInfo` object corresponding to the application.
+        :return: A new :class:`.AppInfo` object corresponding to the application.
         """
         data = await self.http.get_app_info(application_id=application_id)
         appinfo = AppInfo(self, **data)
@@ -386,7 +386,7 @@ class Client(object):
         Gets a webhook by ID.
 
         :param webhook_id: The ID of the webhook to get.
-        :return: A new :class:`~.Webhook` object.
+        :return: A new :class:`.Webhook` object.
         """
         return self.state.make_webhook(await self.http.get_webhook(webhook_id))
 
@@ -397,7 +397,7 @@ class Client(object):
 
         :param invite_code: The invite code to get.
         :param with_counts: Return the approximate counts for this invite?
-        :return: A new :class:`~.Invite` object.
+        :return: A new :class:`.Invite` object.
         """
         return Invite(self, **(await self.http.get_invite(invite_code, with_counts=with_counts)))
 
@@ -406,7 +406,7 @@ class Client(object):
         Gets a widget from a guild.
         
         :param guild_id: The ID of the guild to get the widget of. 
-        :return: A :class:`~.Widget` object.
+        :return: A :class:`.Widget` object.
         """
         data = await self.http.get_widget_data(guild_id)
         return Widget(self, **data)
@@ -483,7 +483,7 @@ class Client(object):
         
         :param guild_id: The ID of the guild which the member is in. 
         :param member_id: The ID of the member to get.
-        :return: The :class:`~.Member` object downloaded.
+        :return: The :class:`.Member` object downloaded.
         """
         member_data = await self.http.get_guild_member(guild_id=guild_id, member_id=member_id)
         member = dt_member.Member(self, **member_data)
@@ -499,7 +499,7 @@ class Client(object):
                                      after: int = None, limit: int = 1000,
                                      get_all: bool = True) -> 'typing.Iterable[dt_member.Member]':
         """
-        Downloads the members for a :class:`~.Guild` over HTTP.
+        Downloads the members for a :class:`.Guild` over HTTP.
         
         .. warning::
         
@@ -509,7 +509,7 @@ class Client(object):
         :param after: The member ID after which to get members for.
         :param limit: The maximum number of members to return. By default, this is 1000 members.
         :param get_all: Should *all* members be fetched?
-        :return: An iterable of :class:`~.Member`.
+        :return: An iterable of :class:`.Member`.
         """
         member_data = []
         if get_all is True:
@@ -543,10 +543,10 @@ class Client(object):
 
     async def download_channels(self, guild_id: int) -> 'typing.List[dt_channel.Channel]':
         """
-        Downloads all the :class:`~.Channel` for a Guild.
+        Downloads all the :class:`.Channel` for a Guild.
         
         :param guild_id: The ID of the guild to download channels for. 
-        :return: An iterable of :class:`~.Channel` objects.
+        :return: An iterable of :class:`.Channel` objects.
         """
         channel_data = await self.http.get_guild_channels(guild_id=guild_id)
         channels = []
@@ -560,7 +560,7 @@ class Client(object):
     async def download_guild(self, guild_id: int, *,
                              full: bool = False) -> 'dt_guild.Guild':
         """
-        Downloads a :class:`~.Guild` over HTTP.
+        Downloads a :class:`.Guild` over HTTP.
         
         .. warning::
         
@@ -569,7 +569,7 @@ class Client(object):
         
         :param guild_id: The ID of the Guild object to download. 
         :param full: If all extra data should be downloaded alongside it.
-        :return: The :class:`~.Guild` object downloaded.
+        :return: The :class:`.Guild` object downloaded.
         """
         guild_data = await self.http.get_guild(guild_id)
         # create the new guild using the data specified

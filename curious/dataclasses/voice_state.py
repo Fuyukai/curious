@@ -50,14 +50,14 @@ class VoiceState(object):
     @property
     def guild(self) -> 'dt_guild.Guild':
         """
-        :return: The :class:`~.Guild` associated, or None if the guild is uncached.
+        :return: The :class:`.Guild` associated, or None if the guild is uncached.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
     def channel(self) -> 'dt_channel.Channel':
         """
-        :return: The :class:`~.Channel` associated, or None if the channel is uncached.
+        :return: The :class:`.Channel` associated, or None if the channel is uncached.
         """
         return self.guild.channels.get(self.channel_id)
 

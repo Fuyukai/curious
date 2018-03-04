@@ -104,7 +104,7 @@ class InviteChannel(IDObject):
         #: The name of this channel.
         self.name = kwargs.get("name")
 
-        #: The :class:`~.ChannelType` of this channel.
+        #: The :class:`.ChannelType` of this channel.
         self.type = dt_channel.ChannelType(kwargs.get("type"))
 
     def __repr__(self) -> str:

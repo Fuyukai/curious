@@ -43,7 +43,7 @@ class WidgetChannel(Dataclass):
         #: The guild ID for this channel.
         self.guild_id = guild.id
 
-        #: The :class:`~.WidgetGuild` for this channel.
+        #: The :class:`.WidgetGuild` for this channel.
         self.guild = guild
 
 
@@ -63,11 +63,11 @@ class WidgetMember(Dataclass):
             "discriminator": kwargs.get("discriminator", None),
             "bot": kwargs.get("bot", False)
         }
-        #: The :class:`~.User` object associated with this member.
+        #: The :class:`.User` object associated with this member.
         self.user = bot.state.make_user(user_dict)
         bot.state._check_decache_user(user_dict["id"])
 
-        #: The :class:`~.WidgetGuild` object associated with this member.
+        #: The :class:`.WidgetGuild` object associated with this member.
         self.guild = guild
 
         #: The game associated with this member.
@@ -76,7 +76,7 @@ class WidgetMember(Dataclass):
             game = {}
         self.game = Game(**game) if game else None
 
-        #: The :class:`~.Status` associated with this member.
+        #: The :class:`.Status` associated with this member.
         self.status = Status(kwargs.get("status"))
 
 
@@ -91,13 +91,13 @@ class WidgetGuild(Dataclass):
         #: The name of this guild.
         self.name = kwargs.get("name", "")
 
-        #: A mapping of :class:`~.WidgetChannel` in this widget guild.
+        #: A mapping of :class:`.WidgetChannel` in this widget guild.
         self._channels = {}  # type: typing.MutableMapping[int, WidgetChannel]
         for channel in kwargs.get("channels", []):
             c = WidgetChannel(bot=self._bot, guild=self, **channel)
             self._channels[c.id] = c
 
-        #: A mapping of :class:`~.WidgetMember` in this widget guild.
+        #: A mapping of :class:`.WidgetMember` in this widget guild.
         self._members = {}
         for member in kwargs.get("members", []):
             m = WidgetMember(bot=self._bot, guild=self, kwargs=member)
@@ -106,7 +106,7 @@ class WidgetGuild(Dataclass):
     @property
     def channels(self) -> 'typing.Mapping[int, WidgetChannel]':
         """
-        :return: A read-only mapping of :class:`~.WidgetChannel` representing the channels for \ 
+        :return: A read-only mapping of :class:`.WidgetChannel` representing the channels for \
             this guild. 
         """
         return MappingProxyType(self._channels)
@@ -114,7 +114,7 @@ class WidgetGuild(Dataclass):
     @property
     def members(self) -> 'typing.Mapping[int, WidgetMember]':
         """
-        :return: A read-only mapping of :class:`~.WidgetMember` representing the channels for \ 
+        :return: A read-only mapping of :class:`.WidgetMember` representing the channels for \
             this guild. 
         """
         return MappingProxyType(self._members)

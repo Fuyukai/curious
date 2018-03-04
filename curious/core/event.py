@@ -352,7 +352,7 @@ class EventContext(object):
         """
         Changes the current status for this shard.
         
-        This takes the same arguments as :class:`~.Client.change_status`, but ignoring the shard ID.
+        This takes the same arguments as :class:`.Client.change_status`, but ignoring the shard ID.
         """
         kwargs["shard_id"] = self.shard_id
         return self.bot.change_status(*args, **kwargs)
@@ -360,6 +360,6 @@ class EventContext(object):
     @property
     def gateway(self):
         """
-        :return: The :class:`~.Gateway` that produced this event. 
+        :return: The :class:`.Gateway` that produced this event.
         """
         return self.bot.gateways[self.shard_id]

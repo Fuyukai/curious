@@ -261,7 +261,7 @@ class ChannelMessageWrapper(object):
         :param content: The content of the message to send.
         :param tts: Should this message be text to speech?
         :param embed: An embed object to send with this message.
-        :return: A new :class:`~.Message` object.
+        :return: A new :class:`.Message` object.
         """
         if not self.channel.type.has_messages():
             raise CuriousError("Cannot send messages to a voice channel")
@@ -318,7 +318,7 @@ class ChannelMessageWrapper(object):
         :param filename: The filename for the file uploaded. If a path-like or str is passed, \
             will use the filename from that if this is not specified.
         :param message_content: Optional: Any extra content to be sent with the message.
-        :return: The new :class:`~.Message` created.
+        :return: The new :class:`.Message` created.
         """
         if not self.channel.type.has_messages():
             raise CuriousError("Cannot send messages to a voice channel")
@@ -548,7 +548,7 @@ class Channel(Dataclass):
         #: The parent ID of this channel.
         self.parent_id = parent_id  # type: int
 
-        #: The :class:`~.ChannelType` of channel this channel is.
+        #: The :class:`.ChannelType` of channel this channel is.
         self.type = ChannelType(kwargs.get("type", 0))  # type: ChannelType
 
         #: The :class:`.ChannelMessageWrapper` for this channel.
@@ -620,7 +620,7 @@ class Channel(Dataclass):
     @property
     def guild(self) -> '_typing.Union[dt_guild.Guild, None]':
         """
-        :return: The :class:`~.Guild` associated with this Channel.
+        :return: The :class:`.Guild` associated with this Channel.
         """
         try:
             return self._bot.guilds[self.guild_id]
@@ -637,14 +637,14 @@ class Channel(Dataclass):
     @property
     def recipients(self) -> '_typing.Mapping[int, dt_user.User]':
         """
-        :return: A mapping of int -> :class:`~.User` for the recipients of this private chat.
+        :return: A mapping of int -> :class:`.User` for the recipients of this private chat.
         """
         return MappingProxyType(self._recipients)
 
     @property
     def user(self) -> '_typing.Union[dt_user.User, None]':
         """
-        :return: If this channel is a private channel, the :class:`~.User` of the other user.
+        :return: If this channel is a private channel, the :class:`.User` of the other user.
         """
         if self.type != ChannelType.PRIVATE:
             return None
@@ -722,7 +722,7 @@ class Channel(Dataclass):
     @property
     def pins(self) -> '_typing.AsyncIterator[dt_message.Message]':
         """
-        :return: A :class:`~.AsyncIteratorWrapper` that can be used to iterate over the pins. 
+        :return: A :class:`.AsyncIteratorWrapper` that can be used to iterate over the pins.
         """
         return AsyncIteratorWrapper(self.get_pins)
 
@@ -811,7 +811,7 @@ class Channel(Dataclass):
         """
         Gets the pins for a channel.
 
-        :return: A list of :class:`~.Message` objects.
+        :return: A list of :class:`.Message` objects.
         """
         msg_data = await self._bot.http.get_pins(self.id)
 
@@ -833,7 +833,7 @@ class Channel(Dataclass):
         """
         Gets the webhooks for this channel.
 
-        :return: A list of :class:`~.Webhook` objects for the channel.
+        :return: A list of :class:`.Webhook` objects for the channel.
         """
         webhooks = await self._bot.http.get_webhooks_for_channel(self.id)
         obbs = []
@@ -910,7 +910,7 @@ class Channel(Dataclass):
 
         You must have MANAGE_WEBHOOKS to delete this webhook.
 
-        :param webhook: The :class:`~.Webhook` to delete.
+        :param webhook: The :class:`.Webhook` to delete.
         """
         if webhook.token is not None:
             # Delete it unconditionally.
@@ -963,7 +963,7 @@ class Channel(Dataclass):
 
             await channel.delete_messages(messages)
 
-        :param messages: A list of :class:`~.Message` objects to delete.
+        :param messages: A list of :class:`.Message` objects to delete.
         :return: The number of messages deleted.
         """
         return await self.messages.bulk_delete(messages)
@@ -1072,7 +1072,7 @@ class Channel(Dataclass):
         :param content: The content of the message to send.
         :param tts: Should this message be text to speech?
         :param embed: An embed object to send with this message.
-        :return: A new :class:`~.Message` object.
+        :return: A new :class:`.Message` object.
         """
         return await self.messages.send(content, tts=tts, embed=embed)
 
@@ -1094,7 +1094,7 @@ class Channel(Dataclass):
             
         :param filename: The filename of the file.
         :param message_content: Optional: Any extra content to be sent with the message.
-        :return: The new :class:`~.Message` created.
+        :return: The new :class:`.Message` created.
         """
         return await self.messages.upload(file_content, filename, message_content=message_content)
 
@@ -1114,7 +1114,7 @@ class Channel(Dataclass):
 
         :param filename: The file to send, in the formats specified above.
         :param message_content: Any extra content to be sent with the message.
-        :return: The new :class:`~.Message` created.
+        :return: The new :class:`.Message` created.
         """
         return await self.messages.upload(fp=filename, filename=filename,
                                           message_content=message_content)
@@ -1123,7 +1123,7 @@ class Channel(Dataclass):
         """
         Changes an overwrite for this channel.
 
-        This overwrite must be an instance of :class:`~.Overwrite`.
+        This overwrite must be an instance of :class:`.Overwrite`.
 
         :param overwrite: The specific overwrite to use.
             If this is None, the overwrite will be deleted.

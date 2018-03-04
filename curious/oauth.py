@@ -78,7 +78,7 @@ class OAuth2Token(object):
         #: The token type of the token (normally ``Bearer``).
         self.token_type = token_type
 
-        #: A list of :class:`~.OAuth2Scope` this token is authenticated for.
+        #: A list of :class:`.OAuth2Scope` this token is authenticated for.
         self.scopes = []
         for scope_name in scope.split(" "):
             self.scopes.append(OAuth2Scope(scope_name))
@@ -120,7 +120,7 @@ class OAuth2Client(object):
     """
     The class used to perform an OAuth2 handshake with Discord.
     This will provide a URL that can be used to authorize a client, and then the ability to fetch a
-    new :class:`~.OAuth2Token`.
+    new :class:`.OAuth2Token`.
     
     .. code-block:: python3
     
@@ -181,7 +181,7 @@ class OAuth2Client(object):
         """
         Gets the authorization URL to be used for the user to authorize this application.
         
-        :param scopes: A list of :class:`~.OAuthScope` for the request. 
+        :param scopes: A list of :class:`.OAuthScope` for the request.
         """
         url = self._oauth2_client.prepare_request_uri(self.AUTHORIZE_URL,
                                                       scope=[scope.value for scope in scopes],
@@ -195,7 +195,7 @@ class OAuth2Client(object):
         
         :param code: The authorization code returned in the URI. 
         :param state: The state returned in the URI.
-        :return: A :class:`~.OAuthToken` object representing the token.
+        :return: A :class:`.OAuthToken` object representing the token.
         """
         # if state not in self._states:
         #    raise InvalidStateError(state)
@@ -218,10 +218,10 @@ class OAuth2Client(object):
         """
         Refreshes a token.
         
-        :param token: Either a :class:`~.OAuth2Token` or the str refresh token.
+        :param token: Either a :class:`.OAuth2Token` or the str refresh token.
         :param scopes: The scopes to request.
             If an OAuth2Token is passed as the token, this will be fetched automatically.
-        :return: The refreshed :class:`~.OAuth2Token`.
+        :return: The refreshed :class:`.OAuth2Token`.
         """
         if isinstance(token, OAuth2Token):
             ref = token.refresh_token
