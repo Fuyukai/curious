@@ -690,6 +690,15 @@ class Channel(Dataclass):
                     if channel.parent_id == self.id]
         return channels
 
+    def get_by_name(self, name: str) -> '_typing.Union[Channel, None]':
+        """
+        Gets a channel by name in this channel's children.
+
+        :param name: The name of the channel to get.
+        :return: A :class:`.Channel` if the channel was find
+        """
+        return next(filter(lambda channel: channel.name == name, self.children), None)
+
     @property
     def messages(self) -> 'ChannelMessageWrapper':
         """
