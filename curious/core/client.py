@@ -698,12 +698,12 @@ class Client(object):
         self.shard_count = shard_count
         return await self.start(shard_count)
 
-    async def _kill(self):
+    async def kill(self) -> None:
         """
         Kills the bot by closing all shards.
         """
         for gateway in self._gateways.values():
-            await gateway.close(code=1006, reason="Bot killed")
+            await gateway.close(code=1006, reason="Bot killed", reconnect=False)
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True, **kwargs):
         """
