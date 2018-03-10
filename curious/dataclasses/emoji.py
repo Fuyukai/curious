@@ -58,6 +58,9 @@ class Emoji(Dataclass):
 
         return self.id == other.id
 
+    def __hash__(self) -> int:
+        return hash(self.id)
+
     def __str__(self) -> str:
         return "<{}:{}:{}>".format('a' if self.animated else '', self.name, self.id)
 
