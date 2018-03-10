@@ -103,21 +103,25 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         self._fields.append(attrdict({"name": str(name), "value": str(value), "inline": inline}))
         return self
 
-    def set_author(self, *, name: str = None, url: str = None) -> 'Embed':
+    def set_author(self, *, name: str, url: str = None, icon_url: str = None) -> 'Embed':
         """
         Sets the author of this embed.
 
         :param name: The name of the author.
         :param url: The URL of the author.
+        :param icon_url: The URL of the author icon.
         :return: The Embed object.
         """
 
-        self.author = attrdict()
-        if name:
-            self.author.name = name
+        self.author = attrdict(
+            name=name
+        )
 
         if url:
             self.author.url = url
+
+        if icon_url:
+            self.author.icon_url = icon_url
 
         return self
 
