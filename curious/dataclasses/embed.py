@@ -67,7 +67,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         self.timestamp = timestamp  # type: datetime.datetime
 
         #: The fields for this embed.
-        self._fields = []
+        self.fields = []
 
         #: The footer for this embed.
         self.footer = make_attrdict("footer")
@@ -100,7 +100,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if isinstance(value, str) and len(value) == 0:
             raise ValueError("Value must not be empty")
 
-        self._fields.append(attrdict({"name": str(name), "value": str(value), "inline": inline}))
+        self.fields.append(attrdict({"name": str(name), "value": str(value), "inline": inline}))
         return self
 
     def set_author(self, *, name: str, url: str = None, icon_url: str = None) -> 'Embed':
@@ -208,6 +208,6 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         if self.author:
             payload["author"] = self.author
 
-        payload["fields"] = self._fields
+        payload["fields"] = self.fields
 
         return payload
