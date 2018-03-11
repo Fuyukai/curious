@@ -627,7 +627,7 @@ class Client(object):
 
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
-            await self._kill()
+            await self.kill()
             raise
 
     @ev_dec(name="ready")
