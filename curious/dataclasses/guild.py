@@ -965,11 +965,10 @@ class Guild(Dataclass):
                 member_obj = self._members[member_id]
             else:
                 member_obj = dt_member.Member(self._bot, **member_data)
+                self._members[member_obj.id] = member_obj
 
             member_obj.nickname = member_data.get("nick", member_obj.nickname)
             member_obj.guild_id = self.id
-
-            self._members[member_obj.id] = member_obj
 
     def _handle_emojis(self, emojis: typing.List[dict]):
         """
@@ -979,8 +978,8 @@ class Guild(Dataclass):
         """
         for emoji in emojis:
             emoji_obj = dt_emoji.Emoji(**emoji, client=self._bot)
-            emoji_obj.guild_id = self.id
             self._emojis[emoji_obj.id] = emoji_obj
+            emoji_obj.guild_id = self.id
 
     def from_guild_create(self, **data: dict) -> 'Guild':
         """
@@ -1037,9 +1036,9 @@ class Guild(Dataclass):
         # Create all of the channel objects.
         for channel_data in data.get("channels", []):
             channel_obj = dt_channel.Channel(self._bot, **channel_data)
-            channel_obj.guild_id = self.id
-            channel_obj._update_overwrites(channel_data.get("permission_overwrites", []),)
             self._channels[channel_obj.id] = channel_obj
+            channel_obj.guild_id = self.id
+            channel_obj._update_overwrites(channel_data.get("permission_overwrites", []), )
 
         # Create all of the voice states.
         for vs_data in data.get("voice_states", []):
@@ -1050,15 +1049,14 @@ class Guild(Dataclass):
                 continue
 
             voice_state = dt_vs.VoiceState(**vs_data, client=self._bot)
+            self._voice_states[voice_state.user_id] = voice_state
 
             vs_channel = self._channels.get(int(vs_data.get("channel_id", 0)))
             if vs_channel is not None:
                 voice_state.channel_id = vs_channel.id
                 voice_state.guild_id = self.id
 
-            self._voice_states[voice_state.user_id] = voice_state
-
-        # Create all of the emoji objects for the server.
+        # delegate to other function
         self._handle_emojis(data.get("emojis", []))
 
     @property
