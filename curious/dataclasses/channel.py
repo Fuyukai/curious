@@ -902,7 +902,7 @@ class Channel(Dataclass):
 
         data = await self._bot.http.edit_webhook(webhook.id,
                                                  name=name, avatar=avatar)
-        webhook._default_name = data.get("name")
+        webhook.default_name = data.get("name")
         webhook._default_avatar = data.get("avatar")
 
         webhook.user.username = data.get("name")
