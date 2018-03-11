@@ -107,11 +107,11 @@ class HTTPException(CuriousError, ConnectionError):
 
         self.error = error
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.error_code == ErrorCode.UNKNOWN:
             return repr(self.error)
 
-        return "{}: {}".format(self.error_code, self.error_code.name, self.error_message)
+        return "{} ({}): {}".format(self.error_code, self.error_code.name, self.error_message)
 
     __repr__ = __str__
 
