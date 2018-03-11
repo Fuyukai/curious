@@ -43,7 +43,6 @@ from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
-from curious.exc import NotFound
 from curious.util import base64ify
 
 logger = logging.getLogger("curious.client")
@@ -436,23 +435,13 @@ class Client(object):
 
                 continue
 
-            # user matching works by doing a search over our guilds
-            # then failing that, trying to get it from users
             user_match = MENTION_REGEX.match(token)
             if user_match is not None:
                 found_name = None
                 user_id = int(user_match.groups()[0])
-                for guild in self.guilds.values():
-                    try:
-                        found_name = guild.members[user_id].name
-                        break
-                    except KeyError:
-                        continue
-                else:
-                    try:
-                        found_name = await self.get_user(user_id)
-                    except NotFound:
-                        pass
+                member_or_user = self.state.find_member_or_user(user_id)
+                if member_or_user:
+                    found_name = member_or_user.name
 
                 if found_name is None:
                     final.append(token)
