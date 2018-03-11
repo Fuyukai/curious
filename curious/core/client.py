@@ -649,7 +649,7 @@ class Client(object):
                     async for event in agen:
                         await self.fire_event(event[0], *event[1:], gateway=gw)
             except Exception as e:  # kill the bot if we failed to parse something
-                await self._kill()
+                await self.kill()
                 raise
             finally:
                 self._gateways.pop(shard_id, None)
