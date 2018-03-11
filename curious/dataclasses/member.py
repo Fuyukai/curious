@@ -106,7 +106,7 @@ class Nickname(str):
         return await self.set(self.NONE)
 
 
-class _MemberRoleContainer(collections.Sequence):
+class MemberRoleContainer(collections.Sequence):
     """
     Represents the roles of a :class:`.Member`.
     """
@@ -118,12 +118,10 @@ class _MemberRoleContainer(collections.Sequence):
         if not self._member.guild:
             return []
 
-        roles = []
-        for id in self._member.role_ids:
-            try:
-                roles.append(self._member.guild.roles[id])
-            except (KeyError, AttributeError):
-                pass
+        roles = filter(
+            lambda r: r is not None,
+            map(self._member.guild.roles.get, self._member.role_ids)
+        )
 
         return sorted(roles)
 
@@ -234,7 +232,7 @@ class Member(Dataclass):
         self.role_ids = [int(rid) for rid in kwargs.get("roles", [])]
 
         #: A :class:`._MemberRoleContainer` that represents the roles of this member.
-        self.roles = _MemberRoleContainer(self)
+        self.roles = MemberRoleContainer(self)
 
         #: The date the user joined the guild.
         self.joined_at = to_datetime(kwargs.get("joined_at", None))  # type: datetime.datetime

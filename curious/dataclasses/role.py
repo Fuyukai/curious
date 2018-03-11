@@ -148,7 +148,7 @@ class Role(Dataclass):
             If :attr:`.Role.mentionable` is ``False``, this will not actually mention the role.
         
         """
-        return "<@&{}>".format(self.id)
+        return f"<@&{self.id}>"
 
     async def assign_to(self, member: 'dt_member.Member') -> 'Role':
         """
@@ -156,11 +156,11 @@ class Role(Dataclass):
         
         .. seealso::
         
-            :meth:`.Guild.add_roles`
+            :meth:`.MemberRoleContainer.add`
 
         :param member: The :class:`.Member` to assign to.
         """
-        await self.guild.add_roles(member, self)
+        await member.roles.add(self)
         return self
 
     async def remove_from(self, member: 'dt_member.Member'):
@@ -169,11 +169,11 @@ class Role(Dataclass):
         
         .. seealso::
         
-            :meth:`.Guild.remove_roles`
+            :meth:`.MemberRoleContainer.remove`
         
         :param member: The :class:`.Member` to assign to.
         """
-        await self.guild.remove_roles(member, self)
+        await member.roles.remove(self)
         return self
 
     async def delete(self) -> 'Role':
