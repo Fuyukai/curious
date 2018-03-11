@@ -23,7 +23,7 @@ class Permissions(object):
     @classmethod
     def none(cls) -> Permissions: ...
 
-    def raise_for_permission(self, permission: Union[str, int]) -> None:
+    def raise_for_permission(self, permission: Union[str, int]) -> None: ...
 
     @property
     def create_instant_invite(self) -> bool: ...
@@ -84,15 +84,17 @@ class Permissions(object):
 
 
 class Overwrite(object):
-     __slots__ = "target", "channel", "allow", "deny"
+     __slots__ = "target", "channel_id", "allow", "deny"
 
      def __init__(self, allow: Union[int, Permissions], deny: Union[int, Permissions],
                   obb: Union[Member, Role],
-                  channel: Channel = None):
+                  channel_id: int = None):
          self.allow = allow
          self.deny = deny
          self.target = obb
-         self.channel = channel
+         self.channel_id = channel_id
      def __repr__(self) -> str: ...
      def __getattr__(self, item) -> bool: ...
      def __setattr__(self, item: str, value: Any): ...
+     @property
+     def channel(self) -> Channel: ...

@@ -529,7 +529,7 @@ class Channel(Dataclass):
     Represents a channel object.
     """
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, **kwargs) -> None:
         super().__init__(kwargs.get("id"), client)
 
         #: The name of this channel.
@@ -593,7 +593,7 @@ class Channel(Dataclass):
         #: The internal overwrites for this channel.
         self._overwrites = {}  # type: _typing.Dict[int, dt_permissions.Overwrite]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<Channel id={self.id} name={self.name} type={self.type.name} " \
                f"guild_id={self.guild_id}>"
 
@@ -605,17 +605,17 @@ class Channel(Dataclass):
         guild = self.guild or guild
 
         for overwrite in overwrites:
-            id = int(overwrite["id"])
+            id_ = int(overwrite["id"])
             type_ = overwrite["type"]
 
             if type_ == "member":
-                obb = guild._members.get(id)
+                obb = guild._members.get(id_)
             else:
-                obb = guild._members.get(id)
+                obb = guild._members.get(id_)
 
             self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                             deny=overwrite["deny"],
-                                                            obb=obb, channel=self)
+                                                            obb=obb, channel_id=self.id)
 
     @property
     def guild(self) -> '_typing.Union[dt_guild.Guild, None]':

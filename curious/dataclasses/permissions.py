@@ -21,9 +21,8 @@ This class uses some automatic generation to create the objects.
 .. currentmodule:: curious.dataclasses.permissions
 """
 import typing
-import weakref
 
-from curious.dataclasses import member as dt_member, role as dt_role
+from curious.dataclasses import channel as dt_channel, member as dt_member, role as dt_role
 from curious.exc import PermissionsError
 
 
@@ -202,24 +201,21 @@ class Overwrite(object):
 
     You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and 
     False to set a deny overwrite.
-
-    :ivar allow: The :class:`Permissions` object that represents the allowed items for this \ 
-        overwrite.
-    :ivar deny: The :class:`Permissions` object that represents the denied items for this overwrite.
-    :ivar target: The original object that this overwrite is for. This can either be a role or a \ 
-        member.
     """
 
-    __slots__ = "target", "channel", "allow", "deny"
+    __slots__ = "target", "channel_id", "allow", "deny"
 
     def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions],
-                 obb, channel=None):
+                 obb: 'typing.Union[dt_member.Member = None, dt_role.Role]',
+                 channel_id: int = None):
+        """
+        :param allow: A :class:`.Permissions` that this overwrite allows.
+        :param deny: A :class:`.Permissions` that this overwrite denies.
+        :param obb: Optional: The :class:`.Member` or :class:`.Role` that this overwrite is for.
+        :param channel_id: Optional: The channel ID this overwrite is in.
+        """
         self.target = obb
-
-        if channel is not None:
-            self.channel = weakref.ref(channel)
-        else:
-            self.channel = None
+        self.channel_id = channel_id
 
         if isinstance(allow, Permissions):
             allow = allow.bitfield
@@ -229,7 +225,13 @@ class Overwrite(object):
             deny = deny.bitfield
         self.deny = Permissions(value=deny if deny is not None else 0)
 
-    def __repr__(self):
+    @property
+    def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
+        """
+        :return: The :class:`.Channel` this overwrite represents.
+        """
+
+    def __repr__(self) -> str:
         return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target,
                                                                                self.channel,
                                                                                self.allow,
