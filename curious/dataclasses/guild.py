@@ -631,7 +631,7 @@ class Guild(Dataclass):
         "channels", "roles", "emojis", "bans",
     )
 
-    valid_embed_styles = ('banner1', 'banner3', 'banner2', 'shield', 'banner4')
+    valid_embed_styles = {'banner1', 'banner3', 'banner2', 'shield', 'banner4'}
 
     def __init__(self, bot, **kwargs) -> None:
         super().__init__(kwargs.get("id"), bot)
