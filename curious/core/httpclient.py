@@ -148,7 +148,6 @@ def encode_multipart(fields, files, boundary=None):
 
 # more of a namespace
 class Endpoints:
-    BASE = "https://discordapp.com"
     API_BASE = "/api/v7"
 
     USER_ID = "/users/{user_id}"
@@ -210,6 +209,12 @@ class Endpoints:
     OAUTH2_TOKENS = OAUTH2_BASE + "/tokens"
     OAUTH2_REVOKE = OAUTH2_TOKENS + "/{app_id}"
 
+    def __init__(self, base_url: str = "https://discordapp.com"):
+        """
+        :param base_url: The base URL for this set of endpoints.
+        """
+        self.BASE = base_url
+
 
 class HTTPClient(object):
     """
@@ -244,7 +249,8 @@ class HTTPClient(object):
             "Authorization": "{}{}".format("Bot " if bot else "", self.token)
         }
 
-        self.session = asks.Session(base_location=Endpoints.BASE, endpoint=Endpoints.API_BASE,
+        self.endpoints = Endpoints()
+        self.session = asks.Session(base_location=self.endpoints.BASE, endpoint=Endpoints.API_BASE,
                                     connections=max_connections)
         self.headers = headers
 
@@ -304,7 +310,7 @@ class HTTPClient(object):
         # temporary
         # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
         if 'uri' not in kwargs:
-            kwargs["uri"] = Endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+            kwargs["uri"] = self.endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
         else:
             kwargs.pop("path", None)
 
