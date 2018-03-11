@@ -215,6 +215,21 @@ class State(object):
             for role in guild.roles.values():
                 yield role
 
+    def find_member_or_user(self, user_id: int) -> typing.Union[Member, User]:
+        """
+        Finds a member or user by ID.
+
+        :param user_id: The user ID to find.
+        :return: The :class:`.Member` or :class:`.User` found, if any.
+        """
+        for guild in self.guilds.values():
+            try:
+                return guild.members[user_id]
+            except KeyError:
+                continue
+
+        return self._users.get(user_id)
+
     def find_channel(self, channel_id: int) -> typing.Union[Channel, None]:
         """
         Finds a channel by ID.  
