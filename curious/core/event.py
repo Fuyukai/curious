@@ -28,6 +28,7 @@ from async_generator import asynccontextmanager
 from multidict import MultiDict
 
 from curious.core import client as md_client
+from curious.core.gateway import GatewayHandler
 from curious.util import remove_from_multidict, safe_generator
 
 logger = logging.getLogger("curious.events")
@@ -294,7 +295,7 @@ def event(name, scan: bool = True):
 
     def __innr(f):
         if not hasattr(f, "events"):
-            f.events = set()
+            f.events = {name}
 
         f.is_event = True
         f.events.add(name)
@@ -330,6 +331,11 @@ class EventContext(object):
 
     def __init__(self, cl: 'md_client.Client', shard_id: int,
                  event_name: str):
+        """
+        :param cl: The :class:`.Client` instance for this event context.
+        :param shard_id: The shard ID this event is for.
+        :param event_name: The event name for this event.
+        """
         #: The :class:`.Client` instance that this event was fired under.
         self.bot = cl
 
@@ -348,17 +354,17 @@ class EventContext(object):
         """
         return self.bot.events.getall(self.event_name, [])
 
-    def change_status(self, *args, **kwargs) -> typing.Coroutine[None, None, None]:
+    async def change_status(self, *args, **kwargs) -> None:
         """
         Changes the current status for this shard.
         
         This takes the same arguments as :class:`.Client.change_status`, but ignoring the shard ID.
         """
         kwargs["shard_id"] = self.shard_id
-        return self.bot.change_status(*args, **kwargs)
+        return await self.bot.change_status(*args, **kwargs)
 
     @property
-    def gateway(self):
+    def gateway(self) -> GatewayHandler:
         """
         :return: The :class:`.Gateway` that produced this event.
         """
