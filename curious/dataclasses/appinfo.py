@@ -20,9 +20,8 @@ Wrappers for Application Info objects.
 """
 from typing import Union
 
-from curious.dataclasses import guild as dt_guild, user as dt_user
+from curious.dataclasses import user as dt_user
 from curious.dataclasses.bases import Dataclass
-from curious.exc import CuriousError
 
 
 class AppInfo(Dataclass):
@@ -84,25 +83,4 @@ class AppInfo(Dataclass):
 
         return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id,
                                                                        self._icon_hash)
-
-    async def add_to_guild(self, guild: 'dt_guild.Guild', *,
-                           permissions: int = 0):
-        """
-        Authorizes this bot to join a guild.
-
-        This requires a userbot client to be used.
-        """
-        if self._bot.is_bot:
-            raise CuriousError("Bots cannot add other bots")
-
-        if self.bot is None:
-            raise CuriousError("This application has no bot associated")
-
-        if self.owner is None and not self.public:
-            raise CuriousError("This bot is not public")
-
-        if self.requires_code_grant:
-            raise CuriousError("This bot requires code grant")
-
-        await self._bot.http.authorize_bot(self.client_id, guild.id, permissions=permissions)
 
