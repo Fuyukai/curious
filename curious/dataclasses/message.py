@@ -207,6 +207,12 @@ class Message(Dataclass):
 
         return emojis
 
+    async def clean_content(self) -> str:
+        """
+        Gets the cleaned content for this message.
+        """
+        return await self._bot.clean_content(self.content)
+
     async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
         """
         Gets a list of valid invites in this message.
