@@ -1038,8 +1038,7 @@ class Guild(Dataclass):
         for channel_data in data.get("channels", []):
             channel_obj = dt_channel.Channel(self._bot, **channel_data)
             channel_obj.guild_id = self.id
-            channel_obj._update_overwrites(channel_data.get("permission_overwrites", []),
-                                           guild=self)
+            channel_obj._update_overwrites(channel_data.get("permission_overwrites", []),)
             self._channels[channel_obj.id] = channel_obj
 
         # Create all of the voice states.

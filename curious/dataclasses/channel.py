@@ -599,19 +599,25 @@ class Channel(Dataclass):
 
     __str__ = __repr__
 
-    def _update_overwrites(self, overwrites: list, guild=None):
-        self._overwrites = {}
+    def _update_overwrites(self, overwrites: _typing.List[dict]):
+        """
+        Updates the overwrites for this channel.
 
-        guild = self.guild or guild
+        :param overwrites: A list of overwrite dicts.
+        """
+        if not self.guild_id:
+            raise CuriousError("A channel without a guild cannot have overwrites")
+
+        self._overwrites = {}
 
         for overwrite in overwrites:
             id_ = int(overwrite["id"])
             type_ = overwrite["type"]
 
             if type_ == "member":
-                obb = guild._members.get(id_)
+                obb = self.guild._members.get(id_)
             else:
-                obb = guild._members.get(id_)
+                obb = self.guild._members.get(id_)
 
             self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                             deny=overwrite["deny"],
