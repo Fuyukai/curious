@@ -3,6 +3,11 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.0.post1 (Released 2018-03-12)
+---------------------------------
+
+ - Fixed :meth:`.Channel.permissions` (thanks PyCharm)
+
 0.7.0 (Released 2018-03-11)
 ---------------------------
 
