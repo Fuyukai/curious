@@ -766,7 +766,8 @@ class Channel(Dataclass):
         """
         overwrite = self._overwrites.get(obb.id)
         if not overwrite:
-            return dt_permissions.Overwrite(0, 0, obb, channel=self)
+            overwrite = dt_permissions.Overwrite(0, 0, obb)
+            overwrite.channel_id = self.id
 
         return overwrite
 
