@@ -18,9 +18,10 @@ Wrappers for Member objects (Users with guilds).
 
 .. currentmodule:: curious.dataclasses.member
 """
-import collections
 import datetime
 from typing import List
+
+import collections
 
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
     voice_state as dt_vs
@@ -28,37 +29,34 @@ from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.presence import Game, Presence, Status
 from curious.exc import HierarchyError, PermissionsError
-from curious.util import subclass_builtin, to_datetime
+from curious.util import to_datetime
 
 
-@subclass_builtin(str)
-class Nickname(str):
+class Nickname(object):
     """
     Represents the nickname of a :class:`.Member`.
-
-    :cvar NONE: A singleton :class:`.Nickname` representing an empty nickname. Equal to the empty \
-        string.
     """
-    NONE: 'Nickname'
-
-    def __new__(cls, value: str):
-        if value is None or value == "":
-            try:
-                return cls.NONE
-            except AttributeError:
-                cls.NONE = super().__new__(cls, "")
-                return cls.NONE
-
-        return super().__new__(cls, value)
+    def __init__(self, parent: 'Member', value: str):
+        self.parent = parent
+        self.value = value
 
     def __eq__(self, other):
-        if other is None and self == self.NONE:
+        if other is None and self.value in [None, ""]:
             return True
 
-        return super().__eq__(other)
+        if isinstance(other, Nickname):
+            return self.value == other.value
+
+        return self.value == other
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __str__(self) -> str:
+        return self.value
 
     def __repr__(self) -> str:
-        return f"<Nickname value={super().__repr__()}>"
+        return f"<Nickname value={self.value}>"
 
     async def set(self, new_nickname: str) -> 'Nickname':
         """
@@ -66,16 +64,15 @@ class Nickname(str):
 
         :param new_nickname: The new nickname of this user. If None, will reset the nickname.
         """
-        parent: Member = self.__dict__['parent']
 
         # Ensure we don't try and set a bad nickname, which makes an empty listener.
         if new_nickname == self:
             return self
 
-        guild: dt_guild.Guild = parent.guild
+        guild: dt_guild.Guild = self.parent.guild
 
         me = False
-        if parent == parent.guild.me:
+        if self.parent == self.parent.guild.me:
             me = True
             if not guild.me.guild_permissions.change_nickname:
                 raise PermissionsError("change_nickname")
@@ -83,27 +80,27 @@ class Nickname(str):
             if not guild.me.guild_permissions.manage_nicknames:
                 raise PermissionsError("manage_nicknames")
 
-        if parent.top_role >= guild.me.top_role and parent != guild.me:
+        if self.parent.top_role >= guild.me.top_role and self.parent != guild.me:
             raise HierarchyError("Top role is equal to or lower than victim's top role")
 
         if new_nickname is not None and len(new_nickname) > 32:
             raise ValueError("Nicknames cannot be longer than 32 characters")
 
         async def _listener(before, after):
-            return after.guild == guild and after.id == parent.id
+            return after.guild == guild and after.id == self.parent.id
 
-        async with parent._bot.events.wait_for_manager("guild_member_update", _listener):
-            await parent._bot.http.change_nickname(guild.id, new_nickname,
-                                                   member_id=parent.id, me=me)
+        async with self.parent._bot.events.wait_for_manager("guild_member_update", _listener):
+            await self.parent._bot.http.change_nickname(guild.id, new_nickname,
+                                                        member_id=self.parent.id, me=me)
 
         # the wait_for means at this point the nickname has been changed
-        return parent.nickname
+        return self.parent.nickname
 
     async def reset(self) -> 'Nickname':
         """
         Resets a member's nickname.
         """
-        return await self.set(self.NONE)
+        return await self.set(None)
 
 
 class MemberRoleContainer(collections.Sequence):
@@ -277,12 +274,7 @@ class Member(Dataclass):
 
     @nickname.setter
     def nickname(self, value: str):
-        if not value:
-            self._nickname = Nickname.NONE
-            return
-
-        self._nickname = Nickname(value)
-        self._nickname.__dict__['parent'] = self
+        self._nickname.value = value
 
     def __hash__(self) -> int:
         return hash(self.guild_id) + hash(self.user.id)
