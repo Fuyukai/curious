@@ -53,7 +53,10 @@ class Nickname(object):
         return not self.__eq__(other)
 
     def __str__(self) -> str:
-        return self.value
+        if self.value is not None:
+            return self.value
+
+        return ""
 
     def __repr__(self) -> str:
         return f"<Nickname value={self.value}>"
