@@ -120,7 +120,7 @@ class MemberRoleContainer(collections.Sequence):
             map(self._member.guild.roles.get, self._member.role_ids)
         )
 
-        return sorted(roles)
+        return sorted(roles, reverse=True)
 
     # opt: the default Sequence makes us re-create the sorted role list constantly
     # we don't wanna cache it, without introducing invalidation hell
