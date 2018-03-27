@@ -297,7 +297,7 @@ class Member(Dataclass):
         new_object.joined_at = self.joined_at
         new_object.guild_id = self.guild_id
         new_object.presence = self.presence
-        new_object.nickname = self.nickname
+        new_object._nickname = self._nickname
 
         return new_object
 
@@ -324,7 +324,7 @@ class Member(Dataclass):
         """
         :return: The computed display name of this user.
         """
-        return self.nickname if self.nickname != Nickname.NONE else self.user.username
+        return self.nickname if self.nickname != None else self.user.username
 
     @property
     def mention(self) -> str:
