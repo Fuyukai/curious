@@ -3,6 +3,11 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.3 (Released 2018-03-27)
+---------------------------
+
+ - Don't immediately disconnect on boot.
+
 0.7.2 (Released 2018-03-27)
 ---------------------------
 
