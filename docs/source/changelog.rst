@@ -3,6 +3,13 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.4 (Released 2018-03-27)
+---------------------------
+
+ - Fix for negative ratelimit sleep times.
+
+ - Don't crash when copying a nickname incorrectly.
+
 0.7.3 (Released 2018-03-27)
 ---------------------------
 
