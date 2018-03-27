@@ -209,8 +209,7 @@ class GatewayHandler(object):
         self.heartbeat_stats.heartbeats += 1
         self.heartbeat_stats.last_heartbeat_time = time.monotonic()
 
-        if self.heartbeat_stats.heartbeats == 1 or \
-                self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
+        if self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
             self.logger.warning("Connection has zombied, reconnecting.")
 
             # Note: The 1006 close code signifies an error.
