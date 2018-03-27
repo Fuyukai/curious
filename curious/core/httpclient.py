@@ -348,8 +348,9 @@ class HTTPClient(object):
                 if tries <= 0:
                     # We need to sleep for a bit before we can start making another request.
                     sleep_time = ceil(reset_time - time.time())
-                    logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
-                    await multio.asynclib.sleep(sleep_time)
+                    if sleep_time >= 0:
+                        logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
+                        await multio.asynclib.sleep(sleep_time)
 
             for tries in range(0, 5):
                 method = kwargs.get("method", "???")
