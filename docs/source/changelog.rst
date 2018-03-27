@@ -3,8 +3,17 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.7.0.post1 (Released 2018-03-12)
----------------------------------
+0.7.2 (Released 2018-03-27)
+---------------------------
+
+ - Changed :class:`.Nickname` to be a proper object, and not a string wrapper.
+
+ - Fix ``Member.roles._sorted_roles`` to sort in reverse order.
+
+ - Attempt at adding better reconnect logic.
+
+0.7.1 (Released 2018-03-12)
+---------------------------
 
  - Fixed :meth:`.Channel.permissions` (thanks PyCharm)
 
