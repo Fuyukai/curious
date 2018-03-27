@@ -25,12 +25,13 @@ import sys
 import time
 import zlib
 from collections import Counter
+from dataclasses import dataclass  # use a 3.6 backport if available
 from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
 import multio
 from async_generator import asynccontextmanager
-from dataclasses import dataclass  # use a 3.6 backport if available
-from lomond.events import Binary, Closed, Connecting, Text
+from lomond.errors import WebSocketClosed, WebSocketClosing
+from lomond.events import Binary, Closed, Connected, Connecting, Text
 
 from curious.core._ws_wrapper import BasicWebsocketWrapper
 from curious.util import safe_generator
@@ -208,7 +209,8 @@ class GatewayHandler(object):
         self.heartbeat_stats.heartbeats += 1
         self.heartbeat_stats.last_heartbeat_time = time.monotonic()
 
-        if self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
+        if self.heartbeat_stats.heartbeats == 1 or \
+                self.heartbeat_stats.heartbeats > self.heartbeat_stats.heartbeat_acks + 1:
             self.logger.warning("Connection has zombied, reconnecting.")
 
             # Note: The 1006 close code signifies an error.
@@ -316,10 +318,15 @@ class GatewayHandler(object):
         async for event in self.websocket:
             if isinstance(event, Closed):
                 await self._stop_heartbeat_events()
+                self.logger.info("The websocket has closed")
                 yield "websocket_closed",
 
             elif isinstance(event, Connecting):
+                self.logger.info("The websocket is opening...")
                 yield "websocket_opened",
+
+            elif isinstance(event, Connected):
+                self.logger.info("The websocket has connected")
 
             elif isinstance(event, (Text, Binary)):
                 gen = self.handle_data_event(event)
@@ -393,12 +400,16 @@ class GatewayHandler(object):
             trace = ", ".join(event_data["_trace"])
             self.logger.info(f"Connected to Discord servers {trace}")
 
-            if self.gw_state.session_id is None:
-                self.logger.info("Sending IDENTIFY...")
-                await self.send_identify()
-            else:
-                self.logger.info("We already have a session ID, Sending RESUME...")
-                await self.send_resume()
+            try:
+                if self.gw_state.session_id is None:
+                    self.logger.info("Sending IDENTIFY...")
+                    await self.send_identify()
+                else:
+                    self.logger.info("We already have a session ID, Sending RESUME...")
+                    await self.send_resume()
+            except (WebSocketClosing, WebSocketClosed):
+                # got killed during a reconnect, so we'll retry after the reconnect
+                pass
 
             # give an event down here instead of above
             # this means that we're all done when we go to give off our event
