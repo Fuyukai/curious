@@ -3,6 +3,11 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.5 (Released 2018-04-01)
+---------------------------
+
+ - Don't crash when trying to fill in guild fields without a cached guild.
+
 0.7.4 (Released 2018-03-27)
 ---------------------------
 
