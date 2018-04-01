@@ -19,12 +19,12 @@ Defines :class:`.State`.
 .. currentmodule:: curious.core.state
 """
 
-import collections
 import copy
 import logging
 import typing
 from types import MappingProxyType
 
+import collections
 import multio
 
 from curious.core import gateway
@@ -461,8 +461,9 @@ class State(object):
         # Create all of the guilds.
         for guild in event_data.get("guilds", []):
             new_guild = Guild(self.client, **guild)
-            new_guild.shard_id = gw.gw_state.shard_id
             self._guilds[new_guild.id] = new_guild
+            new_guild.from_guild_create(**guild)
+            new_guild.shard_id = gw.gw_state.shard_id
 
         logger.info("Ready processed for shard {}. Delaying until all guilds are chunked."
                     .format(gw.gw_state.shard_id))
@@ -580,6 +581,7 @@ class State(object):
             had_guild = False
             guild = Guild(self.client, **event_data)
             self._guilds[guild.id] = guild
+            guild.from_guild_create(**event_data)
 
         guild.shard_id = gw.gw_state.shard_id
         # TODO: Need to do this

@@ -19,18 +19,18 @@ Wrappers for Guild objects.
 .. currentmodule:: curious.dataclasses.guild
 """
 import abc
-import collections
 import copy
 import datetime
 import enum
 import sys
 import typing
+from dataclasses import dataclass
 from math import ceil
 from os import PathLike
 from types import MappingProxyType
 
+import collections
 import multio
-from dataclasses import dataclass
 
 from curious.core.httpclient import Endpoints
 from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, invite as dt_invite, \
@@ -720,9 +720,6 @@ class Guild(Dataclass):
         self.emojis = GuildEmojiWrapper(self, self._emojis)
         #: The :class:`.GuildBanContainer` for this Guild.
         self.bans = GuildBanContainer(self)
-
-        if kwargs:
-            self.from_guild_create(**kwargs)
 
     def _copy(self) -> 'Guild':
         return copy.copy(self)
