@@ -17,10 +17,10 @@ Misc utilities used in commands related things.
 
 .. currentmodule:: curious.commands.utils
 """
-import collections
 import inspect
 from typing import Callable, Iterable, List, Union
 
+import collections
 import typing_inspect
 
 from curious.commands.exc import ConversionFailedError, MissingArgumentError
@@ -82,19 +82,19 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                                   inspect.Parameter.VAR_POSITIONAL]:
                     return None
 
-                if param.default is inspect.Parameter.empty:
+                if param.default == inspect.Parameter.empty:
                     raise MissingArgumentError(ctx, param.name) from e
 
                 return None  # ??
-
-        arg = consume_token()
-        if arg is None:
-            break
 
         # Begin the consumption!
         if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
                           inspect.Parameter.POSITIONAL_ONLY]:
             # ensure we have a non-empty argument
+            arg = consume_token()
+            if arg is None:
+                break
+
             while arg == "":
                 if arg is None:
                     break
@@ -109,7 +109,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
         if param.kind in [inspect.Parameter.KEYWORD_ONLY]:
             # Only add it to final_kwargs.
             # This is a consume all operation, so we eat all of the arguments.
-            f = [arg]
+            f = []
 
             while True:
                 next_arg = consume_token()
@@ -117,6 +117,12 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                     break
 
                 f.append(next_arg)
+
+            if not f:
+                if param.default is inspect.Parameter.empty:
+                    raise MissingArgumentError(ctx, param.name)
+                else:
+                    f = [param.default]
 
             converter = ctx._lookup_converter(param.annotation)
             if len(f) == 1:
@@ -129,7 +135,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
         if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
             # This *shouldn't* be called on `*` arguments, but we can't be sure.
             # Special case - consume ALL the arguments.
-            f = [arg]
+            f = []
 
             while True:
                 next_arg = consume_token()
@@ -137,6 +143,12 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                     break
 
                 f.append(next_arg)
+
+            if not f:
+                if param.default is inspect.Parameter.empty:
+                    raise MissingArgumentError(ctx, param.name)
+                else:
+                    f = [param.default]
 
             converter = ctx._lookup_converter(param.annotation)
             final_args.append(
