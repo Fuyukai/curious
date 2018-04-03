@@ -3,6 +3,15 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.6 (Released 2018-04-03)
+---------------------------
+
+ - Fix conversion with missing arguments on positional arguments.
+
+ - Unwrap :class:`.Nickname` objects in the nickname setter.
+
+ - Pass the value, not the :class:`.Nickname` object, to the nickname setter.
+
 0.7.5 (Released 2018-04-01)
 ---------------------------
 
