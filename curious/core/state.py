@@ -534,7 +534,7 @@ class State(object):
             member.role_ids = [int(rid) for rid in roles]
 
         # update the nickname
-        member.nickname = event_data.get("nick", member.nickname)
+        member.nickname = event_data.get("nick", member.nickname.value)
         # recreate the user object, so the user is properly cached
         if "username" in event_data["user"]:
             self.make_user(event_data["user"], override_cache=True)
@@ -951,7 +951,7 @@ class State(object):
             member.role_ids = [int(i) for i in event_data.get("roles", [])]
 
         guild._members[member.id] = member
-        member.nickname = event_data.get("nick", member.nickname)
+        member.nickname = event_data.get("nick", member.nickname.value)
 
         yield "guild_member_update", old_member, member,
 

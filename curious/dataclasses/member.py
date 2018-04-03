@@ -277,6 +277,9 @@ class Member(Dataclass):
 
     @nickname.setter
     def nickname(self, value: str):
+        if isinstance(value, Nickname):
+            # unwrap nicknames, in case of error
+            value = value.value
         self._nickname.value = value
 
     def __hash__(self) -> int:
