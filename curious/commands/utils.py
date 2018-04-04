@@ -122,14 +122,14 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                 if param.default is inspect.Parameter.empty:
                     raise MissingArgumentError(ctx, param.name)
                 else:
-                    f = [param.default]
-
-            converter = ctx._lookup_converter(param.annotation)
-            if len(f) == 1:
-                final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
+                    final_kwargs[param.name] = param.default
             else:
-                final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
-                                                         " ".join(f))
+                converter = ctx._lookup_converter(param.annotation)
+                if len(f) == 1:
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
+                else:
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
+                                                             " ".join(f))
             continue
 
         if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
@@ -148,12 +148,14 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                 if param.default is inspect.Parameter.empty:
                     raise MissingArgumentError(ctx, param.name)
                 else:
-                    f = [param.default]
-
-            converter = ctx._lookup_converter(param.annotation)
-            final_args.append(
-                _with_reraise(converter, param.annotation, ctx, " ".join(f))
-            )
+                    final_kwargs[param.name] = param.default
+            else:
+                converter = ctx._lookup_converter(param.annotation)
+                if len(f) == 1:
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
+                else:
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
+                                                             " ".join(f))
 
         if param.kind in [inspect.Parameter.VAR_KEYWORD]:
             # no
