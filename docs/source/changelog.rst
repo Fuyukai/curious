@@ -3,6 +3,13 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.7 (Released 2018-04-04)
+---------------------------
+
+ - Fix trying to convert a default.
+
+ - Add a Union converter.
+
 0.7.6 (Released 2018-04-03)
 ---------------------------
 

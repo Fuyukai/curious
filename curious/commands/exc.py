@@ -84,7 +84,12 @@ class ConversionFailedError(CommandsError):
         self.message = message
 
     def __repr__(self) -> str:
-        return f"Cannot convert `{self.arg}` to type `{self.to_type.__name__}`: {self.message}."
+        try:
+            name = getattr(self.to_type, "__name__")
+        except AttributeError:
+            name = repr(self.to_type)
+
+        return f"Cannot convert `{self.arg}` to type `{name}`: {self.message}."
 
     __str__ = __repr__
 

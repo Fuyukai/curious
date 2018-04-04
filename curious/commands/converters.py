@@ -137,3 +137,21 @@ def convert_list(ann, ctx, arg: str) -> List[Any]:
         results.append(converter(internal, ctx, arg))
 
     return results
+
+
+def convert_union(ann, ctx, arg: str) -> Any:
+    """
+    Converts a :class:`typing.Union`.
+
+    This works by finding every type defined in the union, and trying each one until one returns
+    a non-error.
+    """
+    subtypes = typing_inspect.get_args(ann, evaluate=True)
+    for subtype in subtypes:
+        try:
+            converter = ctx._lookup_converter(subtype)
+            return converter(ann, ctx, arg)
+        except ConversionFailedError:
+            continue
+
+    raise ConversionFailedError(ctx, arg, ann, message="Failed to convert to any of these types")

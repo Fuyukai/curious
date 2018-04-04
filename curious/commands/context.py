@@ -25,7 +25,7 @@ from typing import Any, Callable, List, Tuple, Type, Union
 import typing_inspect
 
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_list, \
-    convert_member, convert_role
+    convert_member, convert_role, convert_union
 from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
@@ -47,6 +47,7 @@ class Context(object):
         Role: convert_role,
         # Guild: _convert_guild,
         List: convert_list,
+        Union: convert_union,
         str: lambda ann, ctx, arg: arg,
         int: convert_int,
         float: convert_float,
