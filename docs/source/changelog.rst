@@ -8,7 +8,7 @@ This document displays the differences between each release of curious.
 
  - Fix trying to convert a default.
 
- - Add a Union converter.
+ - Add a :class:`typing.Union` converter.
 
 0.7.6 (Released 2018-04-03)
 ---------------------------
