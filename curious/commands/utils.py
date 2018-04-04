@@ -126,7 +126,8 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             else:
                 converter = ctx._lookup_converter(param.annotation)
                 if len(f) == 1:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
+                                                             f[0])
                 else:
                     final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
                                                              " ".join(f))
@@ -152,7 +153,8 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             else:
                 converter = ctx._lookup_converter(param.annotation)
                 if len(f) == 1:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
+                                                             f[0])
                 else:
                     final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
                                                              " ".join(f))
