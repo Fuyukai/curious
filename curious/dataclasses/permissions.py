@@ -206,7 +206,7 @@ class Overwrite(object):
     __slots__ = "target", "channel_id", "allow", "deny"
 
     def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions],
-                 obb: 'typing.Union[dt_member.Member = None, dt_role.Role]',
+                 obb: 'typing.Union[dt_member.Member, dt_role.Role]',
                  channel_id: int = None):
         """
         :param allow: A :class:`.Permissions` that this overwrite allows.
