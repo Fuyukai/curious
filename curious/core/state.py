@@ -19,13 +19,12 @@ Defines :class:`.State`.
 .. currentmodule:: curious.core.state
 """
 
+import collections
 import copy
 import logging
+import multio
 import typing
 from types import MappingProxyType
-
-import collections
-import multio
 
 from curious.core import gateway
 from curious.dataclasses.bases import allow_external_makes
@@ -945,6 +944,11 @@ class State(object):
         # Re-create the user object.
         # self.make_user(event_data["user"], override_cache=True)
         # self._users[member.user.id] = member.user
+        user = event_data.get("user")
+        if user:
+            # remake user object
+            self.make_user(**user, override_cache=True)
+            self._check_decache_user(member_id)
 
         # Overwrite roles, we want to get rid of any roles that are stale.
         if "roles" in event_data:
