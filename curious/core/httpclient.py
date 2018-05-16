@@ -1965,7 +1965,7 @@ class HTTPClient(object):
 
         :param guild_id: The guild ID of the guild to leave.
         """
-        url = Endpoints.USER_GUILD.format(guild_id)
+        url = Endpoints.USER_GUILD.format(guild_id=guild_id)
 
         data = await self.delete(url, "guild:leave")
         return data
