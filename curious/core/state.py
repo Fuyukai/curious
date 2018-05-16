@@ -947,7 +947,7 @@ class State(object):
         user = event_data.get("user")
         if user:
             # remake user object
-            self.make_user(**user, override_cache=True)
+            self.make_user(user, override_cache=True)
             self._check_decache_user(member_id)
 
         # Overwrite roles, we want to get rid of any roles that are stale.
