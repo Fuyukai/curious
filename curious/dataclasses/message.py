@@ -255,15 +255,15 @@ class Message(Dataclass):
             obb = None
             if type_ == "member":
                 id = int(mention["id"])
-                obb = self.guild.members.get(id)
+                obb = self.guild and self.guild.members.get(id)
                 if obb is None:
                     obb = self._bot.state.make_user(mention)
                     # always check for a decache
                     self._bot.state._check_decache_user(id)
             elif type_ == "role":
-                obb = self.guild.roles.get(int(mention))
+                obb = self.guild and self.guild.roles.get(int(mention))
             elif type_ == "channel":
-                obb = self.guild.channels.get(int(mention))
+                obb = self.guild and self.guild.channels.get(int(mention))
 
             if obb is not None:
                 final_mentions.append(obb)
