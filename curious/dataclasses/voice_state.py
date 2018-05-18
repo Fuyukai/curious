@@ -111,3 +111,9 @@ class VoiceState(object):
         Server undeafens this member on the guild.
         """
         return await self.guild.change_voice_state(self.member, deaf=False)
+
+    async def move(self, to_channel: 'dt_channel.Channel'):
+        """
+        Moves a user to a different voice channel.
+        """
+        return await self.guild.change_voice_state(self.member, channel=to_channel)
