@@ -1218,7 +1218,7 @@ class State(object):
             # disconnect!
             new_voice_state = None
         else:
-            new_voice_state = VoiceState(**event_data)
+            new_voice_state = VoiceState(**event_data, client=self.client)
             new_voice_state.guild_id = guild.id
 
         # copy the voice states
