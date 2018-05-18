@@ -120,6 +120,7 @@ class GatewayHandler(object):
                 ...
     """
     GATEWAY_VERSION = 6
+    ZLIB_FLUSH_SUFFIX = b'\x00\x00\xff\xff'
 
     def __init__(self, gw_state: _GatewayState):
         #: The current state being used for this gateway.
@@ -137,6 +138,10 @@ class GatewayHandler(object):
         self._logger = None
         self._stop_heartbeating = multio.Event()
         self._dispatches_handled = Counter()
+
+        # used for zlib-streaming
+        self._databuffer = bytearray()
+        self._decompressor = zlib.decompressobj()
 
     @property
     def logger(self) -> logging.Logger:
@@ -193,7 +198,6 @@ class GatewayHandler(object):
                     "$referrer": "",
                     "$referring_domain": ""
                 },
-                "compress": True,
                 "large_threshold": 250,
                 "v": self.GATEWAY_VERSION,
                 "shard": [self.gw_state.shard_id, self.gw_state.shard_count]
@@ -308,6 +312,10 @@ class GatewayHandler(object):
 
         self.logger.info("Using %s for the gateway", Wrapper.__name__)
 
+        # new websocket means zlib starts from scratch
+        self._databuffer.clear()
+        self._decompressor = zlib.decompressobj()
+
         self.websocket = await ws_open(self.gw_state.gateway_url)
 
     async def events(self) -> AsyncGenerator[None, Any]:
@@ -322,6 +330,9 @@ class GatewayHandler(object):
 
             elif isinstance(event, Connecting):
                 self.logger.info("The websocket is opening...")
+                # we need to reset the data buffer and zlib inflater
+                self._databuffer.clear()
+                self._decompressor = zlib.decompressobj()
                 yield "websocket_opened",
 
             elif isinstance(event, Connected):
@@ -370,9 +381,12 @@ class GatewayHandler(object):
         Handles a data event.
         """
         if evt.name == "binary":
-            # magic numbers
-            data = zlib.decompress(evt.data, 15, 10490000)
-            data = data.decode("utf-8")
+            self._databuffer.extend(evt.data)
+            if not evt.data.endswith(self.ZLIB_FLUSH_SUFFIX):
+                return
+            else:
+                data = self._decompressor.decompress(self._databuffer).decode('utf-8')
+                self._databuffer.clear()
         else:
             data = evt.text
 
@@ -491,7 +505,7 @@ async def open_websocket(token: str, url: str, *,
     :param shard_count: The number of shards to boot with.
     :return: An async context manager that yields a :class:`.GatewayHandler`.
     """
-    params = f"/?v={GatewayHandler.GATEWAY_VERSION}&encoding=json"
+    params = f"/?v={GatewayHandler.GATEWAY_VERSION}&encoding=json&compress=zlib-stream"
     url = url + params
     state = _GatewayState(token=token, gateway_url=url, shard_id=shard_id, shard_count=shard_count)
     gw = GatewayHandler(gw_state=state)
