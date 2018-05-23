@@ -3,6 +3,21 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.8 (Released 2018-05-23)
+---------------------------
+
+ - Fix :meth:`.HTTPClient.leave_guild`.
+
+ - Fix a crash on ``MEMBER_UPDATE`` packets.
+
+ - Make mentions in DMs return correctly (and also, not crash).
+
+ - Fix new :class:`.VoiceState` objects not having a client object.
+
+ - Add the ability to move members into a different voice channel.
+
+ - Add ``zlib-stream`` as the compression method for the gateway.
+
 0.7.7 (Released 2018-04-04)
 ---------------------------
 
