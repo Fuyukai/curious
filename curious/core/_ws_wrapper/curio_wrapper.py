@@ -55,7 +55,7 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
         ws = WebSocket(self.url, agent=USER_AGENT)
         self._ws = ws
         # generate poll events every 0.5 seconds to see if we can cancel
-        websocket = persist(ws, ping_rate=0, poll=0.5, exit_event=self._cancelled)
+        websocket = persist(ws, ping_rate=0, poll=0.2, exit_event=self._cancelled)
         for event in websocket:
             # on a poll event, consume from the queue and
             if isinstance(event, Poll):
