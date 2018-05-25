@@ -16,15 +16,14 @@
 """
 A curio websocket wrapper.
 """
-
-import threading
-from typing import AsyncIterator
-
 import curio
+import threading
 from curio.thread import AWAIT, async_thread
+from functools import partial
 from lomond import WebSocket
-from lomond.events import Event
+from lomond.events import Event, Poll
 from lomond.persist import persist
+from typing import AsyncIterator
 
 from curious import USER_AGENT
 from curious.core._ws_wrapper import BasicWebsocketWrapper
@@ -41,6 +40,7 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
         #: The gateway task running in an async thread.
         self._task = None  # type: curio.Task
 
+        self._send_queue = curio.UniversalQueue()
         self._queue = curio.UniversalQueue()
         self._cancelled = threading.Event()
         self._ws = None  # type: WebSocket
@@ -55,9 +55,15 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
         ws = WebSocket(self.url, agent=USER_AGENT)
         self._ws = ws
         # generate poll events every 0.5 seconds to see if we can cancel
-        websocket = persist(ws, ping_rate=0, poll=1, exit_event=self._cancelled)
+        websocket = persist(ws, ping_rate=0, poll=0.5, exit_event=self._cancelled)
         for event in websocket:
-            self._queue.put(event)
+            # on a poll event, consume from the queue and
+            if isinstance(event, Poll):
+                if not self._send_queue.empty():
+                    next_send = self._send_queue.get()
+                    next_send()
+            else:
+                self._queue.put(event)
 
         # signal the end of the queue
         self._queue.put(self._done)
@@ -69,25 +75,27 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
             else:
                 return
 
-    @async_thread
-    def send_text(self, message: str):
+    async def send_text(self, message: str):
         """
         Sends text to the websocket.
         """
-        self._ws.send_text(message)
+        p = partial(self._ws.send_text, message)
+        await self._send_queue.put(p)
 
-    @async_thread
-    def close(self, code: int = 1000, reason: str = "Client disconnect", reconnect: bool = False):
+    async def close(self, code: int = 1000, reason: str = "Client disconnect",
+                    reconnect: bool = False):
         """
         Cancels and closes this websocket.
         """
+        def _close():
+            # if reconnecting, don't close this as this will kill the websocket prematurely
+            if not reconnect:
+                self._cancelled.set()
+                AWAIT(self._task.cancel(blocking=False))  # don't block because it closes by itself
 
-        # if reconnecting, don't close this as this will kill the websocket prematurely
-        if not reconnect:
-            self._cancelled.set()
-            AWAIT(self._task.cancel(blocking=False))  # don't block because it closes by itself
+            self._ws.close(code=code, reason=reason)
 
-        self._ws.close(code=code, reason=reason)
+        await self._send_queue.put(_close)
 
     @classmethod
     async def open(cls, url: str) -> 'BasicWebsocketWrapper':
