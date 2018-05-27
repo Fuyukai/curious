@@ -504,7 +504,7 @@ class State(object):
 
         # also awful payloads
         try:
-            user_id = int(event_data.get("id"))
+            user_id = int(user.get("id"))
         except (ValueError, TypeError):
             return
 
