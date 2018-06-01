@@ -35,7 +35,7 @@ from curious.dataclasses.guild import ContentFilterLevel, Guild, MFALevel, Notif
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.presence import Status
+from curious.dataclasses.presence import Presence, Status
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.user import BotUser, User
@@ -523,8 +523,7 @@ class State(object):
             old_member = member._copy()
 
         # Update the member's presence
-        member.presence.status = event_data.get("status")
-        member.presence.game = event_data.get("game", {})
+        member.presence = Presence(status=event_data.get("status"), game=event_data.get("game", {}))
 
         # copy the roles if it exists
         roles = event_data.get("roles", [])
