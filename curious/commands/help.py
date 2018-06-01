@@ -48,7 +48,7 @@ async def _get_command_list(ctx: Context, command, *, include_root: bool = True)
 
         # only do subcommands that can be ran
         try:
-            can_run, _ = await ctx.can_run(command)
+            can_run, _ = await ctx.can_run(subcommand)
         except CommandsError:
             can_run = False
 
