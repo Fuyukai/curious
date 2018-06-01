@@ -106,6 +106,9 @@ async def help_for_all(ctx: Context):
         command_names = []
 
         for command in ctx.manager.commands.values():
+            if getattr(command, "cmd_hidden", False) is True:
+                continue
+
             if command.cmd_subcommand:
                 continue
 
