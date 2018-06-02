@@ -313,6 +313,8 @@ class CommandsManager(object):
         # resolve string modules automatically
         if isinstance(import_path, str):
             module = sys.modules[import_path]
+        else:
+            module = import_path
 
         for plugin in self._module_plugins[module]:
             await plugin.unload()
