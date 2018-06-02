@@ -321,7 +321,7 @@ class CommandsManager(object):
             self.plugins.pop(getattr(plugin, "plugin_name", type(plugin).__name__))
 
         del sys.modules[import_path]
-        del self._module_plugins[import_path]
+        del self._module_plugins[module]
 
     async def event_hook(self, ctx: EventContext, *args, **kwargs):
         """
