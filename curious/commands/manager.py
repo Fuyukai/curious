@@ -18,16 +18,16 @@ Contains the class for the commands manager for a client.
 
 .. currentmodule:: curious.commands.manager
 """
+import sys
+from collections import defaultdict
+
 import importlib
 import inspect
 import logging
-import sys
+import multio
 import traceback
 import typing
-from collections import defaultdict
 from functools import partial
-
-import multio
 
 from curious.commands.context import Context
 from curious.commands.exc import CommandsError
@@ -310,7 +310,11 @@ class CommandsManager(object):
 
         :param import_path: The import path.
         """
-        for plugin in self._module_plugins[import_path]:
+        # resolve string modules automatically
+        if isinstance(import_path, str):
+            module = sys.modules[import_path]
+
+        for plugin in self._module_plugins[module]:
             await plugin.unload()
             self.plugins.pop(getattr(plugin, "plugin_name", "__name__"))
 
