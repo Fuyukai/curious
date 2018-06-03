@@ -18,18 +18,18 @@ Wrappers for Channel objects.
 
 .. currentmodule:: curious.dataclasses.channel
 """
+import time
+from math import floor
+
 import collections
 import enum
+import multio
 import pathlib
-import time
 import typing as _typing
-from math import floor
+from async_generator import asynccontextmanager
 from os import PathLike
 from types import MappingProxyType
 from typing import AsyncIterator
-
-import multio
-from async_generator import asynccontextmanager
 
 from curious.dataclasses import guild as dt_guild, invite as dt_invite, member as dt_member, \
     message as dt_message, permissions as dt_permissions, role as dt_role, user as dt_user, \
@@ -748,9 +748,8 @@ class Channel(Dataclass):
         if self.type != ChannelType.VOICE:
             raise CuriousError("No members for channels that aren't voice channels")
 
-        return list(
-            filter(lambda member: member.voice and member.voice.channel == self, self.guild.members.values())
-        )
+        return [state.member for state in self.guild._voice_states.values()
+                if state.channel_id == self.id]
 
     @property
     def overwrites(self) -> '_typing.Mapping[int, dt_permissions.Overwrite]':
