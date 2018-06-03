@@ -1195,12 +1195,3 @@ class Channel(Dataclass):
 
         await self._bot.http.delete_channel(self.id)
         return self
-
-    async def connect(self):
-        """
-        Connects to voice in this channel.
-        """
-        if self.type != ChannelType.VOICE:
-            raise CuriousError("Cannot connect to a text channel")
-
-        return await self.guild.connect_to_voice(self)
