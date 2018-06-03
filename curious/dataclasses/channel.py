@@ -1181,12 +1181,6 @@ class Channel(Dataclass):
         if not self.permissions(self.guild.me).manage_channels:
             raise PermissionsError("manage_channels")
 
-        if "type_" in kwargs:
-            kwargs["type"] = kwargs["type_"]
-
-        if "type" not in kwargs:
-            kwargs["type"] = self.type
-
         if "parent" in kwargs:
             kwargs["parent_id"] = kwargs["parent"].id
 
