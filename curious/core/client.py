@@ -26,10 +26,9 @@ import enum
 import functools
 import inspect
 import logging
+import multio
 import typing
 from types import MappingProxyType
-
-import multio
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -691,7 +690,7 @@ class Client(object):
         """
         Kills the bot by closing all shards.
         """
-        for gateway in self._gateways.values():
+        for gateway in self._gateways.copy().values():
             await gateway.close(code=1006, reason="Bot killed", reconnect=False)
 
     def run(self, *, shard_count: int = 1, autoshard: bool = True, **kwargs):
