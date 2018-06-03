@@ -749,7 +749,7 @@ class Channel(Dataclass):
             raise CuriousError("No members for channels that aren't voice channels")
 
         return list(
-            filter(lambda member: member.voice.channel == self, self.guild.members.values())
+            filter(lambda member: member.voice and member.voice.channel == self, self.guild.members.values())
         )
 
     @property
