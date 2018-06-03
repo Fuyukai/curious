@@ -3,6 +3,23 @@ Changelog
 
 This document displays the differences between each release of curious.
 
+0.7.9
+-----
+
+ - Remove :meth:`.Channel.connect`.
+
+ - Make ``PRESENCE_UPDATE`` handling more robust.
+
+ - Add :attr:`.Guild.voice_states` and make :attr:`.Channel.voice_members` more efficient.
+
+ - Ignore hidden standalone commands in help.
+
+ - Fix bug showing unavailable subcommands in help.
+
+ - Fix ``unload_plugins_from``.
+
+ - Prevent changing the type of an existing channel.
+
 0.7.8 (Released 2018-05-23)
 ---------------------------
 
