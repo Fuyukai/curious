@@ -739,6 +739,13 @@ class Guild(Dataclass):
         return MappingProxyType(self._members)
 
     @property
+    def voice_states(self) -> 'typing.Mapping[int, dt_vs.VoiceState]':
+        """
+        :return: A mapping of :class:`.VoiceState` that represent voice states in this guild.
+        """
+        return MappingProxyType(self._voice_states)
+
+    @property
     def owner(self) -> 'typing.Union[dt_member.Member, None]':
         """
         :return: A :class:`.Member` object that represents the owner of this guild.
