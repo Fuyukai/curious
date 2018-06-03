@@ -48,7 +48,7 @@ del _fmt
 from curious.core.client import BotType, Client
 from curious.core.event import EventContext, event
 from curious.core.gateway import open_websocket, GatewayHandler
-from curious.core.state import GuildStore, State
+from curious.core.state import State
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.bases import Dataclass, IDObject

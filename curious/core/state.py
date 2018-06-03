@@ -25,6 +25,7 @@ import logging
 import multio
 import typing
 from types import MappingProxyType
+from typing import Dict
 
 from curious.core import gateway
 from curious.dataclasses.bases import allow_external_makes
@@ -56,55 +57,6 @@ def int_or_none(val, default: typing.Any) -> typing.Union[int, None]:
     return int(val)
 
 
-class GuildStore(collections.MutableMapping):
-    """
-    A store for guilds in the state.
-    """
-
-    def __init__(self):
-        #: The internal actual guilds.
-        self.guilds = {}
-
-        #: The order of the guilds, as specified by the READY packet.
-        self.order = []
-
-    def view(self) -> typing.Mapping[int, Guild]:
-        """
-        :return: A :class:`mappingproxy` of the internal guilds. 
-        """
-        return MappingProxyType(self.guilds)
-
-    @property
-    def with_order(self) -> 'typing.Mapping[int, Guild]':
-        """
-        :return: A mapping of the guilds with the order specified in the ready packet.
-        """
-        if not self.order:
-            return self.view()
-
-        o = collections.OrderedDict()
-        for guild in map(int, self.order):
-            o[guild] = self.guilds[guild]
-
-        return MappingProxyType(o)
-
-    # abc methods
-    def __setitem__(self, key, value) -> None:
-        return self.guilds.__setitem__(key, value)
-
-    def __getitem__(self, key) -> Guild:
-        return self.guilds.__getitem__(key)
-
-    def __delitem__(self, key) -> None:
-        return self.guilds.__delitem__(key)
-
-    def __iter__(self) -> typing.Iterator[Guild]:
-        return self.guilds.__iter__()
-
-    def __len__(self) -> int:
-        return self.guilds.__len__()
-
-
 class State(object):
     """
     This represents the state of the Client - in other libraries, the cache.
@@ -124,7 +76,7 @@ class State(object):
         self._private_channels = {}
 
         #: The guilds the bot can see.
-        self._guilds = GuildStore()
+        self._guilds = {}  # type: Dict[int, Guild]
 
         #: The current user cache.
         self._users = {}
@@ -161,7 +113,7 @@ class State(object):
         """
         :return: A mapping of int -> :class:`.Guild`.
         """
-        return self._guilds.view()
+        return MappingProxyType(self._guilds)
 
     @property
     def guilds_ordered(self) -> typing.Mapping[int, Guild]:
@@ -518,6 +470,7 @@ class State(object):
             # create the member from the presence
             # we only pass the User here as we're about to update everything
             member = Member(client=self.client, user=event_data["user"])
+            member.guild_id = member.id
             old_member = None
         else:
             old_member = member._copy()
@@ -526,17 +479,31 @@ class State(object):
         member.presence = Presence(status=event_data.get("status"), game=event_data.get("game", {}))
 
         # copy the roles if it exists
-        roles = event_data.get("roles", [])
+        if old_member is not None:
+            fallback = old_member.role_ids
+        else:
+            fallback = None
+
+        roles = event_data.get("roles", fallback)
         if roles:
             # clear roles
             member.role_ids = [int(rid) for rid in roles]
 
         # update the nickname
-        member.nickname = event_data.get("nick", member.nickname.value)
+        if old_member is not None:
+            fallback = old_member.nickname.value
+        else:
+            fallback = None
+
+        member.nickname = event_data.get("nick", fallback)
         # recreate the user object, so the user is properly cached
         if "username" in event_data["user"]:
             self.make_user(event_data["user"], override_cache=True)
 
+        # Note: Usually, when a member has a change that we need to cache, we get sent a
+        # GUILD_MEMBER_UPDATE packet.
+        # However, sometimes Discord might not send it to us. So we always
+        guild._members[user_id] = member
         yield "member_update", old_member, member,
 
     async def handle_presences_replace(self, gw: 'gateway.GatewayHandler', event_data: dict):
