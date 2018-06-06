@@ -619,9 +619,10 @@ class Channel(Dataclass):
             else:
                 obb = self.guild._members.get(id_)
 
-            self._overwrites[id] = dt_permissions.Overwrite(allow=overwrite["allow"],
-                                                            deny=overwrite["deny"],
-                                                            obb=obb, channel_id=self.id)
+            self._overwrites[id_] = dt_permissions.Overwrite(allow=overwrite["allow"],
+                                                             deny=overwrite["deny"],
+                                                             obb=obb, channel_id=self.id)
+            self._overwrites[id_]._immutable = True
 
     @property
     def guild(self) -> '_typing.Union[dt_guild.Guild, None]':
@@ -767,6 +768,7 @@ class Channel(Dataclass):
         if not overwrite:
             overwrite = dt_permissions.Overwrite(0, 0, obb)
             overwrite.channel_id = self.id
+            overwrite._immutable = True
 
         return overwrite
 

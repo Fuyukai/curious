@@ -25,6 +25,8 @@ import typing
 from curious.dataclasses import channel as dt_channel, member as dt_member, role as dt_role
 from curious.exc import PermissionsError
 
+target_thint = 'typing.Union[dt_member.Member, dt_role.Role]'
+
 
 # I'm far too lazy to type out each permission bit manually.
 # So here's a helper method.
@@ -183,6 +185,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
 
 
 Permissions = build_permissions_class("Permissions")
+perm_thint = typing.Union[int, Permissions]
 
 
 class Overwrite(object):
@@ -201,9 +204,28 @@ class Overwrite(object):
 
     You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and 
     False to set a deny overwrite.
+
+    .. warning::
+
+        You probably don't want to create an instance of this class directly - instead, use
+        :meth:`.Overwrite.overwrite_in(channel, target)`.
+
     """
 
-    __slots__ = "target", "channel_id", "allow", "deny"
+    __slots__ = "target", "channel_id", "allow", "deny", "_immutable"
+
+    @classmethod
+    def overwrite_in(cls, channel: 'dt_channel.Channel', target: target_thint, *,
+                     allow: perm_thint = None, deny: perm_thint) -> 'Overwrite':
+        """
+        :param channel: The :class:`.Channel` to create this overwrite in.
+        :param target: The :class:`.Member` or :class:`.Role` to create this overwrite for.
+        :param allow: An optional set of allowed permissions.
+        :param deny: An optional set of denied permissions.
+        """
+        allow = allow or 0
+        deny = deny or 0
+        return Overwrite(allow, deny, obb=target, channel_id=channel.id)
 
     def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions],
                  obb: 'typing.Union[dt_member.Member, dt_role.Role]',
@@ -225,6 +247,8 @@ class Overwrite(object):
             deny = deny.bitfield
         self.deny = Permissions(value=deny if deny is not None else 0)
 
+        self._immutable = False
+
     @property
     def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
         """
@@ -244,6 +268,9 @@ class Overwrite(object):
 
         This will check allow first, the deny, then finally the role permissions.
         """
+        if item == "_immutable":
+            return super().__getattribute__("_immutable")
+
         if isinstance(self.target, dt_member.Member):
             permissions = self.target.guild_permissions
         elif isinstance(self.target, dt_role.Role):
@@ -273,6 +300,9 @@ class Overwrite(object):
         """
         Attribute setter helper.
         """
+        if key != "_immutable" and hasattr(self, "_immutable") and self._immutable:
+            raise RuntimeError("This PermissionsOverwrite is immutable")
+
         if not hasattr(Permissions, key):
             super().__setattr__(key, value)
             return

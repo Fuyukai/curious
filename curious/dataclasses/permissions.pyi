@@ -84,7 +84,12 @@ class Permissions(object):
 
 
 class Overwrite(object):
-     __slots__ = "target", "channel_id", "allow", "deny"
+     __slots__ = "target", "channel_id", "allow", "deny", "_immutable",
+
+     @classmethod
+     def overwrite_in(cls, channel: Channel, target: Union[Member, Role],
+                      allow: Union[int, Permissions], deny: Union[int, Permissions]) \
+         -> Overwrite: ...
 
      def __init__(self, allow: Union[int, Permissions], deny: Union[int, Permissions],
                   obb: Union[Member, Role],
@@ -93,6 +98,8 @@ class Overwrite(object):
          self.deny = deny
          self.target = obb
          self.channel_id = channel_id
+         self._immutable: bool
+
      def __repr__(self) -> str: ...
      def __getattr__(self, item) -> bool: ...
      def __setattr__(self, item: str, value: Any): ...
