@@ -3,9 +3,7 @@ Commonly used conditions.
 
 .. currentmodule:: curious.commands.conditions
 """
-from typing import Union, List
 
-from curious import Member, User
 from curious.commands import Context, condition
 
 
@@ -42,3 +40,25 @@ def bot_has_permissions(bypass_owner=False, **permissions):
 
 author_has_perms = author_has_permissions
 bot_has_perms = bot_has_permissions
+
+
+def author_has_roles(*roles, bypass_owner=True):
+    def _condition(ctx: Context):
+        if ctx.guild is None:
+            return False
+
+        author_roles = [role.name for role in ctx.author.roles]
+        return all(role in author_roles for role in roles)
+
+    return condition(_condition, bypass_owner=bypass_owner)
+
+
+def bot_has_roles(*roles, bypass_owner=False):
+    def _condition(ctx: Context):
+        if ctx.guild is None:
+            return False
+
+        bot_roles = [role.name for role in ctx.guild.me.roles]
+        return all(role in bot_roles for role in roles)
+
+    return condition(_condition, bypass_owner=bypass_owner)
