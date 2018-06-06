@@ -764,9 +764,17 @@ class Channel(Dataclass):
         """
         Gets the permission overwrites for the specified object.
         """
+        if not self.guild:
+            allow = dt_permissions.Permissions(515136)
+            overwrite = dt_permissions.Overwrite(allow=allow, deny=0, obb=obb, channel_id=self.id)
+            overwrite._immutable = True
+            return overwrite
+
         overwrite = self._overwrites.get(obb.id)
         if not overwrite:
-            overwrite = dt_permissions.Overwrite(0, 0, obb)
+            everyone_overwrite = self._overwrites.get(self.guild.default_role.id)
+            overwrite = dt_permissions.Overwrite(everyone_overwrite.allow, everyone_overwrite.deny,
+                                                 obb)
             overwrite.channel_id = self.id
             overwrite._immutable = True
 
@@ -777,6 +785,10 @@ class Channel(Dataclass):
         """
         :return: The overwrite permissions for the current member.
         """
+        if not self.guild:
+            # this works in this branch, but it shouldn't
+            return self.permissions(None)
+
         return self.permissions(self.guild.me)
 
     def _copy(self):
@@ -1193,7 +1205,7 @@ class Channel(Dataclass):
         Deletes this channel.
         """
         if not self.permissions(self.guild.me).manage_channels:
-            raise PermissionsError("manaqe_channels")
+            raise PermissionsError("manage_channels")
 
         await self._bot.http.delete_channel(self.id)
         return self

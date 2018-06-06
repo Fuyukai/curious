@@ -271,7 +271,9 @@ class Overwrite(object):
         if item == "_immutable":
             return super().__getattribute__("_immutable")
 
-        if isinstance(self.target, dt_member.Member):
+        if isinstance(self.target, dt_member.dt_user.User):  # lol
+            permissions = Permissions(515136)
+        elif isinstance(self.target, dt_member.Member):
             permissions = self.target.guild_permissions
         elif isinstance(self.target, dt_role.Role):
             permissions = self.target.permissions
