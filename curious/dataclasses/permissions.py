@@ -230,6 +230,7 @@ class Overwrite(object):
         """
         :return: The :class:`.Channel` this overwrite represents.
         """
+        return self.target._bot.state.find_channel(self.channel_id)
 
     def __repr__(self) -> str:
         return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target,
