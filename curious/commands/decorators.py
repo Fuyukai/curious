@@ -84,14 +84,20 @@ def command(*,
     return inner
 
 
-def condition(cbl):
+def condition(cbl, *, bypass_owner=True):
     """
     Adds a condition to a command.
 
     This will add the callable to ``cmd_conditions`` on the function.
+
+    :param cbl: A callable that returns a boolean that determines if the command can be run.
+    :param bypass_owner: Whether or not the condition ignores the owner of the bot.
     """
 
     def inner(func):
+        if bypass_owner is True:
+            func.cmd_owner_bypass = True
+
         if not hasattr(func, "cmd_conditions"):
             func.cmd_conditions = []
 

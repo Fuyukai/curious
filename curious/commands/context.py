@@ -187,6 +187,12 @@ class Context(object):
 
         :return: If it can be ran, and a list of conditions that failed.
         """
+        if getattr(cmd, "cmd_owner_bypass", False):
+            application = self.bot.application_info
+            if application is not None:
+                if self.author.id == application.owner.id:
+                    return True, []
+
         conditions = getattr(cmd, "cmd_conditions", [])
         failed = []
         for condition in conditions:
