@@ -47,7 +47,7 @@ def author_has_roles(*roles, bypass_owner=True):
         if ctx.guild is None:
             return False
 
-        author_roles = [role.name for role in ctx.author.roles]
+        author_roles = {role.name for role in ctx.author.roles}
         return all(role in author_roles for role in roles)
 
     return condition(_condition, bypass_owner=bypass_owner)
@@ -58,7 +58,17 @@ def bot_has_roles(*roles, bypass_owner=False):
         if ctx.guild is None:
             return False
 
-        bot_roles = [role.name for role in ctx.guild.me.roles]
+        bot_roles = {role.name for role in ctx.guild.me.roles}
         return all(role in bot_roles for role in roles)
+
+    return condition(_condition, bypass_owner=bypass_owner)
+
+
+def is_guild_owner(bypass_owner=True):
+    def _condition(ctx: Context):
+        if ctx.guild is None:
+            return False
+
+        return ctx.author == ctx.guild.owner
 
     return condition(_condition, bypass_owner=bypass_owner)
