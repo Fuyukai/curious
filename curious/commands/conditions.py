@@ -28,7 +28,7 @@ def is_owner():
             return False
 
         owner = ctx.bot.application_info.owner
-        return ctx.author.id == owner.id
+        return ctx.message.author_id == owner.id
 
     return condition(_condition)
 
@@ -168,6 +168,6 @@ def is_guild_owner(bypass_owner: bool = True):
         if ctx.guild is None:
             return False
 
-        return ctx.message.author_id == ctx.guild.owner.id
+        return ctx.message.author_id == ctx.guild.owner_id
 
     return condition(_condition, bypass_owner=bypass_owner)
