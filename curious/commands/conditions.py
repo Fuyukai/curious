@@ -168,6 +168,6 @@ def is_guild_owner(bypass_owner: bool = True):
         if ctx.guild is None:
             return False
 
-        return ctx.author == ctx.guild.owner
+        return ctx.author.id == ctx.guild.owner.id
 
     return condition(_condition, bypass_owner=bypass_owner)
