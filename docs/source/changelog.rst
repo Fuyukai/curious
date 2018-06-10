@@ -20,6 +20,8 @@ This document displays the differences between each release of curious.
 
  - Prevent changing the type of an existing channel.
 
+ - Add convenient built-in conditions.
+
 0.7.8 (Released 2018-05-23)
 ---------------------------
 
