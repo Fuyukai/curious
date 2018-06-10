@@ -95,12 +95,12 @@ def condition(cbl, *, bypass_owner=True):
     """
 
     def inner(func):
-        func.cmd_owner_bypass = bypass_owner
-
         if not hasattr(func, "cmd_conditions"):
             func.cmd_conditions = []
 
         func.cmd_conditions.append(cbl)
+        func.cmd_owner_bypass = bypass_owner
+
         return func
 
     return inner
