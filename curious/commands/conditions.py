@@ -155,7 +155,7 @@ def is_guild_owner(bypass_owner: bool = True):
     Example::
 
         @command()
-        @is_guild_owner('Cool')
+        @is_guild_owner()
         async def test(ctx: Context):
             await ctx.channel.messages.send('You are the owner of this guild.')
 
