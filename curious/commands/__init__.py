@@ -28,6 +28,7 @@ Commands helpers.
     utils
     ratelimit
     help
+    conditions
 
     exc
     converters

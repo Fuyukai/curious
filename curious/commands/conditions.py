@@ -28,7 +28,7 @@ def is_owner():
             return False
 
         owner = ctx.bot.application_info.owner
-        return ctx.author.id == owner.id
+        return ctx.message.author_id == owner.id
 
     return condition(_condition)
 
@@ -54,7 +54,7 @@ def author_has_permissions(bypass_owner: bool = True, **permissions):
 
     def _condition(ctx: Context):
         perms = ctx.channel.permissions(ctx.author)
-        return all(getattr(perms, name, None) == value
+        return all(getattr(perms, name, None) is value
                    for name, value in permissions.items())
 
     return condition(_condition, bypass_owner=bypass_owner)
@@ -80,7 +80,7 @@ def bot_has_permissions(bypass_owner: bool = False, **permissions):
 
     def _condition(ctx: Context):
         perms = ctx.channel.me_permissions
-        return all(getattr(perms, name, None) == value
+        return all(getattr(perms, name, None) is value
                    for name, value in permissions.items())
 
     return condition(_condition, bypass_owner=bypass_owner)
@@ -94,7 +94,7 @@ def author_has_roles(*roles: str, bypass_owner: bool = True):
     """
     A :func:`.condition` that ensures the author of the message has all of the specified roles.
 
-    The role names must be exact matches.
+    The role names must all be exact matches.
 
     Example::
 
@@ -123,7 +123,7 @@ def bot_has_roles(*roles: str, bypass_owner: bool = False):
     """
     A :func:`.condition` that ensures the bot has all of the specified roles.
 
-    The role names must be exact matches.
+    The role names must all be exact matches.
 
     Example::
 
@@ -155,7 +155,7 @@ def is_guild_owner(bypass_owner: bool = True):
     Example::
 
         @command()
-        @is_guild_owner('Cool')
+        @is_guild_owner()
         async def test(ctx: Context):
             await ctx.channel.messages.send('You are the owner of this guild.')
 
@@ -168,6 +168,6 @@ def is_guild_owner(bypass_owner: bool = True):
         if ctx.guild is None:
             return False
 
-        return ctx.author == ctx.guild.owner
+        return ctx.message.author_id == ctx.guild.owner_id
 
     return condition(_condition, bypass_owner=bypass_owner)

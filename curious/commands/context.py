@@ -190,7 +190,7 @@ class Context(object):
         if getattr(cmd, "cmd_owner_bypass", False):
             application = self.bot.application_info
             if application is not None:
-                if self.author.id == application.owner.id:
+                if self.message.author_id == application.owner.id:
                     return True, []
 
         conditions = getattr(cmd, "cmd_conditions", [])
