@@ -36,6 +36,7 @@ from curious.core.gateway import GatewayHandler, open_websocket
 from curious.core.httpclient import HTTPClient
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
+from curious.dataclasses.bases import allow_external_makes
 from curious.dataclasses.invite import Invite
 from curious.dataclasses.message import CHANNEL_REGEX, EMOJI_REGEX, MENTION_REGEX
 from curious.dataclasses.presence import Game, Status
@@ -595,23 +596,23 @@ class Client(object):
             logger.debug(f"Processing event {name}")
 
         try:
-            result = handler(ctx.gateway, dispatch)
+            with allow_external_makes():
+                result = handler(ctx.gateway, dispatch)
 
-            if inspect.isawaitable(result):
-                result = await result
-            elif inspect.isasyncgen(result):
-                async with multio.asynclib.finalize_agen(result) as gen:
-                    async for i in gen:
-                        await self.events.fire_event(i[0], *i[1:], gateway=ctx.gateway, client=self)
+                if inspect.isawaitable(result):
+                    results = [await result]
+                elif inspect.isasyncgen(result):
+                    async with multio.asynclib.finalize_agen(result) as gen:
+                        results = [r async for r in gen]
+                else:
+                    results = [result]
 
-                # no more processing after the async gen
-                return
-
-            if not isinstance(result, tuple):
-                await self.events.fire_event(result, gateway=ctx.gateway, client=self)
-            else:
-                await self.events.fire_event(result[0], *result[1:], gateway=ctx.gateway,
-                                             client=self)
+            for item in results:
+                if not isinstance(item, tuple):
+                    await self.events.fire_event(item, gateway=ctx.gateway, client=self)
+                else:
+                    await self.events.fire_event(item[0], *item[1:], gateway=ctx.gateway,
+                                                 client=self)
 
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
