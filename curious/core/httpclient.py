@@ -338,8 +338,9 @@ class HTTPClient(object):
         await self.global_lock.acquire()
         # Immediately release it because we're no longer being globally ratelimited.
         await self.global_lock.release()
+
+        await lock.acquire()
         try:
-            await lock.acquire()
 
             if bucket in self._ratelimit_remaining:
                 # Make sure we have enough tries left.
@@ -419,21 +420,23 @@ class HTTPClient(object):
                     if is_global:
                         logger.debug("Reached the global ratelimit, acquiring global lock.")
                         await self.global_lock.acquire()
-                    after_time = int(floor(time.monotonic() - before_time))
-                    if after_time != 0:
-                        # subtract the time we spent waiting for the global lock to be acquired
-                        sleep_time -= after_time
+                    try:
+                        after_time = int(floor(time.monotonic() - before_time))
+                        if after_time != 0:
+                            # subtract the time we spent waiting for the global lock to be acquired
+                            sleep_time -= after_time
 
-                    logger.debug(
-                        "Being ratelimited under bucket %s, waking in %s seconds",
-                        bucket, sleep_time
-                    )
+                        logger.debug(
+                            "Being ratelimited under bucket %s, waking in %s seconds",
+                            bucket, sleep_time
+                        )
 
-                    # Sleep that amount of time.
-                    await multio.asynclib.sleep(sleep_time)
-                    # If the global lock is acquired, unlock it now
-                    if is_global:
-                        await self.global_lock.release()
+                        # Sleep that amount of time.
+                        await multio.asynclib.sleep(sleep_time)
+                    finally:
+                        # If the global lock is acquired, unlock it now
+                        if is_global:
+                            await self.global_lock.release()
 
                 # Now, we have that nuisance out of the way, we can try and get the result from
                 # the request.
@@ -462,9 +465,6 @@ class HTTPClient(object):
 
         finally:
             await lock.release()
-            # Only release the global lock if we need to
-            if self.global_lock.locked():
-                await self.global_lock.release()
 
     async def get(self, url: str, bucket: str,
                   *args, **kwargs):
