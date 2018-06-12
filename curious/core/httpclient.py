@@ -432,7 +432,8 @@ class HTTPClient(object):
                         )
 
                         # Sleep that amount of time.
-                        await multio.asynclib.sleep(sleep_time)
+                        if sleep_time >= 0:
+                            await multio.asynclib.sleep(sleep_time)
                     finally:
                         # If the global lock is acquired, unlock it now
                         if is_global:
