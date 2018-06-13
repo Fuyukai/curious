@@ -469,7 +469,7 @@ class State(object):
             # create the member from the presence
             # we only pass the User here as we're about to update everything
             member = Member(client=self.client, user=event_data["user"])
-            member.guild_id = member.id
+            member.guild_id = guild.id
             old_member = None
         else:
             old_member = member._copy()
