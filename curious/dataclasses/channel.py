@@ -617,7 +617,7 @@ class Channel(Dataclass):
             if type_ == "member":
                 obb = self.guild._members.get(id_)
             else:
-                obb = self.guild._members.get(id_)
+                obb = self.guild._roles.get(id_)
 
             self._overwrites[id_] = dt_permissions.Overwrite(allow=overwrite["allow"],
                                                              deny=overwrite["deny"],
@@ -773,8 +773,18 @@ class Channel(Dataclass):
         overwrite = self._overwrites.get(obb.id)
         if not overwrite:
             everyone_overwrite = self._overwrites.get(self.guild.default_role.id)
-            overwrite = dt_permissions.Overwrite(everyone_overwrite.allow, everyone_overwrite.deny,
-                                                 obb)
+            if everyone_overwrite is None:
+                everyone_perms = self.guild.default_role.permissions
+                everyone_overwrite = dt_permissions.Overwrite(allow=everyone_perms,
+                                                              deny=dt_permissions.Permissions(0),
+                                                              obb=obb)
+                everyone_overwrite.channel_id = self.id
+                overwrite = everyone_overwrite
+            else:
+                overwrite = dt_permissions.Overwrite(everyone_overwrite.allow,
+                                                     everyone_overwrite.deny,
+                                                     obb)
+
             overwrite.channel_id = self.id
             overwrite._immutable = True
 
