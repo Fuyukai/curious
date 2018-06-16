@@ -6,6 +6,12 @@ This document displays the differences between each release of curious.
 0.7.9
 -----
 
+.. note::
+
+    This will be the final release of the 0.7 branch. The 0.8 branch is designed to be a near
+    drop-in replacement, unless you're meddling with internal lib stuff (like the event manager)
+    directly.
+
  - Remove :meth:`.Channel.connect`.
 
  - Make ``PRESENCE_UPDATE`` handling more robust.
@@ -21,6 +27,9 @@ This document displays the differences between each release of curious.
  - Prevent changing the type of an existing channel.
 
  - Add convenient built-in conditions.
+
+ - Speed up event creation in internal code massively by not performing needless stack
+   introspection.
 
 0.7.8 (Released 2018-05-23)
 ---------------------------
