@@ -16,10 +16,10 @@
 """
 A trio websocket wrapper.
 """
-import functools
-import threading
 from collections import AsyncIterator
 
+import functools
+import threading
 import trio
 from lomond import WebSocket
 from lomond.events import Event
@@ -76,18 +76,16 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
         return obb
 
     async def close(self, code: int = 1000, reason: str = "Client closed connection",
-                    reconnect: bool = False) -> None:
+                    reconnect: bool = False, forceful: bool = True) -> None:
         """
         Closes the websocket.
-
-        :param code: The close code to use.
-        :param reason: The close reason to use.
-        :param reconnect: If the websocket should reconnect.
         """
         if not reconnect:
             self._cancelled.set()
 
         self._ws.close(code=code, reason=reason)
+        if forceful:
+            self._ws.session.close()
 
     async def send_text(self, text: str) -> None:
         """

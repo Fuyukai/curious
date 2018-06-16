@@ -18,20 +18,20 @@ Websocket gateway code.
 
 .. currentmodule:: curious.core.gateway
 """
-import enum
-import json
-import logging
 import sys
 import time
 import zlib
 from collections import Counter
-from dataclasses import dataclass  # use a 3.6 backport if available
-from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
+import enum
+import json
+import logging
 import multio
 from async_generator import asynccontextmanager
-from lomond.errors import WebSocketClosed, WebSocketClosing
+from dataclasses import dataclass  # use a 3.6 backport if available
+from lomond.errors import WebSocketClosed, WebSocketClosing, WebSocketUnavailable
 from lomond.events import Binary, Closed, Connected, Connecting, Text
+from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
 from curious.core._ws_wrapper import BasicWebsocketWrapper
 from curious.util import safe_generator
@@ -155,7 +155,8 @@ class GatewayHandler(object):
         return self._logger
 
     async def close(self, code: int = 1000, reason: str = "Client closed connection", *,
-                    reconnect: bool = False, clear_session_id: bool = True):
+                    reconnect: bool = False, clear_session_id: bool = True,
+                    forceful: bool = False):
         """
         Close the current websocket connection.
 
@@ -163,8 +164,9 @@ class GatewayHandler(object):
         :param reason: The close reason.
         :param reconnect: If we should reconnect.
         :param clear_session_id: If we should clear the session ID.
+        :param forceful: If the websocket should be forcefully closed.
         """
-        await self.websocket.close(code=code, reason=reason, reconnect=reconnect)
+        await self.websocket.close(code=code, reason=reason, reconnect=reconnect, forceful=forceful)
         # this kills the websocket
         await self._stop_heartbeating.set()
 
@@ -363,7 +365,10 @@ class GatewayHandler(object):
                 else:
                     break
 
-                await self.send_heartbeat()
+                try:
+                    await self.send_heartbeat()
+                except (WebSocketClosing, WebSocketClosed, WebSocketUnavailable):
+                    return
 
         await multio.asynclib.spawn(self.task_group, heartbeater)
 

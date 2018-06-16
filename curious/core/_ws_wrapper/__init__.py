@@ -16,8 +16,9 @@
 """
 Websocket wrapper classes, using a different backend library.
 """
-import abc
 from collections import AsyncIterable
+
+import abc
 
 
 class BasicWebsocketWrapper(AsyncIterable):
@@ -38,13 +39,14 @@ class BasicWebsocketWrapper(AsyncIterable):
 
     @abc.abstractmethod
     async def close(self, code: int = 1000, reason: str = "Client closed connection",
-                    reconnect: bool = False) -> None:
+                    reconnect: bool = False, forceful: bool = False) -> None:
         """
         Cancels and closes this websocket.
 
         :param code: The close code for this websocket.
         :param reason: The close reason for this websocket.
         :param reconnect: If the websocket should reconnect after being closed.
+        :param forceful: If the websocket should be forcefully closed.
         """
 
     @abc.abstractmethod

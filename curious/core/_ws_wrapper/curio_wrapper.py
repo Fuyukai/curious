@@ -17,14 +17,13 @@
 A curio websocket wrapper.
 """
 
-import threading
-from typing import AsyncIterator
-
 import curio
+import threading
 from curio.thread import AWAIT, async_thread
 from lomond import WebSocket
 from lomond.events import Event
 from lomond.persist import persist
+from typing import AsyncIterator
 
 from curious import USER_AGENT
 from curious.core._ws_wrapper import BasicWebsocketWrapper
@@ -77,7 +76,8 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
         self._ws.send_text(message)
 
     @async_thread
-    def close(self, code: int = 1000, reason: str = "Client disconnect", reconnect: bool = False):
+    def close(self, code: int = 1000, reason: str = "Client disconnect", reconnect: bool = False,
+              forceful: bool = False):
         """
         Cancels and closes this websocket.
         """
@@ -88,6 +88,8 @@ class CurioWebsocketWrapper(BasicWebsocketWrapper):
             AWAIT(self._task.cancel(blocking=False))  # don't block because it closes by itself
 
         self._ws.close(code=code, reason=reason)
+        if forceful and self._ws.session:
+            self._ws.session.close()
 
     @classmethod
     async def open(cls, url: str) -> 'BasicWebsocketWrapper':
