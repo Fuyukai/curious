@@ -683,6 +683,8 @@ class Client(object):
         """
         if autoshard:
             shard_count = await self.get_shard_count()
+        else:
+            await self.get_gateway_url()
 
         self.shard_count = shard_count
         return await self.start(shard_count)
