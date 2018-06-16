@@ -218,24 +218,15 @@ class Client(object):
         """
         return self.state.find_channel(channel_id)
 
-    async def get_gateway_url(self) -> str:
+    async def get_gateway_url(self, get_shard_count: bool = True) \
+        -> typing.Union[str, typing.Tuple[str, int]]:
         """
         :return: The gateway URL for this bot.
         """
-        if self._gw_url:
-            return self._gw_url
-
-        self._gw_url = await self.http.get_gateway_url()
-        return self._gw_url
-
-    async def get_shard_count(self) -> int:
-        """
-        :return: The shard count recommended for this bot.
-        """
-        gw, shards = await self.http.get_shard_count()
-        self._gw_url = gw
-
-        return shards
+        if get_shard_count:
+            return await self.http.get_shard_count()
+        else:
+            return await self.http.get_gateway_url()
 
     def guilds_for(self, shard_id: int) -> 'typing.Iterable[dt_guild.Guild]':
         """
@@ -682,10 +673,11 @@ class Client(object):
         :param autoshard: If the bot should be autosharded.
         """
         if autoshard:
-            shard_count = await self.get_shard_count()
+            url, shard_count = await self.get_gateway_url(get_shard_count=True)
         else:
-            await self.get_gateway_url()
+            url, shard_count = await self.get_gateway_url(get_shard_count=False), shard_count
 
+        self._gw_url = url
         self.shard_count = shard_count
         return await self.start(shard_count)
 
