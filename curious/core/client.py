@@ -551,6 +551,7 @@ class Client(object):
         # create the new guild using the data specified
         guild = dt_guild.Guild(self, **guild_data)
         guild.unavailable = False
+        guild.from_guild_create(**guild_data)
 
         # update the guild store
         self.state._guilds[guild_id] = guild
