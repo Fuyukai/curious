@@ -212,7 +212,7 @@ class Client(object):
         """
         return MappingProxyType(self._gateways)
 
-    def find_channel(self, channel_id: int):
+    def find_channel(self, channel_id: int) -> 'Union[None, dt_channel.Channel]':
         """
         Finds a channel by channel ID.
         """
