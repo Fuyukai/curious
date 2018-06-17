@@ -304,8 +304,7 @@ class Client(object):
     # HTTP Functions
     async def edit_profile(self, *,
                            username: str = None,
-                           avatar: bytes = None,
-                           password: str = None):
+                           avatar: bytes = None):
         """
         Edits the profile of this bot.
 
@@ -314,11 +313,7 @@ class Client(object):
 
         :param username: The new username of the bot.
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
-        :param password: The password to use. Only for user accounts.
         """
-        if not self.user.bot and password is None:
-            raise ValueError("Password must be passed for user bots")
-
         if username:
             if any(x in username for x in ('@', ':', '```')):
                 raise ValueError("Username must not contain banned characters")
@@ -332,7 +327,7 @@ class Client(object):
         if avatar:
             avatar = base64ify(avatar)
 
-        await self.http.edit_user(username, avatar, password)
+        await self.http.edit_user(username, avatar)
 
     async def edit_avatar(self, path: str):
         """
