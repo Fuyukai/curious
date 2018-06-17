@@ -42,7 +42,7 @@ from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
-UserType = typing.TypeVar("U", bound=User)
+UserType = typing.TypeVar("UserType", bound=User)
 logger = logging.getLogger("curious.state")
 
 
