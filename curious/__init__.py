@@ -40,7 +40,7 @@ try:
 except DistributionNotFound:
     __version__ = "0.0.0"
 
-_fmt = "DiscordBot (https://github.com/SunDwarf/curious {0}) Python/{1[0]}.{1[1]}"
+_fmt = "DiscordBot (https://github.com/Fuyukai/curious {0}) Python/{1[0]}.{1[1]}"
 USER_AGENT = _fmt.format(__version__, sys.version_info)
 del _fmt
 
