@@ -501,8 +501,11 @@ class State(object):
 
         # Note: Usually, when a member has a change that we need to cache, we get sent a
         # GUILD_MEMBER_UPDATE packet.
-        # However, sometimes Discord might not send it to us. So we always
-        guild._members[user_id] = member
+        # However, sometimes Discord might not send it to us. So we always update.
+        # We might get PRESENCE_UPDATE events for members that recently left the guild though,
+        # so we must ensure we only update, not add a member
+        if user_id in guild._members:
+            guild._members[user_id] = member
         yield "member_update", old_member, member,
 
     async def handle_presences_replace(self, gw: 'gateway.GatewayHandler', event_data: dict):
