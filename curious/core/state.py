@@ -339,17 +339,22 @@ class State(object):
         channel_id = int(event_data.get("channel_id", 0))
         channel = self.find_channel(channel_id)
 
+        if channel is None:
+            # >.>
+            return
+
         author_id = int(event_data.get("author", {}).get("id", 0))
 
         if channel is not None:
             message.guild_id = channel.guild_id
-        if message.channel.type == ChannelType.PRIVATE:
+
+        if channel.type == ChannelType.PRIVATE:
             if author_id == self._user.id:
                 message.author = self._user
             else:
                 message.author = message.channel.user
-        elif message.channel.type == ChannelType.GROUP:
-            message.author = message.channel.recipients.get(author_id, None)
+        elif channel.type == ChannelType.GROUP:
+            message.author = channel.recipients.get(author_id, None)
         else:
             # Webhooks also exist.
             if event_data.get("webhook_id") is not None:
