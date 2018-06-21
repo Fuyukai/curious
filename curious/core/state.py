@@ -1012,7 +1012,7 @@ class State(object):
         """
         Called when a channel is deleted.
         """
-        channel_id = int(event_data.get("channel_id", 0))
+        channel_id = int(event_data.get("id", 0))
         channel = self.find_channel(channel_id)
 
         if not channel:
