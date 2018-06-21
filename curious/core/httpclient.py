@@ -1235,7 +1235,7 @@ class HTTPClient(object):
 
         :param channel_id: The channel ID to delete.
         """
-        url = Endpoints.CHANNEL_BASE.format(channel_id)
+        url = Endpoints.CHANNEL_BASE.format(channel_id=channel_id)
 
         data = await self.delete(url, bucket="channels:{}".format(channel_id))
         return data
