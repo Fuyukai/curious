@@ -58,8 +58,9 @@ async def _wait_for_manager(manager, name: str, predicate):
             partial = functools.partial(manager.wait_for, name, predicate)
             await multio.asynclib.spawn(tg, partial)
             yield
-        finally:
+        except:
             await multio.asynclib.cancel_task_group(tg)
+            raise
 
 
 class EventManager(object):
