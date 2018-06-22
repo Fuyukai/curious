@@ -314,6 +314,40 @@ class GuildChannelWrapper(_WrapperBase):
 
         return channel.delete()
 
+    async def update_positions(self,
+                               channels_and_positions: typing.Union[typing.Iterable[typing.Tuple[dt_channel.Channel, int]],
+                                                                    typing.Dict[dt_channel.Channel, int]]) -> None:
+        """Changes the positions of the given channels.
+
+            :param channels_and_positions: A dict or iterable of two-item tuples of new channel positions that is in the format of \
+            (channel, position). Must at least consist of a swap of two channels.
+
+        """
+        
+        if not self._guild.me.guild_permissions.manage_channels:
+            raise PermissionsError("manage_channels")
+
+        if isinstance(channels_and_positions, dict):
+            channels_and_positions = channels_and_positions.items()
+
+        # in case the iterable is only iterable once, convert it to a list
+        channels_and_positions = list(channels_and_positions)
+
+        channels_left = set(chan.id for chan, pos in channels_and_positions if chan.position != pos)
+
+        if not channels_left:
+            # nothing to do
+            return
+
+        async def listener(old_channel, new_channel):
+            """listener that tells us if all channels have been updated"""
+            channels_left.discard(new_channel.id)
+
+            return not channels_left
+        
+        async with self._guild._bot.events.wait_for_manager("channel_update", listener):
+            await self._guild._bot.http.update_channel_positions(self._guild.id, [(chan.id, pos) for chan, pos in channels_and_positions])
+
 
 class GuildRoleWrapper(_WrapperBase):
     """

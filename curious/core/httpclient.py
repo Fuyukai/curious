@@ -1228,10 +1228,22 @@ class HTTPClient(object):
         data = await self.patch(url, bucket="channels:{}".format(channel_id), json=payload)
         return data
 
-    async def update_channel_positions(self, channels: typing.List[typing.Tuple[int, int]]):
+    async def update_channel_positions(self, guild_id: int, channel_ids_and_positions: typing.List[typing.Tuple[int, int]]):
         """
-        Updates the positions of
+        Updates the positions of channels
+
+        :param guild_id: The guild ID that contains the channels.
+        :param channel_ids_and_positions: A list of tuples of (channel_id, new_position); must at least be a swap of two channel positions.
         """
+        url = Endpoints.GUILD_CHANNELS.format(guild_id=guild_id)
+
+        if len(channel_ids_and_positions) < 2:
+            raise ValueError("channel_ids_and_position must contain at least 2 entries")
+
+        payload=[{"id": str(id), "position": position} for id, position in channel_ids_and_positions]
+
+        data = await self.patch(url, bucket="guild:{}".format(guild_id), json=payload)
+        return data
 
     async def delete_channel(self, channel_id: int):
         """
