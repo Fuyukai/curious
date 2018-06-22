@@ -270,7 +270,7 @@ class GuildChannelWrapper(_WrapperBase):
             "permission_overwrites": permission_overwrites,
         }
         if type_ is dt_channel.ChannelType.VOICE:
-            kwargs["bitrate"] = bitrate
+            kwargs["bitrate"] = bitrate * 1000
             kwargs["user_limit"] = user_limit
 
         if parent is not None:
@@ -284,15 +284,14 @@ class GuildChannelWrapper(_WrapperBase):
 
         # create a listener so we wait for the WS before editing
         async def _listener(channel: dt_channel.Channel):
-            if channel.name == name and channel.guild == self._guild:
-                return True
+            return channel.name == name and channel.guild == self._guild
 
-            return False
-
-        async with self._guild._bot.events.wait_for_manager("channel_update", _listener):
+        async with self._guild._bot.events.wait_for_manager("channel_create", _listener):
             channel_data = await self._guild._bot.http.create_channel(self._guild.id, **kwargs)
-            # if it's a text channel and the topic was provided, automatically add it
-            if type is dt_channel.ChannelType.TEXT and topic is not None:
+
+        # if it's a text channel and the topic was provided, automatically add it
+        if type is dt_channel.ChannelType.TEXT and topic is not None:
+            async with self._guild._bot.events.wait_for_manager("channel_update", _listener):
                 await self._guild._bot.http.edit_channel(channel_id=channel_data["id"], topic=topic)
 
         return self._channels[int(channel_data.get("id"))]

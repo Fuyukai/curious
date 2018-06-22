@@ -1159,7 +1159,7 @@ class HTTPClient(object):
 
     async def create_channel(self, guild_id: int, name: str, type: int, *,
                              bitrate: int = None, user_limit: int = None,
-                             permission_overwrites: list = None):
+                             parent_id: int = None, permission_overwrites: list = None):
         """
         Creates a new channel.
 
@@ -1168,6 +1168,7 @@ class HTTPClient(object):
         :param type: The type of the channel (text/voice).
         :param bitrate: The bitrate of the channel, if it is a voice channel.
         :param user_limit: The maximum number of users that can be in the channel.
+        :param parent_id: The ID of the parent.
         :param permission_overwrites: The list of permission overwrites to use for this channel.
         """
         url = Endpoints.GUILD_CHANNELS.format(guild_id=guild_id)
@@ -1182,6 +1183,9 @@ class HTTPClient(object):
 
             if user_limit is not None:
                 payload["user_limit"] = user_limit
+
+        if parent_id is not None:
+            payload["parent_id"] = parent_id
 
         if permission_overwrites is not None:
             payload["permission_overwrites"] = permission_overwrites
