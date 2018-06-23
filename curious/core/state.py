@@ -381,20 +381,6 @@ class State(object):
 
         return message
 
-    async def wait_for_voice_data(self, guild_id: int):
-        """
-        Waits for the two voice data packets to be received for the specified guild.
-        """
-        events, state = self.__voice_state_crap[guild_id]  # state is a pointer
-
-        for event in events:
-            await event.wait()
-
-        # pop out the event data for laeter reconnects
-        self.__voice_state_crap.pop(guild_id)
-
-        return state
-
     # ==============================================================================================
     # Event handlers.
     # These parse the events and deconstruct them.
@@ -1135,44 +1121,14 @@ class State(object):
 
             yield "user_typing", channel, user,
 
-    # Voice bullshit
-    async def handle_voice_server_update(self, gw: 'gateway.GatewayHandler', event_data: dict):
-        """
-        Called when a voice server update packet is dispatched.
-        """
-        # This is an internal event, so we do NOT dispatch it.
-        # Instead, store some state internally.
-        guild_id = event_data.get("guild_id")
-        if not guild_id:
-            # thanks
-            return
-
-        events, state = self.__voice_state_crap[int(guild_id)]
-
-        state.update({
-            "token": event_data.get("token"),
-            "endpoint": event_data.get("endpoint"),
-        })
-
-        # Set the VOICE_SERVER_UPDATE event.
-        await events[0].set()
-
     async def handle_voice_state_update(self, gw: 'gateway.GatewayHandler', event_data: dict):
         """
         Called when a member's voice state changes.
         """
         guild_id = int(event_data.get("guild_id", 0))
 
-        # If user_id == self._user.id, it's voice conn bullshit
         user_id = int(event_data.get("user_id", 0))
-        if user_id == self._user.id:
-            # YAY
-            events, state = self.__voice_state_crap[guild_id]
-            state.update({
-                "session_id": event_data.get("session_id")
-            })
-            # 2nd one is voice_state_update event
-            await events[1].set()
+        if user_id == self._user.id:  # this is used for voice
             return
 
         # get the guild and member
