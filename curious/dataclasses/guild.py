@@ -110,7 +110,7 @@ class VerificationLevel(enum.IntEnum):
             dt = datetime.datetime.now() - datetime.timedelta(minutes=10)
 
             # ensure their joined at time is before 10 minutes before now
-            if member.joined_at < dt:
+            if member.joined_at and member.joined_at < dt:
                 return True
 
         # other verification levels ???
