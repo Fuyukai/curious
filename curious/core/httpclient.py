@@ -19,9 +19,11 @@ The main Discord HTTP interface.
 .. currentmodule:: curious.core.httpclient
 """
 import datetime
+import json
 import logging
 import mimetypes
 import random
+import string
 import time
 import typing
 import weakref
@@ -90,7 +92,7 @@ def encode_multipart(fields, files, boundary=None):
     193
     Copied from: https://code.activestate.com/recipes/578668-encode-multipart-form-data-for-uploading-files-via/
     """
-    _BOUNDARY_CHARS = "oanfwenfuwengvwenvnewuifn34fy8u0newfwer69420"
+    _BOUNDARY_CHARS = string.ascii_letters + string.digits
 
     def escape_quote(s):
         return s.replace(b'"', b'\\"')
@@ -686,7 +688,7 @@ class HTTPClient(object):
         return data
 
     async def send_file(self, channel_id: int, file_content: bytes, *,
-                        filename: str = None, content: str = None):
+                        filename: str = None, content: str = None, embed: dict = None):
         """
         Uploads a file to the current channel.
 
@@ -698,9 +700,11 @@ class HTTPClient(object):
         :param content: Any optional message content to send with this file.
         """
         url = Endpoints.CHANNEL_MESSAGES.format(channel_id=channel_id)
-        payload = {}
+        payload_json = {}
         if content is not None:
-            payload["content"] = content
+            payload_json["content"] = content
+        if embed is not None:
+            payload_json["embed"] = embed
 
         files = {
             "file": {
@@ -709,8 +713,13 @@ class HTTPClient(object):
             }
         }
 
-        body, headers = encode_multipart(payload, files)
+        # The Discord API docs say that payload_json needs to be url-encoded, but that is a lie
+        # it must be a normal json string with can contain JSON unicode-escapes (which 
+        # dumps does when ensure_ascii is True; which is the default, but just it case the default changes
+        # in the future, we give it explicitly)
+        payload = {"payload_json": json.dumps(payload_json, ensure_ascii=True, separators=(',', ':'))}
 
+        body, headers = encode_multipart(payload, files)
         data = await self.post(url, "messages:{}".format(channel_id),
                                data=body, headers=headers)
         return data

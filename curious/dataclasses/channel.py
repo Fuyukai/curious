@@ -297,7 +297,8 @@ class ChannelMessageWrapper(object):
     async def upload(self, fp: '_typing.Union[bytes, str, PathLike, _typing.IO]',
                      *,
                      filename: str = None,
-                     message_content: '_typing.Optional[str]' = None) -> 'dt_message.Message':
+                     message_content: '_typing.Optional[str]' = None,
+                     message_embed: '_typing.Optional[Embed]' = None) -> 'dt_message.Message':
         """
         Uploads a message to this channel.
 
@@ -318,6 +319,8 @@ class ChannelMessageWrapper(object):
         :param filename: The filename for the file uploaded. If a path-like or str is passed, \
             will use the filename from that if this is not specified.
         :param message_content: Optional: Any extra content to be sent with the message.
+        :param message_embed: Optional: An :class:`.Embed` to be sent with the message. The embed \
+           can refer to the image as "attachment://filename"
         :return: The new :class:`.Message` created.
         """
         if not self.channel.type.has_messages():
@@ -354,8 +357,10 @@ class ChannelMessageWrapper(object):
         if filename is None:
             filename = "unknown.bin"
 
+        embed = message_embed.to_dict() if message_embed else None
+
         data = await self.channel._bot.http.send_file(self.channel.id, file_content,
-                                                      filename=filename, content=message_content)
+                                                      filename=filename, content=message_content, embed=embed)
         obb = self.channel._bot.state.make_message(data, cache=False)
         return obb
 

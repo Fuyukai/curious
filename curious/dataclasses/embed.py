@@ -151,8 +151,8 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         """
         self.image = attrdict()
 
-        if not image_url.startswith("http") or image_url.startswith("attachment://"):
-            raise ValueError("Image URLs must start with http[s]")
+        if not (image_url.startswith("http") or image_url.startswith("attachment://")):
+            raise ValueError("Image URLs must start with http[s] or attachment")
 
         if image_url:
             self.image.url = image_url
