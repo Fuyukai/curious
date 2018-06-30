@@ -150,7 +150,7 @@ def encode_multipart(fields, files, boundary=None):
 
 # more of a namespace
 class Endpoints:
-    API_BASE = "/api/v7"
+    API_BASE = "/api/v6"
 
     USER_ID = "/users/{user_id}"
     USER_ME = "/users/@me"
