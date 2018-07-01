@@ -70,20 +70,20 @@ class ChannelType(enum.IntEnum):
 class HistoryIterator(collections.AsyncIterator):
     """
     An iterator that allows you to automatically fetch messages and async iterate over them.
-    
+
     .. code-block:: python3
-    
+
         it = HistoryIterator(some_channel, bot, max_messages=100)
-        
+
         # usage 1
         async for message in it:
             ...
-            
+
         # usage 2
         await it.fill_messages()
         for message in it.messages:
             ...
-            
+
     Note that usage 2 will only fill chunks of 100 messages at a time.
     """
 
@@ -132,7 +132,7 @@ class HistoryIterator(collections.AsyncIterator):
     async def fill_messages(self) -> None:
         """
         Called to fill the next <n> messages.
-        
+
         This is called automatically by :meth:`.__anext__`, but can be used to fill the messages
         anyway.
         """
@@ -741,7 +741,7 @@ class Channel(Dataclass):
     @property
     def icon_url(self) -> _typing.Union[str, None]:
         """
-        :return: The icon URL for this channel if it is a group DM. 
+        :return: The icon URL for this channel if it is a group DM.
         """
         return "https://cdn.discordapp.com/channel-icons/{}/{}.webp" \
             .format(self.id, self.icon_hash)
@@ -764,17 +764,57 @@ class Channel(Dataclass):
         """
         return MappingProxyType(self._overwrites)
 
+    def effective_permissions(self, member: 'dt_member.Member') -> \
+        'dt_permissions.Permissions':
+        """
+        Gets the effective permissions for the given member.
+        """
+        if not self.guild:
+            return dt_permissions.Permissions(515136)
+
+        permissions = dt_permissions.Permissions(self.guild.default_role.permissions.bitfield)
+
+        for role in member.roles:
+            permissions.bitfield |= role.permissions.bitfield
+
+        if permissions.administrator:
+            return dt_permissions.Permissions.all()
+
+        overwrites_everyone = self._overwrites.get(self.guild.default_role.id)
+        if overwrites_everyone:
+            permissions.bitfield &= ~(overwrites_everyone.deny.bitfield)
+            permissions.bitfield |= overwrites_everyone.allow.bitfield
+
+        allow = deny = 0
+        for role in member.roles:
+            overwrite = self._overwrites.get(role.id)
+            if overwrite:
+                allow |= overwrite.allow.bitfield
+                deny |= overwrite.deny.bitfield
+
+        permissions.bitfield &= ~deny
+        permissions.bitfield |= allow
+
+        overwrite_member = self._overwrites.get(member.id)
+        if overwrite_member:
+            permissions.bitfield &= ~(overwrite.deny.bitfield)
+            permissions.bitfield |= overwrite.allow.bitfield
+
+        return permissions
+
     def permissions(self, obb: '_typing.Union[dt_member.Member, dt_role.Role]') -> \
             'dt_permissions.Overwrite':
         """
         Gets the permission overwrites for the specified object.
+
+        If you want to check whether a member has specific permissions, use
+        :method:effective_permissions instead.
         """
         if not self.guild:
             allow = dt_permissions.Permissions(515136)
             overwrite = dt_permissions.Overwrite(allow=allow, deny=0, obb=obb, channel_id=self.id)
             overwrite._immutable = True
             return overwrite
-
         overwrite = self._overwrites.get(obb.id)
         if not overwrite:
             everyone_overwrite = self._overwrites.get(self.guild.default_role.id)
@@ -897,7 +937,7 @@ class Channel(Dataclass):
         :param avatar: The bytes content of the new webhook.
         :return: A :class:`.Webhook` that represents the webhook created.
         """
-        if not self.permissions(self.guild.me).manage_webhooks:
+        if not self.effective_permissions(self.guild.me).manage_webhooks:
             raise PermissionsError("manage_webhooks")
 
         if avatar is not None:
@@ -926,7 +966,7 @@ class Channel(Dataclass):
             await self._bot.http.edit_webhook_with_token(webhook.id, webhook.token,
                                                          name=name, avatar=avatar)
 
-        if not self.permissions(self.guild.me).manage_webhooks:
+        if not self.effective_permissions(self.guild.me).manage_webhooks:
             raise PermissionsError("manage_webhooks")
 
         data = await self._bot.http.edit_webhook(webhook.id,
@@ -952,7 +992,7 @@ class Channel(Dataclass):
             await self._bot.http.delete_webhook_with_token(webhook.id, webhook.token)
             return webhook
 
-        if not self.permissions(self.guild.me).manage_webhooks:
+        if not self.effective_permissions(self.guild.me).manage_webhooks:
             raise PermissionsError("manage_webhooks")
 
         await self._bot.http.delete_webhook(webhook.id)
@@ -970,7 +1010,7 @@ class Channel(Dataclass):
         if not self.guild:
             raise PermissionsError("create_instant_invite")
 
-        if not self.permissions(self.guild.me).create_instant_invite:
+        if not self.effective_permissions(self.guild.me).create_instant_invite:
             raise PermissionsError("create_instant_invite")
 
         inv = await self._bot.http.create_invite(self.id, **kwargs)
@@ -983,7 +1023,7 @@ class Channel(Dataclass):
     async def delete_messages(self, messages: '_typing.List[dt_message.Message]') -> int:
         """
         Deletes messages from a channel.
-        This is the low-level delete function - for the high-level function, see 
+        This is the low-level delete function - for the high-level function, see
         :meth:`.Channel.purge()`.
 
         Example for deleting all the last 100 messages:
@@ -1050,7 +1090,7 @@ class Channel(Dataclass):
             raise CuriousError("Cannot send messages to this channel")
 
         if self.guild:
-            if not self.permissions(self.guild.me).send_messages:
+            if not self.effective_permissions(self.guild.me).send_messages:
                 raise PermissionsError("send_message")
 
         await self._bot.http.send_typing(self.id)
@@ -1126,7 +1166,7 @@ class Channel(Dataclass):
 
         :param file_content: The bytes-like file content to upload.
             This **cannot** be a file-like object.
-            
+
         :param filename: The filename of the file.
         :param message_content: Optional: Any extra content to be sent with the message.
         :return: The new :class:`.Message` created.
@@ -1166,7 +1206,7 @@ class Channel(Dataclass):
         if not self.guild:
             raise PermissionsError("manage_roles")
 
-        if not self.permissions(self.guild.me).manage_roles:
+        if not self.effective_permissions(self.guild.me).manage_roles:
             raise PermissionsError("manage_roles")
 
         target = overwrite.target
@@ -1206,7 +1246,7 @@ class Channel(Dataclass):
         if self.guild is None:
             raise CuriousError("Can only edit guild channels")
 
-        if not self.permissions(self.guild.me).manage_channels:
+        if not self.effective_permissions(self.guild.me).manage_channels:
             raise PermissionsError("manage_channels")
 
         if "parent" in kwargs:
@@ -1219,7 +1259,7 @@ class Channel(Dataclass):
         """
         Deletes this channel.
         """
-        if not self.permissions(self.guild.me).manage_channels:
+        if not self.effective_permissions(self.guild.me).manage_channels:
             raise PermissionsError("manage_channels")
 
         await self._bot.http.delete_channel(self.id)
