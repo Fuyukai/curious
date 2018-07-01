@@ -53,7 +53,7 @@ def author_has_permissions(bypass_owner: bool = True, **permissions):
     """
 
     def _condition(ctx: Context):
-        perms = ctx.channel.permissions(ctx.author)
+        perms = ctx.channel.effective_permissions(ctx.author)
         return all(getattr(perms, name, None) is value
                    for name, value in permissions.items())
 

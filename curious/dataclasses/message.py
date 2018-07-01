@@ -308,7 +308,7 @@ class Message(Dataclass):
             has_manage_messages = False
         else:
             me = self.guild.me.id
-            has_manage_messages = self.channel.permissions(self.guild.me).manage_messages
+            has_manage_messages = self.channel.effective_permissions(self.guild.me).manage_messages
 
         if self.id != me and not has_manage_messages:
             raise PermissionsError("manage_messages")
@@ -350,7 +350,7 @@ class Message(Dataclass):
         You must have MANAGE_MESSAGES in the channel to pin the message.
         """
         if self.guild is not None:
-            if not self.channel.permissions(self.guild.me).manage_messages:
+            if not self.channel.effective_permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
         await self._bot.http.pin_message(self.channel.id, self.id)
@@ -364,7 +364,7 @@ class Message(Dataclass):
         Additionally, the message must already be pinned.
         """
         if self.guild is not None:
-            if not self.channel.permissions(self.guild.me).manage_messages:
+            if not self.channel.effective_permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
         await self._bot.http.unpin_message(self.channel.id, self.id)
@@ -401,13 +401,13 @@ class Message(Dataclass):
         """
         Reacts to a message with an emoji.
 
-        This requires an Emoji object for reacting to messages with custom reactions, or a string 
+        This requires an Emoji object for reacting to messages with custom reactions, or a string
         containing the literal unicode (e.g ™) for normal emoji reactions.
 
         :param emoji: The emoji to react with.
         """
         if self.guild:
-            if not self.channel.permissions(self.guild.me).add_reactions:
+            if not self.channel.effective_permissions(self.guild.me).add_reactions:
                 # we can still add already reacted emojis
                 # so make sure to check for that
                 if not self.reacted(emoji):
@@ -432,7 +432,7 @@ class Message(Dataclass):
                 raise CuriousError("Cannot delete other reactions in a DM")
 
         if victim and victim != self:
-            if not self.channel.permissions(self.guild.me).manage_messages:
+            if not self.channel.effective_permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
         if isinstance(reaction, dt_emoji.Emoji):
@@ -450,7 +450,7 @@ class Message(Dataclass):
         if not self.guild:
             raise CuriousError("Cannot delete other reactions in a DM")
 
-        if not self.channel.permissions(self.guild.me).manage_messages:
+        if not self.channel.effective_permissions(self.guild.me).manage_messages:
             raise PermissionsError("manage_messages")
 
         await self._bot.http.delete_all_reactions(self.channel.id, self.id)
