@@ -241,7 +241,7 @@ class ChannelMessageWrapper(object):
         :param after: The snowflake ID to get messages after.
         """
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).read_message_history:
+            if not self.channel.effective_permissions(self.channel.guild.me).read_message_history:
                 raise PermissionsError("read_message_history")
 
         return HistoryIterator(self.channel, before=before, after=after, max_messages=limit)
@@ -267,7 +267,7 @@ class ChannelMessageWrapper(object):
             raise CuriousError("Cannot send messages to a voice channel")
 
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).send_messages:
+            if not self.channel.effective_permissions(self.channel.guild.me).send_messages:
                 raise PermissionsError("send_messages")
 
         if not isinstance(content, str) and content is not None:
@@ -279,7 +279,7 @@ class ChannelMessageWrapper(object):
                 raise CuriousError("Cannot send an empty message")
 
             if self.channel.guild and not \
-                    self.channel.permissions(self.channel.guild.me).embed_links:
+                    self.channel.effective_permissions(self.channel.guild.me).embed_links:
                 raise PermissionsError("embed_links")
         else:
             if content and len(content) > 2000:
@@ -327,10 +327,10 @@ class ChannelMessageWrapper(object):
             raise CuriousError("Cannot send messages to a voice channel")
 
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).send_messages:
+            if not self.channel.effective_permissions(self.channel.guild.me).send_messages:
                 raise PermissionsError("send_messages")
 
-            if not self.channel.permissions(self.channel.guild.me).attach_files:
+            if not self.channel.effective_permissions(self.channel.guild.me).attach_files:
                 raise PermissionsError("attach_files")
 
         if isinstance(fp, bytes):
@@ -386,7 +386,7 @@ class ChannelMessageWrapper(object):
         :return: The number of messages deleted.
         """
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).manage_messages:
+            if not self.channel.effective_permissions(self.channel.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
         minimum_allowed = floor((time.time() - 14 * 24 * 60 * 60) * 1000.0 - 1420070400000) << 22
@@ -439,7 +439,7 @@ class ChannelMessageWrapper(object):
         :return: The number of messages deleted.
         """
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).manage_messages \
+            if not self.channel.effective_permissions(self.channel.guild.me).manage_messages \
                     and not fallback_from_bulk:
                 raise PermissionsError("manage_messages")
 
@@ -508,7 +508,7 @@ class ChannelMessageWrapper(object):
         :raises CuriousError: If the message could not be found.
         """
         if self.channel.guild:
-            if not self.channel.permissions(self.channel.guild.me).read_message_history:
+            if not self.channel.effective_permissions(self.channel.guild.me).read_message_history:
                 raise PermissionsError("read_message_history")
 
         cached_message = self.channel._bot.state.find_message(message_id)
