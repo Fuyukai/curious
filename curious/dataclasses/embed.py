@@ -67,7 +67,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         self.timestamp = timestamp  # type: datetime.datetime
 
         #: The fields for this embed.
-        self.fields = []
+        self.fields = [attrdict(**x) for x in kwargs.get("fields", [])]
 
         #: The footer for this embed.
         self.footer = make_attrdict("footer")
