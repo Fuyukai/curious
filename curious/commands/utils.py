@@ -17,11 +17,10 @@ Misc utilities used in commands related things.
 
 .. currentmodule:: curious.commands.utils
 """
-import inspect
-from typing import Callable, Iterable, List, Union
-
 import collections
+import inspect
 import typing_inspect
+from typing import Callable, Iterable, List, Union
 
 from curious.commands.exc import ConversionFailedError, MissingArgumentError
 from curious.core.client import Client
@@ -152,12 +151,11 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                     final_kwargs[param.name] = param.default
             else:
                 converter = ctx._lookup_converter(param.annotation)
-                if len(f) == 1:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
-                                                             f[0])
-                else:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
-                                                             " ".join(f))
+                results = []
+                for item in f:
+                    results.append(_with_reraise(converter, param.annotation, ctx, item))
+
+                final_args += results
 
         if param.kind in [inspect.Parameter.VAR_KEYWORD]:
             # no
