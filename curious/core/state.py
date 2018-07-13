@@ -873,7 +873,9 @@ class State(object):
         if not guild:
             return
 
-        member = guild._members.pop(int(event_data["user"]["id"]), None)
+        member_id = int(event_data["user"]["id"])
+        member = guild._members.pop(member_id, None)
+
         guild.member_count -= 1
         if not member:
             # We can't see the member, so don't fire an event for it.

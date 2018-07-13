@@ -31,6 +31,10 @@ This document displays the differences between each release of curious.
  - Speed up event creation in internal code massively by not performing needless stack
    introspection.
 
+ - Make the behaviour of ``*args`` in a command more consistent.
+
+    - *args will now call converter(token) on each token it receives as part of the arg string.
+
 0.7.8 (Released 2018-05-23)
 ---------------------------
 
