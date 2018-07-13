@@ -20,9 +20,8 @@ Class for the commands context.
 """
 import inspect
 import types
-from typing import Any, Callable, List, Tuple, Type, Union
-
 import typing_inspect
+from typing import Any, Callable, List, Tuple, Type, Union
 
 from curious.commands.converters import convert_channel, convert_float, convert_int, convert_list, \
     convert_member, convert_role, convert_union
@@ -83,7 +82,7 @@ class Context(object):
         self.bot = event_context.bot
 
     @classmethod
-    def add_converter(cls, type_: Type[Any], converter: 'Callable[[Context, str], Any]'):
+    def add_converter(cls, type_: Type[Any], converter: 'Callable[..., Any]'):
         """
         Adds a converter to the mapping of converters.
 
