@@ -82,7 +82,7 @@ class Context(object):
         self.bot = event_context.bot
 
     @classmethod
-    def add_converter(cls, type_: Type[Any], converter: 'Callable[..., Any]'):
+    def add_converter(cls, type_: Type[Any], converter):
         """
         Adds a converter to the mapping of converters.
 
