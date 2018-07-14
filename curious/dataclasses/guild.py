@@ -1184,6 +1184,9 @@ class Guild(Dataclass):
         if not self.me.guild_permissions.kick_members:
             raise PermissionsError("kick_members")
 
+        if self._guild.owner == victim:
+            raise HierarchyError("Cannot kick the owner")
+
         if victim.guild != self:
             raise ValueError("Member must be from this guild (try `member.user` instead)")
 

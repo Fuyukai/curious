@@ -83,6 +83,10 @@ class Nickname(object):
             if not guild.me.guild_permissions.manage_nicknames:
                 raise PermissionsError("manage_nicknames")
 
+            # we can't change the owner nickname, unless we are the owner
+            if guild.owner == self.parent:
+                raise HierarchyError("Cannot change the nickname of the owner")
+
         if self.parent.top_role >= guild.me.top_role and self.parent != guild.me:
             raise HierarchyError("Top role is equal to or lower than victim's top role")
 
