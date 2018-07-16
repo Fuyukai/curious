@@ -29,6 +29,7 @@ import logging
 import multio
 import typing
 from types import MappingProxyType
+from typing import Union
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -219,7 +220,7 @@ class Client(object):
         return self.state.find_channel(channel_id)
 
     async def get_gateway_url(self, get_shard_count: bool = True) \
-        -> typing.Union[str, typing.Tuple[str, int]]:
+            -> typing.Union[str, typing.Tuple[str, int]]:
         """
         :return: The gateway URL for this bot.
         """
