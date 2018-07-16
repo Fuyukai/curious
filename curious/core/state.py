@@ -29,6 +29,7 @@ from typing import Dict
 
 from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
+from curious.dataclasses.embed import Embed
 from curious.dataclasses.emoji import Emoji
 from curious.dataclasses.guild import ContentFilterLevel, Guild, MFALevel, NotificationLevel, \
     VerificationLevel
@@ -329,7 +330,7 @@ class State(object):
         """
         message = Message(self.client, **event_data)
 
-        if message in self.messages:
+        if message in self.messages and cache is True:
             # don't bother re-caching
             i = self.messages.index(message)
             return self.messages[i]
@@ -676,16 +677,26 @@ class State(object):
         """
         Called when MESSAGE_UPDATE is dispatched.
         """
-        new_message = self.make_message(event_data, cache=False)
-        if not new_message:
+        from_data = self.make_message(event_data, cache=False)
+        if not from_data:
             return
 
-        yield "message_update_uncached", new_message
+        yield "message_update_uncached", from_data
 
         # Try and find the old message.
-        old_message = self.find_message(new_message.id)
+        old_message = self.find_message(from_data.id)
         if not old_message:
             return
+
+        new_message = copy.copy(old_message)
+        new_message.content = event_data.get("content", old_message.content)
+        embeds = event_data.get("embeds")
+        if not embeds:
+            new_message.embeds = old_message.embeds
+        else:
+            new_message.embeds = [Embed(**em) for em in event_data.get("embeds")]
+        new_message._mentions = event_data.get("mentions", old_message._mentions)
+        new_message._role_mentions = event_data.get("mention_roles", old_message._role_mentions)
 
         self.messages.remove(old_message)
         self.messages.append(new_message)
