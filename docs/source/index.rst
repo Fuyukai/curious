@@ -54,8 +54,6 @@ Documentation
     tutorial/commands
     tutorial/better_event_handling
 
-    tutorial/objects/channel
-
     events
 
     changelog

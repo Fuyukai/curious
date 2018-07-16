@@ -146,9 +146,10 @@ Arguments
 
 Arguments to commands are consumed in a specific way, according to the function signature:
 
- - Positional arguments are consumed from single words or single blocks of quoted words.
- - ``*args`` arguments consume every single word.
- - ``*, argument`` arguments also consume every single word.
+ - Positional arguments are consumed from single words or single blocks of quoted words, passing
+   through a single string per argument.
+ - ``*args`` arguments consume every single word, passing through a list.
+ - ``*, argument`` arguments also consume every single word, passing through a joined string.
  - Keyword arguments are consumed, but use their default value if not found.
  - ``**kwargs`` is ignored.
 

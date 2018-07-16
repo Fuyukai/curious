@@ -33,7 +33,11 @@ This document displays the differences between each release of curious.
 
  - Make the behaviour of ``*args`` in a command more consistent.
 
+    - *args will now return a list of arguments.
+
     - *args will now call converter(token) on each token it receives as part of the arg string.
+
+ - Fix ``MESSAGE_UPDATE`` handling to be more sane.
 
 0.7.8 (Released 2018-05-23)
 ---------------------------
