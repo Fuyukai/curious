@@ -18,10 +18,9 @@ Wrappers for Member objects (Users with guilds).
 
 .. currentmodule:: curious.dataclasses.member
 """
+import collections
 import datetime
 from typing import List
-
-import collections
 
 from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
     voice_state as dt_vs
@@ -371,7 +370,7 @@ class Member(Dataclass):
         """
         :return: The computed colour of this user.
         """
-        roles = reversed(self.roles)
+        roles = self.roles._sorted_roles()
 
         # NB: you can abuse discord and edit the defualt role's colour
         # so explicitly check that it isn't the default role, and make sure it has a colour
