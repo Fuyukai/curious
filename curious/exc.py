@@ -100,7 +100,7 @@ class HTTPException(CuriousError, ConnectionError):
             #: The error code for this response.
             self.error_code = ErrorCode(error_code)
         except ValueError:
-            warnings.warn("Received unknown error code {}")
+            warnings.warn(f"Received unknown error code {error_code}")
             #: The error code for this response.
             self.error_code = ErrorCode.UNKNOWN
         self.error_message = error.get("message")
