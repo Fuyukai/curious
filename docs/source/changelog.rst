@@ -3,8 +3,8 @@ Changelog
 
 This document displays the differences between each release of curious.
 
-0.7.9
------
+0.7.9 (Released 2018-08-05)
+---------------------------
 
 .. note::
 
