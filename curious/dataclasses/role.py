@@ -18,7 +18,7 @@ Wrappers for Role objects.
 
 .. currentmodule:: curious.dataclasses.role
 """
-
+import copy
 import functools
 
 from curious.dataclasses import guild as dt_guild, member as dt_member, \
@@ -101,17 +101,7 @@ class Role(Dataclass):
             else self.id < other.id
 
     def _copy(self) -> 'Role':
-        obb = object.__new__(self.__class__)
-
-        obb.name = self.name
-        obb.colour = self.colour
-        obb.hoisted = self.hoisted
-        obb.permissions = self.permissions
-        obb.managed = self.managed
-        obb.position = self.position
-        obb.guild_id = self.guild_id
-
-        return obb
+        return copy.copy(self)
 
     @property
     def guild(self) -> 'dt_guild.Guild':

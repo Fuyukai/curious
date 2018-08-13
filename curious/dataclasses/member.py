@@ -313,6 +313,7 @@ class Member(Dataclass):
         """
         new_object = copy.copy(self)
         new_object.roles = MemberRoleContainer(new_object)
+        new_object.role_ids = self.role_ids.copy()
 
         return new_object
 

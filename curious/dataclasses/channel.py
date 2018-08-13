@@ -850,6 +850,7 @@ class Channel(Dataclass):
     def _copy(self):
         obb = copy.copy(self)
         obb._messages = ChannelMessageWrapper(obb)
+        obb._overwrites = self._overwrites.copy()
         return copy.copy(self)
 
     @deprecated(since="0.7.0", see_instead="Channel.messages.get_history", removal="0.9.0")

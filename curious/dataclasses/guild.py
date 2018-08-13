@@ -769,6 +769,11 @@ class Guild(Dataclass):
         obb.roles = GuildRoleWrapper(obb)
         obb.emojis = GuildEmojiWrapper(obb)
         obb.bans = GuildRoleWrapper(obb)
+        obb._channels = self._channels.copy()
+        obb._roles = self._roles.copy()
+        obb._emojis = self._roles.copy()
+        obb._members = self._members.copy()
+        obb._voice_states = self._voice_states.copy()
         return obb
 
     def __repr__(self) -> str:
