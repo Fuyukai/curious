@@ -448,14 +448,12 @@ class GuildEmojiWrapper(_WrapperBase):
     """
     __slots__ = "_guild", "_emojis"
 
-    def __init__(self, guild: 'Guild',
-                 emojis: 'typing.MutableMapping[int, dt_emoji.Emoji]'):
+    def __init__(self, guild: 'Guild'):
         """
         :param guild: The :class:`.Guild` object that owns this wrapper.
         :param emojis: The dictionary of emojis that this wrapper contains.
         """
         self._guild = guild
-        self._guild._emojis = emojis
 
     @property
     def view(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
