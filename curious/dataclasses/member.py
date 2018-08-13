@@ -45,7 +45,7 @@ class Nickname(object):
             return True
 
         if isinstance(other, Nickname):
-            if self.parent is not other.parent:
+            if self.parent != other.parent:
                 return False
 
             return self.value == other.value
@@ -148,7 +148,7 @@ class MemberRoleContainer(collections.Sequence):
         if not isinstance(other, MemberRoleContainer):
             return False
 
-        if self._member is not other._member:
+        if self._member.id is not other._member.id:
             return False
 
         return self._member.role_ids == other._member.role_ids

@@ -176,6 +176,12 @@ class GuildChannelWrapper(_WrapperBase):
         """
         self._guild = guild
 
+    def __eq__(self, other):
+        if not isinstance(other, GuildChannelWrapper):
+            return False
+
+        return other._guild.id == self._guild.id and other._guild.channels == self._guild.channels
+
     @property
     def view(self) -> 'typing.Mapping[int, dt_channel.Channel]':
         """
@@ -360,6 +366,12 @@ class GuildRoleWrapper(_WrapperBase):
         """
         self._guild = guild
 
+    def __eq__(self, other):
+        if not isinstance(other, GuildRoleWrapper):
+            return None
+
+        return self._guild.id == other._guild.id and self._guild.roles == other._guild.roles
+
     @property
     def view(self) -> 'typing.Mapping[int, dt_role.Role]':
         """
@@ -451,9 +463,14 @@ class GuildEmojiWrapper(_WrapperBase):
     def __init__(self, guild: 'Guild'):
         """
         :param guild: The :class:`.Guild` object that owns this wrapper.
-        :param emojis: The dictionary of emojis that this wrapper contains.
         """
         self._guild = guild
+
+    def __eq__(self, other):
+        if not isinstance(other, GuildEmojiWrapper):
+            return None
+
+        return self._guild.id == other._guild.id and self._guild.emojis == other._guild.emojis
 
     @property
     def view(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
