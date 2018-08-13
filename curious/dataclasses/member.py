@@ -45,6 +45,9 @@ class Nickname(object):
             return True
 
         if isinstance(other, Nickname):
+            if self.parent is not other.parent:
+                return False
+
             return self.value == other.value
 
         return self.value == other
