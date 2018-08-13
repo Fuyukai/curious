@@ -170,21 +170,18 @@ class GuildChannelWrapper(_WrapperBase):
     """
     __slots__ = "_guild", "_channels"
 
-    def __init__(self, guild: 'Guild',
-                 channels: 'typing.MutableMapping[int, dt_channel.Channel]'):
+    def __init__(self, guild: 'Guild'):
         """
         :param guild: The :class:`.Guild` object that owns this wrapper.
-        :param channels: The dictionary of channels that this wrapper contains.
         """
         self._guild = guild
-        self._channels = channels
 
     @property
     def view(self) -> 'typing.Mapping[int, dt_channel.Channel]':
         """
         :return: A read-only view into the channels for this wrapper.
         """
-        return MappingProxyType(self._channels)
+        return MappingProxyType(self._guild._channels)
 
     def __getitem__(self, key) -> 'dt_channel.Channel':
         default = object()
@@ -195,7 +192,7 @@ class GuildChannelWrapper(_WrapperBase):
         return got
 
     def __len__(self) -> int:
-        return len(self._channels)
+        return len(self._guild._channels)
 
     # overwritten methods from the abc
     def get(self, key: typing.Union[str, int], default: default_var = None) \
@@ -208,7 +205,7 @@ class GuildChannelWrapper(_WrapperBase):
         :return: A :class:`.Channel`, if it was found.
         """
         if isinstance(key, int):
-            return self._channels.get(key, default)
+            return self._guild._channels.get(key, default)
         else:
             return self._get_by_name(key, default=default)
 
@@ -226,7 +223,7 @@ class GuildChannelWrapper(_WrapperBase):
         :param default: The default value to get, if the channel cannot be found.
         :return: A :class:`.Channel` if it can be found.
         """
-        s = sorted(self._channels.values(), key=lambda c: c.position)
+        s = sorted(self._guild._channels.values(), key=lambda c: c.position)
         try:
             return next(filter(lambda ch: ch.name == name, s))
         except StopIteration:
@@ -294,13 +291,13 @@ class GuildChannelWrapper(_WrapperBase):
             async with self._guild._bot.events.wait_for_manager("channel_update", _listener):
                 await self._guild._bot.http.edit_channel(channel_id=channel_data["id"], topic=topic)
 
-        return self._channels[int(channel_data.get("id"))]
+        return self._guild._channels[int(channel_data.get("id"))]
 
     def edit(self, channel: 'dt_channel.Channel', **kwargs):
         """
         Edits a channel.
         """
-        if channel.id not in self._channels:
+        if channel.id not in self._guild._channels:
             raise CuriousError("This channel is not part of this guild")
 
         return channel.edit(**kwargs)
@@ -309,7 +306,7 @@ class GuildChannelWrapper(_WrapperBase):
         """
         Deletes a channel.
         """
-        if channel.id not in self._channels:
+        if channel.id not in self._guild._channels:
             raise CuriousError("This channel is not part of this guild")
 
         return channel.delete()
@@ -357,21 +354,18 @@ class GuildRoleWrapper(_WrapperBase):
 
     __slots__ = "_guild", "_roles"
 
-    def __init__(self, guild: 'Guild',
-                 roles: 'typing.MutableMapping[int, dt_role.Role]'):
+    def __init__(self, guild: 'Guild'):
         """
         :param guild: The :class:`.Guild` object that owns this wrapper.
-        :param roles: The dictionary of roles that this wrapper contains.
         """
         self._guild = guild
-        self._roles = roles
 
     @property
     def view(self) -> 'typing.Mapping[int, dt_role.Role]':
         """
         :return: A read-only view into the channels for this wrapper.
         """
-        return MappingProxyType(self._roles)
+        return MappingProxyType(self._guild._roles)
 
     def __getitem__(self, key) -> 'dt_role.Role':
         default = object()
@@ -382,7 +376,7 @@ class GuildRoleWrapper(_WrapperBase):
         return got
 
     def __len__(self) -> int:
-        return len(self._roles)
+        return len(self._guild._roles)
 
     # overwritten methods from the abc
     def get(self, key: typing.Union[str, int], default: default_var = None) \
@@ -395,7 +389,7 @@ class GuildRoleWrapper(_WrapperBase):
         :return: A :class:`.Role`, if it was found.
         """
         if isinstance(key, int):
-            return self._roles.get(key, default)
+            return self._guild._roles.get(key, default)
         else:
             return self._get_by_name(key, default=default)
 
@@ -408,7 +402,7 @@ class GuildRoleWrapper(_WrapperBase):
         :param default: The default value to get, if the role cannot be found.
         :return: A :class:`.Role` if it can be found.
         """
-        s = sorted(self._roles.values(), key=lambda c: c.position)
+        s = sorted(self._guild._roles.values(), key=lambda c: c.position)
         try:
             return next(filter(lambda r: r.name == name, s))
         except StopIteration:
@@ -425,7 +419,7 @@ class GuildRoleWrapper(_WrapperBase):
 
         role_obb = dt_role.Role(client=self._guild._bot,
                                 **(await self._guild._bot.http.create_role(self._guild.id)))
-        self._roles[role_obb.id] = role_obb
+        self._guild._roles[role_obb.id] = role_obb
         role_obb.guild_id = self._guild.id
         return await role_obb.edit(**kwargs)
 
@@ -433,7 +427,7 @@ class GuildRoleWrapper(_WrapperBase):
         """
         Edits a role.
         """
-        if role.id not in self._roles:
+        if role.id not in self._guild._roles:
             raise CuriousError("This role is not part of this guild")
 
         return role.edit(**kwargs)
@@ -442,7 +436,7 @@ class GuildRoleWrapper(_WrapperBase):
         """
         Deletes a role.
         """
-        if role.id not in self._roles:
+        if role.id not in self._guild._roles:
             raise CuriousError("This role is not part of this guild")
 
         return role.delete()
@@ -461,20 +455,20 @@ class GuildEmojiWrapper(_WrapperBase):
         :param emojis: The dictionary of emojis that this wrapper contains.
         """
         self._guild = guild
-        self._emojis = emojis
+        self._guild._emojis = emojis
 
     @property
     def view(self) -> 'typing.Mapping[int, dt_emoji.Emoji]':
         """
         :return: A read-only view into the channels for this wrapper.
         """
-        return MappingProxyType(self._emojis)
+        return MappingProxyType(self._guild._emojis)
 
     def __getitem__(self, key) -> 'dt_emoji.Emoji':
-        return self._emojis[key]
+        return self._guild._emojis[key]
 
     def __len__(self) -> int:
-        return len(self._emojis)
+        return len(self._guild._emojis)
 
     async def create(self, *,
                      name: str, image_data: typing.Union[str, bytes],
@@ -746,16 +740,21 @@ class Guild(Dataclass):
         self.voice_client = None
 
         #: The :class:`.GuildChannelWrapper` that wraps the channels in this Guild.
-        self.channels = GuildChannelWrapper(self, self._channels)
+        self.channels = GuildChannelWrapper(self)
         #: The :class:`.GuildRoleWrapper` that wraps the roles in this Guild.
-        self.roles = GuildRoleWrapper(self, self._roles)
+        self.roles = GuildRoleWrapper(self)
         #: The :class:`.GuildEmojiWrapper` that wraps the emojis in this Guild.
-        self.emojis = GuildEmojiWrapper(self, self._emojis)
+        self.emojis = GuildEmojiWrapper(self)
         #: The :class:`.GuildBanContainer` for this Guild.
         self.bans = GuildBanContainer(self)
 
     def _copy(self) -> 'Guild':
-        return copy.copy(self)
+        obb = copy.copy(self)
+        obb.channels = GuildChannelWrapper(obb)
+        obb.roles = GuildRoleWrapper(obb)
+        obb.emojis = GuildEmojiWrapper(obb)
+        obb.bans = GuildRoleWrapper(obb)
+        return obb
 
     def __repr__(self) -> str:
         return "<Guild id='{}' name='{}' members='{}'>".format(self.id, self.name,

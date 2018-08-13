@@ -22,6 +22,7 @@ import time
 from math import floor
 
 import collections
+import copy
 import enum
 import multio
 import pathlib
@@ -847,19 +848,9 @@ class Channel(Dataclass):
         return self.permissions(self.guild.me)
 
     def _copy(self):
-        obb = object.__new__(self.__class__)
-        obb.name = self.name
-        obb.type = self.type
-        obb.guild_id = self.guild_id
-        obb.nsfw = self.nsfw
-        obb._recipients = self._recipients
-        obb.icon_hash = self.icon_hash
-        obb.owner_id = self.owner_id
-        obb.topic = self.topic
-        obb.position = self.position
-        obb._bot = self._bot
-        obb.parent_id = self.parent_id
-        return obb
+        obb = copy.copy(self)
+        obb._messages = ChannelMessageWrapper(obb)
+        return copy.copy(self)
 
     @deprecated(since="0.7.0", see_instead="Channel.messages.get_history", removal="0.9.0")
     def get_history(self, before: int = None,

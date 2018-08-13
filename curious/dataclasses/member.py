@@ -19,6 +19,7 @@ Wrappers for Member objects (Users with guilds).
 .. currentmodule:: curious.dataclasses.member
 """
 import collections
+import copy
 import datetime
 from typing import List
 
@@ -139,6 +140,15 @@ class MemberRoleContainer(collections.Sequence):
 
     def __getitem__(self, item: int):
         return self._sorted_roles()[item]
+
+    def __eq__(self, other):
+        if not isinstance(other, MemberRoleContainer):
+            return False
+
+        if self._member is not other._member:
+            return False
+
+        return self._member.role_ids == other._member.role_ids
 
     @property
     def top_role(self) -> 'dt_role.Role':
@@ -298,15 +308,8 @@ class Member(Dataclass):
         """
         Copies a member object.
         """
-        new_object = object.__new__(self.__class__)  # type: Member
-        new_object._bot = self._bot
-
-        new_object.id = self.id
-        new_object.role_ids = self.role_ids.copy()
-        new_object.joined_at = self.joined_at
-        new_object.guild_id = self.guild_id
-        new_object.presence = self.presence
-        new_object._nickname = self._nickname
+        new_object = copy.copy(self)
+        new_object.roles = MemberRoleContainer(new_object)
 
         return new_object
 
