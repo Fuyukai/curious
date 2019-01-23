@@ -798,8 +798,8 @@ class Channel(Dataclass):
 
         overwrite_member = self._overwrites.get(member.id)
         if overwrite_member:
-            permissions.bitfield &= ~(overwrite.deny.bitfield)
-            permissions.bitfield |= overwrite.allow.bitfield
+            permissions.bitfield &= ~(overwrite_member.deny.bitfield)
+            permissions.bitfield |= overwrite_member.allow.bitfield
 
         return permissions
 
