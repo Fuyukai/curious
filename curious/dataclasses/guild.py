@@ -1064,6 +1064,12 @@ class Guild(Dataclass):
         self.afk_channel_id = afk_channel_id
         self.afk_timeout = data.get("afk_timeout")
 
+        system_channel_id = data.get("system_channel_id", 0)
+        if system_channel_id:
+            system_channel_id = int(system_channel_id)
+
+        self.system_channel_id = system_channel_id
+
         self.verification_level = VerificationLevel(data.get("verification_level", 0))
         self.mfa_level = MFALevel(data.get("mfa_level", 0))
         self.notification_level = NotificationLevel(data.get("default_message_notifications", 0))
