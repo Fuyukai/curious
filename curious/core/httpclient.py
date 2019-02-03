@@ -305,9 +305,10 @@ class HTTPClient(object):
             headers["X-Audit-Log-Reason"] = quote(kwargs["reason"])
 
         # ensure path is escaped
-        path = kwargs["path"]
-        path = quote(path)
-        kwargs["path"] = path
+        if "path" in kwargs:
+            path = kwargs["path"]
+            path = quote(path)
+            kwargs["path"] = path
 
         # temporary
         # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
