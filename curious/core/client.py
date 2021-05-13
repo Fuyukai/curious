@@ -26,10 +26,11 @@ import enum
 import functools
 import inspect
 import logging
-import multio
 import typing
 from types import MappingProxyType
 from typing import Union
+
+import multio
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
@@ -52,9 +53,10 @@ logger = logging.getLogger("curious.client")
 class BotType(enum.IntEnum):
     """
     An enum that signifies what type of bot this bot is.
-    
+
     This will tell the commands handling how to respond, as well as how to log in.
     """
+
     #: Regular bot. This signifies that the client should log in as a bot account.
     BOT = 1
 
@@ -96,18 +98,17 @@ class Client(object):
             print("Bot logged in.")
 
     """
-    #: A list of events to ignore the READY status.
-    IGNORE_READY = [
-        "connect",
-        "guild_streamed",
-        "guild_chunk",
-        "guild_available",
-        "guild_sync"
-    ]
 
-    def __init__(self, token: str, *,
-                 state_klass: type = None,
-                 bot_type: int = (BotType.BOT | BotType.ONLY_USER)):
+    #: A list of events to ignore the READY status.
+    IGNORE_READY = ["connect", "guild_streamed", "guild_chunk", "guild_available", "guild_sync"]
+
+    def __init__(
+        self,
+        token: str,
+        *,
+        state_klass: type = None,
+        bot_type: int = (BotType.BOT | BotType.ONLY_USER),
+    ):
         """
         :param token: The current token for this bot.
         :param state_klass: The class to construct the connection state from.
@@ -124,6 +125,7 @@ class Client(object):
 
         if state_klass is None:
             from curious.core.state import State
+
             state_klass = State
 
         #: The current connection state for the bot.
@@ -167,7 +169,7 @@ class Client(object):
         return self.state._user
 
     @property
-    def guilds(self) -> 'typing.Mapping[int, dt_guild.Guild]':
+    def guilds(self) -> "typing.Mapping[int, dt_guild.Guild]":
         """
         :return: A mapping of int -> :class:`.Guild` that this client can see.
         """
@@ -179,25 +181,26 @@ class Client(object):
         :return: The invite URL for this bot.
         """
         return "https://discordapp.com/oauth2/authorize?client_id={}&scope=bot".format(
-            self.application_info.client_id)
+            self.application_info.client_id
+        )
 
     @property
     def events_handled(self) -> collections.Counter:
         """
         A :class:`collections.Counter` of all events that have been handled since the bot's bootup.
         This can be used to track statistics for events.
-         
+
         .. code-block:: python3
-        
+
             @command()
             async def events(self, ctx: Context):
                 '''
                 Shows the most common events.
                 '''
-                
+
                 ev = ctx.bot.events_handled.most_common(3)
                 await ctx.channel.messages.send(", ".join("{}: {}".format(*x) for x in ev)
-        
+
         """
 
         c = collections.Counter()
@@ -207,20 +210,21 @@ class Client(object):
         return c
 
     @property
-    def gateways(self) -> 'typing.Mapping[int, GatewayHandler]':
+    def gateways(self) -> "typing.Mapping[int, GatewayHandler]":
         """
-        :return: A read-only view of the current gateways for this client. 
+        :return: A read-only view of the current gateways for this client.
         """
         return MappingProxyType(self._gateways)
 
-    def find_channel(self, channel_id: int) -> 'Union[None, dt_channel.Channel]':
+    def find_channel(self, channel_id: int) -> "Union[None, dt_channel.Channel]":
         """
         Finds a channel by channel ID.
         """
         return self.state.find_channel(channel_id)
 
-    async def get_gateway_url(self, get_shard_count: bool = True) \
-            -> typing.Union[str, typing.Tuple[str, int]]:
+    async def get_gateway_url(
+        self, get_shard_count: bool = True
+    ) -> typing.Union[str, typing.Tuple[str, int]]:
         """
         :return: The gateway URL for this bot.
         """
@@ -229,7 +233,7 @@ class Client(object):
         else:
             return await self.http.get_gateway_url()
 
-    def guilds_for(self, shard_id: int) -> 'typing.Iterable[dt_guild.Guild]':
+    def guilds_for(self, shard_id: int) -> "typing.Iterable[dt_guild.Guild]":
         """
         Gets the guilds for this shard.
 
@@ -245,7 +249,7 @@ class Client(object):
         This will copy it to the events dictionary, where it will be used as an event later on.
 
         .. code-block:: python3
-        
+
             @bot.event("message_create")
             async def something(ctx, message: Message):
                 pass
@@ -283,9 +287,13 @@ class Client(object):
         return await self.events.wait_for(*args, **kwargs)
 
     # Gateway functions
-    async def change_status(self, game: Game = None, status: Status = Status.ONLINE,
-                            afk: bool = False,
-                            shard_id: int = 0):
+    async def change_status(
+        self,
+        game: Game = None,
+        status: Status = Status.ONLINE,
+        afk: bool = False,
+        shard_id: int = 0,
+    ):
         """
         Changes the bot's current status.
 
@@ -297,15 +305,15 @@ class Client(object):
 
         gateway = self._gateways[shard_id]
         return await gateway.send_status(
-            name=game.name if game else None, type_=game.type if game else None,
+            name=game.name if game else None,
+            type_=game.type if game else None,
             url=game.url if game else None,
-            status=status.value, afk=afk
+            status=status.value,
+            afk=afk,
         )
 
     # HTTP Functions
-    async def edit_profile(self, *,
-                           username: str = None,
-                           avatar: bytes = None):
+    async def edit_profile(self, *, username: str = None, avatar: bytes = None):
         """
         Edits the profile of this bot.
 
@@ -316,7 +324,7 @@ class Client(object):
         :param avatar: The bytes-like object that represents the new avatar you wish to use.
         """
         if username:
-            if any(x in username for x in ('@', ':', '```')):
+            if any(x in username for x in ("@", ":", "```")):
                 raise ValueError("Username must not contain banned characters")
 
             if username in ("discordtag", "everyone", "here"):
@@ -333,12 +341,12 @@ class Client(object):
     async def edit_avatar(self, path: str):
         """
         A higher-level way to change your avatar.
-        This allows you to provide a path to the avatar file instead of having to read it in 
+        This allows you to provide a path to the avatar file instead of having to read it in
         manually.
 
         :param path: The path-like object to the avatar file.
         """
-        with open(path, 'rb') as f:
+        with open(path, "rb") as f:
             return await self.edit_profile(avatar=f.read())
 
     async def get_user(self, user_id: int) -> User:
@@ -377,8 +385,7 @@ class Client(object):
         """
         return self.state.make_webhook(await self.http.get_webhook(webhook_id))
 
-    async def get_invite(self, invite_code: str, *,
-                         with_counts: bool = True) -> Invite:
+    async def get_invite(self, invite_code: str, *, with_counts: bool = True) -> Invite:
         """
         Gets an invite by code.
 
@@ -391,8 +398,8 @@ class Client(object):
     async def get_widget(self, guild_id: int) -> Widget:
         """
         Gets a widget from a guild.
-        
-        :param guild_id: The ID of the guild to get the widget of. 
+
+        :param guild_id: The ID of the guild to get the widget of.
         :return: A :class:`.Widget` object.
         """
         data = await self.http.get_widget_data(guild_id)
@@ -414,8 +421,10 @@ class Client(object):
             if channel_match is not None:
                 channel_id = int(channel_match.groups()[0])
                 channel = self.state.find_channel(channel_id)
-                if channel is None or channel.type not in \
-                        [dt_channel.ChannelType.TEXT, dt_channel.ChannelType.VOICE]:
+                if channel is None or channel.type not in [
+                    dt_channel.ChannelType.TEXT,
+                    dt_channel.ChannelType.VOICE,
+                ]:
                     final.append("#deleted-channel")
                 else:
                     final.append(f"#{channel.name}")
@@ -449,16 +458,16 @@ class Client(object):
         return " ".join(final)
 
     # download_ methods
-    async def download_guild_member(self, guild_id: int, member_id: int) -> 'dt_member.Member':
+    async def download_guild_member(self, guild_id: int, member_id: int) -> "dt_member.Member":
         """
         Downloads a :class:`.Member` over HTTP.
-        
+
         .. warning::
-            
+
             The :attr:`.Member.roles` and similar fields will be empty when downloading a Member,
             unless the guild was in cache.
-        
-        :param guild_id: The ID of the guild which the member is in. 
+
+        :param guild_id: The ID of the guild which the member is in.
         :param member_id: The ID of the member to get.
         :return: The :class:`.Member` object downloaded.
         """
@@ -472,16 +481,16 @@ class Client(object):
 
         return member
 
-    async def download_guild_members(self, guild_id: int, *,
-                                     after: int = None, limit: int = 1000,
-                                     get_all: bool = True) -> 'typing.Iterable[dt_member.Member]':
+    async def download_guild_members(
+        self, guild_id: int, *, after: int = None, limit: int = 1000, get_all: bool = True
+    ) -> "typing.Iterable[dt_member.Member]":
         """
         Downloads the members for a :class:`.Guild` over HTTP.
-        
+
         .. warning::
-        
+
             This can take a long time on big guilds.
-        
+
         :param guild_id: The ID of the guild to download members for.
         :param after: The member ID after which to get members for.
         :param limit: The maximum number of members to return. By default, this is 1000 members.
@@ -492,8 +501,9 @@ class Client(object):
         if get_all is True:
             last_id = 0
             while True:
-                next_data = await self.http.get_guild_members(guild_id=guild_id, limit=limit,
-                                                              after=last_id)
+                next_data = await self.http.get_guild_members(
+                    guild_id=guild_id, limit=limit, after=last_id
+                )
                 # no more members to get
                 if not next_data:
                     break
@@ -505,8 +515,9 @@ class Client(object):
 
                 last_id = member_data[-1]["user"]["id"]
         else:
-            next_data = await self.http.get_guild_members(guild_id=guild_id, limit=limit,
-                                                          after=after)
+            next_data = await self.http.get_guild_members(
+                guild_id=guild_id, limit=limit, after=after
+            )
             member_data.extend(next_data)
 
         # create the member objects
@@ -518,11 +529,11 @@ class Client(object):
 
         return members
 
-    async def download_channels(self, guild_id: int) -> 'typing.List[dt_channel.Channel]':
+    async def download_channels(self, guild_id: int) -> "typing.List[dt_channel.Channel]":
         """
         Downloads all the :class:`.Channel` for a Guild.
-        
-        :param guild_id: The ID of the guild to download channels for. 
+
+        :param guild_id: The ID of the guild to download channels for.
         :return: An iterable of :class:`.Channel` objects.
         """
         channel_data = await self.http.get_guild_channels(guild_id=guild_id)
@@ -534,17 +545,16 @@ class Client(object):
 
         return channels
 
-    async def download_guild(self, guild_id: int, *,
-                             full: bool = False) -> 'dt_guild.Guild':
+    async def download_guild(self, guild_id: int, *, full: bool = False) -> "dt_guild.Guild":
         """
         Downloads a :class:`.Guild` over HTTP.
-        
+
         .. warning::
-        
-            If ``full`` is True, this will fetch and fill ALL objects of the guild, including 
+
+            If ``full`` is True, this will fetch and fill ALL objects of the guild, including
             channels and members. This can take a *long* time if the guild is large.
-        
-        :param guild_id: The ID of the Guild object to download. 
+
+        :param guild_id: The ID of the Guild object to download.
         :param full: If all extra data should be downloaded alongside it.
         :return: The :class:`.Guild` object downloaded.
         """
@@ -599,8 +609,9 @@ class Client(object):
                 if not isinstance(item, tuple):
                     await self.events.fire_event(item, gateway=ctx.gateway, client=self)
                 else:
-                    await self.events.fire_event(item[0], *item[1:], gateway=ctx.gateway,
-                                                 client=self)
+                    await self.events.fire_event(
+                        item[0], *item[1:], gateway=ctx.gateway, client=self
+                    )
 
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
@@ -608,7 +619,7 @@ class Client(object):
             raise
 
     @ev_dec(name="ready")
-    async def handle_ready(self, ctx: 'EventContext'):
+    async def handle_ready(self, ctx: "EventContext"):
         """
         Handles a READY event, dispatching a ``shards_ready`` event when all shards are ready.
         """
@@ -617,8 +628,9 @@ class Client(object):
         if not all(self._ready_state.values()):
             return
 
-        await self.events.fire_event("shards_ready", gateway=self._gateways[ctx.shard_id],
-                                     client=self)
+        await self.events.fire_event(
+            "shards_ready", gateway=self._gateways[ctx.shard_id], client=self
+        )
 
     async def handle_shard(self, shard_id: int, shard_count: int):
         """
@@ -628,8 +640,9 @@ class Client(object):
         :param shard_count: The shard count to send in the identify packet.
         """
         # consume events
-        async with open_websocket(self._token, self._gw_url,
-                                  shard_id=shard_id, shard_count=shard_count) as gw:
+        async with open_websocket(
+            self._token, self._gw_url, shard_id=shard_id, shard_count=shard_count
+        ) as gw:
             self._gateways[shard_id] = gw
 
             try:

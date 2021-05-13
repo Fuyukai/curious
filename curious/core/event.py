@@ -170,8 +170,9 @@ class EventManager(object):
             # remove the function
             self.temporary_listeners = remove_from_multidict(self.temporary_listeners, key, func)
         except Exception:
-            logger.exception("Unhandled exception in listener {}!".format(func.__name__),
-                             exc_info=True)
+            logger.exception(
+                "Unhandled exception in listener {}!".format(func.__name__), exc_info=True
+            )
             self.temporary_listeners = remove_from_multidict(self.temporary_listeners, key, func)
 
     async def wait_for(self, event_name: str, predicate=None):
@@ -224,7 +225,7 @@ class EventManager(object):
             return output[0]
         return output
 
-    def wait_for_manager(self, event_name: str, predicate) -> 'typing.AsyncContextManager[None]':
+    def wait_for_manager(self, event_name: str, predicate) -> "typing.AsyncContextManager[None]":
         """
         Returns a context manager that can be used to run some steps whilst waiting for a
         temporary listener.
@@ -281,8 +282,9 @@ class EventManager(object):
             await self.spawn(self._safety_wrapper, coro)
 
         for listener in self.temporary_listeners.getall(event_name, []):
-            coro = functools.partial(self._listener_wrapper, event_name, listener, ctx,
-                                     *args, **kwargs)
+            coro = functools.partial(
+                self._listener_wrapper, event_name, listener, ctx, *args, **kwargs
+            )
             await self.spawn(coro)
 
 
@@ -330,8 +332,7 @@ class EventContext(object):
     Represents a special context that are passed to events.
     """
 
-    def __init__(self, cl: 'md_client.Client', shard_id: int,
-                 event_name: str):
+    def __init__(self, cl: "md_client.Client", shard_id: int, event_name: str):
         """
         :param cl: The :class:`.Client` instance for this event context.
         :param shard_id: The shard ID this event is for.
@@ -349,16 +350,16 @@ class EventContext(object):
         self.event_name = event_name  # type: str
 
     @property
-    def handlers(self) -> typing.List[typing.Callable[['EventContext'], None]]:
+    def handlers(self) -> typing.List[typing.Callable[["EventContext"], None]]:
         """
-        :return: A list of handlers registered for this event. 
+        :return: A list of handlers registered for this event.
         """
         return self.bot.events.getall(self.event_name, [])
 
     async def change_status(self, *args, **kwargs) -> None:
         """
         Changes the current status for this shard.
-        
+
         This takes the same arguments as :class:`.Client.change_status`, but ignoring the shard ID.
         """
         kwargs["shard_id"] = self.shard_id

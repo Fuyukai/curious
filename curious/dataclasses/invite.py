@@ -32,8 +32,12 @@ if the data for each  is not cached by curious. Otherwise, full :class:`.Guild` 
 import typing
 
 from curious import util
-from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
-    user as dt_user
+from curious.dataclasses import (
+    channel as dt_channel,
+    guild as dt_guild,
+    member as dt_member,
+    user as dt_user,
+)
 from curious.dataclasses.bases import IDObject
 from curious.exc import PermissionsError
 
@@ -89,8 +93,9 @@ class InviteGuild(IDObject):
         :return: The splash URL for this guild, or None if one isn't set.
         """
         if self.splash_hash:
-            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(self.id,
-                                                                           self.splash_hash)
+            return "https://cdn.discordapp.com/splashes/{}/{}.webp".format(
+                self.id, self.splash_hash
+            )
 
 
 class InviteChannel(IDObject):
@@ -116,7 +121,14 @@ class InviteMetadata(object):
     Represents metadata attached to an invite.
     """
 
-    __slots__ = "uses", "max_uses", "max_age", "temporary", "created_at", "revoked",
+    __slots__ = (
+        "uses",
+        "max_uses",
+        "max_age",
+        "temporary",
+        "created_at",
+        "revoked",
+    )
 
     def __init__(self, **kwargs):
         #: The number of times this invite was used.
@@ -157,13 +169,15 @@ class Invite(object):
 
         #: The invite guild this is attached to.
         #: The actual guild object can be more easily fetched with `.guild`.
-        self._invite_guild = \
-            InviteGuild(**kwargs.get("guild"))  # type: typing.Union[InviteGuild, dt_guild.Guild]
+        self._invite_guild = InviteGuild(
+            **kwargs.get("guild")
+        )  # type: typing.Union[InviteGuild, dt_guild.Guild]
 
         #: The invite channel this is attached to.
         #: The actual channel object can be more easily fetched with `.channel`.
-        self._invite_channel = \
-            InviteChannel(**kwargs.get("channel"))  # type: typing.Union[InviteChannel, dt_channel.Channel]
+        self._invite_channel = InviteChannel(
+            **kwargs.get("channel")
+        )  # type: typing.Union[InviteChannel, dt_channel.Channel]
 
         #: The ID of the user that created this invite.
         #: This can be None for partnered invites.
@@ -188,7 +202,7 @@ class Invite(object):
             self._bot.state._check_decache_user(self.inviter_id)
 
     @property
-    def inviter(self) -> 'typing.Union[dt_member.Member, dt_user.User]':
+    def inviter(self) -> "typing.Union[dt_member.Member, dt_user.User]":
         """
         :return: The :class:`.Member` or :class:`.User` that made this invite.
         """
@@ -202,14 +216,14 @@ class Invite(object):
         return u
 
     @property
-    def guild(self) -> 'typing.Union[dt_guild.Guild, InviteGuild]':
+    def guild(self) -> "typing.Union[dt_guild.Guild, InviteGuild]":
         """
         :return: The guild this invite is associated with.
         """
         return self._bot.state.guilds.get(self.guild_id, self._invite_guild)
 
     @property
-    def channel(self) -> 'typing.Union[dt_channel.Channel, InviteChannel]':
+    def channel(self) -> "typing.Union[dt_channel.Channel, InviteChannel]":
         """
         :return: The channel this invite is associated with.
         """

@@ -26,8 +26,17 @@ class VoiceState(object):
     """
     Represents the voice state of a user.
     """
-    __slots__ = ("user_id", "guild_id", "channel_id", "_self_mute",
-                 "_server_mute", "_self_deaf", "_server_deaf", "_bot")
+
+    __slots__ = (
+        "user_id",
+        "guild_id",
+        "channel_id",
+        "_self_mute",
+        "_server_mute",
+        "_self_deaf",
+        "_server_deaf",
+        "_bot",
+    )
 
     def __init__(self, **kwargs) -> None:
         self._bot = kwargs.get("client")
@@ -48,21 +57,21 @@ class VoiceState(object):
         self._server_deaf = kwargs.get("deaf", False)
 
     @property
-    def guild(self) -> 'dt_guild.Guild':
+    def guild(self) -> "dt_guild.Guild":
         """
         :return: The :class:`.Guild` associated, or None if the guild is uncached.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
-    def channel(self) -> 'dt_channel.Channel':
+    def channel(self) -> "dt_channel.Channel":
         """
         :return: The :class:`.Channel` associated, or None if the channel is uncached.
         """
         return self.guild.channels.get(self.channel_id)
 
     @property
-    def member(self) -> 'dt_member.Member':
+    def member(self) -> "dt_member.Member":
         """
         :return: The :class:`.Member` associated, or None.
         """
@@ -83,10 +92,9 @@ class VoiceState(object):
         return self._server_deaf or self._self_deaf
 
     def __repr__(self):
-        return "<VoiceState user={} deaf={} mute={} channel={}>".format(self.member.user,
-                                                                        self.deafened,
-                                                                        self.muted,
-                                                                        self.channel)
+        return "<VoiceState user={} deaf={} mute={} channel={}>".format(
+            self.member.user, self.deafened, self.muted, self.channel
+        )
 
     async def mute(self):
         """
@@ -112,7 +120,7 @@ class VoiceState(object):
         """
         return await self.guild.change_voice_state(self.member, deaf=False)
 
-    async def move(self, to_channel: 'dt_channel.Channel'):
+    async def move(self, to_channel: "dt_channel.Channel"):
         """
         Moves a user to a different voice channel.
         """

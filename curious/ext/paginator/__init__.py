@@ -33,14 +33,20 @@ class ReactionsPaginator(object):
     """
     A paginator for a message using reactions.
     """
+
     BUTTON_BACKWARDS = "◀"
     BUTTON_FORWARD = "▶"
     BUTTON_STOP = "⏹"
 
-    def __init__(self, content: typing.Union[str, typing.List[str], typing.List[Embed]],
-                 channel: Channel,
-                 respond_to: typing.Union[Member, User], *,
-                 break_at: int = 2000, title: str = None):
+    def __init__(
+        self,
+        content: typing.Union[str, typing.List[str], typing.List[Embed]],
+        channel: Channel,
+        respond_to: typing.Union[Member, User],
+        *,
+        break_at: int = 2000,
+        title: str = None,
+    ):
         """
         :param content: The content to page through.
         :param channel: The channel to send the content to.
@@ -59,8 +65,9 @@ class ReactionsPaginator(object):
         if isinstance(content, list):
             self._message_chunks = content
         else:
-            self._message_chunks = [self._content[i:i + break_at] for i in
-                                    range(0, len(self._content), break_at)]
+            self._message_chunks = [
+                self._content[i : i + break_at] for i in range(0, len(self._content), break_at)
+            ]
 
         #: The current page this paginator is on.
         self.page = 0
@@ -71,8 +78,9 @@ class ReactionsPaginator(object):
         self._reaction_queue = multio.Queue()
 
     @classmethod
-    async def paginate_response(cls, content: str,
-                                responding_to: Message, *args, **kwargs) -> 'ReactionsPaginator':
+    async def paginate_response(
+        cls, content: str, responding_to: Message, *args, **kwargs
+    ) -> "ReactionsPaginator":
         """
         Paginates a response to a message.
 
@@ -95,15 +103,9 @@ class ReactionsPaginator(object):
             embed.set_footer(text="Page {}/{}".format(self.page + 1, len(self._message_chunks)))
 
         if self._message is None:
-            self._message = await self.channel.messages.send(
-                content=self.title,
-                embed=embed
-            )
+            self._message = await self.channel.messages.send(content=self.title, embed=embed)
         else:
-            await self._message.edit(
-                new_content=self.title,
-                embed=embed
-            )
+            await self._message.edit(new_content=self.title, embed=embed)
 
     async def _add_initial_reactions(self):
         """

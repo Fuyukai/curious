@@ -23,8 +23,13 @@ import functools
 import typing
 from typing import Iterator
 
-from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member, \
-    message as dt_message, user as dt_user
+from curious.dataclasses import (
+    channel as dt_channel,
+    guild as dt_guild,
+    member as dt_member,
+    message as dt_message,
+    user as dt_user,
+)
 
 
 class MessageGroup:
@@ -32,37 +37,37 @@ class MessageGroup:
     A small class that returns messages from a message group.
     """
 
-    __slots__ = "msgs",
+    __slots__ = ("msgs",)
 
-    def __init__(self, msgs: 'typing.List[dt_message.Message]'):
+    def __init__(self, msgs: "typing.List[dt_message.Message]"):
         self.msgs = msgs
 
     # generic magic methods
-    def __getitem__(self, item) -> 'dt_message.Message':
+    def __getitem__(self, item) -> "dt_message.Message":
         return self.msgs[item]
 
-    def __iter__(self) -> 'Iterator[dt_message.Message]':
+    def __iter__(self) -> "Iterator[dt_message.Message]":
         return iter(self.msgs)
 
     def __repr__(self) -> str:
         return "<MessageGroup msgs='{}'>".format(self.msgs)
 
     @property
-    def before(self) -> 'typing.Tuple[dt_message.Message, dt_message.Message]':
+    def before(self) -> "typing.Tuple[dt_message.Message, dt_message.Message]":
         """
         :return: The two :class:`.Message` objects that happen before the requested message.
         """
         return self.msgs[0], self.msgs[1]
 
     @property
-    def message(self) -> 'dt_message.Message':
+    def message(self) -> "dt_message.Message":
         """
         :return: The :class:`.Message` that matched this search query.
         """
         return self.msgs[2]
 
     @property
-    def after(self) -> 'typing.Tuple[dt_message.Message, dt_message.Message]':
+    def after(self) -> "typing.Tuple[dt_message.Message, dt_message.Message]":
         """
         :return: The two :class:`.Message` objects that happen after the requested message.
         """
@@ -73,19 +78,20 @@ class SearchResults(collections.AsyncIterator):
     """
     An async iterator that can be used to iterate over the results of a search.
     This will automatically fill results, and return messages as appropriate.
-    
+
     The return type of iterating over this is a :class:`.MessageGroup`, which contains the messages
     around the message that matched the search result.
-    
+
     .. code-block:: python3
-    
+
         async for i in sr:
             print(i.before)  # 2 messages from before
             print(i.message) # the message that matched
             print(i.after)   # 2 messages from after
-            
+
     """
-    def __init__(self, sq: 'SearchQuery') -> None:
+
+    def __init__(self, sq: "SearchQuery") -> None:
         self.sq = sq
 
         # state vars
@@ -99,15 +105,15 @@ class SearchResults(collections.AsyncIterator):
         return "<SearchResults page='{}' messages='{}'>".format(self.page, len(self.groups))
 
     # builder methods
-    def limit(self, limit: int=-1) -> 'SearchResults':
+    def limit(self, limit: int = -1) -> "SearchResults":
         """
         Sets the maximum messages to fetch from this search result.
-        
+
         .. code-block:: python3
-        
+
             async for group in sr.limit(25):
                 ...
-        
+
         :param limit: The limit to set.
         :return: This :class:`.SearchResults`.
         """
@@ -129,13 +135,13 @@ class SearchResults(collections.AsyncIterator):
 
         self.page += 1
 
-    def get_next(self) -> 'MessageGroup':
+    def get_next(self) -> "MessageGroup":
         """
         Gets the next page of results.
-        
-        If no results were found, this will raise an IndexError, and you must fetch the next page 
+
+        If no results were found, this will raise an IndexError, and you must fetch the next page
         with :meth:`.SearchResults.fetch_next_page`.
-        
+
         :return: A :class:`.MessageGroup` for the next page of results, if applicable.
         """
         # prevent more fetching
@@ -146,7 +152,7 @@ class SearchResults(collections.AsyncIterator):
         self._total_count += len(popped.msgs)
         return popped
 
-    async def __anext__(self) -> 'MessageGroup':
+    async def __anext__(self) -> "MessageGroup":
         try:
             return self.get_next()
         except IndexError:
@@ -162,40 +168,41 @@ class SearchResults(collections.AsyncIterator):
 class SearchQuery(object):
     """
     Represents a search query to be sent to Discord. This is a simple wrapper over the HTTP API.
-    
+
     For example, to search a channel called ``general`` for messages with the content ``heck``:
-    
+
     .. code-block:: python3
 
         with ctx.guild.search as sq:
             sq.content = "heck"
             sq.channel = next(filter(lambda c: c.name == "general", ctx.guild.channels), None)
-             
+
         async for result in sq.results:
             ...  # do whatever with the messages returned.
-            
+
     You can get results out of the query in two ways:
-    
+
     .. code-block:: python3
-    
+
         sq = SearchQuery(ctx.guild)
         sq.content = "heck"
-        
+
         # form 1
         async for item in sq.results:
             ...
-            
+
         # form 2
         results = await sq.get_messages()
         for result in results:
             ...
-            
-    It is recommended to use the ``async for`` form, as this will automatically page the results 
+
+    It is recommended to use the ``async for`` form, as this will automatically page the results
     and return the next page of results as soon as the current one is exhausted.
     """
 
-    def __init__(self, guild: 'dt_guild.Guild' = None,
-                 channel: 'dt_channel.Channel' = None) -> None:
+    def __init__(
+        self, guild: "dt_guild.Guild" = None, channel: "dt_channel.Channel" = None
+    ) -> None:
         """
         :param guild: The :class:`.Guild` to search the messages for.
         :param channel: The :class:`.Channel` to search messages for. Only used for DMs.
@@ -209,7 +216,7 @@ class SearchQuery(object):
 
     def make_params(self) -> typing.Dict[str, str]:
         """
-        :return: The dict of parameters to send for this request. 
+        :return: The dict of parameters to send for this request.
         """
         params = {}
 
@@ -227,7 +234,7 @@ class SearchQuery(object):
         return params
 
     # magic methods
-    def __enter__(self) -> 'SearchQuery':
+    def __enter__(self) -> "SearchQuery":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
@@ -240,7 +247,7 @@ class SearchQuery(object):
     @property
     def _http_meth(self) -> typing.Callable[[], dict]:
         """
-        :return: The built URL to execute this search query on. 
+        :return: The built URL to execute this search query on.
         """
         if self.guild is not None:
             return functools.partial(self._bot.http.search_guild, self.guild.id)
@@ -256,21 +263,21 @@ class SearchQuery(object):
 
     # public properties
     @property
-    def guild(self) -> 'typing.Union[dt_guild.Guild, None]':
+    def guild(self) -> "typing.Union[dt_guild.Guild, None]":
         """
         :return: The :class:`.Guild` this search query is searching.
         """
         return self._guild
 
     @property
-    def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
+    def channel(self) -> "typing.Union[dt_channel.Channel, None]":
         """
         The :class:`.Channel` that is being searched.
-        
+
         .. note::
-            
+
             If this a DM, this will not be added in the params.
-        
+
         :getter: Gets the :class:`.Channel` to be searched.
         :setter: Sets the :class:`.Channel` to be searched.
         """
@@ -296,7 +303,7 @@ class SearchQuery(object):
     def content(self) -> str:
         """
         The str content that is being searched.
-        
+
         :getter: Gets the ``str`` content to be searched.
         :setter: Sets the ``str`` content to be searched.
         """
@@ -307,24 +314,24 @@ class SearchQuery(object):
         self._query = value
 
     @property
-    def results(self) -> 'SearchResults':
+    def results(self) -> "SearchResults":
         """
         A simple way of accessing the search results for a search query.
-        
+
         :return: A :class:`.SearchResults` representing the results of this query.
         """
         return SearchResults(self)
 
     # workhouse methods
-    async def execute(self, page: int = 0) -> 'typing.List[typing.List[dt_message.Message]]':
+    async def execute(self, page: int = 0) -> "typing.List[typing.List[dt_message.Message]]":
         """
         Executes the search query.
-        
+
         .. warning::
-            
+
             This is an internal method, used by the library. Use :meth:`.get_messages` instead
             of this.
-        
+
         :param page: The page of results to return.
         :return: A list of :class:`.Message` which returns the results of the search query.
         """
@@ -344,11 +351,11 @@ class SearchQuery(object):
 
         return message_blocks
 
-    async def get_messages(self, page: int = 0) -> 'SearchResults':
+    async def get_messages(self, page: int = 0) -> "SearchResults":
         """
         Executes the search query and gets the messages for the specified page.
-        
-        :param page: The page of results to return. 
+
+        :param page: The page of results to return.
         :return: A :class:`.SearchResult` that can be used to search the results.
         """
         res = SearchResults(self)

@@ -16,10 +16,10 @@
 """
 A trio websocket wrapper.
 """
-from collections import AsyncIterator
-
 import functools
 import threading
+from collections import AsyncIterator
+
 import trio
 from lomond import WebSocket
 from lomond.events import Event
@@ -63,7 +63,7 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
         self._portal.run(self._queue.put, self._done)
 
     @classmethod
-    async def open(cls, url: str, nursery) -> 'BasicWebsocketWrapper':
+    async def open(cls, url: str, nursery) -> "BasicWebsocketWrapper":
         """
         Opens a new websocket connection.
 
@@ -75,8 +75,13 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
         nursery.start_soon(partial, obb.websocket_task)
         return obb
 
-    async def close(self, code: int = 1000, reason: str = "Client closed connection",
-                    reconnect: bool = False, forceful: bool = True) -> None:
+    async def close(
+        self,
+        code: int = 1000,
+        reason: str = "Client closed connection",
+        reconnect: bool = False,
+        forceful: bool = True,
+    ) -> None:
         """
         Closes the websocket.
         """
@@ -95,7 +100,7 @@ class TrioWebsocketWrapper(BasicWebsocketWrapper):
         """
         self._ws.send_text(text)
 
-    async def __aiter__(self) -> 'AsyncIterator[Event]':
+    async def __aiter__(self) -> "AsyncIterator[Event]":
         async for item in self._queue:
             if item == self._done:
                 return

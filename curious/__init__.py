@@ -55,8 +55,16 @@ from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.emoji import Emoji
-from curious.dataclasses.guild import ContentFilterLevel, Guild, GuildChannelWrapper, \
-    GuildEmojiWrapper, GuildRoleWrapper, MFALevel, NotificationLevel, VerificationLevel
+from curious.dataclasses.guild import (
+    ContentFilterLevel,
+    Guild,
+    GuildChannelWrapper,
+    GuildEmojiWrapper,
+    GuildRoleWrapper,
+    MFALevel,
+    NotificationLevel,
+    VerificationLevel,
+)
 from curious.dataclasses.invite import Invite, InviteChannel, InviteGuild, InviteMetadata
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message

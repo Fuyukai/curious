@@ -29,10 +29,14 @@ from curious.commands.utils import get_description
 logger = logging.getLogger(__name__)
 
 
-def command(*,
-            name: str = None, description: str = None,
-            hidden: bool = False,
-            aliases: List[str] = None, **kwargs):
+def command(
+    *,
+    name: str = None,
+    description: str = None,
+    hidden: bool = False,
+    aliases: List[str] = None,
+    **kwargs,
+):
     """
     Marks a function as a command. This annotates the command with some attributes that allow it
     to be invoked as a command.
@@ -145,8 +149,9 @@ def _subcommand(parent):
     return inner
 
 
-def autoplugin(plugin: 'Type[md_plugin.Plugin]' = None, *,
-               startswith: str = "command") -> 'Type[md_plugin.Plugin]':
+def autoplugin(
+    plugin: "Type[md_plugin.Plugin]" = None, *, startswith: str = "command"
+) -> "Type[md_plugin.Plugin]":
     """
     Automatically assigns commands inside a plugin.
 
@@ -199,8 +204,9 @@ def autoplugin(plugin: 'Type[md_plugin.Plugin]' = None, *,
                 ) from None
 
             made_command = found_command.subcommand(name=parts[2])(member)
-            logger.debug("Made a subcommand %s (parent %s) on plugin %s",
-                         parts[2], parts[1], plugin.__name__)
+            logger.debug(
+                "Made a subcommand %s (parent %s) on plugin %s", parts[2], parts[1], plugin.__name__
+            )
             setattr(plugin, name, made_command)
 
     return plugin

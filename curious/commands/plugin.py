@@ -36,7 +36,8 @@ class Plugin(metaclass=PluginMeta):
     """
     Represents a plugin (a collection of events and commands under one class).
     """
-    def __init__(self, client: 'md_client.Client'):
+
+    def __init__(self, client: "md_client.Client"):
         #: The client for this plugin.
         self.client = client
 

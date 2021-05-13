@@ -33,6 +33,7 @@ class ConditionsFailedError(CommandsError):
     """
     Raised when conditions fail for a command.
     """
+
     def __init__(self, ctx, check):
         self.ctx = ctx
         self.conditions = check
@@ -41,7 +42,7 @@ class ConditionsFailedError(CommandsError):
         if isinstance(self.conditions, list):
             return f"The conditions for `{self.ctx.command_name}` failed."
 
-        return f"The condition `{self.conditions.__name__}` for `{self.ctx.command_name}` failed." \
+        return f"The condition `{self.conditions.__name__}` for `{self.ctx.command_name}` failed."
 
     __str__ = __repr__
 
@@ -50,6 +51,7 @@ class MissingArgumentError(CommandsError):
     """
     Raised when a command is missing an argument.
     """
+
     def __init__(self, ctx, arg):
         self.ctx = ctx
         self.arg = arg
@@ -64,6 +66,7 @@ class CommandInvokeError(CommandsError):
     """
     Raised when a command has an error during invokation.
     """
+
     def __init__(self, ctx):
         self.ctx = ctx
 
@@ -77,6 +80,7 @@ class ConversionFailedError(CommandsError):
     """
     Raised when conversion fails.
     """
+
     def __init__(self, ctx, arg: str, to_type: type, message: str = "Unknown error"):
         self.ctx = ctx
         self.arg = arg
@@ -98,6 +102,7 @@ class CommandRateLimited(CommandsError):
     """
     Raised when a command is ratelimited.
     """
+
     def __init__(self, context, func, limit, bucket: Tuple[int, float]):
         self.ctx = context
         self.func = func
@@ -106,7 +111,9 @@ class CommandRateLimited(CommandsError):
 
     def __repr__(self) -> str:
         left = int(ceil(self.bucket[1] - time.monotonic()))
-        return f"The command {self.ctx.command_name} is currently rate limited for " \
-               f"{left} second(s)."
+        return (
+            f"The command {self.ctx.command_name} is currently rate limited for "
+            f"{left} second(s)."
+        )
 
     __str__ = __repr__

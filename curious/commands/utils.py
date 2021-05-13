@@ -19,8 +19,9 @@ Misc utilities used in commands related things.
 """
 import collections
 import inspect
-import typing_inspect
 from typing import Callable, Iterable, List, Union
+
+import typing_inspect
 
 from curious.commands.exc import ConversionFailedError, MissingArgumentError
 from curious.core.client import Client
@@ -43,7 +44,7 @@ def get_full_name(func) -> str:
 
         func = func.cmd_parent
 
-    return ' '.join(reversed(name))
+    return " ".join(reversed(name))
 
 
 async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
@@ -77,8 +78,7 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             except StopIteration as e:
                 # not good!
                 # If we're a *arg format, we can safely handle this, or if we have a default.
-                if param.kind in [inspect.Parameter.KEYWORD_ONLY,
-                                  inspect.Parameter.VAR_POSITIONAL]:
+                if param.kind in [inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_POSITIONAL]:
                     return None
 
                 if param.default == inspect.Parameter.empty:
@@ -87,8 +87,10 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
                 return None  # ??
 
         # Begin the consumption!
-        if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                          inspect.Parameter.POSITIONAL_ONLY]:
+        if param.kind in [
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.POSITIONAL_ONLY,
+        ]:
             # ensure we have a non-empty argument
             arg = consume_token()
             if arg is None:
@@ -125,11 +127,11 @@ async def _convert(ctx, tokens: List[str], signature: inspect.Signature):
             else:
                 converter = ctx._lookup_converter(param.annotation)
                 if len(f) == 1:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
-                                                             f[0])
+                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx, f[0])
                 else:
-                    final_kwargs[param.name] = _with_reraise(converter, param.annotation, ctx,
-                                                             " ".join(f))
+                    final_kwargs[param.name] = _with_reraise(
+                        converter, param.annotation, ctx, " ".join(f)
+                    )
             continue
 
         if param.kind in [inspect.Parameter.VAR_POSITIONAL]:
@@ -207,13 +209,16 @@ def get_usage(func, invoked_as: str = None) -> str:
         # check if we should skip the 2nd arg
         # not always possible
         from curious.commands.context import Context
+
         if name in ["ctx", "context"] or param.annotation is Context:
             continue
 
         # switch based on kind (again...)
         assert isinstance(param, inspect.Parameter)
-        if param.kind in [inspect.Parameter.POSITIONAL_OR_KEYWORD,
-                          inspect.Parameter.POSITIONAL_ONLY]:
+        if param.kind in [
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.POSITIONAL_ONLY,
+        ]:
             if param.annotation is not inspect.Parameter.empty:
                 s = "<{}: {}>".format(param.name, stringify(param.annotation))
             else:
@@ -222,8 +227,9 @@ def get_usage(func, invoked_as: str = None) -> str:
         elif param.kind in [inspect.Parameter.KEYWORD_ONLY, inspect.Parameter.VAR_POSITIONAL]:
             if param.default is not inspect.Parameter.empty:
                 if param.annotation is not inspect.Parameter.empty:
-                    s = "[{}: {} (default: {})]".format(param.name, stringify(param.annotation),
-                                                        repr(param.default))
+                    s = "[{}: {} (default: {})]".format(
+                        param.name, stringify(param.annotation), repr(param.default)
+                    )
                 else:
                     s = "[{} (default: {})]".format(param.name, repr(param.default))
             else:
@@ -260,13 +266,13 @@ def split_message_content(content: str, delim: str = " ") -> List[str]:
     """
 
     tokens = []
-    cur = ''
+    cur = ""
     in_quotes = False
 
     for char in content.strip():
         if char == delim and not in_quotes:
             tokens.append(cur)
-            cur = ''
+            cur = ""
         elif char == '"' and not in_quotes:
             in_quotes = True
             cur += char
@@ -331,7 +337,7 @@ def prefix_check_factory(prefix: Union[str, Iterable[str], Callable[[Client, Mes
         if not matched:
             return None
 
-        tokens = split_message_content(message.content[len(matched):])
+        tokens = split_message_content(message.content[len(matched) :])
         command_word = tokens[0]
 
         return command_word, tokens[1:]

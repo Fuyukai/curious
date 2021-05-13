@@ -50,8 +50,13 @@ class CommandRateLimit(object):
     Represents a ratelimit for a command.
     """
 
-    def __init__(self, *, limit: int, time: float,
-                 bucket_namer: Callable[[Context], str] = BucketNamer.AUTHOR):
+    def __init__(
+        self,
+        *,
+        limit: int,
+        time: float,
+        bucket_namer: Callable[[Context], str] = BucketNamer.AUTHOR,
+    ):
         """
         :param limit: The number of times a command can be called in the specified limit.
         :param time: The time (in seconds) this ratelimit lasts.

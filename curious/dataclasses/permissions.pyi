@@ -9,22 +9,18 @@ from curious.dataclasses.role import Role
 
 
 class Permissions(object):
-    __slots__ = 'bitfield',
+    __slots__ = ("bitfield",)
     def __new__(cls, value: int, **kwargs): ...
     def __init__(self, value: int, **kwargs):
         self.bitfield: int = value
-
     def _get_bit(self, bit: int) -> bool: ...
     def _set_bit(self, bit: int, value: bool): ...
     def __repr__(self) -> str: ...
-
     @classmethod
     def all(cls) -> Permissions: ...
     @classmethod
     def none(cls) -> Permissions: ...
-
     def raise_for_permission(self, permission: Union[str, int]) -> None: ...
-
     @property
     def create_instant_invite(self) -> bool: ...
     @property
@@ -82,26 +78,36 @@ class Permissions(object):
     @property
     def manage_emojis(self) -> bool: ...
 
-
 class Overwrite(object):
-     __slots__ = "target", "channel_id", "allow", "deny", "_immutable",
-
-     @classmethod
-     def overwrite_in(cls, channel: Channel, target: Union[Member, Role],
-                      allow: Union[int, Permissions], deny: Union[int, Permissions]) \
-         -> Overwrite: ...
-
-     def __init__(self, allow: Union[int, Permissions], deny: Union[int, Permissions],
-                  obb: Union[Member, Role],
-                  channel_id: int = None):
-         self.allow = allow
-         self.deny = deny
-         self.target = obb
-         self.channel_id = channel_id
-         self._immutable: bool
-
-     def __repr__(self) -> str: ...
-     def __getattr__(self, item) -> bool: ...
-     def __setattr__(self, item: str, value: Any): ...
-     @property
-     def channel(self) -> Channel: ...
+    __slots__ = (
+        "target",
+        "channel_id",
+        "allow",
+        "deny",
+        "_immutable",
+    )
+    @classmethod
+    def overwrite_in(
+        cls,
+        channel: Channel,
+        target: Union[Member, Role],
+        allow: Union[int, Permissions],
+        deny: Union[int, Permissions],
+    ) -> Overwrite: ...
+    def __init__(
+        self,
+        allow: Union[int, Permissions],
+        deny: Union[int, Permissions],
+        obb: Union[Member, Role],
+        channel_id: int = None,
+    ):
+        self.allow = allow
+        self.deny = deny
+        self.target = obb
+        self.channel_id = channel_id
+        self._immutable: bool
+    def __repr__(self) -> str: ...
+    def __getattr__(self, item) -> bool: ...
+    def __setattr__(self, item: str, value: Any): ...
+    @property
+    def channel(self) -> Channel: ...

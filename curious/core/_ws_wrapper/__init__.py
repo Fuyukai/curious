@@ -16,15 +16,15 @@
 """
 Websocket wrapper classes, using a different backend library.
 """
-from collections import AsyncIterable
-
 import abc
+from collections import AsyncIterable
 
 
 class BasicWebsocketWrapper(AsyncIterable):
     """
     The base class for a basic websocket wrapper.
     """
+
     _done = object()
 
     def __init__(self, url: str) -> None:
@@ -32,14 +32,19 @@ class BasicWebsocketWrapper(AsyncIterable):
         self.url = url
 
     @abc.abstractclassmethod
-    async def open(cls, url: str) -> 'BasicWebsocketWrapper':
+    async def open(cls, url: str) -> "BasicWebsocketWrapper":
         """
         Opens this websocket.
         """
 
     @abc.abstractmethod
-    async def close(self, code: int = 1000, reason: str = "Client closed connection",
-                    reconnect: bool = False, forceful: bool = False) -> None:
+    async def close(
+        self,
+        code: int = 1000,
+        reason: str = "Client closed connection",
+        reconnect: bool = False,
+        forceful: bool = False,
+    ) -> None:
         """
         Cancels and closes this websocket.
 

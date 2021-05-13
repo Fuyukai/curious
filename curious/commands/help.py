@@ -97,7 +97,7 @@ async def help_for_all(ctx: Context):
         row_num += 1
         # wrap the command names in backticks
         # and join it all up with some pipes
-        names_joined = ' | '.join(f"`{c}`" for c in command_names)
+        names_joined = " | ".join(f"`{c}`" for c in command_names)
         plugin_name = getattr(plugin, "plugin_name", plugin.__class__.__name__)
         rows.append(f"**{row_num}. {plugin_name}:** {names_joined}")
 
@@ -117,7 +117,7 @@ async def help_for_all(ctx: Context):
 
         if command_names:
             row_num += 1
-            names_joined = ' | '.join(f"`{c}`" for c in command_names)
+            names_joined = " | ".join(f"`{c}`" for c in command_names)
             rows.append(f"**{row_num}. Uncategorized:** {names_joined}")
 
     if not rows:
@@ -126,7 +126,7 @@ async def help_for_all(ctx: Context):
     # add a preamble
     preamble = "**Commands:**\nUse `help <command>` for more information about a command.\n\n"
 
-    rows_joined = '\n'.join(rows)
+    rows_joined = "\n".join(rows)
     return f"{preamble}{rows_joined}"
 
 

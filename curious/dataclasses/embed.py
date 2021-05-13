@@ -29,15 +29,17 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
     Represents an Embed object on Discord.
     """
 
-    def __init__(self, *,
-                 title: str = None,
-                 description: str = None,
-                 colour: int = None,
-                 type_: str = None,
-                 url: str = None,
-                 timestamp: str = None,
-                 **kwargs):
-
+    def __init__(
+        self,
+        *,
+        title: str = None,
+        description: str = None,
+        colour: int = None,
+        type_: str = None,
+        url: str = None,
+        timestamp: str = None,
+        **kwargs,
+    ):
         def make_attrdict(key: str) -> attrdict:
             if key not in kwargs:
                 return attrdict()
@@ -84,8 +86,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         #: The thumbnail for this embed.
         self.thumbnail = make_attrdict("thumbnail")
 
-    def add_field(self, *, name: str, value: str,
-                  inline: bool = True) -> 'Embed':
+    def add_field(self, *, name: str, value: str, inline: bool = True) -> "Embed":
         """
         Adds a field to the embed.
 
@@ -103,7 +104,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         self.fields.append(attrdict({"name": str(name), "value": str(value), "inline": inline}))
         return self
 
-    def set_author(self, *, name: str, url: str = None, icon_url: str = None) -> 'Embed':
+    def set_author(self, *, name: str, url: str = None, icon_url: str = None) -> "Embed":
         """
         Sets the author of this embed.
 
@@ -113,9 +114,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         :return: The Embed object.
         """
 
-        self.author = attrdict(
-            name=name
-        )
+        self.author = attrdict(name=name)
 
         if url:
             self.author.url = url
@@ -125,7 +124,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
 
         return self
 
-    def set_footer(self, *, text: str = None, icon_url: str = None) -> 'Embed':
+    def set_footer(self, *, text: str = None, icon_url: str = None) -> "Embed":
         """
         Sets the footer of this embed.
 
@@ -142,7 +141,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
 
         return self
 
-    def set_image(self, *, image_url: str) -> 'Embed':
+    def set_image(self, *, image_url: str) -> "Embed":
         """
         Sets the image of this embed.
 
@@ -159,11 +158,11 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
 
         return self
 
-    def set_thumbnail(self, *, url: str) -> 'Embed':
+    def set_thumbnail(self, *, url: str) -> "Embed":
         """
         Sets the thumbnail image of this embed.
-        
-        :param url: The image URL of this thumbnail. 
+
+        :param url: The image URL of this thumbnail.
         :return: The Embed object.
         """
         self.thumbnail = attrdict()
@@ -175,9 +174,7 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
         """
         Converts this embed into a flattened dict.
         """
-        payload = {
-            "type": self.type_ if self.type_ else "rich"
-        }
+        payload = {"type": self.type_ if self.type_ else "rich"}
 
         if self.title:
             payload["title"] = self.title

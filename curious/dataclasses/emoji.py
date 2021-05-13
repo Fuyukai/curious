@@ -29,6 +29,7 @@ class Emoji(Dataclass):
     """
     Represents a custom emoji uploaded to a guild.
     """
+
     __slots__ = ("id", "name", "role_ids", "require_colons", "managed", "guild_id", "animated")
 
     def __init__(self, **kwargs):
@@ -62,14 +63,12 @@ class Emoji(Dataclass):
         return hash(self.id)
 
     def __str__(self) -> str:
-        return "<{}:{}:{}>".format('a' if self.animated else '', self.name, self.id)
+        return "<{}:{}:{}>".format("a" if self.animated else "", self.name, self.id)
 
     def __repr__(self) -> str:
         return "<Emoji guild={!r} id={!r} name={!r}>".format(self.guild, self.id, self.name)
 
-    async def edit(self, *,
-                   name: str = None,
-                   roles: 'typing.List[dt_role.Role]' = None) -> 'Emoji':
+    async def edit(self, *, name: str = None, roles: "typing.List[dt_role.Role]" = None) -> "Emoji":
         """
         Edits this emoji.
 
@@ -80,8 +79,9 @@ class Emoji(Dataclass):
         if roles is not None:
             roles = [r.id for r in roles]
 
-        await self._bot.http.edit_guild_emoji(guild_id=self.guild_id, emoji_id=self.id,
-                                              name=name, roles=roles)
+        await self._bot.http.edit_guild_emoji(
+            guild_id=self.guild_id, emoji_id=self.id, name=name, roles=roles
+        )
         return self
 
     async def delete(self) -> None:
@@ -91,14 +91,14 @@ class Emoji(Dataclass):
         await self._bot.http.delete_guild_emoji(self.guild_id, emoji_id=self.id)
 
     @property
-    def guild(self) -> 'dt_guild.Guild':
+    def guild(self) -> "dt_guild.Guild":
         """
         :return: The :class:`.Guild` this emoji object is associated with.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
-    def roles(self) -> 'typing.List[dt_role.Role]':
+    def roles(self) -> "typing.List[dt_role.Role]":
         """
         :return: A list of :class:`.Role` this emoji can be used by.
         """

@@ -22,9 +22,16 @@ import enum
 import re
 import typing
 
-from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, guild as dt_guild, \
-    invite as dt_invite, member as dt_member, role as dt_role, user as dt_user, \
-    webhook as dt_webhook
+from curious.dataclasses import (
+    channel as dt_channel,
+    emoji as dt_emoji,
+    guild as dt_guild,
+    invite as dt_invite,
+    member as dt_member,
+    role as dt_role,
+    user as dt_user,
+    webhook as dt_webhook,
+)
 from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.embed import Embed
@@ -41,6 +48,7 @@ class MessageType(enum.IntEnum):
     """
     Represents the type of a message.
     """
+
     #: The default (i.e. user message) type.
     DEFAULT = 0
 
@@ -71,9 +79,22 @@ class Message(Dataclass):
     """
     Represents a Message.
     """
-    __slots__ = ("content", "guild_id", "author", "created_at", "edited_at", "embeds",
-                 "attachments", "_mentions", "_role_mentions", "reactions", "channel_id",
-                 "author_id", "type")
+
+    __slots__ = (
+        "content",
+        "guild_id",
+        "author",
+        "created_at",
+        "edited_at",
+        "embeds",
+        "attachments",
+        "_mentions",
+        "_role_mentions",
+        "reactions",
+        "channel_id",
+        "author_id",
+        "type",
+    )
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs.get("id"), client)
@@ -139,40 +160,40 @@ class Message(Dataclass):
         return self.content
 
     @property
-    def guild(self) -> 'dt_guild.Guild':
+    def guild(self) -> "dt_guild.Guild":
         """
         :return: The :class:`.Guild` this message is associated with.
         """
         return self.channel.guild
 
     @property
-    def channel(self) -> 'dt_channel.Channel':
+    def channel(self) -> "dt_channel.Channel":
         """
         :return: The :class:`.Channel` this message is associated with.
         """
         return self._bot.state.find_channel(self.channel_id)
 
     @property
-    def mentions(self) -> 'typing.List[dt_member.Member]':
+    def mentions(self) -> "typing.List[dt_member.Member]":
         """
         Returns a list of :class:`.Member` that were mentioned in this message.
-        
+
         .. warning::
-            
-            The mentions in this will **not** be in order. Discord does not return them in any 
+
+            The mentions in this will **not** be in order. Discord does not return them in any
             particular order.
 
         """
         return self._resolve_mentions(self._mentions, "member")
 
     @property
-    def role_mentions(self) -> 'typing.List[dt_role.Role]':
+    def role_mentions(self) -> "typing.List[dt_role.Role]":
         """
         Returns a list of :class:`.Role` that were mentioned in this message.
-        
+
         .. warning::
-            
-            The mentions in this will **not** be in order. Discord does not return them in any 
+
+            The mentions in this will **not** be in order. Discord does not return them in any
             particular order.
 
         """
@@ -180,12 +201,12 @@ class Message(Dataclass):
         return self._resolve_mentions(self._role_mentions, "role")
 
     @property
-    def channel_mentions(self) -> 'typing.List[dt_channel.Channel]':
+    def channel_mentions(self) -> "typing.List[dt_channel.Channel]":
         """
         Returns a list of :class:`.Channel` that were mentioned in this message.
-        
+
         .. note::
-        
+
             These mentions **are** in order. They are parsed from the message content.
 
         """
@@ -193,7 +214,7 @@ class Message(Dataclass):
         return self._resolve_mentions(mentions, "channel")
 
     @property
-    def emojis(self) -> 'typing.List[dt_emoji.Emoji]':
+    def emojis(self) -> "typing.List[dt_emoji.Emoji]":
         """
         Returns a list of :class:`.Emoji` that was found in this message.
         """
@@ -213,7 +234,7 @@ class Message(Dataclass):
         """
         return await self._bot.clean_content(self.content)
 
-    async def get_invites(self) -> 'typing.List[dt_invite.Invite]':
+    async def get_invites(self) -> "typing.List[dt_invite.Invite]":
         """
         Gets a list of valid invites in this message.
         """
@@ -234,19 +255,18 @@ class Message(Dataclass):
         return obbs
 
     @property
-    def invites(self) -> 'typing.AsyncIterator[dt_invite.Invite]':
+    def invites(self) -> "typing.AsyncIterator[dt_invite.Invite]":
         """
         Returns a list of :class:`.Invite` objects that are in this message (and valid).
         """
         return AsyncIteratorWrapper(self.get_invites)
 
-    def _resolve_mentions(self,
-                          mentions: typing.List[typing.Union[dict, str]],
-                          type_: str) \
-            -> 'typing.List[typing.Union[dt_channel.Channel, dt_role.Role, dt_member.Member]]':
+    def _resolve_mentions(
+        self, mentions: typing.List[typing.Union[dict, str]], type_: str
+    ) -> "typing.List[typing.Union[dt_channel.Channel, dt_role.Role, dt_member.Member]]":
         """
         Resolves the mentions for this message.
-        
+
         :param mentions: The mentions to resolve; a list of dicts or ints.
         :param type_: The type of mention to resolve: ``channel``, ``role``, or ``member``.
         """
@@ -283,7 +303,7 @@ class Message(Dataclass):
 
         return final_mentions
 
-    def reacted(self, emoji: 'typing.Union[dt_emoji.Emoji, str]') -> bool:
+    def reacted(self, emoji: "typing.Union[dt_emoji.Emoji, str]") -> bool:
         """
         Checks if this message was reacted to with the specified emoji.
 
@@ -300,7 +320,7 @@ class Message(Dataclass):
         """
         Deletes this message.
 
-        You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own 
+        You must have MANAGE_MESSAGE permissions to delete this message, or have it be your own
         message.
         """
         if self.guild is None:
@@ -315,8 +335,7 @@ class Message(Dataclass):
 
         await self._bot.http.delete_message(self.channel.id, self.id)
 
-    async def edit(self, new_content: str = None, *,
-                   embed: Embed = None) -> 'Message':
+    async def edit(self, new_content: str = None, *, embed: Embed = None) -> "Message":
         """
         Edits this message.
 
@@ -337,13 +356,15 @@ class Message(Dataclass):
         if embed:
             embed = embed.to_dict()
 
-        async with self._bot.events.wait_for_manager("message_update",
-                                                     lambda o, n: n.id == self.id):
-            await self._bot.http.edit_message(self.channel.id, self.id, content=new_content,
-                                              embed=embed)
+        async with self._bot.events.wait_for_manager(
+            "message_update", lambda o, n: n.id == self.id
+        ):
+            await self._bot.http.edit_message(
+                self.channel.id, self.id, content=new_content, embed=embed
+            )
         return self
 
-    async def pin(self) -> 'Message':
+    async def pin(self) -> "Message":
         """
         Pins this message.
 
@@ -356,7 +377,7 @@ class Message(Dataclass):
         await self._bot.http.pin_message(self.channel.id, self.id)
         return self
 
-    async def unpin(self) -> 'Message':
+    async def unpin(self) -> "Message":
         """
         Unpins this message.
 
@@ -370,8 +391,9 @@ class Message(Dataclass):
         await self._bot.http.unpin_message(self.channel.id, self.id)
         return self
 
-    async def get_who_reacted(self, emoji: 'typing.Union[dt_emoji.Emoji, str]') \
-            -> 'typing.List[typing.Union[dt_user.User, dt_member.Member]]':
+    async def get_who_reacted(
+        self, emoji: "typing.Union[dt_emoji.Emoji, str]"
+    ) -> "typing.List[typing.Union[dt_user.User, dt_member.Member]]":
         """
         Fetches who reacted to this message.
 
@@ -397,7 +419,7 @@ class Message(Dataclass):
 
         return result
 
-    async def react(self, emoji: 'typing.Union[dt_emoji.Emoji, str]'):
+    async def react(self, emoji: "typing.Union[dt_emoji.Emoji, str]"):
         """
         Reacts to a message with an emoji.
 
@@ -419,8 +441,9 @@ class Message(Dataclass):
 
         await self._bot.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def unreact(self, reaction: 'typing.Union[dt_emoji.Emoji, str]',
-                      victim: 'dt_member.Member' = None):
+    async def unreact(
+        self, reaction: "typing.Union[dt_emoji.Emoji, str]", victim: "dt_member.Member" = None
+    ):
         """
         Removes a reaction from a user.
 
@@ -440,8 +463,9 @@ class Message(Dataclass):
         else:
             emoji = reaction
 
-        await self._bot.http.delete_reaction(self.channel.id, self.id, emoji,
-                                             victim=victim.id if victim else None)
+        await self._bot.http.delete_reaction(
+            self.channel.id, self.id, emoji, victim=victim.id if victim else None
+        )
 
     async def remove_all_reactions(self) -> None:
         """

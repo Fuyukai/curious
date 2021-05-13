@@ -20,11 +20,19 @@ Class for the commands context.
 """
 import inspect
 import types
-import typing_inspect
 from typing import Any, Callable, List, Tuple, Type, Union
 
-from curious.commands.converters import convert_channel, convert_float, convert_int, convert_list, \
-    convert_member, convert_role, convert_union
+import typing_inspect
+
+from curious.commands.converters import (
+    convert_channel,
+    convert_float,
+    convert_int,
+    convert_list,
+    convert_member,
+    convert_role,
+    convert_union,
+)
 from curious.commands.exc import CommandInvokeError, CommandsError, ConditionsFailedError
 from curious.commands.utils import _convert
 from curious.core.event import EventContext
@@ -40,6 +48,7 @@ class Context(object):
     """
     A class that represents the context for a command.
     """
+
     _converters = {
         Channel: convert_channel,
         Member: convert_member,
@@ -131,7 +140,7 @@ class Context(object):
         # no match
         return False
 
-    def _lookup_converter(self, annotation: Type[Any]) -> 'Callable[[Any, Context, str], Any]':
+    def _lookup_converter(self, annotation: Type[Any]) -> "Callable[[Any, Context, str], Any]":
         """
         Looks up a converter for the specified annotation.
         """
@@ -171,14 +180,12 @@ class Context(object):
         try:
             await coro
         except CommandsError as e:
-            await self.manager.client.events.fire_event("command_error", self, e,
-                                                        ctx=evt_ctx)
+            await self.manager.client.events.fire_event("command_error", self, e, ctx=evt_ctx)
         except Exception as e:
             try:
                 raise CommandInvokeError(self) from e
             except CommandInvokeError as e2:
-                await self.manager.client.events.fire_event("command_error", self, e2,
-                                                            ctx=evt_ctx)
+                await self.manager.client.events.fire_event("command_error", self, e2, ctx=evt_ctx)
 
     async def can_run(self, cmd) -> Tuple[bool, list]:
         """

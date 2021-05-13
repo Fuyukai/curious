@@ -28,6 +28,7 @@ class Reaction(object):
     """
     Represents a reaction.
     """
+
     def __init__(self, **kwargs) -> None:
         #: The :class:`.Message` this reaction is for.
         self.message = None

@@ -51,7 +51,7 @@ class IDObject(object):
     It is also hashable, using the ID as a hash.
     """
 
-    __slots__ = "id",
+    __slots__ = ("id",)
 
     def __init__(self, id: int):
         """
@@ -106,31 +106,37 @@ class Dataclass(IDObject):
                 frame = frameinfo.frame
                 f_globals = frame.f_globals
                 f_name = frame.f_code.co_name
-                module = f_globals.get('__name__', None)
-                file = f_globals.get('__file__', None)
+                module = f_globals.get("__name__", None)
+                file = f_globals.get("__file__", None)
 
                 if module is not None:
                     if f_name == "_convert" and module.startswith("curious.commands"):
-                        raise RuntimeError("You passed a dataclass ({}) as a type hint to your "
-                                           "command without a converter - don't do this!\n"
-                                           "This error has been raised because no builtin converter"
-                                           " exists, or the built-in converter has been replaced. "
-                                           "Make sure to either add one or fix your code to use a "
-                                           "converter function!".format(cls.__name__))
-                    elif not module.startswith("curious") \
-                            and f'/python3.{sys.version_info[1]}' not in file:
-                        raise RuntimeError("You tried to make a dataclass manually - don't do this!"
-                                           "\nThe library handles making dataclasses for you. If "
-                                           "you want to get an instance, use the appropriate "
-                                           "lookup method. \nIf you really need to make the "
-                                           "dataclass yourself, wrap it in a "
-                                           "``with allow_external_makes)``.")
+                        raise RuntimeError(
+                            "You passed a dataclass ({}) as a type hint to your "
+                            "command without a converter - don't do this!\n"
+                            "This error has been raised because no builtin converter"
+                            " exists, or the built-in converter has been replaced. "
+                            "Make sure to either add one or fix your code to use a "
+                            "converter function!".format(cls.__name__)
+                        )
+                    elif (
+                        not module.startswith("curious")
+                        and f"/python3.{sys.version_info[1]}" not in file
+                    ):
+                        raise RuntimeError(
+                            "You tried to make a dataclass manually - don't do this!"
+                            "\nThe library handles making dataclasses for you. If "
+                            "you want to get an instance, use the appropriate "
+                            "lookup method. \nIf you really need to make the "
+                            "dataclass yourself, wrap it in a "
+                            "``with allow_external_makes)``."
+                        )
             finally:
                 del frameinfo, frame
 
         return object.__new__(cls)
 
-    def __init__(self, id: int, cl: 'client.Client'):
+    def __init__(self, id: int, cl: "client.Client"):
         super().__init__(id)
 
         self._bot = cl

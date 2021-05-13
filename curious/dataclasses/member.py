@@ -23,8 +23,12 @@ import copy
 import datetime
 from typing import List
 
-from curious.dataclasses import guild as dt_guild, role as dt_role, user as dt_user, \
-    voice_state as dt_vs
+from curious.dataclasses import (
+    guild as dt_guild,
+    role as dt_role,
+    user as dt_user,
+    voice_state as dt_vs,
+)
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.presence import Game, Presence, Status
@@ -36,7 +40,8 @@ class Nickname(object):
     """
     Represents the nickname of a :class:`.Member`.
     """
-    def __init__(self, parent: 'Member', value: str):
+
+    def __init__(self, parent: "Member", value: str):
         self.parent = parent
         self.value = value
 
@@ -64,7 +69,7 @@ class Nickname(object):
     def __repr__(self) -> str:
         return f"<Nickname value={self.value}>"
 
-    async def set(self, new_nickname: str) -> 'Nickname':
+    async def set(self, new_nickname: str) -> "Nickname":
         """
         Sets the nickname of the username.
 
@@ -100,13 +105,14 @@ class Nickname(object):
             return after.guild == guild and after.id == self.parent.id
 
         async with self.parent._bot.events.wait_for_manager("guild_member_update", _listener):
-            await self.parent._bot.http.change_nickname(guild.id, new_nickname,
-                                                        member_id=self.parent.id, me=me)
+            await self.parent._bot.http.change_nickname(
+                guild.id, new_nickname, member_id=self.parent.id, me=me
+            )
 
         # the wait_for means at this point the nickname has been changed
         return self.parent.nickname
 
-    async def reset(self) -> 'Nickname':
+    async def reset(self) -> "Nickname":
         """
         Resets a member's nickname.
         """
@@ -118,16 +124,15 @@ class MemberRoleContainer(collections.Sequence):
     Represents the roles of a :class:`.Member`.
     """
 
-    def __init__(self, member: 'Member'):
+    def __init__(self, member: "Member"):
         self._member = member
 
-    def _sorted_roles(self) -> 'List[dt_role.Role]':
+    def _sorted_roles(self) -> "List[dt_role.Role]":
         if not self._member.guild:
             return []
 
         roles = filter(
-            lambda r: r is not None,
-            map(self._member.guild.roles.get, self._member.role_ids)
+            lambda r: r is not None, map(self._member.guild.roles.get, self._member.role_ids)
         )
 
         return sorted(roles, reverse=True)
@@ -154,7 +159,7 @@ class MemberRoleContainer(collections.Sequence):
         return self._member.role_ids == other._member.role_ids
 
     @property
-    def top_role(self) -> 'dt_role.Role':
+    def top_role(self) -> "dt_role.Role":
         """
         :return: The top :class:`.Role` for this member.
         """
@@ -164,7 +169,7 @@ class MemberRoleContainer(collections.Sequence):
 
         return self[0]
 
-    async def add(self, *roles: 'dt_role.Role'):
+    async def add(self, *roles: "dt_role.Role"):
         """
         Adds roles to this member.
 
@@ -177,8 +182,11 @@ class MemberRoleContainer(collections.Sequence):
         # Ensure we can add all of these roles.
         for _r in roles:
             if _r >= self._member.guild.me.top_role:
-                msg = "Cannot add role {} - it has a higher or equal position to our top role" \
-                    .format(_r.name)
+                msg = (
+                    "Cannot add role {} - it has a higher or equal position to our top role".format(
+                        _r.name
+                    )
+                )
                 raise HierarchyError(msg)
 
         async def _listener(before, after: Member):
@@ -196,7 +204,7 @@ class MemberRoleContainer(collections.Sequence):
                 self._member.guild_id, self._member.id, role_ids
             )
 
-    async def remove(self, *roles: 'dt_role.Role'):
+    async def remove(self, *roles: "dt_role.Role"):
         """
         Removes roles from this member.
 
@@ -207,8 +215,9 @@ class MemberRoleContainer(collections.Sequence):
 
         for _r in roles:
             if _r >= self._member.guild.me.top_role:
-                msg = "Cannot remove role {} - it has a higher or equal position to our top role" \
-                    .format(_r.name)
+                msg = "Cannot remove role {} - it has a higher or equal position to our top role".format(
+                    _r.name
+                )
                 raise HierarchyError(msg)
 
         async def _listener(before, after: Member):
@@ -225,8 +234,9 @@ class MemberRoleContainer(collections.Sequence):
 
         async with self._member._bot.events.wait_for_manager("guild_member_update", _listener):
             role_ids = set([_r.id for _r in to_keep])
-            await self._member._bot.http.edit_member_roles(self._member.guild_id, self._member.id,
-                                                           role_ids)
+            await self._member._bot.http.edit_member_roles(
+                self._member.guild_id, self._member.id, role_ids
+            )
 
 
 class Member(Dataclass):
@@ -234,8 +244,15 @@ class Member(Dataclass):
     A member represents somebody who is inside a guild.
     """
 
-    __slots__ = ("_user_data", "role_ids", "joined_at", "_nickname", "guild_id", "presence",
-                 "roles")
+    __slots__ = (
+        "_user_data",
+        "role_ids",
+        "joined_at",
+        "_nickname",
+        "guild_id",
+        "presence",
+        "roles",
+    )
 
     def __init__(self, client, **kwargs):
         super().__init__(kwargs["user"]["id"], client)
@@ -261,18 +278,19 @@ class Member(Dataclass):
         self.guild_id = None  # type: int
 
         #: The current :class:`.Presence` of this member.
-        self.presence = Presence(status=kwargs.get("status", Status.OFFLINE),
-                                 game=kwargs.get("game", None))
+        self.presence = Presence(
+            status=kwargs.get("status", Status.OFFLINE), game=kwargs.get("game", None)
+        )
 
     @property
-    def guild(self) -> 'dt_guild.Guild':
+    def guild(self) -> "dt_guild.Guild":
         """
         :return: The :class:`.Guild` associated with this member.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
-    def voice(self) -> 'dt_vs.VoiceState':
+    def voice(self) -> "dt_vs.VoiceState":
         """
         :return: The :class:`.VoiceState` associated with this member.
         """
@@ -325,7 +343,7 @@ class Member(Dataclass):
             pass
 
     @property
-    def user(self) -> 'dt_user.User':
+    def user(self) -> "dt_user.User":
         """
         :return: The underlying :class:`.User` for this member.
         """
@@ -345,7 +363,7 @@ class Member(Dataclass):
     @property
     def mention(self) -> str:
         """
-        :return: A string that mentions this member. 
+        :return: A string that mentions this member.
         """
         if self.nickname:
             return "<@!{}>".format(self.id)
@@ -389,7 +407,7 @@ class Member(Dataclass):
             return 0
 
     @property
-    def top_role(self) -> 'dt_role.Role':
+    def top_role(self) -> "dt_role.Role":
         """
         :return: This member's top-most :class:`.Role`.
         """

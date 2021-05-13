@@ -18,20 +18,20 @@ Websocket gateway code.
 
 .. currentmodule:: curious.core.gateway
 """
+import enum
+import json
+import logging
 import sys
 import time
 import zlib
 from collections import Counter
+from dataclasses import dataclass  # use a 3.6 backport if available
+from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
-import enum
-import json
-import logging
 import multio
 from async_generator import asynccontextmanager
-from dataclasses import dataclass  # use a 3.6 backport if available
 from lomond.errors import WebSocketClosed, WebSocketClosing, WebSocketUnavailable
 from lomond.events import Binary, Closed, Connected, Connecting, Text
-from typing import Any, AsyncContextManager, AsyncGenerator, List, Union
 
 from curious.core._ws_wrapper import BasicWebsocketWrapper
 from curious.util import safe_generator
@@ -41,6 +41,7 @@ class GatewayOp(enum.IntEnum):
     """
     Represents the opcode mapping for the gateway.
     """
+
     DISPATCH = 0
     HEARTBEAT = 1
     IDENTIFY = 2
@@ -61,6 +62,7 @@ class _GatewayState:
     """
     Represents the gateway state for the current gateway.
     """
+
     #: The current token.
     token: str
 
@@ -85,6 +87,7 @@ class HeartbeatStats:
     """
     Represents the statistics for the gateway's heartbeat counters.
     """
+
     #: The number of heartbeats sent.
     heartbeats: int = 0
 
@@ -119,8 +122,9 @@ class GatewayHandler(object):
             async for event in gateway.events():
                 ...
     """
+
     GATEWAY_VERSION = 6
-    ZLIB_FLUSH_SUFFIX = b'\x00\x00\xff\xff'
+    ZLIB_FLUSH_SUFFIX = b"\x00\x00\xff\xff"
 
     def __init__(self, gw_state: _GatewayState):
         #: The current state being used for this gateway.
@@ -154,9 +158,15 @@ class GatewayHandler(object):
         self._logger = logging.getLogger("curious.gateway:shard-{}".format(self.gw_state.shard_id))
         return self._logger
 
-    async def close(self, code: int = 1000, reason: str = "Client closed connection", *,
-                    reconnect: bool = False, clear_session_id: bool = True,
-                    forceful: bool = False):
+    async def close(
+        self,
+        code: int = 1000,
+        reason: str = "Client closed connection",
+        *,
+        reconnect: bool = False,
+        clear_session_id: bool = True,
+        forceful: bool = False,
+    ):
         """
         Close the current websocket connection.
 
@@ -198,12 +208,12 @@ class GatewayHandler(object):
                     "$browser": "curious",
                     "$device": "curious",
                     "$referrer": "",
-                    "$referring_domain": ""
+                    "$referring_domain": "",
                 },
                 "large_threshold": 250,
                 "v": self.GATEWAY_VERSION,
-                "shard": [self.gw_state.shard_id, self.gw_state.shard_count]
-            }
+                "shard": [self.gw_state.shard_id, self.gw_state.shard_count],
+            },
         }
         return await self.send(payload)
 
@@ -222,14 +232,12 @@ class GatewayHandler(object):
             # In my testing, closing with a 1006 will allow a resume once reconnected,
             # whereas other close codes won't.
             # The timeout mihgt be too high to RESUME, however.
-            return await self.close(code=1006, reason="Zombied connection", reconnect=True,
-                                    clear_session_id=False)
+            return await self.close(
+                code=1006, reason="Zombied connection", reconnect=True, clear_session_id=False
+            )
 
         self.logger.debug("Heartbeating with sequence {}".format(self.gw_state.sequence))
-        payload = {
-            "op": GatewayOp.HEARTBEAT,
-            "d": self.gw_state.sequence
-        }
+        payload = {"op": GatewayOp.HEARTBEAT, "d": self.gw_state.sequence}
         return await self.send(payload)
 
     async def send_resume(self) -> None:
@@ -241,8 +249,8 @@ class GatewayHandler(object):
             "d": {
                 "token": self.gw_state.token,
                 "session_id": self.gw_state.session_id,
-                "seq": self.gw_state.sequence
-            }
+                "seq": self.gw_state.sequence,
+            },
         }
         return await self.send(payload)
 
@@ -252,18 +260,20 @@ class GatewayHandler(object):
         """
         payload = {
             "op": GatewayOp.REQUEST_MEMBERS,
-            "d": {
-                "guild_id": list(map(str, guild_ids)),
-                "query": "",
-                "limit": 0
-            }
+            "d": {"guild_id": list(map(str, guild_ids)), "query": "", "limit": 0},
         }
 
         return await self.send(payload)
 
-    async def send_status(self, *, status: int = None, name: str = None, url: str = None,
-                          type_: int = None,
-                          afk: bool = None):
+    async def send_status(
+        self,
+        *,
+        status: int = None,
+        name: str = None,
+        url: str = None,
+        type_: int = None,
+        afk: bool = None,
+    ):
         """
         Sends a PRESENCE_UPDATE.
 
@@ -273,18 +283,12 @@ class GatewayHandler(object):
         :param type_: The type of the status to send.
         :param afk: If the account is to be marked as AFK.
         """
-        payload = {
-            "op": GatewayOp.PRESENCE,
-            "d": {}
-        }
+        payload = {"op": GatewayOp.PRESENCE, "d": {}}
         if status is not None:
             payload["d"]["status"] = status
 
         if name is not None:
-            game = {
-                "name": name,
-                "type": type_
-            }
+            game = {"name": name, "type": type_}
             if url is not None:
                 game["url"] = url
 
@@ -305,9 +309,11 @@ class GatewayHandler(object):
         """
         if multio.asynclib.lib_name == "curio":
             from curious.core._ws_wrapper.curio_wrapper import CurioWebsocketWrapper as Wrapper
+
             ws_open = Wrapper.open
         elif multio.asynclib.lib_name == "trio":
             from curious.core._ws_wrapper.trio_wrapper import TrioWebsocketWrapper as Wrapper
+
             ws_open = lambda url: Wrapper.open(url, self.task_group)
         else:
             raise RuntimeError("Unsupported lib: " + multio.asynclib.lib_name)
@@ -390,7 +396,7 @@ class GatewayHandler(object):
             if not evt.data.endswith(self.ZLIB_FLUSH_SUFFIX):
                 return
             else:
-                data = self._decompressor.decompress(self._databuffer).decode('utf-8')
+                data = self._decompressor.decompress(self._databuffer).decode("utf-8")
                 self._databuffer.clear()
         else:
             data = evt.text
@@ -400,9 +406,9 @@ class GatewayHandler(object):
             return
 
         decoded = json.loads(data)
-        opcode = decoded.get('op')
-        sequence = decoded.get('s')
-        event_data = decoded.get('d', {})
+        opcode = decoded.get("op")
+        sequence = decoded.get("s")
+        event_data = decoded.get("d", {})
 
         # update sequence number for dispatches
         if sequence is not None:
@@ -431,7 +437,7 @@ class GatewayHandler(object):
 
             # give an event down here instead of above
             # this means that we're all done when we go to give off our event
-            yield ("gateway_hello", event_data['_trace'])
+            yield ("gateway_hello", event_data["_trace"])
 
         elif opcode == GatewayOp.HEARTBEAT:
             await self.send_heartbeat()
@@ -456,7 +462,10 @@ class GatewayHandler(object):
                 self.gw_state.session_id = None
                 await self.send_identify()
 
-            yield ("gateway_invalidate_session", should_resume,)
+            yield (
+                "gateway_invalidate_session",
+                should_resume,
+            )
 
         elif opcode == GatewayOp.DISPATCH:
             event = decoded.get("t")
@@ -468,12 +477,20 @@ class GatewayHandler(object):
                 self.gw_state.session_id = event_data["session_id"]
 
             self._dispatches_handled[event] += 1
-            yield ("gateway_dispatch_received", event, event_data,)
+            yield (
+                "gateway_dispatch_received",
+                event,
+                event_data,
+            )
 
         elif opcode == GatewayOp.RECONNECT:
             self.logger.info("Being asked to reconnect...")
-            await self.close(code=1000, reason="Server asked to reconnect",
-                             reconnect=True, clear_session_id=False)
+            await self.close(
+                code=1000,
+                reason="Server asked to reconnect",
+                reconnect=True,
+                clear_session_id=False,
+            )
 
         else:
             try:
@@ -484,9 +501,9 @@ class GatewayHandler(object):
 
 @asynccontextmanager
 @safe_generator
-async def open_websocket(token: str, url: str, *,
-                         shard_id: int = 0, shard_count: int = 1) \
-        -> AsyncContextManager[GatewayHandler]:
+async def open_websocket(
+    token: str, url: str, *, shard_id: int = 0, shard_count: int = 1
+) -> AsyncContextManager[GatewayHandler]:
     """
     Opens a new connection to Discord.
 

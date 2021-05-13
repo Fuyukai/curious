@@ -54,8 +54,7 @@ def author_has_permissions(bypass_owner: bool = True, **permissions):
 
     def _condition(ctx: Context):
         perms = ctx.channel.effective_permissions(ctx.author)
-        return all(getattr(perms, name, None) is value
-                   for name, value in permissions.items())
+        return all(getattr(perms, name, None) is value for name, value in permissions.items())
 
     return condition(_condition, bypass_owner=bypass_owner)
 
@@ -80,8 +79,7 @@ def bot_has_permissions(bypass_owner: bool = False, **permissions):
 
     def _condition(ctx: Context):
         perms = ctx.channel.me_permissions
-        return all(getattr(perms, name, None) is value
-                   for name, value in permissions.items())
+        return all(getattr(perms, name, None) is value for name, value in permissions.items())
 
     return condition(_condition, bypass_owner=bypass_owner)
 

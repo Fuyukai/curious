@@ -25,7 +25,7 @@ import typing
 from curious.dataclasses import channel as dt_channel, member as dt_member, role as dt_role
 from curious.exc import PermissionsError
 
-target_thint = 'typing.Union[dt_member.Member, dt_role.Role]'
+target_thint = "typing.Union[dt_member.Member, dt_role.Role]"
 
 
 # I'm far too lazy to type out each permission bit manually.
@@ -33,7 +33,7 @@ target_thint = 'typing.Union[dt_member.Member, dt_role.Role]'
 def build_permissions_class(name: str = "Permissions") -> type:
     """
     Builds the permissions class automagically.
-    This should ***not*** be used by normal user code - it is designed for internal usage by 
+    This should ***not*** be used by normal user code - it is designed for internal usage by
     curious.
 
     :param name: The name of the class.
@@ -48,8 +48,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
     accessible via ``bitfield``.
     """
 
-    def __init__(self, value: int = 0,
-                 **kwargs):
+    def __init__(self, value: int = 0, **kwargs):
         """
         Creates a new Permissions object.
 
@@ -62,8 +61,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
 
             setattr(self, perm, value)
 
-    def __new__(cls, value: int = 0,
-                **kwargs):
+    def __new__(cls, value: int = 0, **kwargs):
         if isinstance(value, cls):
             return value
 
@@ -78,7 +76,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
 
     def _set_bit(self, bit: int, value: bool):
         if value:
-            self.bitfield |= (1 << bit)
+            self.bitfield |= 1 << bit
         else:
             self.bitfield &= ~(1 << bit)
 
@@ -137,9 +135,12 @@ def build_permissions_class(name: str = "Permissions") -> type:
     _doc_base = ":return: If this member has the {} permission (bit {})."
 
     properties = {
-        name: property(fget=_get_permission_getter(name, bit),
-                       fset=_get_permission_setter(name, bit),
-                       doc=_doc_base.format(name, bit)) for (name, bit) in permissions.items()
+        name: property(
+            fget=_get_permission_getter(name, bit),
+            fset=_get_permission_setter(name, bit),
+            doc=_doc_base.format(name, bit),
+        )
+        for (name, bit) in permissions.items()
     }
 
     def raise_for_permission(self, permission: typing.Union[str]) -> None:
@@ -176,7 +177,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
         "none": none,
         "raise_for_permission": raise_for_permission,
         "__slots__": ("bitfield",),
-        **properties
+        **properties,
     }
     new_class = type(name, (object,), namespace)
     new_class.__doc__ = __doc__
@@ -192,17 +193,17 @@ class Overwrite(object):
     """
     Represents a permission overwrite.
 
-    This has all properties that the base Permissions object, but it takes into accounts the 
-    overwrites for the channels. It is always recommended to use this over the server permissions, 
-    as it will fall back to the default permissions for the role if it can't find specific 
+    This has all properties that the base Permissions object, but it takes into accounts the
+    overwrites for the channels. It is always recommended to use this over the server permissions,
+    as it will fall back to the default permissions for the role if it can't find specific
     overwrites.
 
-    The overwrite has a permission marked as ``True`` if the object has a) an overwrite on the 
-    channel OR b) the object has that permission and no overwrite. The overwrite is marked as 
-    ``False`` if the object has a) an overwrite on the channel OR b) the object does not have that 
+    The overwrite has a permission marked as ``True`` if the object has a) an overwrite on the
+    channel OR b) the object has that permission and no overwrite. The overwrite is marked as
+    ``False`` if the object has a) an overwrite on the channel OR b) the object does not have that
     permission and no overwrite/a deny overwrite.
 
-    You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and 
+    You can set an attribute to None to clear the overwrite, True to set an allow overwrite, and
     False to set a deny overwrite.
 
     .. warning::
@@ -215,8 +216,14 @@ class Overwrite(object):
     __slots__ = "target", "channel_id", "allow", "deny", "_immutable"
 
     @classmethod
-    def overwrite_in(cls, channel: 'dt_channel.Channel', target: target_thint, *,
-                     allow: perm_thint = None, deny: perm_thint) -> 'Overwrite':
+    def overwrite_in(
+        cls,
+        channel: "dt_channel.Channel",
+        target: target_thint,
+        *,
+        allow: perm_thint = None,
+        deny: perm_thint,
+    ) -> "Overwrite":
         """
         :param channel: The :class:`.Channel` to create this overwrite in.
         :param target: The :class:`.Member` or :class:`.Role` to create this overwrite for.
@@ -227,9 +234,13 @@ class Overwrite(object):
         deny = deny or 0
         return Overwrite(allow, deny, obb=target, channel_id=channel.id)
 
-    def __init__(self, allow: typing.Union[int, Permissions], deny: typing.Union[int, Permissions],
-                 obb: 'typing.Union[dt_member.Member, dt_role.Role]',
-                 channel_id: int = None):
+    def __init__(
+        self,
+        allow: typing.Union[int, Permissions],
+        deny: typing.Union[int, Permissions],
+        obb: "typing.Union[dt_member.Member, dt_role.Role]",
+        channel_id: int = None,
+    ):
         """
         :param allow: A :class:`.Permissions` that this overwrite allows.
         :param deny: A :class:`.Permissions` that this overwrite denies.
@@ -250,17 +261,16 @@ class Overwrite(object):
         self._immutable = False
 
     @property
-    def channel(self) -> 'typing.Union[dt_channel.Channel, None]':
+    def channel(self) -> "typing.Union[dt_channel.Channel, None]":
         """
         :return: The :class:`.Channel` this overwrite represents.
         """
         return self.target._bot.state.find_channel(self.channel_id)
 
     def __repr__(self) -> str:
-        return "<Overwrites for object={} channel={} allow={} deny={}>".format(self.target,
-                                                                               self.channel,
-                                                                               self.allow,
-                                                                               self.deny)
+        return "<Overwrites for object={} channel={} allow={} deny={}>".format(
+            self.target, self.channel, self.allow, self.deny
+        )
 
     def __getattr__(self, item) -> bool:
         """

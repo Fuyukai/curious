@@ -55,8 +55,9 @@ class AppInfo(Dataclass):
         self.public = self._application.get("bot_public", None)  # type: bool
 
         #: Does this bot require OAuth2 Code Grant?
-        self.requires_code_grant = self._application.get("bot_require_code_grant",
-                                                         None)  # type: bool
+        self.requires_code_grant = self._application.get(
+            "bot_require_code_grant", None
+        )  # type: bool
 
         #: The icon hash for this application.
         self._icon_hash = self._application.get("icon", None)  # type: str
@@ -70,8 +71,9 @@ class AppInfo(Dataclass):
             self.bot = None
 
     def __repr__(self) -> str:
-        return "<{} owner='{!r}' name='{!r}' bot='{!r}'>".format(type(self).__name__, self.owner,
-                                                                 self.name, self.bot)
+        return "<{} owner='{!r}' name='{!r}' bot='{!r}'>".format(
+            type(self).__name__, self.owner, self.name, self.bot
+        )
 
     @property
     def icon_url(self) -> Union[str, None]:
@@ -81,6 +83,6 @@ class AppInfo(Dataclass):
         if self._icon_hash is None:
             return None
 
-        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(self.client_id,
-                                                                       self._icon_hash)
-
+        return "https://cdn.discordapp.com/app-icons/{}/{}.jpg".format(
+            self.client_id, self._icon_hash
+        )
