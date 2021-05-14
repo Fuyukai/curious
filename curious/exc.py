@@ -21,8 +21,6 @@ Exceptions raised from within the library.
 import enum
 import warnings
 
-from asks.response_objects import Response
-
 
 class CuriousError(Exception):
     """
@@ -92,7 +90,7 @@ class HTTPException(CuriousError, ConnectionError):
     Raised when a HTTP request fails with a 400 <= e < 600 error code.
     """
 
-    def __init__(self, response: Response, error: dict):
+    def __init__(self, response, error: dict):
         self.response = response
 
         error_code = error.get("code", 0)

@@ -18,19 +18,19 @@ Wrappers for Guild objects.
 
 .. currentmodule:: curious.dataclasses.guild
 """
-import sys
-from math import ceil
-
 import abc
 import collections
 import copy
 import datetime
 import enum
-import multio
+import sys
 import typing
 from dataclasses import dataclass
+from math import ceil
 from os import PathLike
 from types import MappingProxyType
+
+import trio
 
 from curious.core.httpclient import Endpoints
 from curious.dataclasses import channel as dt_channel, emoji as dt_emoji, invite as dt_invite, \
@@ -41,7 +41,7 @@ from curious.dataclasses.presence import Presence, Status
 from curious.exc import CuriousError, HTTPException, HierarchyError, PermissionsError
 from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
-default_var = typing.TypeVar("T")
+DEFAULT = typing.TypeVar("DEFAULT")
 
 
 class MFALevel(enum.IntEnum):
@@ -201,8 +201,8 @@ class GuildChannelWrapper(_WrapperBase):
         return len(self._guild._channels)
 
     # overwritten methods from the abc
-    def get(self, key: typing.Union[str, int], default: default_var = None) \
-            -> 'typing.Union[dt_channel.Channel, default_var]':
+    def get(self, key: typing.Union[str, int], default: DEFAULT = None) \
+            -> 'typing.Union[dt_channel.Channel, DEFAULT]':
         """
         Gets a channel by name or ID.
 
@@ -215,8 +215,8 @@ class GuildChannelWrapper(_WrapperBase):
         else:
             return self._get_by_name(key, default=default)
 
-    def _get_by_name(self, name: str, default: default_var = None) \
-            -> 'typing.Union[dt_channel.Channel, default_var]':
+    def _get_by_name(self, name: str, default: DEFAULT = None) \
+            -> 'typing.Union[dt_channel.Channel, DEFAULT]':
         """
         Gets a channel by name.
 
@@ -391,8 +391,8 @@ class GuildRoleWrapper(_WrapperBase):
         return len(self._guild._roles)
 
     # overwritten methods from the abc
-    def get(self, key: typing.Union[str, int], default: default_var = None) \
-            -> 'typing.Union[dt_role.Role, default_var]':
+    def get(self, key: typing.Union[str, int], default: DEFAULT = None) \
+            -> 'typing.Union[dt_role.Role, DEFAULT]':
         """
         Gets a role by name or ID.
 
@@ -405,8 +405,8 @@ class GuildRoleWrapper(_WrapperBase):
         else:
             return self._get_by_name(key, default=default)
 
-    def _get_by_name(self, name: str, default: default_var = None) \
-            -> 'typing.Union[dt_role.Role, default_var]':
+    def _get_by_name(self, name: str, default: DEFAULT = None) \
+            -> 'typing.Union[dt_role.Role, DEFAULT]':
         """
         Gets a role by name.
 
@@ -748,7 +748,7 @@ class Guild(Dataclass):
         self._large = None  # type: bool
 
         #: Has this guild finished chunking?
-        self._finished_chunking = multio.Event()
+        self._finished_chunking = trio.Event()
         self._chunks_left = 0
 
         #: The current voice client associated with this guild.

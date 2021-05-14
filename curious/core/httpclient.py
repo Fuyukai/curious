@@ -27,16 +27,15 @@ import string
 import time
 import typing
 import weakref
+from contextlib import asynccontextmanager
 from email.utils import parsedate
 from math import ceil, floor
 from urllib.parse import quote
 
-import asks
-import multio
+import httpx
 import pytz
-from asks.errors import ConnectivityError
-from asks.response_objects import Response
-from h11 import RemoteProtocolError
+import trio
+from httpx import Response
 
 try:
     # try and load a C impl of LRU first
@@ -233,50 +232,48 @@ class HTTPClient(object):
 
     All of these functions require a **ratelimit bucket** which will be used to prevent the client 
     from hitting 429 ratelimits.
-
-    :param token: The token to use for all HTTP requests.
-    :param bot: Is this client a bot?
-    :param max_connections: The max connections for this HTTP client.
     """
 
-    def __init__(self, token: str, *,
-                 bot: bool = True,
-                 max_connections: int = 10):
+    def __init__(
+        self,
+        token: str,
+        endpoints: Endpoints,
+        session: httpx.AsyncClient,
+    ):
         #: The token used for all requests.
         self.token = token
 
         # Calculated headers
         headers = {
             "User-Agent": curious.USER_AGENT,
-            "Authorization": "{}{}".format("Bot " if bot else "", self.token)
+            "Authorization": f"Bot {token}"
         }
 
-        self.endpoints = Endpoints()
-        self.session = asks.Session(base_location=self.endpoints.BASE, endpoint=Endpoints.API_BASE,
-                                    connections=max_connections)
+        self.session = session
         self.headers = headers
 
+        self.endpoints = endpoints
+
         #: The global ratelimit lock.
-        self.global_lock = multio.Lock()
+        self.global_lock = trio.Lock()
 
         self._rate_limits = weakref.WeakValueDictionary()
         self._ratelimit_remaining = lru(1024)
-        self._is_bot = bot
 
-    def get_ratelimit_lock(self, bucket: object) -> 'multio.Lock':
+    def get_ratelimit_lock(self, bucket: object) -> trio.Lock:
         """
         Gets a ratelimit lock from the dict if it exists, otherwise creates a new one.
         """
         try:
             return self._rate_limits[bucket]
         except KeyError:
-            lock = multio.Lock()
+            lock = trio.Lock()
             self._rate_limits[bucket] = lock
             return lock
 
     # Special wrapper functions
     @staticmethod
-    def get_response_data(response: Response) -> typing.Union[str, dict]:
+    async def get_response_data(response: Response) -> typing.Union[str, dict]:
         """
         Return either the text of a request or the JSON.
 
@@ -285,7 +282,7 @@ class HTTPClient(object):
         if response.headers.get("Content-Type", None) == "application/json":
             return response.json()
 
-        return response.content
+        return (await response.aread()).decode(encoding="utf-8")
 
     async def _make_request(self, *args, **kwargs) -> Response:
         """
@@ -310,14 +307,13 @@ class HTTPClient(object):
             path = quote(path)
             kwargs["path"] = path
 
-        # temporary
-        # return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
-        if 'uri' not in kwargs:
-            kwargs["uri"] = self.endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+        if 'url' not in kwargs:
+            kwargs["url"] = self.endpoints.BASE + Endpoints.API_BASE + kwargs["path"]
+            kwargs.pop("path")
         else:
             kwargs.pop("path", None)
 
-        return await asks.request(*args, headers=headers, timeout=5, **kwargs)
+        return await self.session.request(*args, headers=headers, timeout=5, **kwargs)
 
     async def request(self, bucket: object, *args, **kwargs):
         """
@@ -340,7 +336,7 @@ class HTTPClient(object):
         # If we're being globally ratelimited, this will block until the global lock is finished.
         await self.global_lock.acquire()
         # Immediately release it because we're no longer being globally ratelimited.
-        await self.global_lock.release()
+        self.global_lock.release()
 
         await lock.acquire()
         try:
@@ -354,7 +350,7 @@ class HTTPClient(object):
                     sleep_time = ceil(reset_time - time.time())
                     if sleep_time >= 0:
                         logger.debug("Sleeping with lock open for {} seconds.".format(sleep_time))
-                        await multio.asynclib.sleep(sleep_time)
+                        await trio.sleep(sleep_time)
 
             for tries in range(0, 5):
                 method = kwargs.get("method", "???")
@@ -366,20 +362,19 @@ class HTTPClient(object):
                 except OSError:
                     # discord forcefully disconnected or similar
                     continue
-                except ConnectivityError:
-                    # discord deadlocked for whatever reason
-                    continue
-                except RemoteProtocolError:
-                    # discord broke
+                except httpx.RequestError:
+                    # various http errors
                     continue
 
                 logger.debug(f"{method} {path} => {response.status_code} (try {tries + 1})")
 
+                # XXX: Is this still relevant in 2021?
+                # When I wrote this in 2016, Discord would still regulartly return 502s.
                 if response.status_code in range(500, 600):
                     # 502 means that we can retry without worrying about ratelimits.
                     # Perform exponential backoff to prevent spamming discord.
                     sleep_time = 1 + (tries * 2)
-                    await multio.asynclib.sleep(sleep_time)
+                    await trio.sleep(sleep_time)
                     continue
 
                 if response.status_code == 429:
@@ -387,7 +382,7 @@ class HTTPClient(object):
                     # But it's okay, we can handle it.
                     logger.warning("Hit a 429 in bucket {}. Check your clock!".format(bucket))
                     sleep_time = ceil(int(response.headers["Retry-After"]) / 1000)
-                    await multio.asynclib.sleep(sleep_time)
+                    await trio.sleep(sleep_time)
                     continue
 
                 # Extract ratelimit headers.
@@ -398,7 +393,6 @@ class HTTPClient(object):
                 self._ratelimit_remaining[bucket] = remaining, reset
 
                 # Next, check if we need to sleep.
-                # Check if we need to sleep.
                 # This is signaled by Ratelimit-Remaining being 0 or Ratelimit-Global being True.
                 is_global = response.headers.get("X-Ratelimit-Global", None) is not None
                 should_sleep = remaining == 0 or is_global
@@ -419,7 +413,7 @@ class HTTPClient(object):
                             # fallback in case we get some really bad response
                             sleep_time = 1 + (tries * 2)
 
-                    before_time = time.monotonic()
+                    before_time = time.perf_counter()
                     if is_global:
                         logger.debug("Reached the global ratelimit, acquiring global lock.")
                         await self.global_lock.acquire()
@@ -436,7 +430,7 @@ class HTTPClient(object):
 
                         # Sleep that amount of time.
                         if sleep_time >= 0:
-                            await multio.asynclib.sleep(sleep_time)
+                            await trio.sleep(sleep_time)
                     finally:
                         # If the global lock is acquired, unlock it now
                         if is_global:
@@ -444,7 +438,7 @@ class HTTPClient(object):
 
                 # Now, we have that nuisance out of the way, we can try and get the result from
                 # the request.
-                result = self.get_response_data(response)
+                result = await self.get_response_data(response)
 
                 # Status codes between 200 and 300 mean success, so we return the data directly.
                 if 200 <= response.status_code < 300:
@@ -468,7 +462,7 @@ class HTTPClient(object):
                 raise RuntimeError("Failed to get response after 5 tries.")
 
         finally:
-            await lock.release()
+            lock.release()
 
     async def get(self, url: str, bucket: str,
                   *args, **kwargs):
@@ -535,9 +529,6 @@ class HTTPClient(object):
         """
         :return: The recommended number of shards for this bot.
         """
-        if not self._is_bot:
-            raise Forbidden(None, {"code": 20002, "message": "Only bots can use this endpoint"})
-
         data = await self.get(Endpoints.GATEWAY_BOT, "gateway")
         return data["url"], data["shards"]
 
@@ -1996,3 +1987,15 @@ class HTTPClient(object):
 
         data = await self.delete(url, "guild:leave")
         return data
+
+
+@asynccontextmanager
+async def open_http_client(
+    token: str, endpoints: Endpoints = Endpoints(),
+) -> typing.AsyncContextManager[HTTPClient]:
+    """
+    Opens a new HTTP client using the specified token and the optional set of endpoints.
+    """
+    async with httpx.AsyncClient() as session:
+        client = HTTPClient(token, endpoints, session)
+        yield client

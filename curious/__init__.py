@@ -33,21 +33,17 @@ from __future__ import generator_stop  # enforce generator stop
 
 import sys
 
-from pkg_resources import DistributionNotFound, get_distribution
-
-try:
-    __version__ = get_distribution("discord-curious").version
-except DistributionNotFound:
-    __version__ = "0.0.0"
+__version__ = "1.0.0"
 
 _fmt = "DiscordBot (https://github.com/Fuyukai/curious {0}) Python/{1[0]}.{1[1]}"
 USER_AGENT = _fmt.format(__version__, sys.version_info)
 del _fmt
 
 
-from curious.core.client import BotType, Client
+from curious.core.client import Client
 from curious.core.event import EventContext, event
-from curious.core.gateway import open_websocket, GatewayHandler
+
+# from curious.core.gateway import open_websocket, GatewayHandler
 from curious.core.state import State
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.attachment import Attachment
@@ -76,7 +72,3 @@ from curious.dataclasses.user import User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget, WidgetChannel, WidgetGuild, WidgetMember
-
-# for asks
-# import multio
-# multio.init('curio')

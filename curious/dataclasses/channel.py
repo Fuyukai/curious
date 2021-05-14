@@ -29,7 +29,7 @@ from os import PathLike
 from types import MappingProxyType
 from typing import AsyncIterator
 
-import multio
+import trio
 from async_generator import asynccontextmanager
 
 from curious.dataclasses import (
@@ -45,7 +45,7 @@ from curious.dataclasses import (
 from curious.dataclasses.bases import Dataclass, IDObject
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, ErrorCode, Forbidden, HTTPException, PermissionsError
-from curious.util import AsyncIteratorWrapper, base64ify, deprecated, safe_generator
+from curious.util import AsyncIteratorWrapper, base64ify, deprecated
 
 
 class ChannelType(enum.IntEnum):
@@ -1124,9 +1124,7 @@ class Channel(Dataclass):
 
         await self._bot.http.send_typing(self.id)
 
-    @property
     @asynccontextmanager
-    @safe_generator
     async def typing(self) -> _typing.AsyncContextManager[None]:
         """
         :return: A context manager that sends typing repeatedly.
@@ -1135,30 +1133,24 @@ class Channel(Dataclass):
 
         .. code-block:: python3
 
-            async with channel.typing:
+            async with channel.typing():
                 res = await do_long_action()
 
             await channel.messages.send("Long action:", res)
         """
-        running = multio.Event()
 
         async def runner():
             await self.send_typing()
             while True:
-                try:
-                    async with multio.timeout_after(5):
-                        await running.wait()
-                except multio.asynclib.TaskTimeout:
-                    await self.send_typing()
-                else:
-                    return
+                await trio.sleep(5)
+                await self.send_typing()
 
-        async with multio.asynclib.task_manager() as tg:
-            await multio.asynclib.spawn(tg, runner)
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(runner)
             try:
                 yield
             finally:
-                await multio.asynclib.cancel_task_group(tg)
+                nursery.cancel_scope.cancel()
 
     @deprecated(since="0.7.0", see_instead="Channel.messages.send", removal="0.10.0")
     async def send(

@@ -20,19 +20,11 @@ Classes for plugin objects.
 """
 import inspect
 import logging
-from collections import OrderedDict
-
-import multio
 
 from curious.core import client as md_client
 
 
-class PluginMeta(type):
-    def __prepare__(*args, **kwargs):
-        return OrderedDict()  # 3.6 compat
-
-
-class Plugin(metaclass=PluginMeta):
+class Plugin(object):
     """
     Represents a plugin (a collection of events and commands under one class).
     """

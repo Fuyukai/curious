@@ -29,7 +29,6 @@ import types
 import warnings
 from typing import Any, Awaitable, Callable, Coroutine, List, Union
 
-import multio
 from multidict import MultiDict
 
 NO_ITEM = object()
@@ -226,9 +225,8 @@ async def coerce_agen(gen):
     Coerces an async generator into a list.
     """
     results = []
-    async with multio.asynclib.finalize_agen(gen) as agen:
-        async for i in agen:
-            results.append(i)
+    async for i in gen:
+        results.append(i)
 
     return results
 
@@ -356,16 +354,6 @@ def deprecated(*, since: str, see_instead, removal: str):
         return new_wrapper
 
     return inner
-
-
-def safe_generator(cbl):
-    # only wrap if we have curio
-    try:
-        from curio.meta import safe_generator
-
-        return safe_generator(cbl)
-    except ModuleNotFoundError:
-        return cbl
 
 
 def _ad_getattr(self, key: str):

@@ -26,8 +26,6 @@ import typing
 from types import MappingProxyType
 from typing import Dict
 
-import multio
-
 from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.embed import Embed
@@ -92,9 +90,6 @@ class State(object):
         self.messages = collections.deque(maxlen=max_messages)
 
         self.__shards_is_ready = collections.defaultdict(lambda: False)
-        self.__voice_state_crap = collections.defaultdict(
-            lambda *args, **kwargs: ((multio.Event(), multio.Event()), {})
-        )
 
     def is_ready(self, shard_id: int) -> bool:
         """
@@ -409,7 +404,7 @@ class State(object):
 
         logger.info(
             "We have been issued a session on shard {}, parsing ready for `{}#{}` ({})".format(
-                gw.gw_state.shard_id, self._user.username, self._user.discriminator, self._user.id
+                gw.info.shard_id, self._user.username, self._user.discriminator, self._user.id
             )
         )
 
@@ -418,11 +413,11 @@ class State(object):
             new_guild = Guild(self.client, **guild)
             self._guilds[new_guild.id] = new_guild
             new_guild.from_guild_create(**guild)
-            new_guild.shard_id = gw.gw_state.shard_id
+            new_guild.shard_id = gw.info.shard_id
 
         logger.info(
             "Ready processed for shard {}. Delaying until all guilds are chunked.".format(
-                gw.gw_state.shard_id
+                gw.info.shard_id
             )
         )
         yield "connect",
@@ -434,7 +429,7 @@ class State(object):
         """
         Called when the gateway connection is resumed.
         """
-        yield ("resumed",)
+        yield "resumed",
 
     async def handle_user_update(self, gw: "gateway.GatewayHandler", event_data: dict):
         """
@@ -560,7 +555,7 @@ class State(object):
             self._guilds[guild.id] = guild
             guild.from_guild_create(**event_data)
 
-        guild.shard_id = gw.gw_state.shard_id
+        guild.shard_id = gw.info.shard_id
         # TODO: Need to do this
         # try:
         #    guild.me.presence.game = gw.game
@@ -570,7 +565,7 @@ class State(object):
         #    pass
 
         # Dispatch the event if we're ready (i.e not streaming)
-        if self.__shards_is_ready[gw.gw_state.shard_id]:
+        if self.__shards_is_ready[gw.info.shard_id]:
             if had_guild:
                 yield "guild_available", guild,
             else:

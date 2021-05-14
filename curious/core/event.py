@@ -23,13 +23,14 @@ import inspect
 import logging
 import typing
 
-import multio
+import trio
 from async_generator import asynccontextmanager
 from multidict import MultiDict
+from trio import Nursery
 
 from curious.core import client as md_client
 from curious.core.gateway import GatewayHandler
-from curious.util import remove_from_multidict, safe_generator
+from curious.util import remove_from_multidict
 
 logger = logging.getLogger("curious.events")
 
@@ -48,19 +49,14 @@ class ListenerExit(Exception):
 
 
 @asynccontextmanager
-@safe_generator
 async def _wait_for_manager(manager, name: str, predicate):
     """
     Helper class for managing a wait_for.
     """
-    async with multio.asynclib.task_manager() as tg:
-        try:
-            partial = functools.partial(manager.wait_for, name, predicate)
-            await multio.asynclib.spawn(tg, partial)
-            yield
-        except:
-            await multio.asynclib.cancel_task_group(tg)
-            raise
+    async with trio.open_nursery() as nursery:
+        partial = functools.partial(manager.wait_for, name, predicate)
+        nursery.start_soon(partial)
+        yield
 
 
 class EventManager(object):
@@ -70,9 +66,9 @@ class EventManager(object):
     This deals with firing of events and temporary listeners.
     """
 
-    def __init__(self):
+    def __init__(self, nursery: Nursery):
         #: The task manager used to spawn events.
-        self.task_manager = None
+        self.nursery = nursery
 
         #: A list of event hooks.
         self.event_hooks = set()
@@ -239,7 +235,7 @@ class EventManager(object):
         """
         return _wait_for_manager(self, event_name, predicate)
 
-    async def spawn(self, cofunc, *args) -> typing.Any:
+    def spawn(self, cofunc, *args) -> typing.Any:
         """
         Spawns a new async function using our task manager.
 
@@ -253,18 +249,16 @@ class EventManager(object):
         :param cofunc: The async function to spawn.
         :param args: Args to provide to the async function.
         """
-        return await multio.asynclib.spawn(self.task_manager, cofunc, *args)
+        return self.nursery.start_soon(cofunc, *args)
 
-    async def fire_event(self, event_name: str, *args, **kwargs):
+    def fire_event(self, event_name: str, *args, **kwargs):
         """
-        Fires an event.
-
-        :param event_name: The name of the event to fire.
+        Fires a single event.
         """
         if "ctx" not in kwargs:
             gateway = kwargs.pop("gateway")
             client = kwargs.pop("client")
-            ctx = EventContext(client, gateway.gw_state.shard_id, event_name)
+            ctx = EventContext(client, gateway.info.shard_id, event_name)
         else:
             ctx = kwargs.pop("ctx")
 
@@ -274,18 +268,18 @@ class EventManager(object):
         # always ensure hooks are ran first
         for hook in self.event_hooks:
             cofunc = functools.partial(hook, ctx, *args, **kwargs)
-            await self.spawn(cofunc)
+            self.spawn(cofunc)
 
         for handler in self.event_listeners.getall(event_name, []):
             coro = functools.partial(handler, ctx, *args, **kwargs)
             coro.__name__ = handler.__name__
-            await self.spawn(self._safety_wrapper, coro)
+            self.spawn(self._safety_wrapper, coro)
 
         for listener in self.temporary_listeners.getall(event_name, []):
             coro = functools.partial(
                 self._listener_wrapper, event_name, listener, ctx, *args, **kwargs
             )
-            await self.spawn(coro)
+            self.spawn(coro)
 
 
 def event(name, scan: bool = True):

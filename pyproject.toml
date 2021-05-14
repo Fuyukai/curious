@@ -8,23 +8,17 @@ authors = ["Lura Skye <l@veriny.tf>"]
 readme = "README.rst"
 
 [tool.poetry.dependencies]
-python = ">=3.6.2"
-anyio = "*"
-asks = ">=2.3.1"
-async-generator = ">=1.9.0"
-coloredlogs = {optional = true, version = "*"}
-lomond = ">=0.3.1"
+python = ">=3.8.0"
 multidict = ">=4.1.0"
-oauthlib = "<2.1.0,>=2.0.2"
-outcome = "*"
 pylru = ">=1.0.9"
 pytz = ">=2017.3"
-toml = {optional = true, version = "*"}
 typing-inspect = ">=0.2.0"
-trio = "^0.13.0"
+trio = "^0.18.0"
+trio-websocket = "^0.9.2"
+httpx = "^0.18.1"
 
 [tool.poetry.dev-dependencies]
-black = "^19.10b0"
+black = "^21.5b1"
 
 [tool.black]
 line-length = 100

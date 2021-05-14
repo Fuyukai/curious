@@ -22,20 +22,22 @@ This contains a definition for :class:`.Client` which is used to interface prima
 """
 
 import collections
-import enum
-import functools
 import inspect
 import logging
 import typing
+from contextlib import asynccontextmanager
 from types import MappingProxyType
 from typing import Union
 
-import multio
+import trio
+from async_generator import aclosing
 
 from curious.core import chunker as md_chunker
 from curious.core.event import EventContext, EventManager, event as ev_dec, scan_events
-from curious.core.gateway import GatewayHandler, open_websocket
-from curious.core.httpclient import HTTPClient
+# from curious.core.gateway import GatewayHandler, open_websocket
+from curious.core.gateway import GatewayHandler
+from curious.core.httpclient import HTTPClient, open_http_client
+from curious.core.state import State
 from curious.dataclasses import channel as dt_channel, guild as dt_guild, member as dt_member
 from curious.dataclasses.appinfo import AppInfo
 from curious.dataclasses.bases import allow_external_makes
@@ -47,35 +49,7 @@ from curious.dataclasses.webhook import Webhook
 from curious.dataclasses.widget import Widget
 from curious.util import base64ify
 
-logger = logging.getLogger("curious.client")
-
-
-class BotType(enum.IntEnum):
-    """
-    An enum that signifies what type of bot this bot is.
-
-    This will tell the commands handling how to respond, as well as how to log in.
-    """
-
-    #: Regular bot. This signifies that the client should log in as a bot account.
-    BOT = 1
-
-    #: User bot. This signifies that the client should log in as a user account.
-    USERBOT = 2
-
-    # 4 is reserved
-
-    #: No bot responses. This signifies that the client should respond to ONLY USER messages.
-    ONLY_USER = 8
-
-    #: No DMs. This signifies the bot only works in guilds.
-    NO_DMS = 16
-
-    #: No guilds. This signifies the bot only works in DMs.
-    NO_GUILDS = 32
-
-    #: Self bot. This signifies the bot only responds to itself.
-    SELF_BOT = 64
+logger = logging.getLogger("curious.core.client")
 
 
 class Client(object):
@@ -105,40 +79,21 @@ class Client(object):
     def __init__(
         self,
         token: str,
-        *,
-        state_klass: type = None,
-        bot_type: int = (BotType.BOT | BotType.ONLY_USER),
+        http: HTTPClient,
+        nursery: trio.Nursery,
     ):
         """
         :param token: The current token for this bot.
         :param state_klass: The class to construct the connection state from.
-        :param bot_type: A union of :class:`.BotType` that defines the type of this bot.
         """
+        self._token: str = token
+        self.shard_count: int = 0
+        self.state = State(self)
+        self.events = EventManager(nursery)
+
         #: The mapping of `shard_id -> gateway` objects.
         self._gateways = {}  # type: typing.MutableMapping[int, GatewayHandler]
 
-        #: The number of shards this client has.
-        self.shard_count = 0
-
-        #: The token for the bot.
-        self._token = token
-
-        if state_klass is None:
-            from curious.core.state import State
-
-            state_klass = State
-
-        #: The current connection state for the bot.
-        self.state = state_klass(self)
-
-        #: The bot type for this bot.
-        self.bot_type = bot_type
-
-        if self.bot_type & BotType.BOT and self.bot_type & BotType.USERBOT:
-            raise ValueError("Bot cannot be a bot and a userbot at the same time")
-
-        #: The current :class:`.EventManager` for this bot.
-        self.events = EventManager()
         #: The current :class:`.Chunker` for this bot.
         self.chunker = md_chunker.Chunker(self)
         self.chunker.register_events(self.events)
@@ -146,7 +101,7 @@ class Client(object):
         self._ready_state = {}
 
         #: The :class:`.HTTPClient` used for this bot.
-        self.http = HTTPClient(self._token, bot=bool(self.bot_type & BotType.BOT))
+        self.http = http
 
         #: The cached gateway URL.
         self._gw_url = None  # type: str
@@ -156,7 +111,7 @@ class Client(object):
         self.application_info = None  # type: AppInfo
 
         #: The task manager used for this bot.
-        self.task_manager = None
+        self.nursery = nursery
 
         for (name, event) in scan_events(self):
             self.events.add_event(event)
@@ -267,18 +222,18 @@ class Client(object):
     # rip in peace old fire_event
     # 2016-2017
     # broke my pycharm
-    async def fire_event(self, event_name: str, *args, **kwargs):
+    def fire_event(self, event_name: str, *args, **kwargs):
         """
         Fires an event.
 
         This actually passes the arguments to :meth:`.EventManager.fire_event`.
         """
         gateway = kwargs.get("gateway")
-        if not self.state.is_ready(gateway.gw_state.shard_id):
+        if not self.state.is_ready(gateway.info.shard_id):
             if event_name not in self.IGNORE_READY and not event_name.startswith("gateway_"):
                 return
 
-        return await self.events.fire_event(event_name, *args, **kwargs, client=self)
+        return self.events.fire_event(event_name, *args, **kwargs, client=self)
 
     async def wait_for(self, *args, **kwargs) -> typing.Any:
         """
@@ -364,7 +319,7 @@ class Client(object):
             self.state._check_decache_user(u.id)
             return u
 
-    async def get_application(self, application_id: int) -> AppInfo:
+    async def get_application(self, application_id: typing.Optional[int]) -> AppInfo:
         """
         Gets an application by ID.
 
@@ -600,18 +555,15 @@ class Client(object):
                 if inspect.isawaitable(result):
                     results = [await result]
                 elif inspect.isasyncgen(result):
-                    async with multio.asynclib.finalize_agen(result) as gen:
-                        results = [r async for r in gen]
+                    results = [r async for r in result]
                 else:
                     results = [result]
 
             for item in results:
                 if not isinstance(item, tuple):
-                    await self.events.fire_event(item, gateway=ctx.gateway, client=self)
+                    self.events.fire_event(item, gateway=ctx.gateway, client=self)
                 else:
-                    await self.events.fire_event(
-                        item[0], *item[1:], gateway=ctx.gateway, client=self
-                    )
+                    self.events.fire_event(item[0], *item[1:], gateway=ctx.gateway, client=self)
 
         except Exception:
             logger.exception(f"Error decoding event {name} with data {dispatch}!")
@@ -628,7 +580,7 @@ class Client(object):
         if not all(self._ready_state.values()):
             return
 
-        await self.events.fire_event(
+        self.events.fire_event(
             "shards_ready", gateway=self._gateways[ctx.shard_id], client=self
         )
 
@@ -640,20 +592,18 @@ class Client(object):
         :param shard_count: The shard count to send in the identify packet.
         """
         # consume events
-        async with open_websocket(
-            self._token, self._gw_url, shard_id=shard_id, shard_count=shard_count
-        ) as gw:
-            self._gateways[shard_id] = gw
+        gateway = GatewayHandler(
+            token=self._token,
+            gateway_url=self._gw_url,
+            shard_id=shard_id,
+            shard_count=shard_count,
+        )
 
-            try:
-                async with multio.asynclib.finalize_agen(gw.events()) as agen:
-                    async for event in agen:
-                        await self.fire_event(event[0], *event[1:], gateway=gw)
-            except Exception as e:  # kill the bot if we failed to parse something
-                await self.kill()
-                raise
-            finally:
-                self._gateways.pop(shard_id, None)
+        self._gateways[shard_id] = gateway
+
+        async with aclosing(gateway.read_events()) as agen:
+            async for event in agen:
+                self.fire_event(event[0], *event[1:], gateway=gateway)
 
     async def start(self, shard_count: int):
         """
@@ -661,19 +611,10 @@ class Client(object):
 
         :param shard_count: The number of shards to boot.
         """
-        if self.bot_type & BotType.BOT:
-            self.application_info = AppInfo(self, **(await self.http.get_app_info(None)))
-
-        # update ready state
-        for shard_id in range(shard_count):
-            self._ready_state[shard_id] = False
-
-        async with multio.asynclib.task_manager() as tg:
-            self.task_manager = tg
-            self.events.task_manager = tg
-
+        async with trio.open_nursery() as n:
             for shard_id in range(0, shard_count):
-                await multio.asynclib.spawn(tg, self.handle_shard, shard_id, shard_count)
+                self._ready_state[shard_id] = False
+                n.start_soon(self.handle_shard, shard_id, shard_count)
 
     async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
         """
@@ -687,34 +628,34 @@ class Client(object):
         else:
             url, shard_count = await self.get_gateway_url(get_shard_count=False), shard_count
 
+        self.application_info = await self.get_application(None)
+
         self._gw_url = url
         self.shard_count = shard_count
-        return await self.start(shard_count)
+        try:
+            await self.start(shard_count)
+        finally:
+            with trio.fail_after(1) as scope:
+                scope.shield = True
+                await self.kill()
 
     async def kill(self) -> None:
         """
         Kills the bot by closing all shards.
         """
         for gateway in self._gateways.copy().values():
-            await gateway.close(code=1006, reason="Bot killed", reconnect=False)
+            await gateway.kill(code=1006, reason="Bot killed")
 
-    def run(self, *, shard_count: int = 1, autoshard: bool = True, **kwargs):
-        """
-        Convenience method to run the bot with multio.
 
-        :param shard_count: The number of shards to use. Ignored if autoshard is True.
-        :param autoshard: If the bot should be autosharded.
-        """
+@asynccontextmanager
+async def open_client(token: str) -> typing.AsyncContextManager[Client]:
+    """
+    Opens a new Discord client, connecting using the specified token.
+    """
 
-        p = functools.partial(self.run_async, shard_count=shard_count, autoshard=autoshard)
-        multio.run(p, **kwargs)
+    async with trio.open_nursery() as n:
+        async with open_http_client(token) as http:
+            client = Client(token, http, n)
+            yield client
 
-    @classmethod
-    def from_token(cls, token: str = None):
-        """
-        Starts a bot from a token object.
-
-        :param token: The token to use for the bot.
-        """
-        bot = cls(token)
-        return bot.run()
+        n.cancel_scope.cancel()
