@@ -616,17 +616,11 @@ class Client(object):
                 self._ready_state[shard_id] = False
                 n.start_soon(self.handle_shard, shard_id, shard_count)
 
-    async def run_async(self, *, shard_count: int = 1, autoshard: bool = True):
+    async def _run_async(self):
         """
         Runs the client asynchronously.
-
-        :param shard_count: The number of shards to boot.
-        :param autoshard: If the bot should be autosharded.
         """
-        if autoshard:
-            url, shard_count = await self.get_gateway_url(get_shard_count=True)
-        else:
-            url, shard_count = await self.get_gateway_url(get_shard_count=False), shard_count
+        url, shard_count = await self.get_gateway_url(get_shard_count=True)
 
         self.application_info = await self.get_application(None)
 
@@ -657,5 +651,6 @@ async def open_client(token: str) -> typing.AsyncContextManager[Client]:
         async with open_http_client(token) as http:
             client = Client(token, http, n)
             yield client
+            await client._run_async()
 
         n.cancel_scope.cancel()

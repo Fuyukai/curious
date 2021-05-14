@@ -163,6 +163,7 @@ class GatewayHandler(object):
                 | GatewayIntent.GUILD_BANS
                 | GatewayIntent.GUILD_EMOJIS
                 | GatewayIntent.GUILD_INVITES
+                | GatewayIntent.GUILD_PRESENCES
                 | GatewayIntent.GUILD_MESSAGES
                 | GatewayIntent.GUILD_MESSAGE_REACTIONS
                 | GatewayIntent.DIRECT_MESSAGES
