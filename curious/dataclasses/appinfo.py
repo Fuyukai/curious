@@ -18,10 +18,14 @@ Wrappers for Application Info objects.
 
 .. currentmodule:: curious.dataclasses.appinfo
 """
-from typing import Union
+from __future__ import annotations
 
-from curious.dataclasses import user as dt_user
+from typing import TYPE_CHECKING, Optional
+
 from curious.dataclasses.bases import Dataclass
+
+if TYPE_CHECKING:
+    from curious.dataclasses.user import User
 
 
 class AppInfo(Dataclass):
@@ -43,32 +47,27 @@ class AppInfo(Dataclass):
 
         #: The owner of this application.
         #: This can be None if the application fetched isn't the bot's.
-        self.owner = owner
-
+        self.owner: Optional[User] = owner
         #: The name of this application.
-        self.name = self._application.get("name", None)  # type: str
+        self.name: str = self._application.get("name", None)
 
         #: The description of this application.
-        self.description = self._application.get("description", None)  # type: str
+        self.description: str = self._application.get("description", None)
 
         #: Is this bot public?
-        self.public = self._application.get("bot_public", None)  # type: bool
+        self.public: bool = self._application.get("bot_public", False)
 
         #: Does this bot require OAuth2 Code Grant?
-        self.requires_code_grant = self._application.get(
-            "bot_require_code_grant", None
-        )  # type: bool
+        self.requires_code_grant: bool = self._application.get("bot_require_code_grant", False)
 
         #: The icon hash for this application.
-        self._icon_hash = self._application.get("icon", None)  # type: str
+        self._icon_hash: Optional[str] = self._application.get("icon", None)
 
         #: The bot :class:`.User` associated with this application, if available.
-        self.bot = None  # type: dt_user.User
+        self.bot: Optional[User] = None
 
         if "bot" in kwargs:
             self.bot = self._bot.state.make_user(kwargs.get("bot", {}))
-        else:
-            self.bot = None
 
     def __repr__(self) -> str:
         return "<{} owner='{!r}' name='{!r}' bot='{!r}'>".format(
@@ -76,7 +75,7 @@ class AppInfo(Dataclass):
         )
 
     @property
-    def icon_url(self) -> Union[str, None]:
+    def icon_url(self) -> Optional[str]:
         """
         :return: The icon url for this bot.
         """

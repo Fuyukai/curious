@@ -19,9 +19,12 @@ Wrappers for Reaction objects.
 .. currentmodule:: curious.dataclasses.reaction
 """
 
-import typing
+from typing import Union, TYPE_CHECKING
 
-from curious.dataclasses import emoji as dt_emoji
+from curious.dataclasses.emoji import Emoji
+
+if TYPE_CHECKING:
+    from curious.dataclasses.message import Message
 
 
 class Reaction(object):
@@ -29,18 +32,25 @@ class Reaction(object):
     Represents a reaction.
     """
 
+    __slots__ = (
+        "message",
+        "emoji",
+        "count",
+        "me",
+    )
+
     def __init__(self, **kwargs) -> None:
         #: The :class:`.Message` this reaction is for.
-        self.message = None
+        self.message: Message = None  # noqa
 
         #: The emoji that represents this reaction.
-        self.emoji = None  # type: typing.Union[str, dt_emoji.Emoji]
+        self.emoji: Union[Emoji, str] = None  # noqa
 
         #: The number of times this message was reacted to.
-        self.count = kwargs.get("count", 1)  # 1 is better than 0
+        self.count: int = kwargs.get("count", 1)  # 1 is better than 0
 
         #: If this user reacted to the message.
-        self.me = kwargs.get("me", False)
+        self.me: bool = kwargs.get("me", False)
 
     def __repr__(self) -> str:
         return "<Reaction emoji={} count={}>".format(self.emoji, self.count)

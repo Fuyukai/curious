@@ -19,16 +19,18 @@ Wrappers for Webhook objects.
 .. currentmodule:: curious.dataclasses.webhook
 """
 
-import typing
+from __future__ import annotations
 
-from curious.dataclasses import (
-    channel as dt_channel,
-    embed as dt_embed,
-    guild as dt_guild,
-    user as dt_user,
-)
+from typing import TYPE_CHECKING, Optional, List
+
+from curious.dataclasses.embed import Embed
 from curious.dataclasses.bases import Dataclass
 from curious.util import base64ify
+
+if TYPE_CHECKING:
+    from curious.dataclasses.user import User
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.channel import Channel
 
 
 class Webhook(Dataclass):
@@ -61,26 +63,26 @@ class Webhook(Dataclass):
         super().__init__(kwargs.get("webhook_id", kwargs.get("id")), cl=client)
 
         #: The user object associated with this webhook.
-        self.user = None  # type: dt_user.User
+        self.user: User = None  # noqa
 
         #: The ID of the Guild associated with this object.
-        self.guild_id = None  # type: int
+        self.guild_id: int = None  # noqa
 
         #: The ID of the Channel associated with this object.
-        self.channel_id = None  # type: int
+        self.channel_id: int = None  # noqa
 
         #: The token associated with this webhook.
         #: This is None if the webhook was received from a Message object.
-        self.token = kwargs.get("token", None)  # type: str
+        self.token: Optional[str] = kwargs.get("token", None)
 
         #: The owner of this webhook.
-        self.owner = None  # type: dt_user.User
+        self.owner: Optional[User] = None
 
         #: The default name of this webhook.
-        self.default_name = None  # type: str
+        self.default_name: str = None  # noqa
 
         #: The default avatar of this webhook.
-        self._default_avatar = None  # type: str
+        self._default_avatar: str = None  # noqa
 
     def __repr__(self) -> str:
         return "<Webhook id={} name={} channel={} owner={}>".format(
@@ -114,24 +116,21 @@ class Webhook(Dataclass):
         return self.user.name or self.default_name
 
     @property
-    def guild(self) -> "dt_guild.Guild":
+    def guild(self) -> Guild:
         """
         :return: The :class:`.Guild` this webhook is in.
         """
-        return self._bot.guilds.get(self.guild_id)
+        return self._bot.guilds[self.guild_id]
 
     @property
-    def channel(self) -> "dt_channel.Channel":
+    def channel(self) -> Channel:
         """
         :return: The :class:`.Channel` this webhook is in.
         """
-        if self.guild is None:
-            return None
-
-        return self.guild.channels.get(self.channel_id)
+        return self.guild.channels[self.channel_id]
 
     @classmethod
-    async def create(cls, channel: "dt_channel.Channel", *, name: str, avatar: bytes) -> "Webhook":
+    async def create(cls, channel: Channel, *, name: str, avatar: bytes) -> Webhook:
         """
         Creates a new webhook.
 
@@ -167,7 +166,7 @@ class Webhook(Dataclass):
         else:
             return await self.guild.delete_webhook(self)
 
-    async def edit(self, *, name: str = None, avatar: bytes = None) -> "Webhook":
+    async def edit(self, *, name: str = None, avatar: bytes = None) -> Webhook:
         """
         Edits this webhook.
 
@@ -198,9 +197,9 @@ class Webhook(Dataclass):
         content: str = None,
         username: str = None,
         avatar_url: str = None,
-        embeds: "typing.List[dt_embed.Embed]" = None,
+        embeds: List[Embed] = None,
         wait: bool = False,
-    ) -> typing.Union[None, str]:
+    ) -> Optional[str]:
         """
         Executes the webhook.
 

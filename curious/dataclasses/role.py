@@ -18,16 +18,20 @@ Wrappers for Role objects.
 
 .. currentmodule:: curious.dataclasses.role
 """
+from __future__ import annotations
+
 import copy
 import functools
 
-from curious.dataclasses import (
-    guild as dt_guild,
-    member as dt_member,
-    permissions as dt_permissions,
-)
+from curious.dataclasses.permissions import Permissions
 from curious.dataclasses.bases import Dataclass
 from curious.exc import PermissionsError
+
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.member import Member
 
 
 class _MentionableRole(object):
@@ -41,19 +45,19 @@ class _MentionableRole(object):
 
     """
 
-    def __init__(self, r: "Role"):
+    def __init__(self, r: Role):
         self.role = r
 
-    def allow_mentions(self):
-        return self.role.edit(mentionable=True)
+    async def allow_mentions(self):  # noqa
+        return await self.role.edit(mentionable=True)
 
-    def disallow_mentions(self):
-        return self.role.edit(mentionable=False)
+    async def disallow_mentions(self):  # noqa
+        return await self.role.edit(mentionable=False)
 
-    def __aenter__(self):
+    def __aenter__(self):  # noqa
         return self.allow_mentions()
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):  # noqa
         await self.disallow_mentions()
         return False
 
@@ -79,30 +83,30 @@ class Role(Dataclass):
         super().__init__(kwargs.get("id"), client)
 
         #: The name of this role.
-        self.name = kwargs.get("name", None)
+        self.name: str = kwargs["name"]
 
         #: The colour of this role.
-        self.colour = kwargs.get("color", 0)
+        self.colour: int = kwargs.get("color", 0)
 
         #: Is this role hoisted?
-        self.hoisted = kwargs.get("hoist", False)
+        self.hoisted: bool = kwargs.get("hoist", False)
 
         #: Is this role mentionable?
-        self.mentionable = kwargs.get("mentionable", False)
+        self.mentionable: bool = kwargs.get("mentionable", False)
 
         #: The permissions of this role.
-        self.permissions = dt_permissions.Permissions(kwargs.get("permissions", 0))
+        self.permissions = Permissions(kwargs.get("permissions", 0))
 
         #: Is this role managed?
-        self.managed = kwargs.get("managed", False)
+        self.managed: bool = kwargs.get("managed", False)
 
         #: The position of this role.
-        self.position = kwargs.get("position", 0)
+        self.position: int = kwargs.get("position", 0)
 
         #: The ID of the guild associated with this Role.
-        self.guild_id = int(kwargs.get("guild_id", 0))  # type: dt_guild.Guild
+        self.guild_id: int = None  # noqa
 
-    def __lt__(self, other: "Role") -> bool:
+    def __lt__(self, other: Role) -> bool:
         if not isinstance(other, Role):
             return NotImplemented
 
@@ -119,7 +123,7 @@ class Role(Dataclass):
         return copy.copy(self)
 
     @property
-    def guild(self) -> "dt_guild.Guild":
+    def guild(self) -> Guild:
         """
         :return: The :class:`.Guild` associated with this role.
         """
@@ -155,7 +159,7 @@ class Role(Dataclass):
         """
         return f"<@&{self.id}>"
 
-    async def assign_to(self, member: "dt_member.Member") -> "Role":
+    async def assign_to(self, member: Member) -> Role:
         """
         Assigns this role to a member.
 
@@ -168,7 +172,7 @@ class Role(Dataclass):
         await member.roles.add(self)
         return self
 
-    async def remove_from(self, member: "dt_member.Member"):
+    async def remove_from(self, member: Member):
         """
         Removes this role from a member.
 
@@ -181,7 +185,7 @@ class Role(Dataclass):
         await member.roles.remove(self)
         return self
 
-    async def delete(self) -> "Role":
+    async def delete(self) -> Role:
         """
         Deletes this role.
         """
@@ -195,7 +199,7 @@ class Role(Dataclass):
         self,
         *,
         name: str = None,
-        permissions: "dt_permissions.Permissions" = None,
+        permissions: Union[int, Permissions] = None,
         colour: int = None,
         position: int = None,
         hoist: bool = None,
@@ -215,7 +219,7 @@ class Role(Dataclass):
             raise PermissionsError("manage_roles")
 
         if permissions is not None:
-            if isinstance(permissions, dt_permissions.Permissions):
+            if isinstance(permissions, Permissions):
                 permissions = permissions.bitfield
 
         async with self._bot.events.wait_for_manager("role_update", lambda b, a: a.id == self.id):

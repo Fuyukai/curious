@@ -29,17 +29,21 @@ if the data for each  is not cached by curious. Otherwise, full :class:`.Guild` 
 
 .. currentmodule:: curious.dataclasses.invite
 """
-import typing
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional, List, Union
 
 from curious import util
-from curious.dataclasses import (
-    channel as dt_channel,
-    guild as dt_guild,
-    member as dt_member,
-    user as dt_user,
-)
 from curious.dataclasses.bases import IDObject
 from curious.exc import PermissionsError
+
+from curious.dataclasses.channel_type import ChannelType
+
+if TYPE_CHECKING:
+    from curious.dataclasses.member import Member
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.user import User
+    from curious.dataclasses.channel import Channel
 
 
 class InviteGuild(IDObject):
@@ -51,28 +55,28 @@ class InviteGuild(IDObject):
         super().__init__(kwargs.get("id"))
 
         #: The name of this guild.
-        self.name = kwargs.get("name", None)  # type: str
+        self.name: str = kwargs["name"]
 
         #: The splash hash of this guild.
-        self.splash_hash = kwargs.get("splash")  # type: str
+        self.splash_hash: Optional[str] = kwargs.get("splash")
 
         #: The icon hash of this guild.
-        self._icon_hash = kwargs.get("icon")  # type: str
+        self._icon_hash: Optional[str] = kwargs.get("icon")
 
         #: A list of features for this guild.
-        self.features = kwargs.get("features")  # type: typing.List[str]
+        self.features: List[str] = kwargs.get("features", [])
 
         #: The approximate member count for this guild.
-        self.member_count = kwargs.get("approximate_member_count")
+        self.member_count: int = kwargs.get("approximate_member_count")
 
         #: The approximate presence count.
-        self.presence_count = kwargs.get("approximate_presence_count")
+        self.presence_count: int = kwargs.get("approximate_presence_count")
 
         #: The number of text channels.
-        self.text_channel_count = kwargs.get("text_channel_count")
+        self.text_channel_count: int = kwargs.get("text_channel_count")
 
         #: The number of voice channels.
-        self.voice_channel_count = kwargs.get("voice_channel_count")
+        self.voice_channel_count: int = kwargs.get("voice_channel_count")
 
     def __repr__(self) -> str:
         return "<InviteGuild id={} name='{}'>".format(self.id, self.name)
@@ -80,7 +84,7 @@ class InviteGuild(IDObject):
     __str__ = __repr__
 
     @property
-    def icon_url(self) -> str:
+    def icon_url(self) -> Optional[str]:
         """
         :return: The icon URL for this guild, or None if one isn't set.
         """
@@ -88,7 +92,7 @@ class InviteGuild(IDObject):
             return "https://cdn.discordapp.com/icons/{}/{}.webp".format(self.id, self._icon_hash)
 
     @property
-    def splash_url(self) -> str:
+    def splash_url(self) -> Optional[str]:
         """
         :return: The splash URL for this guild, or None if one isn't set.
         """
@@ -110,7 +114,7 @@ class InviteChannel(IDObject):
         self.name = kwargs.get("name")
 
         #: The :class:`.ChannelType` of this channel.
-        self.type = dt_channel.ChannelType(kwargs.get("type"))
+        self.type = ChannelType(kwargs.get("type"))
 
     def __repr__(self) -> str:
         return "<InviteChannel name={}>".format(self.name)
@@ -159,7 +163,7 @@ class Invite(object):
         self._bot = client
 
         #: The invite code.
-        self.code = kwargs.get("code")  # type: str
+        self.code: str = kwargs.get("code")
 
         #: The guild ID for this invite.
         self.guild_id = int(kwargs["guild"]["id"])
@@ -169,15 +173,11 @@ class Invite(object):
 
         #: The invite guild this is attached to.
         #: The actual guild object can be more easily fetched with `.guild`.
-        self._invite_guild = InviteGuild(
-            **kwargs.get("guild")
-        )  # type: typing.Union[InviteGuild, dt_guild.Guild]
+        self._invite_guild = InviteGuild(**kwargs.get("guild"))
 
         #: The invite channel this is attached to.
         #: The actual channel object can be more easily fetched with `.channel`.
-        self._invite_channel = InviteChannel(
-            **kwargs.get("channel")
-        )  # type: typing.Union[InviteChannel, dt_channel.Channel]
+        self._invite_channel = InviteChannel(**kwargs.get("channel"))
 
         #: The ID of the user that created this invite.
         #: This can be None for partnered invites.
@@ -202,28 +202,27 @@ class Invite(object):
             self._bot.state._check_decache_user(self.inviter_id)
 
     @property
-    def inviter(self) -> "typing.Union[dt_member.Member, dt_user.User]":
+    def inviter(self) -> Union[Member, User]:
         """
         :return: The :class:`.Member` or :class:`.User` that made this invite.
         """
-        if isinstance(self._invite_guild, InviteGuild):
-            return self._bot.state.make_user(self._inviter_data)
+        guild = self.guild
+        if not isinstance(guild, InviteGuild):
+            member = guild.members.get(self.inviter_id)
+            if member:
+                return member
 
-        u = self._invite_guild.members.get(self.inviter_id)
-        if not u:
-            return self._bot.state.make_user(self._inviter_data)
-
-        return u
+        return self._bot.state.make_user(self._inviter_data)
 
     @property
-    def guild(self) -> "typing.Union[dt_guild.Guild, InviteGuild]":
+    def guild(self) -> Union[Guild, InviteGuild]:
         """
         :return: The guild this invite is associated with.
         """
         return self._bot.state.guilds.get(self.guild_id, self._invite_guild)
 
     @property
-    def channel(self) -> "typing.Union[dt_channel.Channel, InviteChannel]":
+    def channel(self) -> Union[Channel, InviteChannel]:
         """
         :return: The channel this invite is associated with.
         """
@@ -233,7 +232,7 @@ class Invite(object):
 
         return g.channels.get(self.channel_id, self._invite_channel)
 
-    async def delete(self):
+    async def delete(self) -> None:
         """
         Deletes this invite.
 

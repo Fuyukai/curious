@@ -18,28 +18,31 @@ Wrappers for Message objects.
 
 .. currentmodule:: curious.dataclasses.message
 """
+from __future__ import annotations
+
+import datetime
 import enum
 import re
-import typing
+from typing import Union, Optional, TYPE_CHECKING, List, AsyncIterator
 
-from curious.dataclasses import (
-    channel as dt_channel,
-    emoji as dt_emoji,
-    guild as dt_guild,
-    invite as dt_invite,
-    member as dt_member,
-    role as dt_role,
-    user as dt_user,
-    webhook as dt_webhook,
-)
-from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.emoji import Emoji
+from curious.dataclasses.user import User
+from curious.dataclasses.attachment import Attachment
 from curious.dataclasses.embed import Embed
 from curious.exc import CuriousError, ErrorCode, HTTPException, PermissionsError
 from curious.util import AsyncIteratorWrapper, to_datetime
 
+if TYPE_CHECKING:
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.member import Member
+    from curious.dataclasses.channel import Channel
+    from curious.dataclasses.role import Role
+    from curious.dataclasses.webhook import Webhook
+    from curious.dataclasses.invite import Invite
+
 CHANNEL_REGEX = re.compile(r"<#([0-9]*)>")
-INVITE_REGEX = re.compile(r"(?:discord\.gg/(\S+)|discordapp\.com/invites/(\S+))")
+INVITE_REGEX = re.compile(r"discord\.gg/(\S+)|discordapp\.com/invites/(\S+)")
 EMOJI_REGEX = re.compile(r"<a?:([\S]+):([0-9]+)>")
 MENTION_REGEX = re.compile(r"<@!?([0-9]+)>")
 
@@ -74,6 +77,22 @@ class MessageType(enum.IntEnum):
     #: The guild member join type, used when a member joins a guild.
     GUILD_MEMBER_JOIN = 7
 
+    # TODO: Document these
+    USER_PREMIUM_GUILD_SUBSCRIPTION = 8
+    USER_PREMIUM_GUILD_SUBSCRIPTION_TIER_1 = 9
+    USER_PREMIUM_GUILD_SUBSCRIPTION_TIER_2 = 10
+    USER_PREMIUM_GUILD_SUBSCRIPTION_TIER_3 = 11
+    CHANNEL_FOLLOW_ADD = 12
+    GUILD_DISCOVERY_DISQUALIFIED = 14
+    GUILD_DISCOVERY_REQUALIFIED = 15
+    GUILD_DISCOVERY_GRACE_PERIOD_INITIAL_WARNING = 16
+    GUILD_DISCOVERY_GRACE_PERIOD_FINAL_WARNING = 17
+    THREAD_CREATED = 18
+    REPLY = 19
+    APPLICATION_COMMAND = 20
+    THREAD_STARTER_MESSAGE = 21
+    GUILD_INVITE_REMINDER = 22
+
 
 class Message(Dataclass):
     """
@@ -100,20 +119,20 @@ class Message(Dataclass):
         super().__init__(kwargs.get("id"), client)
 
         #: The content of the message.
-        self.content = kwargs.get("content", None)  # type: str
+        self.content: str = kwargs["content"]
 
         #: The ID of the guild this message is in.
-        self.guild_id = None
+        self.guild_id: Optional[int] = None
 
         #: The ID of the channel the message was sent in.
-        self.channel_id = int(kwargs.get("channel_id", 0))  # type: int
+        self.channel_id: int = int(kwargs["channel_id"])
 
         #: The ID of the author.
-        self.author_id = int(kwargs.get("author", {}).get("id", 0)) or None  # type: int
+        self.author_id: int = int(kwargs.get("author", {}).get("id", 0)) or None
 
         #: The author of this message. Can be one of: :class:`.Member`, :class:`.Webhook`,
         #: :class:`.User`.
-        self.author = None  # type: typing.Union[dt_member.Member, dt_webhook.Webhook]
+        self.author: Union[Member, Webhook, User] = None
 
         type_ = kwargs.get("type", 0)
         #: The type of this message.
@@ -121,10 +140,12 @@ class Message(Dataclass):
 
         #: The true timestamp of this message, a :class:`datetime.datetime`.
         #: This is not the snowflake timestamp.
-        self.created_at = to_datetime(kwargs.get("timestamp", None))
+        self.created_at: datetime.datetime = to_datetime(kwargs.get("timestamp", None))
 
         #: The edited timestamp of this message.
         #: This can sometimes be None.
+        self.edited_at: datetime.datetime
+
         edited_timestamp = kwargs.get("edited_timestamp", None)
         if edited_timestamp is not None:
             self.edited_at = to_datetime(edited_timestamp)
@@ -132,12 +153,12 @@ class Message(Dataclass):
             self.edited_at = None
 
         #: The list of :class:`.Embed` objects this message contains.
-        self.embeds = []
+        self.embeds: List[Embed] = []
         for embed in kwargs.get("embeds", []):
             self.embeds.append(Embed(**embed))
 
         #: The list of :class:`.Attachment` this message contains.
-        self.attachments = []
+        self.attachments: List[Attachment] = []
 
         for attachment in kwargs.get("attachments", []):
             self.attachments.append(Attachment(bot=self._bot, **attachment))
@@ -160,21 +181,21 @@ class Message(Dataclass):
         return self.content
 
     @property
-    def guild(self) -> "dt_guild.Guild":
+    def guild(self) -> Optional[Guild]:
         """
         :return: The :class:`.Guild` this message is associated with.
         """
         return self.channel.guild
 
     @property
-    def channel(self) -> "dt_channel.Channel":
+    def channel(self) -> Channel:
         """
         :return: The :class:`.Channel` this message is associated with.
         """
         return self._bot.state.find_channel(self.channel_id)
 
     @property
-    def mentions(self) -> "typing.List[dt_member.Member]":
+    def mentions(self) -> List[Member]:
         """
         Returns a list of :class:`.Member` that were mentioned in this message.
 
@@ -187,7 +208,7 @@ class Message(Dataclass):
         return self._resolve_mentions(self._mentions, "member")
 
     @property
-    def role_mentions(self) -> "typing.List[dt_role.Role]":
+    def role_mentions(self) -> List[Role]:
         """
         Returns a list of :class:`.Role` that were mentioned in this message.
 
@@ -201,7 +222,7 @@ class Message(Dataclass):
         return self._resolve_mentions(self._role_mentions, "role")
 
     @property
-    def channel_mentions(self) -> "typing.List[dt_channel.Channel]":
+    def channel_mentions(self) -> List[Channel]:
         """
         Returns a list of :class:`.Channel` that were mentioned in this message.
 
@@ -214,7 +235,7 @@ class Message(Dataclass):
         return self._resolve_mentions(mentions, "channel")
 
     @property
-    def emojis(self) -> "typing.List[dt_emoji.Emoji]":
+    def emojis(self) -> List[Emoji]:
         """
         Returns a list of :class:`.Emoji` that was found in this message.
         """
@@ -234,7 +255,7 @@ class Message(Dataclass):
         """
         return await self._bot.clean_content(self.content)
 
-    async def get_invites(self) -> "typing.List[dt_invite.Invite]":
+    async def get_invites(self) -> List[Invite]:
         """
         Gets a list of valid invites in this message.
         """
@@ -255,15 +276,17 @@ class Message(Dataclass):
         return obbs
 
     @property
-    def invites(self) -> "typing.AsyncIterator[dt_invite.Invite]":
+    def invites(self) -> AsyncIterator[Invite]:
         """
         Returns a list of :class:`.Invite` objects that are in this message (and valid).
         """
         return AsyncIteratorWrapper(self.get_invites)
 
     def _resolve_mentions(
-        self, mentions: typing.List[typing.Union[dict, str]], type_: str
-    ) -> "typing.List[typing.Union[dt_channel.Channel, dt_role.Role, dt_member.Member]]":
+        self,
+        mentions,
+        type_,
+    ):
         """
         Resolves the mentions for this message.
 
@@ -303,7 +326,7 @@ class Message(Dataclass):
 
         return final_mentions
 
-    def reacted(self, emoji: "typing.Union[dt_emoji.Emoji, str]") -> bool:
+    def reacted(self, emoji: Union[Emoji, str]) -> bool:
         """
         Checks if this message was reacted to with the specified emoji.
 
@@ -364,7 +387,7 @@ class Message(Dataclass):
             )
         return self
 
-    async def pin(self) -> "Message":
+    async def pin(self) -> Message:
         """
         Pins this message.
 
@@ -377,7 +400,7 @@ class Message(Dataclass):
         await self._bot.http.pin_message(self.channel.id, self.id)
         return self
 
-    async def unpin(self) -> "Message":
+    async def unpin(self) -> Message:
         """
         Unpins this message.
 
@@ -392,15 +415,16 @@ class Message(Dataclass):
         return self
 
     async def get_who_reacted(
-        self, emoji: "typing.Union[dt_emoji.Emoji, str]"
-    ) -> "typing.List[typing.Union[dt_user.User, dt_member.Member]]":
+        self,
+        emoji: Union[Emoji, str],
+    ) -> List[Union[User, Member]]:
         """
         Fetches who reacted to this message.
 
         :param emoji: The emoji to check.
         :return: A list of either :class:`.Member` or :class:`.User` that reacted to this message.
         """
-        if isinstance(emoji, dt_emoji.Emoji):
+        if not isinstance(emoji, str):
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
         reactions = await self._bot.http.get_reaction_users(self.channel.id, self.id, emoji)
@@ -409,17 +433,17 @@ class Message(Dataclass):
         for user in reactions:
             member_id = int(user.get("id"))
             if self.guild is None:
-                result.append(dt_user.User(self._bot, **user))
+                result.append(User(self._bot, **user))
             else:
                 member = self.guild.members.get(member_id)
                 if not member:
-                    result.append(dt_user.User(self._bot, **user))
+                    result.append(User(self._bot, **user))
                 else:
                     result.append(member)
 
         return result
 
-    async def react(self, emoji: "typing.Union[dt_emoji.Emoji, str]"):
+    async def react(self, emoji: Union[Emoji, str]):
         """
         Reacts to a message with an emoji.
 
@@ -435,15 +459,13 @@ class Message(Dataclass):
                 if not self.reacted(emoji):
                     raise PermissionsError("add_reactions")
 
-        if isinstance(emoji, dt_emoji.Emoji):
+        if not isinstance(emoji, str):
             # undocumented!
             emoji = "{}:{}".format(emoji.name, emoji.id)
 
         await self._bot.http.add_reaction(self.channel.id, self.id, emoji)
 
-    async def unreact(
-        self, reaction: "typing.Union[dt_emoji.Emoji, str]", victim: "dt_member.Member" = None
-    ):
+    async def unreact(self, reaction: Union[Emoji, str], victim: Member = None):
         """
         Removes a reaction from a user.
 
@@ -458,7 +480,7 @@ class Message(Dataclass):
             if not self.channel.effective_permissions(self.guild.me).manage_messages:
                 raise PermissionsError("manage_messages")
 
-        if isinstance(reaction, dt_emoji.Emoji):
+        if not isinstance(reaction, str):
             emoji = "{}:{}".format(reaction.name, reaction.id)
         else:
             emoji = reaction

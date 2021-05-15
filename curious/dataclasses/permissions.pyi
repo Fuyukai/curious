@@ -7,7 +7,6 @@ from curious.dataclasses.channel import Channel
 from curious.dataclasses.member import Member
 from curious.dataclasses.role import Role
 
-
 class Permissions(object):
     __slots__ = ("bitfield",)
     def __new__(cls, value: int, **kwargs): ...

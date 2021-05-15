@@ -46,7 +46,6 @@ from curious.dataclasses.message import CHANNEL_REGEX, EMOJI_REGEX, MENTION_REGE
 from curious.dataclasses.presence import Game, Status
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.webhook import Webhook
-from curious.dataclasses.widget import Widget
 from curious.util import base64ify
 
 logger = logging.getLogger("curious.core.client")
@@ -350,16 +349,6 @@ class Client(object):
         """
         return Invite(self, **(await self.http.get_invite(invite_code, with_counts=with_counts)))
 
-    async def get_widget(self, guild_id: int) -> Widget:
-        """
-        Gets a widget from a guild.
-
-        :param guild_id: The ID of the guild to get the widget of.
-        :return: A :class:`.Widget` object.
-        """
-        data = await self.http.get_widget_data(guild_id)
-        return Widget(self, **data)
-
     async def clean_content(self, content: str) -> str:
         """
         Cleans the content of a message, using the bot's cache.
@@ -580,9 +569,7 @@ class Client(object):
         if not all(self._ready_state.values()):
             return
 
-        self.events.fire_event(
-            "shards_ready", gateway=self._gateways[ctx.shard_id], client=self
-        )
+        self.events.fire_event("shards_ready", gateway=self._gateways[ctx.shard_id], client=self)
 
     async def handle_shard(self, shard_id: int, shard_count: int):
         """

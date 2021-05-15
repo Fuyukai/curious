@@ -18,12 +18,18 @@ Wrappers for User objects.
 
 .. currentmodule:: curious.dataclasses.user
 """
+from __future__ import annotations
 
 import datetime
+from typing import Optional, TYPE_CHECKING
 
-from curious.dataclasses import channel as dt_channel, guild as dt_guild, message as dt_message
 from curious.dataclasses.bases import Dataclass
 from curious.exc import CuriousError
+
+if TYPE_CHECKING:
+    from curious.dataclasses.channel import Channel
+    from curious.dataclasses.message import Message
+    from curious.dataclasses.guild import Guild
 
 
 class AvatarUrl(object):
@@ -115,26 +121,26 @@ class User(Dataclass):
         super().__init__(kwargs.get("id"), client)
 
         #: The username of this user.
-        self.username = kwargs.get("username", None)
+        self.username: str = kwargs["username"]
 
         #: The discriminator of this user.
         #: Note: This is a string, not an integer.
-        self.discriminator = kwargs.get("discriminator", None)
+        self.discriminator: str = kwargs["discriminator"]
 
         #: The avatar hash of this user.
-        self.avatar_hash = kwargs.get("avatar", None)
+        self.avatar_hash: Optional[str] = kwargs.get("avatar", None)
 
         #: If this user is verified or not.
-        self.verified = kwargs.get("verified", None)
+        self.verified: bool = kwargs.get("verified", False)
 
         #: If this user has MFA enabled or not.
-        self.mfa_enabled = kwargs.get("mfa_enabled", None)
+        self.mfa_enabled: bool = kwargs.get("mfa_enabled", False)
 
         #: If this user is a bot.
-        self.bot = kwargs.get("bot", False)
+        self.bot: bool = kwargs.get("bot", False)
 
     @property
-    def user(self) -> "User":
+    def user(self) -> User:
         return self
 
     def _copy(self):
@@ -152,7 +158,7 @@ class User(Dataclass):
         return new_object
 
     @property
-    def avatar_url(self) -> "AvatarUrl":
+    def avatar_url(self) -> AvatarUrl:
         """
         :return: The avatar URL of this user.
         """
@@ -191,7 +197,7 @@ class User(Dataclass):
     def __str__(self) -> str:
         return f"{self.username}#{self.discriminator}"
 
-    async def open_private_channel(self) -> "dt_channel.Channel":
+    async def open_private_channel(self) -> Channel:
         """
         Opens a private channel with a user.
 
@@ -214,7 +220,7 @@ class User(Dataclass):
         channel = self._bot.state.make_private_channel(channel_data)
         return channel
 
-    async def send(self, content: str = None, *args, **kwargs) -> "dt_message.Message":
+    async def send(self, content: str = None, *args, **kwargs) -> Message:
         """
         Sends a message to the user over a private channel.
 
@@ -226,7 +232,7 @@ class User(Dataclass):
 
         return message
 
-    async def unban_from(self, guild: "dt_guild.Guild"):
+    async def unban_from(self, guild: Guild):
         """
         Unbans this user from a guild.
 

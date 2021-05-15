@@ -29,7 +29,7 @@ Curious - An async Python 3.6+ library for Discord bots.
     exc
     util
 """
-from __future__ import generator_stop  # enforce generator stop
+from __future__ import annotations
 
 import sys
 
@@ -67,8 +67,6 @@ from curious.dataclasses.message import Message
 from curious.dataclasses.presence import Game, Presence, Status
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
-from curious.dataclasses.search import SearchQuery, SearchResults
 from curious.dataclasses.user import User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
-from curious.dataclasses.widget import Widget, WidgetChannel, WidgetGuild, WidgetMember

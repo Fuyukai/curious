@@ -18,22 +18,23 @@ Wrappers for Member objects (Users with guilds).
 
 .. currentmodule:: curious.dataclasses.member
 """
+from __future__ import annotations
+
 import collections
 import copy
-import datetime
-from typing import List
+from typing import List, Optional, TYPE_CHECKING
 
-from curious.dataclasses import (
-    guild as dt_guild,
-    role as dt_role,
-    user as dt_user,
-    voice_state as dt_vs,
-)
 from curious.dataclasses.bases import Dataclass
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.presence import Game, Presence, Status
+from curious.dataclasses.presence import Presence, Status
+from curious.dataclasses.user import User
 from curious.exc import HierarchyError, PermissionsError
 from curious.util import to_datetime
+
+if TYPE_CHECKING:
+    from curious.dataclasses.role import Role
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.voice_state import VoiceState
 
 
 class Nickname(object):
@@ -41,11 +42,11 @@ class Nickname(object):
     Represents the nickname of a :class:`.Member`.
     """
 
-    def __init__(self, parent: "Member", value: str):
+    def __init__(self, parent: Member, value: str):
         self.parent = parent
         self.value = value
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         if other is None and self.value in [None, ""]:
             return True
 
@@ -69,7 +70,13 @@ class Nickname(object):
     def __repr__(self) -> str:
         return f"<Nickname value={self.value}>"
 
-    async def set(self, new_nickname: str) -> "Nickname":
+    def empty(self) -> bool:
+        """
+        Checks if this nickname is empty or unset.
+        """
+        return not self.value
+
+    async def set(self, new_nickname: Optional[str]) -> "Nickname":
         """
         Sets the nickname of the username.
 
@@ -77,10 +84,10 @@ class Nickname(object):
         """
 
         # Ensure we don't try and set a bad nickname, which makes an empty listener.
-        if new_nickname == self:
+        if self == new_nickname:
             return self
 
-        guild: dt_guild.Guild = self.parent.guild
+        guild = self.parent.guild
 
         me = False
         if self.parent == self.parent.guild.me:
@@ -127,7 +134,7 @@ class MemberRoleContainer(collections.Sequence):
     def __init__(self, member: "Member"):
         self._member = member
 
-    def _sorted_roles(self) -> "List[dt_role.Role]":
+    def _sorted_roles(self) -> List[Role]:
         if not self._member.guild:
             return []
 
@@ -159,7 +166,7 @@ class MemberRoleContainer(collections.Sequence):
         return self._member.role_ids == other._member.role_ids
 
     @property
-    def top_role(self) -> "dt_role.Role":
+    def top_role(self) -> Role:
         """
         :return: The top :class:`.Role` for this member.
         """
@@ -169,7 +176,7 @@ class MemberRoleContainer(collections.Sequence):
 
         return self[0]
 
-    async def add(self, *roles: "dt_role.Role"):
+    async def add(self, *roles: Role):
         """
         Adds roles to this member.
 
@@ -204,7 +211,7 @@ class MemberRoleContainer(collections.Sequence):
                 self._member.guild_id, self._member.id, role_ids
             )
 
-    async def remove(self, *roles: "dt_role.Role"):
+    async def remove(self, *roles: Role):
         """
         Removes roles from this member.
 
@@ -262,20 +269,20 @@ class Member(Dataclass):
         self._bot.state.make_user(self._user_data)
 
         #: An iterable of role IDs this member has.
-        self.role_ids = [int(rid) for rid in kwargs.get("roles", [])]
+        self.role_ids: List[int] = [int(rid) for rid in kwargs.get("roles", [])]
 
         #: A :class:`._MemberRoleContainer` that represents the roles of this member.
         self.roles = MemberRoleContainer(self)
 
         #: The date the user joined the guild.
-        self.joined_at = to_datetime(kwargs.get("joined_at", None))  # type: datetime.datetime
+        self.joined_at = to_datetime(kwargs.get("joined_at", None))
 
         nick = kwargs.get("nick")
         #: The member's current :class:`.Nickname`.
-        self._nickname = Nickname(self, nick)  # type: Nickname
+        self._nickname: Nickname = Nickname(self, nick)
 
         #: The ID of the guild that this member is in.
-        self.guild_id = None  # type: int
+        self.guild_id: int = None
 
         #: The current :class:`.Presence` of this member.
         self.presence = Presence(
@@ -283,14 +290,14 @@ class Member(Dataclass):
         )
 
     @property
-    def guild(self) -> "dt_guild.Guild":
+    def guild(self) -> Guild:
         """
         :return: The :class:`.Guild` associated with this member.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
-    def voice(self) -> "dt_vs.VoiceState":
+    def voice(self) -> Optional[VoiceState]:
         """
         :return: The :class:`.VoiceState` associated with this member.
         """
@@ -343,7 +350,7 @@ class Member(Dataclass):
             pass
 
     @property
-    def user(self) -> "dt_user.User":
+    def user(self) -> User:
         """
         :return: The underlying :class:`.User` for this member.
         """
@@ -351,14 +358,14 @@ class Member(Dataclass):
             return self._bot.state._users[self.id]
         except KeyError:
             # don't go through make_user as it'll cache it
-            return dt_user.User(self._bot, **self._user_data)
+            return User(self._bot, **self._user_data)
 
     @property
     def name(self) -> str:
         """
         :return: The computed display name of this user.
         """
-        return self.nickname if self.nickname != None else self.user.username
+        return self.nickname if self.nickname.empty() else self.user.username
 
     @property
     def mention(self) -> str:
@@ -377,18 +384,18 @@ class Member(Dataclass):
         """
         return self.presence.status if self.presence else Status.OFFLINE
 
-    @property
-    def game(self) -> Game:
-        """
-        :return: The current :class:`.Game` this member is playing.
-        """
-        if not self.presence:
-            return None
-
-        if self.presence.status == Status.OFFLINE:
-            return None
-
-        return self.presence.game
+    # @property
+    # def game(self) -> Game:
+    #     """
+    #     :return: The current :class:`.Game` this member is playing.
+    #     """
+    #     if not self.presence:
+    #         return None
+    #
+    #     if self.presence.status == Status.OFFLINE:
+    #         return None
+    #
+    #     return self.presence.game
 
     @property
     def colour(self) -> int:
@@ -407,7 +414,7 @@ class Member(Dataclass):
             return 0
 
     @property
-    def top_role(self) -> "dt_role.Role":
+    def top_role(self) -> Role:
         """
         :return: This member's top-most :class:`.Role`.
         """

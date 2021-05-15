@@ -335,6 +335,7 @@ class CommandsManager(object):
         """
         The event hook for the commands manager.
         """
+
         async with trio.open_nursery() as n:
             for plugin in self.plugins.values():
                 body = inspect.getmembers(plugin, predicate=lambda v: hasattr(v, "is_event"))

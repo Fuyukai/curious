@@ -47,26 +47,26 @@ class Embed(object):  # not an IDObject! Embeds don't have IDs.
             return attrdict(**kwargs[key])
 
         #: The title of this embed.
-        self.title = title
+        self.title: str = title
 
         #: The description of this embed.
-        self.description = description
+        self.description: str = description
 
         if colour is None:
             # for passing in from discord
             colour = kwargs.get("color")
 
         #: The colour of this embed.
-        self.colour = colour
+        self.colour: int = colour
 
         #: The type of this embed.
-        self.type_ = type_
+        self.type_: str = type_
 
         #: The URL for this embed.
-        self.url = url
+        self.url: str = url
 
         #: The timestamp for this embed.
-        self.timestamp = timestamp  # type: datetime.datetime
+        self.timestamp: datetime.datetime = timestamp
 
         #: The fields for this embed.
         self.fields = [attrdict(**x) for x in kwargs.get("fields", [])]

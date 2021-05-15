@@ -18,6 +18,8 @@ Base classes that all dataclasses inherit from.
 
 .. currentmodule:: curious.dataclasses.bases
 """
+from __future__ import annotations
+
 import datetime
 import inspect
 import sys
@@ -61,7 +63,7 @@ class IDObject(object):
             id = int(id)
 
         #: The ID of this object.
-        self.id = id
+        self.id: int = id
 
     def __repr__(self) -> str:
         return "<{} id={!r}>".format(self.__class__.__name__, self.id)

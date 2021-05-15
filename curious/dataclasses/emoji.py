@@ -18,11 +18,15 @@ Wrappers for custom emojis in guilds.
 
 .. currentmodule:: curious.dataclasses.emoji
 """
+from __future__ import annotations
 
-import typing
+from typing import List, TYPE_CHECKING, Optional
 
-from curious.dataclasses import guild as dt_guild, role as dt_role
 from curious.dataclasses.bases import Dataclass
+
+if TYPE_CHECKING:
+    from curious.dataclasses.guild import Guild
+    from curious.dataclasses.role import Role
 
 
 class Emoji(Dataclass):
@@ -30,28 +34,40 @@ class Emoji(Dataclass):
     Represents a custom emoji uploaded to a guild.
     """
 
-    __slots__ = ("id", "name", "role_ids", "require_colons", "managed", "guild_id", "animated")
+    __slots__ = (
+        "id",
+        "name",
+        "role_ids",
+        "require_colons",
+        "managed",
+        "guild_id",
+        "animated",
+        "available",
+    )
 
     def __init__(self, **kwargs):
         super().__init__(int(kwargs.get("id")), kwargs.get("client"))
 
         #: The name of this emoji.
-        self.name = kwargs.get("name", None)  # type: str
+        self.name: str = kwargs["name"]
 
         #: A list of role IDs that this emoji can be used by.
-        self.role_ids = kwargs.get("roles", [])  # type: typing.List[int]
+        self.role_ids: List[int] = kwargs.get("roles", [])
 
         #: If this emoji requires colons to use.
-        self.require_colons = kwargs.get("require_colons", False)  # type: bool
+        self.require_colons: bool = kwargs.get("require_colons", False)
 
         #: If this emoji is managed or not.
-        self.managed = kwargs.get("managed", False)  # type: bool
+        self.managed: bool = kwargs.get("managed", False)
 
         #: The ID of the guild this emoji is associated with.
-        self.guild_id = None  # type: int
+        self.guild_id: int = None
 
         #: If this emoji is animated or not.
-        self.animated = kwargs.get("animated", False)  # type: bool
+        self.animated: bool = kwargs.get("animated", False)
+
+        #: If this emoji is available. May be False due to server boosts.
+        self.available: bool = kwargs.get("available", False)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, str):
@@ -91,14 +107,14 @@ class Emoji(Dataclass):
         await self._bot.http.delete_guild_emoji(self.guild_id, emoji_id=self.id)
 
     @property
-    def guild(self) -> "dt_guild.Guild":
+    def guild(self) -> Optional[Guild]:
         """
         :return: The :class:`.Guild` this emoji object is associated with.
         """
         return self._bot.guilds.get(self.guild_id)
 
     @property
-    def roles(self) -> "typing.List[dt_role.Role]":
+    def roles(self) -> List[Role]:
         """
         :return: A list of :class:`.Role` this emoji can be used by.
         """

@@ -172,8 +172,11 @@ class GatewayHandler(object):
 
         gateway_url = gateway_url + f"/?v={self.GATEWAY_VERSION}&encoding=json&compress=zlib-stream"
         self.info = GatewayInfo(
-            token=token, gateway_url=gateway_url, shard_id=shard_id, shard_count=shard_count,
-            intents=intents_bitfield
+            token=token,
+            gateway_url=gateway_url,
+            shard_id=shard_id,
+            shard_count=shard_count,
+            intents=intents_bitfield,
         )
         self.heartbeat_stats = HeartbeatStats()
 

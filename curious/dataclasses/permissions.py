@@ -20,12 +20,16 @@ This class uses some automatic generation to create the objects.
 
 .. currentmodule:: curious.dataclasses.permissions
 """
-import typing
+from __future__ import annotations
 
-from curious.dataclasses import channel as dt_channel, member as dt_member, role as dt_role
+from typing import TYPE_CHECKING, Union
+
 from curious.exc import PermissionsError
 
-target_thint = "typing.Union[dt_member.Member, dt_role.Role]"
+if TYPE_CHECKING:
+    from curious.dataclasses.role import Role
+    from curious.dataclasses.channel import Channel
+    from curious.dataclasses.member import Member
 
 
 # I'm far too lazy to type out each permission bit manually.
@@ -143,7 +147,7 @@ def build_permissions_class(name: str = "Permissions") -> type:
         for (name, bit) in permissions.items()
     }
 
-    def raise_for_permission(self, permission: typing.Union[str]) -> None:
+    def raise_for_permission(self, permission: str) -> None:
         """
         Raises :class:`.PermissionsError` if this permission does not have the required bit.
         """
@@ -186,7 +190,6 @@ def build_permissions_class(name: str = "Permissions") -> type:
 
 
 Permissions = build_permissions_class("Permissions")
-perm_thint = typing.Union[int, Permissions]
 
 
 class Overwrite(object):
@@ -218,11 +221,11 @@ class Overwrite(object):
     @classmethod
     def overwrite_in(
         cls,
-        channel: "dt_channel.Channel",
-        target: target_thint,
+        channel: Channel,
+        target: Union[Member, Role],
         *,
-        allow: perm_thint = None,
-        deny: perm_thint,
+        allow: Union[int, Permissions] = None,
+        deny: Union[int, Permissions] = None,
     ) -> "Overwrite":
         """
         :param channel: The :class:`.Channel` to create this overwrite in.
@@ -236,9 +239,9 @@ class Overwrite(object):
 
     def __init__(
         self,
-        allow: typing.Union[int, Permissions],
-        deny: typing.Union[int, Permissions],
-        obb: "typing.Union[dt_member.Member, dt_role.Role]",
+        allow: Union[int, Permissions],
+        deny: Union[int, Permissions],
+        obb: Union[Member, Role],
         channel_id: int = None,
     ):
         """
@@ -261,7 +264,7 @@ class Overwrite(object):
         self._immutable = False
 
     @property
-    def channel(self) -> "typing.Union[dt_channel.Channel, None]":
+    def channel(self) -> Channel:
         """
         :return: The :class:`.Channel` this overwrite represents.
         """
@@ -281,14 +284,12 @@ class Overwrite(object):
         if item == "_immutable":
             return super().__getattribute__("_immutable")
 
-        if isinstance(self.target, dt_member.dt_user.User):  # lol
-            permissions = Permissions(515136)
-        elif isinstance(self.target, dt_member.Member):
+        if hasattr(self.target, "guild_permissionns"):
             permissions = self.target.guild_permissions
-        elif isinstance(self.target, dt_role.Role):
+        elif hasattr(self.target, "permissions"):
             permissions = self.target.permissions
         else:
-            raise TypeError("Target must be a member or a role")
+            raise ValueError("Don't know what this target is")
 
         if permissions.administrator:
             # short-circuit to always return True if they have administrator
