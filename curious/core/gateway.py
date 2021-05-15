@@ -31,6 +31,8 @@ from trio import CancelScope, SocketStream
 from trio_websocket import WebSocketConnection, wrap_client_stream, ConnectionClosed
 from trio_websocket._impl import _url_to_host
 
+from curious.exc import CuriousError, InvalidTokenException
+
 
 class GatewayOp(enum.IntEnum):
     """
@@ -357,8 +359,23 @@ class GatewayHandler(object):
                 while True:
                     try:
                         next_event = await self._last_ws_connection.websocket.get_message()
-                    except ConnectionClosed:
-                        break
+                    except ConnectionClosed as e:
+                        self.logger.warning(f"The gateway is closing with code={e.reason.code} "
+                                            f"reason={e.reason.reason}")
+
+                        if e.reason.code == 4004:
+                            raise InvalidTokenException() from e
+                        elif e.reason.code == 4014:
+                            raise CuriousError("Received a 4014 Disallowed Intents. Curious "
+                                               "requires both privileged intents to function "
+                                               "properly! Please make sure they are enabled on "
+                                               "your bot's page in the developer portal.") from e
+
+                        elif 4000 <= e.reason.code < 5000:
+                            raise CuriousError("Internal error! This might be a bug. Please "
+                                               "report it!") from e
+                        else:
+                            break
 
                     # annoying zlib compression...
                     if isinstance(next_event, bytes):

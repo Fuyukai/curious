@@ -28,6 +28,12 @@ class CuriousError(Exception):
     """
 
 
+class InvalidTokenException(CuriousError):
+    """
+    Raised when your token is invalid.
+    """
+
+
 # HTTP based exceptions.
 class ErrorCode(enum.IntEnum):
     UNKNOWN_ACCOUNT = 10001
@@ -114,7 +120,7 @@ class HTTPException(CuriousError, ConnectionError):
     __repr__ = __str__
 
 
-class Unauthorized(HTTPException):
+class Unauthorized(HTTPException, InvalidTokenException):
     """
     Raised when your bot token is invalid.
     """
