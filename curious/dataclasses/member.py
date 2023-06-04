@@ -20,8 +20,8 @@ Wrappers for Member objects (Users with guilds).
 """
 from __future__ import annotations
 
-import collections
 import copy
+from collections.abc import Sequence
 from typing import List, Optional, TYPE_CHECKING
 
 from curious.dataclasses.bases import Dataclass
@@ -126,7 +126,7 @@ class Nickname(object):
         return await self.set(None)
 
 
-class MemberRoleContainer(collections.Sequence):
+class MemberRoleContainer(Sequence):
     """
     Represents the roles of a :class:`.Member`.
     """

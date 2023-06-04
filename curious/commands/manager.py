@@ -18,14 +18,17 @@ Contains the class for the commands manager for a client.
 
 .. currentmodule:: curious.commands.manager
 """
+
+from __future__ import annotations
+
 import importlib
 import inspect
 import logging
 import sys
 import traceback
-import typing
 from collections import defaultdict
 from functools import partial
+from typing import TYPE_CHECKING, Type, Optional, Union
 
 import trio
 
@@ -35,9 +38,11 @@ from curious.commands.help import help_command
 from curious.commands.plugin import Plugin
 from curious.commands.ratelimit import RateLimiter
 from curious.commands.utils import prefix_check_factory
-from curious.core import client as md_client
 from curious.core.event import EventContext, event
 from curious.dataclasses.message import Message
+
+if TYPE_CHECKING:
+    from curious.core.client import Client
 
 logger = logging.getLogger("curious.commands.manager")
 
@@ -108,7 +113,7 @@ class CommandsManager(object):
     """
 
     def __init__(
-        self, client: "md_client.Client", *, message_check=None, command_prefix: str = None
+        self, client: Client, *, message_check=None, command_prefix: str = None
     ):
         """
         :param client: The :class:`.Client` to use with this manager.
@@ -143,7 +148,7 @@ class CommandsManager(object):
         self._module_plugins = defaultdict(lambda: [])
 
     @classmethod
-    def with_client(cls, client: "md_client.Client", **kwargs):
+    def with_client(cls, client: Client, **kwargs):
         """
         Creates a manager and automatically registers events.
         """
@@ -163,7 +168,7 @@ class CommandsManager(object):
 
         self.commands["help"] = command(name="help")(help_command)
 
-    async def load_plugin(self, klass: typing.Type[Plugin], *args, module: str = None):
+    async def load_plugin(self, klass: Type[Plugin], *args, module: str = None):
         """
         Loads a plugin.
 
@@ -175,7 +180,7 @@ class CommandsManager(object):
         :param args: Any args to provide to the plugin.
         :param module: The module name provided with this plugin. Only used interally.
         """
-        # get the name and create the plugin object
+
         plugin_name = getattr(klass, "plugin_name", klass.__name__)
         instance = klass(self.client, *args)
 
@@ -188,13 +193,14 @@ class CommandsManager(object):
 
         return instance
 
-    async def unload_plugin(self, klass: typing.Union[Plugin, str]):
+    async def unload_plugin(self, klass: Union[Plugin, str]):
         """
         Unloads a plugin.
 
         :param klass: The plugin class or name of plugin to unload.
         """
-        p: Plugin = None
+
+        p: Optional[Plugin] = None
         if isinstance(klass, str):
             p = self.plugins.pop(klass)
 
@@ -204,10 +210,6 @@ class CommandsManager(object):
                 break
 
         if p is not None:
-            # cancel the task group used for this plugin, if it's running
-            if p.task_group is not None:
-                await multio.asynclib.cancel_task_group(p.task_group)
-
             await p.unload()
 
         return p
@@ -226,7 +228,7 @@ class CommandsManager(object):
                 return next(
                     filter(
                         lambda cmd: not cmd.cmd_subcommand
-                        and (cmd.cmd_name == name or name in cmd.cmd_aliases),
+                                    and (cmd.cmd_name == name or name in cmd.cmd_aliases),
                         cmds,
                     )
                 )
@@ -290,6 +292,7 @@ class CommandsManager(object):
 
         :param import_path: The import path to import.
         """
+
         mod = importlib.import_module(import_path)
 
         # define the predicate for the body scanner
@@ -357,17 +360,11 @@ class CommandsManager(object):
         if not message.author:
             return
 
-        # check bot type
-        if message.author.user.bot and self.client.bot_type & 8:
+        # don't process messages from other bots
+        if message.author.user.bot:
             return
 
-        if message.author.user != self.client.user and self.client.bot_type & 64:
-            return
-
-        if message.guild_id is not None and self.client.bot_type & 32:
-            return
-
-        if message.guild_id is None and self.client.bot_type & 16:
+        if message.guild_id is None:
             return
 
         # step 1, match the messages

@@ -156,7 +156,7 @@ def encode_multipart(fields, files, boundary=None):
 
 # more of a namespace
 class Endpoints:
-    API_BASE = "/api/v7"
+    API_BASE = "/api/v9"
 
     USER_ID = "/users/{user_id}"
     USER_ME = "/users/@me"
@@ -390,8 +390,8 @@ class HTTPClient(object):
                     continue
 
                 # Extract ratelimit headers.
-                remaining = int(response.headers.get("X-Ratelimit-Remaining", 1))
-                reset = int(response.headers.get("X-Ratelimit-Reset", 1))
+                remaining = float(response.headers.get("X-Ratelimit-Remaining", 1))
+                reset = float(response.headers.get("X-Ratelimit-Reset", 1))
 
                 # Update the ratelimit headers.
                 self._ratelimit_remaining[bucket] = remaining, reset

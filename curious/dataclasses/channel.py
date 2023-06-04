@@ -24,7 +24,7 @@ import collections
 import copy
 import pathlib
 import time
-from collections import Mapping
+from collections.abc import Mapping
 from math import floor
 from os import PathLike
 from types import MappingProxyType
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
     from curious.dataclasses.webhook import Webhook
 
 
-class HistoryIterator(collections.AsyncIterator):
+class HistoryIterator(AsyncIterator):
     """
     An iterator that allows you to automatically fetch messages and async iterate over them.
 
@@ -628,7 +628,7 @@ class Channel(Dataclass):
                 obb = self.guild._roles.get(id_)
 
             self._overwrites[id_] = Overwrite(
-                allow=overwrite["allow"], deny=overwrite["deny"], obb=obb, channel_id=self.id
+                allow=int(overwrite["allow"]), deny=int(overwrite["deny"]), obb=obb, channel_id=self.id
             )
             self._overwrites[id_]._immutable = True
 

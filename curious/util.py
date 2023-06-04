@@ -27,6 +27,7 @@ import inspect
 import textwrap
 import types
 import warnings
+from collections.abc import AsyncIterator
 from typing import Any, Awaitable, Callable, Coroutine, List, Union
 
 from multidict import MultiDict
@@ -49,7 +50,7 @@ def remove_from_multidict(d: MultiDict, key: str, item: Any):
     return d
 
 
-class AsyncIteratorWrapper(collections.AsyncIterator):
+class AsyncIteratorWrapper(AsyncIterator):
     """
     Wraps a coroutine that returns a sequence of items into something that can iterated over
     asynchronously.

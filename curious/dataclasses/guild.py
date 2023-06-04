@@ -21,12 +21,11 @@ Wrappers for Guild objects.
 from __future__ import annotations
 
 import abc
-import collections
 import copy
 import datetime
 import enum
 import sys
-from collections import Iterable
+from collections.abc import Iterable
 from dataclasses import dataclass
 from math import ceil
 from os import PathLike
@@ -169,7 +168,7 @@ class ContentFilterLevel(enum.IntEnum):
     SCAN_ALL = 2
 
 
-class _WrapperBase(collections.Mapping, collections.Iterable):
+class _WrapperBase(Mapping, Iterable):
     """
     Represents the base class for a wrapper object.
     """

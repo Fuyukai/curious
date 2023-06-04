@@ -19,14 +19,14 @@ Defines :class:`.State`.
 .. currentmodule:: curious.core.state
 """
 
+from __future__ import annotations
+
 import collections
 import copy
 import logging
-import typing
 from types import MappingProxyType
-from typing import Dict
+from typing import Dict, TYPE_CHECKING, TypeVar, Optional, Mapping, Generator, Union, Type
 
-from curious.core import gateway
 from curious.dataclasses.channel import Channel, ChannelType
 from curious.dataclasses.embed import Embed
 from curious.dataclasses.emoji import Emoji
@@ -40,27 +40,32 @@ from curious.dataclasses.guild import (
 from curious.dataclasses.member import Member
 from curious.dataclasses.message import Message
 from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.presence import Presence, Status
+from curious.dataclasses.presence import Presence
 from curious.dataclasses.reaction import Reaction
 from curious.dataclasses.role import Role
 from curious.dataclasses.user import BotUser, User
 from curious.dataclasses.voice_state import VoiceState
 from curious.dataclasses.webhook import Webhook
 
-UserType = typing.TypeVar("UserType", bound=User)
+if TYPE_CHECKING:
+    from curious.core.gateway import GatewayHandler
+
+UserType = TypeVar("UserType", bound=User)
 logger = logging.getLogger("curious.state")
 
 
-def int_or_none(val, default: typing.Any) -> typing.Union[int, None]:
+def int_or_none(val, default: Optional[int]) -> Optional[int]:
     """
     Returns int or None.
     """
+
     if val is None:
         return default
 
     return int(val)
 
 
+# noinspection PyUnusedLocal
 class State(object):
     """
     This represents the state of the Client - in other libraries, the cache.
@@ -71,7 +76,7 @@ class State(object):
     def __init__(self, client, max_messages: int = 500):
         #: The current user of this bot.
         #: This is automatically set after login.
-        self._user = None  # type: BotUser
+        self._user = None
 
         #: The client associated with this connection.
         self.client = client
@@ -89,7 +94,7 @@ class State(object):
         #: This is bounded to prevent the message cache from growing infinitely.
         self.messages = collections.deque(maxlen=max_messages)
 
-        self.__shards_is_ready = collections.defaultdict(lambda: False)
+        self.__shards_is_ready: Dict[int, bool] = collections.defaultdict(lambda: False)
 
     def is_ready(self, shard_id: int) -> bool:
         """
@@ -110,7 +115,7 @@ class State(object):
             guild._finished_chunking.clear()
 
     @property
-    def guilds(self) -> typing.Mapping[int, Guild]:
+    def guilds(self) -> Mapping[int, Guild]:
         """
         :return: A mapping of int -> :class:`.Guild`.
         """
@@ -138,7 +143,7 @@ class State(object):
         return [guild for guild in self.guilds.values() if guild.shard_id == shard_id]
 
     # get_all_* methods
-    def get_all_channels(self) -> typing.Generator[Channel, None, None]:
+    def get_all_channels(self) -> Generator[Channel, None, None]:
         """
         :return: A generator that yields all :class:`.Channel`s the bot can see.
         """
@@ -146,7 +151,7 @@ class State(object):
             for channel in guild.channels.values():
                 yield channel
 
-    def get_all_members(self) -> typing.Generator[Member, None, None]:
+    def get_all_members(self) -> Generator[Member, None, None]:
         """
         :return: A generator that yields all :class:`.Member`s the bot can see.
         """
@@ -154,7 +159,7 @@ class State(object):
             for member in guild.members.values():
                 yield member
 
-    def get_all_roles(self) -> typing.Generator[Role, None, None]:
+    def get_all_roles(self) -> Generator[Role, None, None]:
         """
         :return: A generator that yields all :class:`.Role`s the bot can see.
         """
@@ -162,7 +167,7 @@ class State(object):
             for role in guild.roles.values():
                 yield role
 
-    def find_member_or_user(self, user_id: int) -> typing.Union[Member, User]:
+    def find_member_or_user(self, user_id: int) -> Union[Member, User]:
         """
         Finds a member or user by ID.
 
@@ -177,7 +182,7 @@ class State(object):
 
         return self._users.get(user_id)
 
-    def find_channel(self, channel_id: int) -> typing.Union[Channel, None]:
+    def find_channel(self, channel_id: int) -> Union[Channel, None]:
         """
         Finds a channel by ID.
         This will search all guild channels, as well as private channels.
@@ -300,7 +305,7 @@ class State(object):
         self,
         user_data: dict,
         *,
-        user_klass: typing.Type[UserType] = User,
+        user_klass: Type[UserType] = User,
         override_cache: bool = False,
     ) -> UserType:
         """
@@ -320,7 +325,7 @@ class State(object):
 
         return user
 
-    def make_message(self, event_data: dict, cache: bool = True) -> Message:
+    def make_message(self, event_data: dict, cache: bool = True) -> Optional[Message]:
         """
         Constructs a new message object.
 
@@ -354,7 +359,7 @@ class State(object):
                 message.author = self._user
             else:
                 message.author = message.channel.user
-        elif channel.type == ChannelType.GROUP:
+        elif channel.type == ChannelType.GROUP_DM:
             message.author = channel.recipients.get(author_id, None)
         else:
             # Webhooks also exist.
@@ -386,7 +391,7 @@ class State(object):
     # Event handlers.
     # These parse the events and deconstruct them.
 
-    async def handle_ready(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_ready(self, gw: GatewayHandler, event_data: dict):
         """
         Called when READY is dispatched.
         """
@@ -418,13 +423,13 @@ class State(object):
         # event_data.pop("guilds")
         # pprint.pprint(event_data)
 
-    async def handle_resumed(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_resumed(self, gw: GatewayHandler, event_data: dict):
         """
         Called when the gateway connection is resumed.
         """
         yield "resumed",
 
-    async def handle_user_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_user_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when the bot's user is updated.
         """
@@ -437,7 +442,7 @@ class State(object):
 
         yield "user_update",
 
-    async def handle_presence_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_presence_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a member changes game.
         """
@@ -504,11 +509,11 @@ class State(object):
             guild._members[user_id] = member
         yield "member_update", old_member, member,
 
-    async def handle_presences_replace(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_presences_replace(self, gw: GatewayHandler, event_data: dict):
         # TODO
         print("P_R", event_data)
 
-    async def handle_guild_members_chunk(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_members_chunk(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a chunk of members has arrived.
         """
@@ -532,7 +537,7 @@ class State(object):
             # Set the finished chunking event.
             await guild._finished_chunking.set()
 
-    async def handle_guild_create(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_create(self, gw: GatewayHandler, event_data: dict):
         """
         Called when GUILD_CREATE is dispatched.
         """
@@ -583,7 +588,7 @@ class State(object):
         members = len(event_data.get("members", []))
         yield "guild_chunk", guild, members
 
-    async def handle_guild_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when GUILD_UPDATE is dispatched.
         """
@@ -628,7 +633,7 @@ class State(object):
 
         yield "guild_update", old_guild, guild,
 
-    async def handle_guild_delete(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_delete(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a guild becomes unavailable.
         """
@@ -652,7 +657,7 @@ class State(object):
                     # use member.id to avoid user lookup
                     self._check_decache_user(member.id)
 
-    async def handle_guild_emojis_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_emojis_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a guild updates its emojis.
         """
@@ -668,7 +673,7 @@ class State(object):
 
         yield "guild_emojis_update", old_guild, guild,
 
-    async def handle_message_create(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_create(self, gw: GatewayHandler, event_data: dict):
         """
         Called when MESSAGE_CREATE is dispatched.
         """
@@ -684,7 +689,7 @@ class State(object):
 
         yield "message_create", message,
 
-    async def handle_message_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when MESSAGE_UPDATE is dispatched.
         """
@@ -718,7 +723,7 @@ class State(object):
 
         yield "message_update", old_message, new_message,
 
-    async def handle_message_delete(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_delete(self, gw: GatewayHandler, event_data: dict):
         """
         Called when MESSAGE_DELETE is dispatched.
         """
@@ -732,7 +737,7 @@ class State(object):
 
         yield "message_delete", message,
 
-    async def handle_message_delete_bulk(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_delete_bulk(self, gw: GatewayHandler, event_data: dict):
         """
         Called when MESSAGE_DELETE_BULK is dispatched.
         """
@@ -760,7 +765,7 @@ class State(object):
             if em:
                 return em
 
-    async def handle_message_reaction_add(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_reaction_add(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a reaction is added to a message.
         """
@@ -819,7 +824,7 @@ class State(object):
         yield "message_reaction_add", message, author, reaction,
 
     async def handle_message_reaction_remove_all(
-        self, gw: "gateway.GatewayHandler", event_data: dict
+        self, gw: GatewayHandler, event_data: dict
     ):
         """
         Called when all reactions are removed from a message.
@@ -832,7 +837,7 @@ class State(object):
         message.reactions = []
         yield "message_reaction_remove_all", message, reactions,
 
-    async def handle_message_reaction_remove(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_message_reaction_remove(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a reaction is removed from a message.
         """
@@ -869,7 +874,7 @@ class State(object):
 
         yield "message_reaction_remove", message, reaction,
 
-    async def handle_guild_member_add(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_member_add(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a guild adds a new member.
         """
@@ -886,7 +891,7 @@ class State(object):
         guild.member_count += 1
         yield "guild_member_add", member,
 
-    async def handle_guild_member_remove(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_member_remove(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a guild removes a member.
         """
@@ -906,7 +911,7 @@ class State(object):
 
         yield "guild_member_remove", member,
 
-    async def handle_guild_member_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_member_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a guild member is updated.
         """
@@ -942,7 +947,7 @@ class State(object):
 
         yield "guild_member_update", old_member, member,
 
-    async def handle_guild_ban_add(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_ban_add(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a ban is added to a guild.
         """
@@ -963,7 +968,7 @@ class State(object):
 
         yield "guild_member_ban", member,
 
-    async def handle_guild_ban_remove(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_ban_remove(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a ban is removed from a guild.
         """
@@ -976,7 +981,7 @@ class State(object):
         user = self.make_user(event_data["user"])
         yield "user_unban", guild, user,
 
-    async def handle_channel_create(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_channel_create(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a channel is created.
         """
@@ -996,7 +1001,7 @@ class State(object):
 
         yield "channel_create", channel,
 
-    async def handle_channel_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_channel_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a channel is updated.
         """
@@ -1019,7 +1024,7 @@ class State(object):
         channel._update_overwrites(event_data.get("permission_overwrites", []))
         yield "channel_update", old_channel, channel,
 
-    async def handle_channel_delete(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_channel_delete(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a channel is deleted.
         """
@@ -1036,7 +1041,7 @@ class State(object):
 
         yield "channel_delete", channel,
 
-    async def handle_guild_role_create(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_role_create(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a role is created.
         """
@@ -1064,7 +1069,7 @@ class State(object):
 
         yield "role_create", role
 
-    async def handle_guild_role_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_role_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a role is updated.
         """
@@ -1096,11 +1101,11 @@ class State(object):
         role.hoisted = event_data.get("hoisted")
         role.mentionable = event_data.get("mentionable")
         role.managed = event_data.get("managed")
-        role.permissions = Permissions(event_data.get("permissions", 0))
+        role.permissions = Permissions(int(event_data.get("permissions", 0)))
 
         yield "role_update", old_role, role,
 
-    async def handle_guild_role_delete(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_guild_role_delete(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a role is deleted.
         """
@@ -1123,7 +1128,7 @@ class State(object):
 
         yield "role_delete", role,
 
-    async def handle_typing_start(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_typing_start(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a user starts typing.
         """
@@ -1146,7 +1151,7 @@ class State(object):
 
             yield "user_typing", channel, user,
 
-    async def handle_voice_state_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_voice_state_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a member's voice state changes.
         """
@@ -1181,7 +1186,7 @@ class State(object):
 
         yield "voice_state_update", member, old_voice_state, new_voice_state,
 
-    async def handle_webhooks_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_webhooks_update(self, gw: GatewayHandler, event_data: dict):
         """
         Called when a channel has a webhook updated.
 
@@ -1189,81 +1194,8 @@ class State(object):
         """
 
     # TODO: Flesh these out
-    async def handle_channel_pins_update(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_channel_pins_update(self, gw: GatewayHandler, event_data: dict):
         pass
 
-    async def handle_channel_pins_ack(self, gw: "gateway.GatewayHandler", event_data: dict):
+    async def handle_channel_pins_ack(self, gw: GatewayHandler, event_data: dict):
         pass
-
-    # Userbot only events.
-    async def handle_user_settings_update(self, gw: "gateway.GatewayHandler", event_data: dict):
-        """
-        Called when the current user's settings update.
-        """
-        old_settings = self._user.settings.copy()
-
-        dict.update(self._user.settings, **event_data)
-        # make sure to update the guild order
-        guild_order = event_data.get("guild_positions")
-        if guild_order:
-            self._guilds.order = [int(x) for x in guild_order]
-
-        # update status, if applicable
-        new_status = Status(self._user.settings.get("status", old_settings.get("status", "ONLINE")))
-        for guild in self.guilds.values():
-            if new_status.strength > guild.me.status.strength:
-                guild.me.status = new_status
-
-        yield "user_settings_update", old_settings, self._user.settings,
-
-    async def handle_message_ack(self, gw: "gateway.GatewayHandler", event_data: dict):
-        """
-        Called when a message is acknowledged.
-        """
-        channel = self.find_channel(int(event_data.get("channel_id", 0)))
-        try:
-            message = self.find_message(int(event_data.get("message_id", 0)))
-        except (ValueError, TypeError):
-            # message_id is None, wtf?
-            return
-
-        if channel is None:
-            return
-
-        if message is None:
-            return
-
-        yield "message_ack", channel, message,
-
-    async def handle_channel_recipient_add(self, gw: "gateway.GatewayHandler", event_data: dict):
-        """
-        Called when a recipient is added to a channel.
-        """
-        user = event_data.get("user", {})
-        id = int(event_data.get("channel_id", 0))
-
-        user = self._users.get(int(user.get("id", 0)))
-
-        channel = self.find_channel(channel_id=id)
-        if channel is None:
-            return
-
-        channel._recipients[user.id] = user
-
-        yield "group_user_add", channel, user,
-
-    async def handle_channel_recipient_remove(self, gw: "gateway.GatewayHandler", event_data: dict):
-        """
-        Called when a recipient is removed a channel.
-        """
-        user = event_data.get("user", {})
-        id = int(event_data.get("channel_id", 0))
-
-        user = self._users.get(int(user.get("id", 0)))
-        channel = self.find_channel(channel_id=id)
-        if channel is None:
-            return
-
-        if user in channel.recipients.values():
-            channel._recipients.pop(user.id, None)
-            yield "group_user_remove", channel, user,

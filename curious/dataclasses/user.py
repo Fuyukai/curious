@@ -125,7 +125,8 @@ class User(Dataclass):
 
         #: The discriminator of this user.
         #: Note: This is a string, not an integer.
-        self.discriminator: str = kwargs["discriminator"]
+        #: May be empty (i.e, 0000) if this user has no discriminator.
+        self.discriminator: str = kwargs.get("discriminator", "0000")
 
         #: The avatar hash of this user.
         self.avatar_hash: Optional[str] = kwargs.get("avatar", None)

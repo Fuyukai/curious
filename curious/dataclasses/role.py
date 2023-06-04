@@ -22,12 +22,11 @@ from __future__ import annotations
 
 import copy
 import functools
-
-from curious.dataclasses.permissions import Permissions
-from curious.dataclasses.bases import Dataclass
-from curious.exc import PermissionsError
-
 from typing import TYPE_CHECKING, Union
+
+from curious.dataclasses.bases import Dataclass
+from curious.dataclasses.permissions import Permissions
+from curious.exc import PermissionsError
 
 if TYPE_CHECKING:
     from curious.dataclasses.guild import Guild
@@ -95,7 +94,7 @@ class Role(Dataclass):
         self.mentionable: bool = kwargs.get("mentionable", False)
 
         #: The permissions of this role.
-        self.permissions = Permissions(kwargs.get("permissions", 0))
+        self.permissions = Permissions(int(kwargs.get("permissions", 0)))
 
         #: Is this role managed?
         self.managed: bool = kwargs.get("managed", False)

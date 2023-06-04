@@ -18,10 +18,14 @@ Classes for plugin objects.
 
 .. currentmodule:: curious.commands.plugin
 """
-import inspect
-import logging
 
-from curious.core import client as md_client
+from __future__ import annotations
+
+import inspect
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from curious.core.client import Client
 
 
 class Plugin(object):
@@ -29,7 +33,7 @@ class Plugin(object):
     Represents a plugin (a collection of events and commands under one class).
     """
 
-    def __init__(self, client: "md_client.Client"):
+    def __init__(self, client: Client):
         #: The client for this plugin.
         self.client = client
 
@@ -42,33 +46,8 @@ class Plugin(object):
 
         By default, this does nothing. It is meant to be overridden to customize behaviour.
         """
+
         pass
-
-    async def spawn(self, cofunc, *args):
-        """
-        Spawns a task using this plugin's task group.
-        """
-        if self.task_group is None:
-            # spawn a new task group function
-            async def task_group_magic():
-                logger = logging.getLogger(__name__)
-                try:
-                    async with multio.asynclib.task_manager() as tg:
-                        self.task_group = tg
-                        await multio.asynclib.spawn(tg, cofunc, *args)
-                except multio.asynclib.TaskGroupError as e:
-                    errors = multio.asynclib.unwrap_taskgrouperror(e)
-                    for error in errors:
-                        logger.exception("Plugin task group crashed!", exc_info=error)
-                except Exception as e:
-                    logger.exception("Plugin task group crashed!", exc_info=e)
-                finally:
-                    self.task_group = None
-
-            await multio.asynclib.spawn(self.client.task_manager, task_group_magic)
-        else:
-            # spawn using the current one
-            await multio.asynclib.spawn(self.task_group, cofunc, *args)
 
     async def unload(self) -> None:
         """

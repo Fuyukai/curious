@@ -147,7 +147,7 @@ class GatewayHandler(object):
     Primary class that handles connecting to the Discord gateway.
     """
 
-    GATEWAY_VERSION = 8
+    GATEWAY_VERSION = 9
     ZLIB_FLUSH_SUFFIX = b"\x00\x00\xff\xff"
 
     def __init__(
